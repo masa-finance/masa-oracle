@@ -1,14 +1,17 @@
 import os
 
-def create_directory_structure():
+def diagnostic_create_directory_structure():
     """
     Create a directory structure for the 'masa-oracle' project.
     
     Directories and files are created based on a predefined list.
     """
-    base_path = 'masa-oracle'
+    base_path = '.'
     
-    # Updated paths for directories and files
+    # Print the current working directory for diagnostic purposes
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Attempting to create directories and files under: {os.path.join(os.getcwd(), base_path)}")
+    
     paths = [
         '/domain/',
         '/domain/node/',
@@ -64,6 +67,11 @@ def create_directory_structure():
         full_path = os.path.join(base_path, path.lstrip('/'))  # Removing leading slash for compatibility
         if path.endswith('/'):
             os.makedirs(full_path, exist_ok=True)
+            print(f"Created directory: {full_path}")
         else:
             with open(full_path, 'a', encoding='utf-8') as f:
                 pass
+            print(f"Created file: {full_path}")
+
+# To run the diagnostic function:
+diagnostic_create_directory_structure()
