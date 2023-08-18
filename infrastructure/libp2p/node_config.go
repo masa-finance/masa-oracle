@@ -1,27 +1,24 @@
-package main
+// /infrastructure/libp2p/node_config.go
+
+package libp2p
 
 import (
 	"context"
-	"fmt"
 
-	libp2p "github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	host "github.com/libp2p/go-libp2p-core/host"
 )
 
-func main() {
-	ctx := context.Background()
-
-	// Generate a new random identity
-	privateKey, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
+// SetupNode initializes a libp2p node with an RSA identity.
+// Returns the created node and any error that might occur.
+func SetupNode(ctx context.Context) (host.Host, error) {
+	// Generate an RSA key pair for this host.
+	privKey, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	// Create a new libp2p node with the generated identity
-	node, err := libp2p.New(ctx, libp2p.Identity(privateKey))
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Node created with ID:", node.ID())
+	// Create a new instance of libp2p with the given private key.
+	return libp2p.New(libp2p.Identity(privKey))
 }
