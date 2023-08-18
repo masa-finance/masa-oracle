@@ -74,4 +74,4 @@ Masa Oracle isn't just about data distribution; it's also about community-driven
 
 ## Conclusion
 
-Masa Oracle, as a part of the broader Masa Protocol, is not just another tool in the web3 toolbox. It's a paradigm shift, ensuring that as the decentralized web grows, it doesn't lose sight of its core tenets—privacy, control, and user-centricity. With Masa, the promise of web3 is not just preserved; it's enhanced.
+TBD
