@@ -2,6 +2,67 @@
 
 Masa Oracle is a pioneering protocol designed to revolutionize the way data behavioral, and identity data is accessed, distributed, and incentivized in a decentralized manner. By leveraging the power of blockchain technology, the Masa Oracle ensures transparency, security, and fair rewards for nodes participating in the data distribution network.
 
+## Getting Started
+
+### Prerequisites
+
+Ensure you have Go installed on your system. If not, you can download and install it from [here](https://golang.org/dl/).
+
+### Running the Node
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/masa-finance/masa-oracle.git
+cd masa-oracle
+```
+
+2. Build the node:
+
+```bash
+go build -o masa-node
+```
+
+3. Run the node:
+
+```bash
+./masa-node   
+```
+
+You should see the node's address printed on the console. This indicates that your node is up and running, ready to connect with other Masa nodes.
+
+---
+
+## Connecting Nodes
+
+Once you have the Masa node set up, you can easily connect multiple nodes together. Here's a step-by-step guide on how to do this:
+
+### Starting a Listening Node
+
+In one terminal window, start a node in listening mode:
+
+```bash
+$ ./masa-node
+```
+
+You should see an output similar to:
+
+```bash
+libp2p host address: /ip4/127.0.0.1/tcp/64924/p2p/12D3KooWSWGcJjMW75PL9LPpSFJGxf5wapXHe9V9auZD6hK1Tf26
+```
+
+This address is the multiaddress of the node. It provides all the necessary information for another peer to locate and communicate with this node.
+
+### Connecting a Second Node
+
+In another terminal window, run a second node and pass the multiaddress of the first node as a command-line argument:
+
+```bash
+./masa-node /ip4/127.0.0.1/tcp/49175/p2p/12D3KooWSWGcJjMW75PL9LPpSFJGxf5wapXHe9V9auZD6hK1Tf26
+```
+
+Once you run the command, the second node should attempt to connect to the first node. If successful, you might see some form of acknowledgment or interaction between the nodes, such as ping responses (depending on your implementation details).
+
 ## Introduction to Masa's Data Sources and Behavioral Tracking
 
 Masa Oracle emerges as a groundbreaking solution in the web3 space, addressing the pressing need for a unified data layer that encapsulates a user's holistic behavior and identity data. In the decentralized realm, while the promise of privacy and control over one's data is paramount, the absence of a comprehensive data layer has led to fragmented experiences and inefficiencies.
