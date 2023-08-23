@@ -4,8 +4,10 @@ go 1.20
 
 require (
 	github.com/libp2p/go-libp2p v0.29.2
-	github.com/libp2p/go-libp2p-kad-dht v0.24.3
+	github.com/libp2p/go-libp2p-core v0.20.1
+	github.com/libp2p/go-libp2p-kad-dht v0.25.0
 	github.com/multiformats/go-multiaddr v0.10.1
+	github.com/sirupsen/logrus v1.8.1
 )
 
 require (

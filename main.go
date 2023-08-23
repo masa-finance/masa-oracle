@@ -15,7 +15,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
-	multiaddr "github.com/multiformats/go-multiaddr"
+	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	"github.com/libp2p/go-libp2p/p2p/transport/websocket"
+	"github.com/multiformats/go-multiaddr"
 )
 
 const keyFilePath = "private.key"
@@ -71,10 +73,12 @@ func main() {
 	}
 
 	h, err := libp2p.New(
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"),
+		libp2p.Transport(websocket.New),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0/ws"),
 		libp2p.ResourceManager(rm),
 		libp2p.Identity(privKey),
 		libp2p.Ping(false), // disable built-in ping
+		libp2p.Security(libp2ptls.ID, libp2ptls.New),
 	)
 	if err != nil {
 		panic(err)
