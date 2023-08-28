@@ -26,13 +26,15 @@ import (
 )
 
 type OracleNode struct {
-	Host     host.Host
-	PrivKey  crypto.PrivKey
-	DHT      *dht.IpfsDHT
-	Protocol protocol.ID
+	Host       host.Host
+	PrivKey    crypto.PrivKey
+	DHT        *dht.IpfsDHT
+	Protocol   protocol.ID
+	multiAddrs multiaddr.Multiaddr
+	ctx        context.Context
 }
 
-func NewOracleNode(privKey crypto.PrivKey) (*OracleNode, error) {
+func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
@@ -62,10 +64,11 @@ func NewOracleNode(privKey crypto.PrivKey) (*OracleNode, error) {
 		Host:     host,
 		PrivKey:  privKey,
 		Protocol: nodeProtocol,
+		ctx:      ctx,
 	}, nil
 }
 
-func (node *OracleNode) Start(ctx context.Context) error {
+func (node *OracleNode) Start() error {
 	node.Host.SetStreamHandler(node.Protocol, node.handleMessage)
 
 	peerInfo := peer.AddrInfo{
@@ -76,10 +79,11 @@ func (node *OracleNode) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	node.multiAddrs = multiaddrs[0]
 	fmt.Println("libp2p host address:", multiaddrs[0])
 
 	go func() {
-		<-ctx.Done()
+		<-node.ctx.Done()
 		node.Host.Close()
 	}()
 	go func() {
@@ -108,7 +112,7 @@ func (node *OracleNode) Start(ctx context.Context) error {
 		addrs = append(addrs, addr)
 	}
 
-	node.DiscoverAndJoin(ctx, addrs)
+	node.DiscoverAndJoin(addrs)
 	return nil
 }
 
@@ -154,9 +158,9 @@ func (node *OracleNode) webhookHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Webhook called"})
 }
 
+// Connect is useful for testing in a local environment, It should probably be removed
 func (node *OracleNode) Connect(targetNode *OracleNode) error {
 	targetNodeAddressInfo := host.InfoFromHost(targetNode.Host)
-
 	err := node.Host.Connect(context.Background(), *targetNodeAddressInfo)
 	if err != nil {
 		return err
@@ -177,12 +181,12 @@ func (node *OracleNode) Addresses() string {
 	return strings.Join(addressesString, ", ")
 }
 
-func (node *OracleNode) DiscoverAndJoin(ctx context.Context, bootstrapPeers []multiaddr.Multiaddr) error {
-	kademliaDHT, err := dht.New(ctx, node.Host)
+func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) error {
+	kademliaDHT, err := dht.New(node.ctx, node.Host)
 	if err != nil {
 		return err
 	}
-	if err = kademliaDHT.Bootstrap(ctx); err != nil {
+	if err = kademliaDHT.Bootstrap(node.ctx); err != nil {
 		return err
 	}
 	node.DHT = kademliaDHT
@@ -202,7 +206,7 @@ func (node *OracleNode) DiscoverAndJoin(ctx context.Context, bootstrapPeers []mu
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := node.Host.Connect(ctx, *peerinfo); err != nil {
+			if err := node.Host.Connect(node.ctx, *peerinfo); err != nil {
 				logrus.Warning(err)
 			} else {
 				logrus.Info("Connection established with bootstrap node:", *peerinfo)
@@ -216,7 +220,7 @@ func (node *OracleNode) DiscoverAndJoin(ctx context.Context, bootstrapPeers []mu
 
 	logrus.Debug("Searching for other peers...")
 	// Use the routing discovery to find peers.
-	peerChan, err := routingDiscovery.FindPeers(ctx, string(node.Protocol))
+	peerChan, err := routingDiscovery.FindPeers(node.ctx, string(node.Protocol))
 	if err != nil {
 		return err
 	}
@@ -224,8 +228,18 @@ func (node *OracleNode) DiscoverAndJoin(ctx context.Context, bootstrapPeers []mu
 		if peer.ID == node.Host.ID() {
 			continue
 		}
-		logrus.Debugf("Found peer: %s", peer.String())
+		logrus.Infof("Found peer: %s", peer.String())
+		// Send a message with this node's multi address string to each peer that is found
+		stream, err := node.Host.NewStream(node.ctx, peer.ID, node.Protocol)
+		if err != nil {
+			logrus.Error("Error opening stream:", err)
+			continue
+		}
+		_, err = stream.Write([]byte(node.multiAddrs.String()))
+		if err != nil {
+			logrus.Error("Error writing to stream:", err)
+			continue
+		}
 	}
-
 	return nil
 }

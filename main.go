@@ -95,11 +95,11 @@ func main() {
 		}
 	}
 
-	node, err := NewOracleNode(privKey)
+	node, err := NewOracleNode(privKey, ctx)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = node.Start(ctx)
+	err = node.Start()
 	if err != nil {
 		logrus.Fatal(err)
 	}
