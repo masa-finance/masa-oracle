@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -29,6 +30,8 @@ func init() {
 	}
 	envFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_node.env")
 	keyFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_key")
+	certFilePath := filepath.Join(usr.HomeDir, ".masa", "webhook-selfsigned-cert.pem")
+	certKeyFilePath := filepath.Join(usr.HomeDir, ".masa", "webhook - selfsigned - key.pem")
 
 	// Create the directories if they don't already exist
 	if _, err := os.Stat(filepath.Dir(envFilePath)); os.IsNotExist(err) {
@@ -40,8 +43,11 @@ func init() {
 	// Check if the .env file exists
 	if _, err := os.Stat(envFilePath); os.IsNotExist(err) {
 		// If not, create it with default values
-		defaultEnv := fmt.Sprintf("%s=%s\n", keyFileKey, keyFilePath)
-		err = os.WriteFile(envFilePath, []byte(defaultEnv), 0644)
+		builder := strings.Builder{}
+		builder.WriteString(fmt.Sprintf("%s=%s\n", keyFileKey, keyFilePath))
+		builder.WriteString(fmt.Sprintf("%s=%s\n", cert, certFilePath))
+		builder.WriteString(fmt.Sprintf("%s=%s\n", certPem, certKeyFilePath))
+		err = os.WriteFile(envFilePath, []byte(builder.String()), 0644)
 		if err != nil {
 			logrus.Fatal("could not write to .env file:", err)
 		}
@@ -53,6 +59,12 @@ func init() {
 }
 
 func main() {
+	if len(os.Args) > 1 {
+		err := os.Setenv(peers, os.Args[1])
+		if err != nil {
+			logrus.Error(err)
+		}
+	}
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 

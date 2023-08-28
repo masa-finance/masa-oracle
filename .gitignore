@@ -13,6 +13,7 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.log
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
@@ -23,6 +24,9 @@ go.work
 
 .env
 .idea/**
+.vscode/**
 private.key
 masa-oracle
+masa_oracle_node.log
 *.log
+.DS_Store
