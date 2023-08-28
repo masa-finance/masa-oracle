@@ -11,12 +11,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/protocol"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
@@ -42,10 +42,13 @@ func NewOracleNode(privKey crypto.PrivKey) (*OracleNode, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	addrStr := "/ip4/0.0.0.0/tcp/0/ws"
+	if os.Getenv(portNbr) != "" {
+		addrStr = fmt.Sprintf("/ip4/0.0.0.0/tcp/%s/ws", os.Getenv(portNbr))
+	}
 	host, err := libp2p.New(
 		libp2p.Transport(websocket.New),
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0/ws"),
+		libp2p.ListenAddrStrings(addrStr),
 		libp2p.ResourceManager(rm),
 		libp2p.Identity(privKey),
 		libp2p.Ping(false), // disable built-in ping
@@ -54,10 +57,11 @@ func NewOracleNode(privKey crypto.PrivKey) (*OracleNode, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	nodeProtocol := protocol.ID(os.Getenv(oracleProtocol))
 	return &OracleNode{
-		Host:    host,
-		PrivKey: privKey,
+		Host:     host,
+		PrivKey:  privKey,
+		Protocol: nodeProtocol,
 	}, nil
 }
 
@@ -190,6 +194,10 @@ func (node *OracleNode) DiscoverAndJoin(ctx context.Context, bootstrapPeers []mu
 		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil {
 			logrus.Error(err)
+		}
+		if peerinfo.ID == node.Host.ID() {
+			logrus.Info("Skipping connect to self")
+			continue
 		}
 		wg.Add(1)
 		go func() {

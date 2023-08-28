@@ -30,6 +30,13 @@ func init() {
 	envFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_node.env")
 	keyFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_key")
 
+	// Create the directories if they don't already exist
+	if _, err := os.Stat(filepath.Dir(envFilePath)); os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(envFilePath), 0755)
+		if err != nil {
+			logrus.Fatal("could not create directory:", err)
+		}
+	}
 	// Check if the .env file exists
 	if _, err := os.Stat(envFilePath); os.IsNotExist(err) {
 		// If not, create it with default values
