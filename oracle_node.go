@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/libp2p/go-libp2p"
@@ -114,6 +116,8 @@ func (node *OracleNode) Start() error {
 	}
 
 	node.DiscoverAndJoin(addrs)
+	go node.sendMessageToRandomPeer()
+
 	return nil
 }
 
@@ -249,4 +253,35 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 	}
 	logrus.Infof("found %d peers", len(node.Host.Network().Peers()))
 	return nil
+}
+
+func (node *OracleNode) sendMessageToRandomPeer() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			peers := node.Host.Network().Peers()
+			if len(peers) > 0 {
+				// Choose a random peer
+				randPeer := peers[rand.Intn(len(peers))]
+
+				// Create a new stream with this peer
+				stream, err := node.Host.NewStream(node.ctx, randPeer, node.Protocol)
+				if err != nil {
+					logrus.Error("Error opening stream:", err)
+					continue
+				}
+
+				// Send a message to this peer
+				_, err = stream.Write([]byte(fmt.Sprintf("Hello from %s\n", node.multiAddrs.String())))
+				if err != nil {
+					logrus.Error("Error writing to stream:", err)
+				}
+			}
+		case <-node.ctx.Done():
+			return
+		}
+	}
 }
