@@ -59,7 +59,7 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 	if err != nil {
 		return nil, err
 	}
-	nodeProtocol := protocol.ID(os.Getenv(oracleProtocol))
+	nodeProtocol := protocol.ID(oracleProtocol)
 	return &OracleNode{
 		Host:     host,
 		PrivKey:  privKey,
@@ -70,6 +70,7 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 
 func (node *OracleNode) Start() error {
 	node.Host.SetStreamHandler(node.Protocol, node.handleMessage)
+	node.Host.Network().Notify(&ConnectionLogger{})
 
 	peerInfo := peer.AddrInfo{
 		ID:    node.Host.ID(),
@@ -123,18 +124,15 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	if err != nil {
 		logrus.Error(err)
 		stream.Reset()
-		return
 	}
 	connection := stream.Conn()
 
-	logrus.Infof("Message from '%s': %s", connection.RemotePeer().String(), message)
+	logrus.Infof("Message from '%s': %s, remote: %s", connection.RemotePeer().String(), message, stream.Conn().RemotePeer())
 	// Send an acknowledgement
-	_, err = stream.Write([]byte("ACK"))
+	_, err = stream.Write([]byte("ACK\n"))
 	if err != nil {
-		fmt.Println("Error writing to stream:", err)
-		return
+		logrus.Error("Error writing to stream:", err)
 	}
-
 }
 
 func (node *OracleNode) authMiddleware() gin.HandlerFunc {
@@ -210,6 +208,14 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 				logrus.Warning(err)
 			} else {
 				logrus.Info("Connection established with bootstrap node:", *peerinfo)
+				stream, err := node.Host.NewStream(node.ctx, peerinfo.ID, node.Protocol)
+				if err != nil {
+					logrus.Error("Error opening stream:", err)
+				}
+				_, err = stream.Write([]byte(fmt.Sprintf("Hello from %s\n", node.multiAddrs.String())))
+				if err != nil {
+					logrus.Error("Error writing to stream:", err)
+				}
 			}
 		}()
 	}
@@ -235,11 +241,12 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 			logrus.Error("Error opening stream:", err)
 			continue
 		}
-		_, err = stream.Write([]byte(node.multiAddrs.String()))
+		_, err = stream.Write([]byte(fmt.Sprintf("Hello from %s", node.multiAddrs.String())))
 		if err != nil {
 			logrus.Error("Error writing to stream:", err)
 			continue
 		}
 	}
+	logrus.Infof("found %d peers", len(node.Host.Network().Peers()))
 	return nil
 }

@@ -59,7 +59,9 @@ func init() {
 }
 
 func main() {
+	logrus.Infof("arg size is %d", len(os.Args))
 	if len(os.Args) > 1 {
+		logrus.Infof("found arg: %s", os.Args[1])
 		err := os.Setenv(peers, os.Args[1])
 		if err != nil {
 			logrus.Error(err)
