@@ -1,14 +1,23 @@
-# Use the official Golang image from the Docker Hub
-FROM golang:1.17
+# Use the official Golang image as our base image
+FROM golang:1.20
 
-# Create a directory for the application inside the Docker image
+# Install git (required for fetching dependencies)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
+# Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy everything from the current directory on your machine to the app directory in the Docker image
+# Copy everything from the current directory to the Working Directory inside the container
 COPY . .
 
-# Download necessary dependencies
-RUN go mod download
+# Fetch dependencies
+RUN go mod tidy
 
-# This command runs your application when the Docker container is launched.
-CMD ["go", "run", "mid.go"]
+# Build the Go app
+RUN go build -o main .
+
+# Expose port 4001 (change if necessary)
+EXPOSE 4001
+
+# Command to run the executable
+CMD ["./main"]
