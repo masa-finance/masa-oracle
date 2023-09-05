@@ -20,6 +20,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
+	"github.com/libp2p/go-libp2p/p2p/host/autonat"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	"github.com/libp2p/go-libp2p/p2p/transport/websocket"
@@ -225,8 +226,13 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 	}
 	wg.Wait()
 
-	routingDiscovery := routing.NewRoutingDiscovery(kademliaDHT)
 	logrus.Info("Announcing ourselves...")
+	routingDiscovery := routing.NewRoutingDiscovery(kademliaDHT)
+	// Advertise this node
+	_, err = routingDiscovery.Advertise(node.ctx, string(node.Protocol))
+	if err != nil {
+		return err
+	}
 
 	logrus.Debug("Searching for other peers...")
 	// Use the routing discovery to find peers.
@@ -252,6 +258,17 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 		}
 	}
 	logrus.Infof("found %d peers", len(node.Host.Network().Peers()))
+
+	autoNat, err := autonat.New(node.Host, nil)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	// Wait a bit for the service to bootstrap
+	time.Sleep(5 * time.Second)
+
+	// Get the public address
+	reachability := autoNat.Status()
+	logrus.Info("Reachability status:", reachability.String())
 	return nil
 }
 

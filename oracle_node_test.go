@@ -13,16 +13,6 @@ import (
 )
 
 func TestOracleNodeCommunication(t *testing.T) {
-	// Create two OracleNodes
-	// Get or create the private key
-	privKey1, err := getOrCreatePrivateKey(filepath.Join("tests/node1/private.key"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	node1, err := NewOracleNode(privKey1)
-	if err != nil {
-		t.Fatal(err)
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Listen for SIGINT (CTRL+C)
@@ -35,7 +25,18 @@ func TestOracleNodeCommunication(t *testing.T) {
 		cancel()
 	}()
 
-	err = node1.Start(ctx)
+	// Create two OracleNodes
+	// Get or create the private key
+	privKey1, err := getOrCreatePrivateKey(filepath.Join("tests/node1/private.key"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	node1, err := NewOracleNode(privKey1, ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = node1.Start()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,11 +45,11 @@ func TestOracleNodeCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	node2, err := NewOracleNode(privKey2)
+	node2, err := NewOracleNode(privKey2, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = node2.Start(ctx)
+	err = node2.Start()
 	if err != nil {
 		t.Fatal(err)
 	}
