@@ -25,8 +25,12 @@ go.work
 .env
 .idea/**
 .vscode/**
-private.key
-masa-oracle
-masa_oracle_node.log
 *.log
 .DS_Store
+
+private.key
+masa-oracle
+
+tools/tools
+tools/*.json
+tools/*.bin
