@@ -17,6 +17,8 @@ import (
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	"github.com/libp2p/go-libp2p/p2p/transport/websocket"
 	"github.com/multiformats/go-multiaddr"
+
+	"github.com/masa-finance/masa-oracle/crypto"
 )
 
 func run() {
@@ -31,7 +33,7 @@ func run() {
 	}
 
 	// Get or create the private key
-	privKey, err := getOrCreatePrivateKey("")
+	privKey, err := crypto.GetOrCreatePrivateKey("")
 	if err != nil {
 		panic(err)
 	}

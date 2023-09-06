@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/host"
+
+	"github.com/masa-finance/masa-oracle/crypto"
 )
 
 func TestOracleNodeCommunication(t *testing.T) {
@@ -27,7 +29,7 @@ func TestOracleNodeCommunication(t *testing.T) {
 
 	// Create two OracleNodes
 	// Get or create the private key
-	privKey1, err := getOrCreatePrivateKey(filepath.Join("tests/node1/private.key"))
+	privKey1, err := crypto.GetOrCreatePrivateKey(filepath.Join("tests/node1/private.key"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +43,7 @@ func TestOracleNodeCommunication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	privKey2, err := getOrCreatePrivateKey(filepath.Join("tests/node2/private.key"))
+	privKey2, err := crypto.GetOrCreatePrivateKey(filepath.Join("tests/node2/private.key"))
 	if err != nil {
 		t.Fatal(err)
 	}

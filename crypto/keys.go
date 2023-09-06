@@ -1,4 +1,4 @@
-package main
+package crypto
 
 import (
 	"crypto/ecdsa"
@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func getOrCreatePrivateKey(keyFile string) (crypto.PrivKey, error) {
+func GetOrCreatePrivateKey(keyFile string) (crypto.PrivKey, error) {
 	// Check if the private key file exists
 	data, err := os.ReadFile(keyFile)
 	if err == nil {
@@ -29,11 +29,12 @@ func getOrCreatePrivateKey(keyFile string) (crypto.PrivKey, error) {
 		return privKey, nil
 	} else {
 		// Generate a new private key
-		privKey, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
+		privKey, _, err := crypto.GenerateKeyPair(crypto.Secp256k1, 2048)
 		if err != nil {
 			return nil, err
 		}
 		// Marshal the private key to bytes
+
 		data, err := crypto.MarshalPrivateKey(privKey)
 		if err != nil {
 			return nil, err
@@ -47,7 +48,7 @@ func getOrCreatePrivateKey(keyFile string) (crypto.PrivKey, error) {
 	}
 }
 
-func generateSelfSignedCert(certPath, keyPath string) error {
+func GenerateSelfSignedCert(certPath, keyPath string) error {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return err

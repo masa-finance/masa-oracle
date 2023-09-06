@@ -1,7 +1,6 @@
 package ethereum
 
 import (
-	"crypto/ecdsa"
 	"errors"
 	"math/big"
 	"os"
@@ -9,11 +8,23 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/libp2p/go-libp2p/core/crypto"
 )
 
-func AddUser(privateKey *ecdsa.PrivateKey, chainId int64, userId, reputationScore string) (string, error) {
+func AddUser(privateKey crypto.PrivKey, chainId int64, userId, reputationScore string) (string, error) {
 	// Connect to an ethereum node  running locally
+
+	raw, err := privateKey.Raw()
+	if err != nil {
+		return "", err
+	}
+	ecdsaKey, err := ethCrypto.ToECDSA(raw)
+	if err != nil {
+		return "", err
+	}
+
 	ethNodeUrl := os.Getenv("eth.node.url")
 	if ethNodeUrl == "" {
 		return "", errors.New("eth.node.url is not set in the environment")
@@ -24,7 +35,7 @@ func AddUser(privateKey *ecdsa.PrivateKey, chainId int64, userId, reputationScor
 	}
 
 	// Initialize transactor
-	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(chainId))
+	transactor, err := bind.NewKeyedTransactorWithChainID(ecdsaKey, big.NewInt(chainId))
 
 	// Set up gas price and gas limit
 	price, err := strconv.ParseInt(os.Getenv("gas.price.wei"), 10, 64)

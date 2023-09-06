@@ -13,6 +13,8 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/crypto"
 )
 
 func init() {
@@ -80,7 +82,7 @@ func main() {
 		cancel()
 	}()
 
-	privKey, err := getOrCreatePrivateKey(os.Getenv(keyFileKey))
+	privKey, err := crypto.GetOrCreatePrivateKey(os.Getenv(keyFileKey))
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -91,7 +93,7 @@ func main() {
 	if _, err := os.Stat(certFile); os.IsNotExist(err) {
 		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
 			// If not, generate them
-			if err := generateSelfSignedCert(certFile, keyFile); err != nil {
+			if err := crypto.GenerateSelfSignedCert(certFile, keyFile); err != nil {
 				logrus.Fatal("Failed to generate self-signed certificate:", err)
 			}
 		}
