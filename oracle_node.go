@@ -23,7 +23,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/host/autonat"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
-	"github.com/libp2p/go-libp2p/p2p/transport/websocket"
+	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
@@ -47,12 +47,12 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 	if err != nil {
 		return nil, err
 	}
-	addrStr := "/ip4/0.0.0.0/tcp/0/ws"
+	addrStr := "/ip4/0.0.0.0/udp/0/quic-v1"
 	if os.Getenv(portNbr) != "" {
-		addrStr = fmt.Sprintf("/ip4/0.0.0.0/tcp/%s/ws", os.Getenv(portNbr))
+		addrStr = fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(portNbr))
 	}
 	host, err := libp2p.New(
-		libp2p.Transport(websocket.New),
+		libp2p.Transport(quic.NewTransport),
 		libp2p.ListenAddrStrings(addrStr),
 		libp2p.ResourceManager(rm),
 		libp2p.Identity(privKey),
