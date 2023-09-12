@@ -14,10 +14,10 @@ COPY . .
 RUN go mod tidy
 
 # Build the Go app
-RUN go build -o masa-oracle .
+RUN go build -v -o masa-node ./cmd/masa-node
 
 # Expose port 4001 (change if necessary)
 EXPOSE 4001
 
  # Command to run the executable with bootnode address
- CMD ["./masa-oracle", "/ip4/192.168.1.6/tcp/4001/ws/p2p/QmQq37unSom5Vv2dzEyiRqPc8V9JUAZXFmkyQfZtW4J1Bt"]
+ CMD ["./masa-node", "/ip4/192.168.1.6/udp/4001/quic-v1/p2p/16Uiu2HAmSZDV66ndX8TdMtxk99VvjYyPt2DMjeedQjNScFbbqHKK", "4001"]
