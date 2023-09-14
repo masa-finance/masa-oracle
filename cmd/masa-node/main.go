@@ -89,6 +89,8 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	crypto.VerifyEthereumCompatibility(privKey)
+
 	node, err := masa.NewOracleNode(privKey, ctx)
 	if err != nil {
 		logrus.Fatal(err)

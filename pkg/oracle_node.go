@@ -164,6 +164,14 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 	if err != nil {
 		return err
 	}
+	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
+		logrus.Infof("Peer added to DHT: %s", p)
+	}
+
+	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
+		logrus.Infof("Peer removed from DHT: %s", p)
+	}
+
 	if err = kademliaDHT.Bootstrap(node.ctx); err != nil {
 		return err
 	}
@@ -206,7 +214,7 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 	// Advertise this node
 	_, err = routingDiscovery.Advertise(node.ctx, string(node.Protocol))
 	if err != nil {
-		return err
+		logrus.Error(err)
 	}
 
 	logrus.Debug("Searching for other peers...")
@@ -233,8 +241,31 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 		}
 	}
 	logrus.Infof("found %d peers", len(node.Host.Network().Peers()))
+	node.SetupAutoNAT()
+	return nil
+}
 
-	autoNat, err := autonat.New(node.Host, nil)
+func (node *OracleNode) SetupAutoNAT() error {
+	privKey, _, err := crypto.GenerateKeyPair(crypto.Secp256k1, 2048)
+	if err != nil {
+		return err
+	}
+	newHost, err := libp2p.New(
+		libp2p.Transport(quic.NewTransport),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/udp/0/quic-v1"),
+		libp2p.Identity(privKey),
+		libp2p.Ping(false), // disable built-in ping
+		libp2p.Security(libp2ptls.ID, libp2ptls.New),
+	)
+	if err != nil {
+		return err
+	}
+	opts := []autonat.Option{
+		autonat.EnableService(newHost.Network()),
+		autonat.WithReachability(network.ReachabilityUnknown),
+		autonat.WithoutThrottling(),
+	}
+	autoNat, err := autonat.New(node.Host, opts...)
 	if err != nil {
 		logrus.Fatal(err)
 	}
