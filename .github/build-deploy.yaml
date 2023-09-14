@@ -1,0 +1,27 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "devops" ]
+
+env:
+  PROJECT_ID: masa-chain
+  LOCATION: us-central1
+  KUBE_LOCATION: europe-central2-a
+  KUBE_CLUSTER_NAME: dev
+
+jobs:
+  build:
+    # Add 'id-token' with the intended permissions for workload identity federation
+    runs-on: dockershared
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build and Push Container
+        run: | 
+          echo '${{ secrets.GCP_CREDENTIALS }}' | docker login -u _json_key --password-stdin us-central1-docker.pkg.dev
+          DOCKER_BUILDKIT=1 docker build -t "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:${{ github.sha }}" -t "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:latest" .
+          docker images
+          docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:${{ github.sha }}"
+          docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:latest"
