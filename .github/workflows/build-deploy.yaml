@@ -36,4 +36,4 @@ jobs:
           echo '${{ secrets.GCP_CREDENTIALS }}' > ~/.gcloud-api-key.json
           gcloud auth activate-service-account --key-file ~/.gcloud-api-key.json
           gcloud container clusters get-credentials ${{ env.KUBE_CLUSTER_NAME }} --zone ${{ env.KUBE_LOCATION }} --project ${{ env.PROJECT_ID }}
-          helm upgrade $GITHUB_REPOSITORY ./chart -n $GITHUB_REPOSITORY --install --wait --timeout 15m0s -f ./chart/values.yaml --debug --set image.tag=${{ github.sha }}
+          helm upgrade masa-oracle ./chart -n $GITHUB_REPOSITORY --install --wait --timeout 15m0s -f ./chart/values.yaml --debug --set image.tag=${{ github.sha }}
