@@ -25,6 +25,7 @@ jobs:
           docker images
           docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:${{ github.sha }}"
           docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:latest"
+          
   deploy:
     needs: build
     runs-on: dockershared
