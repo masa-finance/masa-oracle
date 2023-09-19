@@ -129,6 +129,7 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	connection := stream.Conn()
 
 	logrus.Infof("Message from '%s': %s, remote: %s", connection.RemotePeer().String(), message, connection.RemoteMultiaddr())
+	//peerinfo, err := peer.AddrInfoFromP2pAddr(connection.RemoteMultiaddr())
 	// Send an acknowledgement
 	_, err = stream.Write([]byte("ACK\n"))
 	if err != nil {
@@ -160,7 +161,7 @@ func (node *OracleNode) Addresses() string {
 }
 
 func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) error {
-	kademliaDHT, err := dht.New(node.ctx, node.Host)
+	kademliaDHT, err := dht.New(node.ctx, node.Host, dht.Mode(dht.ModeServer))
 	if err != nil {
 		return err
 	}
@@ -200,7 +201,7 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 				if err != nil {
 					logrus.Error("Error opening stream:", err)
 				}
-				_, err = stream.Write([]byte(fmt.Sprintf("Hello from %s\n", node.multiAddrs.String())))
+				_, err = stream.Write([]byte(fmt.Sprintf("d&j1 Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
 				}
@@ -234,7 +235,7 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 			logrus.Error("Error opening stream:", err)
 			continue
 		}
-		_, err = stream.Write([]byte(fmt.Sprintf("Hello from %s", node.multiAddrs.String())))
+		_, err = stream.Write([]byte(fmt.Sprintf("d&j2 Hello from %s", node.multiAddrs.String())))
 		if err != nil {
 			logrus.Error("Error writing to stream:", err)
 			continue
@@ -298,7 +299,7 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 				}
 
 				// Send a message to this peer
-				_, err = stream.Write([]byte(fmt.Sprintf("Hello from %s\n", node.multiAddrs.String())))
+				_, err = stream.Write([]byte(fmt.Sprintf("ticker Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
 				}
