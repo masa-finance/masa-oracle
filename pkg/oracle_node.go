@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
@@ -17,13 +16,14 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	"github.com/libp2p/go-libp2p/p2p/host/autonat"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+
+	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 )
 
 type OracleNode struct {
@@ -91,8 +91,6 @@ func (node *OracleNode) Start() (err error) {
 			return
 		}
 	}()
-	go func() {
-	}()
 
 	peersStr := os.Getenv(Peers)
 	if peersStr != "" {
@@ -140,6 +138,7 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 // Connect is useful for testing in a local environment, It should probably be removed
 func (node *OracleNode) Connect(targetNode *OracleNode) error {
 	targetNodeAddressInfo := host.InfoFromHost(targetNode.Host)
+
 	err := node.Host.Connect(context.Background(), *targetNodeAddressInfo)
 	if err != nil {
 		return err
@@ -161,87 +160,12 @@ func (node *OracleNode) Addresses() string {
 }
 
 func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) error {
-	kademliaDHT, err := dht.New(node.ctx, node.Host, dht.Mode(dht.ModeServer))
+	var err error
+	node.DHT, err = myNetwork.NewDht(node.ctx, node.Host, bootstrapPeers, node.Protocol, node.multiAddrs)
 	if err != nil {
 		return err
 	}
-	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("Peer added to DHT: %s", p)
-	}
-
-	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
-		logrus.Infof("Peer removed from DHT: %s", p)
-	}
-
-	if err = kademliaDHT.Bootstrap(node.ctx); err != nil {
-		return err
-	}
-	node.DHT = kademliaDHT
-
-	// Let's connect to the bootstrap nodes first. They will tell us about the
-	// other nodes in the network.
-	var wg sync.WaitGroup
-	for _, peerAddr := range bootstrapPeers {
-		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
-		if err != nil {
-			logrus.Error(err)
-		}
-		if peerinfo.ID == node.Host.ID() {
-			logrus.Info("Skipping connect to self")
-			continue
-		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := node.Host.Connect(node.ctx, *peerinfo); err != nil {
-				logrus.Warning(err)
-			} else {
-				logrus.Info("Connection established with bootstrap node:", *peerinfo)
-				stream, err := node.Host.NewStream(node.ctx, peerinfo.ID, node.Protocol)
-				if err != nil {
-					logrus.Error("Error opening stream:", err)
-				}
-				_, err = stream.Write([]byte(fmt.Sprintf("d&j1 Hello from %s\n", node.multiAddrs.String())))
-				if err != nil {
-					logrus.Error("Error writing to stream:", err)
-				}
-			}
-		}()
-	}
-	wg.Wait()
-
-	logrus.Info("Announcing ourselves...")
-	routingDiscovery := routing.NewRoutingDiscovery(kademliaDHT)
-	// Advertise this node
-	_, err = routingDiscovery.Advertise(node.ctx, string(node.Protocol))
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	logrus.Debug("Searching for other peers...")
-	// Use the routing discovery to find peers.
-	peerChan, err := routingDiscovery.FindPeers(node.ctx, string(node.Protocol))
-	if err != nil {
-		return err
-	}
-	for availPeer := range peerChan {
-		if availPeer.ID == node.Host.ID() {
-			continue
-		}
-		logrus.Infof("Found availPeer: %s", availPeer.String())
-		// Send a message with this node's multi address string to each availPeer that is found
-		stream, err := node.Host.NewStream(node.ctx, availPeer.ID, node.Protocol)
-		if err != nil {
-			logrus.Error("Error opening stream:", err)
-			continue
-		}
-		_, err = stream.Write([]byte(fmt.Sprintf("d&j2 Hello from %s", node.multiAddrs.String())))
-		if err != nil {
-			logrus.Error("Error writing to stream:", err)
-			continue
-		}
-	}
-	logrus.Infof("found %d peers", len(node.Host.Network().Peers()))
+	myNetwork.Discover(node.ctx, node.Host, node.DHT, node.Protocol, node.multiAddrs)
 	node.SetupAutoNAT()
 	return nil
 }

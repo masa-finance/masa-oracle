@@ -25,7 +25,7 @@ func init() {
 	}
 	mw := io.MultiWriter(os.Stdout, f)
 	logrus.SetOutput(mw)
-	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetLevel(logrus.InfoLevel)
 
 	usr, err := user.Current()
 	if err != nil {
@@ -89,7 +89,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	crypto.VerifyEthereumCompatibility(privKey)
+	//crypto.VerifyEthereumCompatibility(privKey)
 
 	node, err := masa.NewOracleNode(privKey, ctx)
 	if err != nil {
