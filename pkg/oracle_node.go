@@ -93,22 +93,24 @@ func (node *OracleNode) Start() (err error) {
 	}()
 
 	peersStr := os.Getenv(Peers)
-	if peersStr != "" {
-		bootstrapPeers := strings.Split(peersStr, ",")
-		addrs := make([]multiaddr.Multiaddr, 0)
-		for _, peerAddr := range bootstrapPeers {
-			addr, err := multiaddr.NewMultiaddr(peerAddr)
-			if err != nil {
-				return err
-			}
-			addrs = append(addrs, addr)
+	bootstrapPeers := strings.Split(peersStr, ",")
+	addrs := make([]multiaddr.Multiaddr, 0)
+	for _, peerAddr := range bootstrapPeers {
+		if peerAddr == "" {
+			continue
 		}
-
-		err = node.DiscoverAndJoin(addrs)
+		addr, err := multiaddr.NewMultiaddr(peerAddr)
 		if err != nil {
 			return err
 		}
+		addrs = append(addrs, addr)
 	}
+
+	err = node.DiscoverAndJoin(addrs)
+	if err != nil {
+		return err
+	}
+
 	go node.sendMessageToRandomPeer()
 	return
 }
@@ -165,7 +167,7 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 	if err != nil {
 		return err
 	}
-	myNetwork.Discover(node.ctx, node.Host, node.DHT, node.Protocol, node.multiAddrs)
+	go myNetwork.Discover(node.ctx, node.Host, node.DHT, node.Protocol, node.multiAddrs)
 	node.SetupAutoNAT()
 	return nil
 }
