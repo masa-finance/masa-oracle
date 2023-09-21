@@ -2,7 +2,7 @@ name: Build and Deploy to Cloud Run
 
 on:
   push:
-    branches: [ "devops" ]
+    branches: [ "main" ]
 
 env:
   PROJECT_ID: masa-chain
