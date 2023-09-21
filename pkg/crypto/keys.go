@@ -7,10 +7,12 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"os"
 	"time"
 
+	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -39,6 +41,7 @@ func GetOrCreatePrivateKey(keyFile string) (crypto.PrivKey, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		// Save the private key to the file
 		if err := os.WriteFile(keyFile, data, 0600); err != nil {
 			return nil, err
@@ -105,5 +108,30 @@ func GenerateSelfSignedCert(certPath, keyPath string) error {
 	if err := pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}); err != nil {
 		return err
 	}
+	return nil
+}
+
+func VerifyEthereumCompatibility(privKey crypto.PrivKey) error {
+	// Convert the libp2p private key to an Ethereum private key
+	raw, err := privKey.Raw()
+	if err != nil {
+		return err
+	}
+	ecdsaPrivKey, err := ethCrypto.ToECDSA(raw)
+	if err != nil {
+		return err
+	}
+
+	// Print the private key in hexadecimal format
+	//data, err := crypto.MarshalPrivateKey(privKey)
+	//if err != nil {
+	//	return err
+	//}
+	//fmt.Printf("Private key: \n%s\n", hex.EncodeToString(data))
+
+	// Print the public key and address
+	fmt.Println("Ethereum public key:", ecdsaPrivKey.PublicKey)
+	// Derive the Ethereum address from the private key
+	fmt.Println("Ethereum address:", ethCrypto.PubkeyToAddress(ecdsaPrivKey.PublicKey).Hex())
 	return nil
 }
