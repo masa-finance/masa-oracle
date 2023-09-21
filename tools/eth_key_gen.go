@@ -18,7 +18,7 @@ func GenerateEthKey() {
 
 	privateKeyBytes := crypto.FromECDSA(privateKey)
 	fmt.Println("SAVE BUT DO NOT SHARE THIS (Private Key):", hexutil.Encode(privateKeyBytes))
-	err = os.WriteFile("priv_key", privateKeyBytes, 0644)
+	err = os.WriteFile("receiver_priv_key", privateKeyBytes, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}

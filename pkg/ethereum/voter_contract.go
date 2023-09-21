@@ -8,19 +8,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/libp2p/go-libp2p/core/crypto"
+
+	"github.com/masa-finance/masa-oracle/pkg/ethereum/contracts"
 )
 
 func AddUser(privateKey crypto.PrivKey, chainId int64, userId, reputationScore string) (string, error) {
 	// Connect to an ethereum node  running locally
-
-	raw, err := privateKey.Raw()
-	if err != nil {
-		return "", err
-	}
-	ecdsaKey, err := ethCrypto.ToECDSA(raw)
+	ecdsaKey, err := LibP2pToEcdsa(privateKey)
 	if err != nil {
 		return "", err
 	}
@@ -57,7 +53,7 @@ func AddUser(privateKey crypto.PrivKey, chainId int64, userId, reputationScore s
 	contractAddress := common.HexToAddress(address)
 
 	// Initialize a new instance of the contract bound to a specific deployed contract
-	contract, err := NewPackageName(contractAddress, client)
+	contract, err := contracts.NewPackageName(contractAddress, client)
 	if err != nil {
 		return "", err
 	}
