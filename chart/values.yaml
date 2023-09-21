@@ -13,7 +13,7 @@ image:
 # multiaddress:
 
 env:
-  - name: PortNbr
+  - name: portNbr
     value: "4001"
 
 
