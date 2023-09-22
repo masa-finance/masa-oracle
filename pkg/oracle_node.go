@@ -11,6 +11,7 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -32,6 +33,7 @@ type OracleNode struct {
 	DHT        *dht.IpfsDHT
 	Protocol   protocol.ID
 	multiAddrs multiaddr.Multiaddr
+	topic      *pubsub.Topic
 	ctx        context.Context
 }
 
@@ -61,11 +63,16 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		return nil, err
 	}
 	nodeProtocol := protocol.ID(oracleProtocol)
+	topic, err := myNetwork.NewPubSub(ctx, newHost, oracleProtocol)
+	if err != nil {
+		return nil, err
+	}
 	return &OracleNode{
 		Host:     newHost,
 		PrivKey:  privKey,
 		Protocol: nodeProtocol,
 		ctx:      ctx,
+		topic:    topic,
 	}, nil
 }
 
@@ -228,6 +235,12 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 				_, err = stream.Write([]byte(fmt.Sprintf("ticker Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
+				}
+			} else {
+				//publish a message on the Topic
+				err := node.topic.Publish(node.ctx, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
+				if err != nil {
+					logrus.Error("Error publishing to topic:", err)
 				}
 			}
 		case <-node.ctx.Done():
