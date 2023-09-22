@@ -34,7 +34,11 @@ func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.T
 		for {
 			m, err := sub.Next(ctx)
 			if err != nil {
-				panic(err)
+				logrus.Error(err)
+			}
+			// Skip messages from the same node
+			if m.ReceivedFrom == host.ID() {
+				continue
 			}
 			fmt.Println(m.ReceivedFrom, ": ", string(m.Message.Data))
 		}

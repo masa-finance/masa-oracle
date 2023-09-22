@@ -236,9 +236,8 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
 				}
-			} else {
 				//publish a message on the Topic
-				err := node.topic.Publish(node.ctx, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
+				err = node.topic.Publish(node.ctx, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
 					logrus.Error("Error publishing to topic:", err)
 				}
