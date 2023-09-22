@@ -8,6 +8,8 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,7 +42,16 @@ func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.T
 			if m.ReceivedFrom == host.ID() {
 				continue
 			}
-			fmt.Println(m.ReceivedFrom, ": ", string(m.Message.Data))
+			// Get the peer's IP address
+			var addrs multiaddr.Multiaddr
+			connectedness := host.Network().Connectedness(m.ReceivedFrom)
+			if connectedness == network.Connected {
+				peerInfo := host.Peerstore().PeerInfo(m.ReceivedFrom)
+				addrs = peerInfo.Addrs[0]
+				logrus.Infof("%s : %s : %s", m.ReceivedFrom, string(m.Message.Data), addrs.String())
+			} else {
+				logrus.Info(m.ReceivedFrom, ": ", string(m.Message.Data))
+			}
 		}
 	}()
 	return topic, nil
