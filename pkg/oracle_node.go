@@ -144,7 +144,7 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	buf := bufio.NewReader(stream)
 	message, err := buf.ReadString('\n')
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("handleMessage: %s", err.Error())
 	}
 	connection := stream.Conn()
 
