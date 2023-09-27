@@ -39,7 +39,7 @@ func NewDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mult
 	for _, peerAddr := range bootstrapPeers {
 		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("kdht: %s", err.Error())
 		}
 		if peerinfo.ID == host.ID() {
 			logrus.Info("DHT Skipping connect to self")
