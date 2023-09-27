@@ -36,7 +36,7 @@ func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.T
 		for {
 			m, err := sub.Next(ctx)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Errorf("sub.Next: %s", err.Error())
 			}
 			// Skip messages from the same node
 			if m.ReceivedFrom == host.ID() {
@@ -47,6 +47,9 @@ func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.T
 			connectedness := host.Network().Connectedness(m.ReceivedFrom)
 			if connectedness == network.Connected {
 				peerInfo := host.Peerstore().PeerInfo(m.ReceivedFrom)
+				if len(peerInfo.Addrs) == 0 {
+					continue
+				}
 				addrs = peerInfo.Addrs[0]
 				logrus.Infof("%s : %s : %s", m.ReceivedFrom, string(m.Message.Data), addrs.String())
 			} else {
@@ -62,7 +65,7 @@ func streamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 	for {
 		s, err := reader.ReadString('\n')
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("streamConsoleTo: %s", err.Error())
 		}
 		if err := topic.Publish(ctx, []byte(s)); err != nil {
 			fmt.Println("### Publish error:", err)
