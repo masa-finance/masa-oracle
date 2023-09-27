@@ -3,7 +3,6 @@ package network
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"os"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -65,10 +64,14 @@ func streamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 	for {
 		s, err := reader.ReadString('\n')
 		if err != nil {
+			// Add check for EOF error and continue
+			if err.Error() == "EOF" {
+				continue
+			}
 			logrus.Errorf("streamConsoleTo: %s", err.Error())
 		}
 		if err := topic.Publish(ctx, []byte(s)); err != nil {
-			fmt.Println("### Publish error:", err)
+			logrus.Errorf("### Publish error: %s", err)
 		}
 	}
 }
