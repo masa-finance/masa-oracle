@@ -11,15 +11,20 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/libp2p/go-libp2p/p2p/security/noise"
+
 	"github.com/libp2p/go-libp2p/p2p/host/autonat"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
+	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
@@ -32,6 +37,7 @@ type OracleNode struct {
 	DHT        *dht.IpfsDHT
 	Protocol   protocol.ID
 	multiAddrs multiaddr.Multiaddr
+	topic      *pubsub.Topic
 	ctx        context.Context
 }
 
@@ -45,27 +51,45 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 	if err != nil {
 		return nil, err
 	}
-	addrStr := "/ip4/0.0.0.0/udp/0/quic-v1"
-	if os.Getenv(PortNbr) != "" {
-		addrStr = fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(PortNbr))
+	addrStr := []string{
+		"/ip4/0.0.0.0/udp/0/quic-v1",
+		"/ip4/0.0.0.0/tcp/0",
 	}
+	if os.Getenv(PortNbr) != "" {
+		addrStr = []string{
+			fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(PortNbr)),
+			fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
+		}
+	}
+
 	newHost, err := libp2p.New(
 		libp2p.Transport(quic.NewTransport),
-		libp2p.ListenAddrStrings(addrStr),
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
+		libp2p.ListenAddrStrings(addrStr...),
 		libp2p.ResourceManager(rm),
 		libp2p.Identity(privKey),
 		libp2p.Ping(false), // disable built-in ping
-		libp2p.Security(libp2ptls.ID, libp2ptls.New),
+		libp2p.ChainOptions(
+			libp2p.Security(noise.ID, noise.New),
+			libp2p.Security(libp2ptls.ID, libp2ptls.New),
+		),
+		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop
 	)
 	if err != nil {
 		return nil, err
 	}
 	nodeProtocol := protocol.ID(oracleProtocol)
+	topic, err := myNetwork.NewPubSub(ctx, newHost, oracleProtocol)
+	if err != nil {
+		return nil, err
+	}
 	return &OracleNode{
 		Host:     newHost,
 		PrivKey:  privKey,
 		Protocol: nodeProtocol,
 		ctx:      ctx,
+		topic:    topic,
 	}, nil
 }
 
@@ -121,10 +145,6 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	message, err := buf.ReadString('\n')
 	if err != nil {
 		logrus.Error(err)
-		err := stream.Reset()
-		if err != nil {
-			logrus.Error(err)
-		}
 	}
 	connection := stream.Conn()
 
@@ -220,6 +240,11 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 				// Create a new stream with this peer
 				stream, err := node.Host.NewStream(node.ctx, randPeer, node.Protocol)
 				if err != nil {
+					// Check if the error is about the protocol
+					if strings.Contains(err.Error(), "failed to negotiate protocol") {
+						logrus.Info("Skipping peer due to protocol negotiation error:", err)
+						continue
+					}
 					logrus.Error("Error opening stream:", err)
 					continue
 				}
@@ -227,7 +252,13 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 				// Send a message to this peer
 				_, err = stream.Write([]byte(fmt.Sprintf("ticker Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
-					logrus.Error("Error writing to stream:", err)
+					logrus.Error("Error opening stream:", err)
+					continue
+				}
+				//publish a message on the Topic
+				err = node.topic.Publish(node.ctx, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
+				if err != nil {
+					logrus.Error("Error publishing to topic:", err)
 				}
 			}
 		case <-node.ctx.Done():
