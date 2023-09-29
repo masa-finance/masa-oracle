@@ -19,5 +19,5 @@ RUN go build -v -o masa-node ./cmd/masa-node
 # Expose port 4001 (change if necessary)
 EXPOSE 4001
 
- # Command to run the executable with bootnode address
- CMD ["./masa-node"]
+# Command to run the executable with bootnode address
+CMD ["./masa-node"]
