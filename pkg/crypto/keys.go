@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"math/big"
@@ -17,38 +18,57 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetOrCreatePrivateKey(keyFile string) (crypto.PrivKey, error) {
-	// Check if the private key file exists
-	data, err := os.ReadFile(keyFile)
-	if err == nil {
-		// Decode the private key from the file
-		privKey, err := crypto.UnmarshalPrivateKey(data)
+func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, err error) {
+	// Check if the private key file is set in the environment
+	envKey := os.Getenv("PRIVATE_KEY")
+	if envKey != "" {
+		rawKey, err := hex.DecodeString(envKey)
+		if err != nil {
+			logrus.Errorf("Error decoding private key: %s\n", err)
+			return nil, err
+		}
+		privKey, err = crypto.UnmarshalPrivateKey(rawKey)
 		if err != nil {
 			logrus.Errorf("Error unmarshalling private key: %s\n", err)
 			return nil, err
 		}
-		logrus.Infof("Loaded private key from %s", keyFile)
-		return privKey, nil
 	} else {
-		// Generate a new private key
-		privKey, _, err := crypto.GenerateKeyPair(crypto.Secp256k1, 2048)
-		if err != nil {
-			return nil, err
-		}
-		// Marshal the private key to bytes
+		// Check if the private key file exists
+		data, err := os.ReadFile(keyFile)
+		if err == nil {
+			// Decode the private key from the file
+			rawKey, err := hex.DecodeString(string(data))
+			if err != nil {
+				logrus.Errorf("Error decoding private key: %s\n", err)
+				return nil, err
+			}
+			privKey, err = crypto.UnmarshalPrivateKey(rawKey)
+			if err != nil {
+				logrus.Errorf("Error unmarshalling private key: %s\n", err)
+				return nil, err
+			}
+			logrus.Infof("Loaded private key from %s", keyFile)
 
-		data, err := crypto.MarshalPrivateKey(privKey)
-		if err != nil {
-			return nil, err
+		} else {
+			// Generate a new private key
+			privKey, _, err = crypto.GenerateKeyPair(crypto.Secp256k1, 2048)
+			if err != nil {
+				return nil, err
+			}
+			// Marshal the private key to bytes
+			data, err := crypto.MarshalPrivateKey(privKey)
+			if err != nil {
+				return nil, err
+			}
+			encodedKey := hex.EncodeToString(data)
+			// Save the private key to the file
+			if err := os.WriteFile(keyFile, []byte(encodedKey), 0600); err != nil {
+				return nil, err
+			}
+			logrus.Infof("Generated and saved a new private key to %s: %s", keyFile, privKey)
 		}
-
-		// Save the private key to the file
-		if err := os.WriteFile(keyFile, data, 0600); err != nil {
-			return nil, err
-		}
-		logrus.Infof("Generated and saved a new private key to %s: %s", keyFile, privKey)
-		return privKey, nil
 	}
+	return privKey, nil
 }
 
 func GenerateSelfSignedCert(certPath, keyPath string) error {
@@ -123,11 +143,11 @@ func VerifyEthereumCompatibility(privKey crypto.PrivKey) error {
 	}
 
 	// Print the private key in hexadecimal format
-	//data, err := crypto.MarshalPrivateKey(privKey)
-	//if err != nil {
-	//	return err
-	//}
-	//fmt.Printf("Private key: \n%s\n", hex.EncodeToString(data))
+	data, err := crypto.MarshalPrivateKey(privKey)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Private key: \n%s\n", hex.EncodeToString(data))
 
 	// Print the public key and address
 	fmt.Println("Ethereum public key:", ecdsaPrivKey.PublicKey)
