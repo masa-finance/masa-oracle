@@ -153,7 +153,11 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	// Send an acknowledgement
 	_, err = stream.Write([]byte("ACK\n"))
 	if err != nil {
-		logrus.Error("Error writing to stream:", err)
+		if err == network.ErrReset {
+			logrus.Info("Stream was reset, skipping write operation")
+		} else {
+			logrus.Error("Error writing to stream:", err)
+		}
 	}
 }
 
@@ -252,7 +256,11 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 				// Send a message to this peer
 				_, err = stream.Write([]byte(fmt.Sprintf("ticker Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
-					logrus.Error("Error opening stream:", err)
+					if err == network.ErrReset {
+						logrus.Info("Stream was reset, skipping write operation")
+					} else {
+						logrus.Error("Error writing to stream:", err)
+					}
 					continue
 				}
 				//publish a message on the Topic
