@@ -3,7 +3,7 @@ module github.com/masa-finance/masa-oracle
 go 1.21
 
 require (
-	github.com/ethereum/go-ethereum v1.13.1
+	github.com/ethereum/go-ethereum v1.13.2
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.5.1
 	github.com/libp2p/go-libp2p v0.31.0
