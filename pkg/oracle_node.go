@@ -74,6 +74,8 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 			libp2p.Security(noise.ID, noise.New),
 			libp2p.Security(libp2ptls.ID, libp2ptls.New),
 		),
+		libp2p.EnableNATService(),
+		libp2p.NATPortMap(),
 		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop
 	)
 	if err != nil {
