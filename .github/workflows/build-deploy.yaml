@@ -27,7 +27,7 @@ jobs:
 #         docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:latest"
           
   deploy:
-    needs: build
+    #    needs: build
     runs-on: dockershared
     container:
       image: 855827059168.dkr.ecr.us-east-1.amazonaws.com/masa-ops:masa-chain-ci
