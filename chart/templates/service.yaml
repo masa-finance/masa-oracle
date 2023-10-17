@@ -5,12 +5,15 @@ metadata:
   labels:
     {{- include "masa-oracle.labels" . | nindent 4 }}
 spec:
-  externalTrafficPolicy: Local
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}
+      protocol: TCP
+      name: tcpconnection
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
       protocol: UDP
-      name: udpconnection
+      name: UDPconnection
   selector:
     {{- include "masa-oracle.selectorLabels" . | nindent 4 }}
