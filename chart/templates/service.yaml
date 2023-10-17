@@ -11,9 +11,5 @@ spec:
       targetPort: {{ .Values.service.port }}
       protocol: TCP
       name: tcpconnection
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
-      protocol: UDP
-      name: UDPconnection
   selector:
     {{- include "masa-oracle.selectorLabels" . | nindent 4 }}
