@@ -7,9 +7,9 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
-      protocol: UDP
-      name: UDPconnection
+    - port: 4001
+      targetPort: 4001
+      protocol: TCP
+      name: connection
   selector:
     {{- include "masa-oracle.selectorLabels" . | nindent 4 }}
