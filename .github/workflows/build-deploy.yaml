@@ -27,7 +27,7 @@ jobs:
           docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:latest"
           
   deploy:
-    #    needs: build
+    needs: build
     runs-on: dockershared
     container:
       image: 855827059168.dkr.ecr.us-east-1.amazonaws.com/masa-ops:masa-chain-ci
@@ -37,4 +37,4 @@ jobs:
           echo '${{ secrets.GCP_CREDENTIALS }}' > ~/.gcloud-api-key.json
           gcloud auth activate-service-account --key-file ~/.gcloud-api-key.json
           gcloud container clusters get-credentials ${{ env.KUBE_CLUSTER_NAME }} --zone ${{ env.KUBE_LOCATION }} --project ${{ env.PROJECT_ID }}
-          helm upgrade masa-oracle ./chart -n masa-oracle --install --wait --timeout 15m0s -f ./chart/dev.yaml --debug --set image.tag=${{ github.sha }}
+          helm upgrade masa-oracle ./chart -n masa-oracle --install --wait --timeout 15m0s -f ./chart/dev.yaml --debug
