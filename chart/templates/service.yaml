@@ -6,6 +6,7 @@ metadata:
     {{- include "masa-oracle.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
+  externalTrafficPolicy: Local
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}
