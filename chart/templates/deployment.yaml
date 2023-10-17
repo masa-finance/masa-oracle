@@ -5,9 +5,6 @@ metadata:
   labels:
     {{- include "masa-oracle.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "masa-oracle.selectorLabels" . | nindent 6 }}
@@ -39,17 +36,9 @@ spec:
           {{- end }}
           env: {{ toYaml .Values.env | nindent 10 }}
           ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
-#         livenessProbe:
-#           httpGet:
-#             path: /
-#             port: http
-#         readinessProbe:
-#           httpGet:
-#             path: /
-#             port: http
+          - name: tcpexpose
+            containerPort: 4001
+            protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.gcpEnvSecret }}
