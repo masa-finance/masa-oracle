@@ -3,6 +3,7 @@ package masa
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -55,10 +56,17 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		"/ip4/0.0.0.0/udp/0/quic-v1",
 		"/ip4/0.0.0.0/tcp/0",
 	}
-	if os.Getenv(PortNbr) != "" {
-		addrStr = []string{
-			fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(PortNbr)),
-			fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
+	// There should not be a case where UDP port is not set but TCP port is set
+	if os.Getenv(UdpPortNbr) != "" {
+		if os.Getenv(TcpPortNbr) != "" {
+			addrStr = []string{
+				fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(UdpPortNbr)),
+				fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(TcpPortNbr)),
+			}
+		} else {
+			addrStr = []string{
+				fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(UdpPortNbr)),
+			}
 		}
 	}
 
@@ -258,7 +266,7 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 				// Send a message to this peer
 				_, err = stream.Write([]byte(fmt.Sprintf("ticker Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
-					if err == network.ErrReset {
+					if errors.Is(err, network.ErrReset) {
 						logrus.Info("Stream was reset, skipping write operation")
 					} else {
 						logrus.Error("Error writing to stream:", err)

@@ -65,8 +65,14 @@ func main() {
 		if err != nil {
 			logrus.Error(err)
 		}
-		if len(os.Args) == 3 {
-			err := os.Setenv(masa.PortNbr, os.Args[2])
+		if len(os.Args) > 2 {
+			err := os.Setenv(masa.UdpPortNbr, os.Args[2])
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+		if len(os.Args) > 3 {
+			err := os.Setenv(masa.TcpPortNbr, os.Args[3])
 			if err != nil {
 				logrus.Error(err)
 			}
