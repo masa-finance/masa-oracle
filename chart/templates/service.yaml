@@ -1,20 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: masa-oracle-test
+  name: {{ include "masa-oracle.fullname" . }}
   labels:
-    helm.sh/chart: masa-oracle-0.1.0
-    app.kubernetes.io/name: masa-oracle
-    app.kubernetes.io/instance: masa-oracle-test
-    app.kubernetes.io/version: "1.16.0"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "masa-oracle.labels" . | nindent 4 }}
 spec:
   type: LoadBalancer
+  externalTrafficPolicy: Local
   ports:
     - port: 4001
       targetPort: 4001
-      protocol: UDP
-      name: UDPconnection
+      protocol: TCP
+      name: tcpconnection
   selector:
-    app.kubernetes.io/name: masa-oracle
-    app.kubernetes.io/instance: masa-oracle-test
+    {{- include "masa-oracle.selectorLabels" . | nindent 4 }}
