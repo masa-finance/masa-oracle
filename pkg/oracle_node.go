@@ -21,10 +21,8 @@ import (
 
 	"github.com/libp2p/go-libp2p/p2p/host/autonat"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
-	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
-	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
@@ -53,19 +51,19 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 	}
 	addrStr := []string{
 		"/ip4/0.0.0.0/udp/0/quic-v1",
-		"/ip4/0.0.0.0/tcp/0",
+		//"/ip4/0.0.0.0/tcp/0",
 	}
 	if os.Getenv(PortNbr) != "" {
 		addrStr = []string{
 			fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(PortNbr)),
-			fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
+			//fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
 		}
 	}
 
 	newHost, err := libp2p.New(
 		libp2p.Transport(quic.NewTransport),
-		libp2p.Transport(tcp.NewTCPTransport),
-		libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
+		//libp2p.Transport(tcp.NewTCPTransport),
+		//libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
 		libp2p.ListenAddrStrings(addrStr...),
 		libp2p.ResourceManager(rm),
 		libp2p.Identity(privKey),
