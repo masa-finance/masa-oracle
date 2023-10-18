@@ -10,7 +10,7 @@ spec:
   ports:
     - port: 4001
       targetPort: 4001
-      protocol: TCP
-      name: tcpconnection
+      protocol: UDP
+      name: udpconnection
   selector:
     {{- include "masa-oracle.selectorLabels" . | nindent 4 }}
