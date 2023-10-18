@@ -38,7 +38,7 @@ spec:
           ports:
           - name: udpexpose
             containerPort: 4001
-            protocol: udp
+            protocol: UDP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.gcpEnvSecret }}
