@@ -12,7 +12,7 @@ env:
 
 jobs:
   build:
-    # Add 'id-token' with the intended permissions for workload identity federation
+    # Add 'id-token' with the intended permissions for workload identity federation (test)
     runs-on: dockershared
     steps:
       - name: Checkout
