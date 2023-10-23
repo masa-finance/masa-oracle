@@ -3,7 +3,7 @@ module github.com/masa-finance/masa-oracle
 go 1.21
 
 require (
-	github.com/ethereum/go-ethereum v1.13.3
+	github.com/ethereum/go-ethereum v1.13.4
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.5.1
 	github.com/libp2p/go-libp2p v0.31.0
@@ -25,7 +25,7 @@ require (
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
-	github.com/consensys/gnark-crypto v0.12.0 // indirect
+	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect
