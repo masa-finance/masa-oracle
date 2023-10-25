@@ -1,40 +1,50 @@
-name: Build and Deploy to Cloud Run
+name: Build and run
 
 on:
   push:
-    branches: [ "main" ]
-
-env:
-  PROJECT_ID: masa-chain
-  LOCATION: us-central1
-  KUBE_LOCATION: europe-central2-a
-  KUBE_CLUSTER_NAME: dev
+    branches: [ "devops-vm" ]
 
 jobs:
-  build:
-    # Add 'id-token' with the intended permissions for workload identity federation (test)
-    runs-on: dockershared
+  boot-node:
+    runs-on: [ "boot-node" ]
+    outputs:
+      CONNECTION_STRING: ${{steps.host-selector.outputs.CONNECTION_STRING}}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Copy binary & restart service
+      run: |
+        sudo systemctl stop masa-oracle.service
+        go mod tidy
+        go build -v -o masa-node ./cmd/masa-node
+        cp ./cmd/masa-node/main.go /home/mykhaylo/masa-oracle-main/cmd/masa-node/main.go
+        sudo systemctl daemon-reload
+        sudo systemctl restart masa-oracle.service
+    - name: Get host address
+      id: host-selector
+      run: |
+        CONNECTION_STRING=$(systemctl -l --no-pager status masa-oracle.service | grep 'libp2p host address:' | awk '{print $NF}')
+        while [ -z "$CONNECTION_STRING" ]
+          do
+            CONNECTION_STRING=$(sudo systemctl -l --no-pager status masa-oracle.service | grep 'libp2p host address:' | awk '{print $NF}')
+          done
+        echo $CONNECTION_STRING
+        echo "CONNECTION_STRING=$CONNECTION_STRING" >> "$GITHUB_OUTPUT"
 
-      - name: Build and Push Container
-        run: |
-          echo '${{ secrets.GCP_CREDENTIALS }}' | docker login -u _json_key --password-stdin us-central1-docker.pkg.dev
-          DOCKER_BUILDKIT=1 docker build -t "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:${{ github.sha }}" -t "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:latest" .
-          docker images
-          docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:${{ github.sha }}"
-          docker push "${{ env.LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/$GITHUB_REPOSITORY:latest"
-          
-  deploy:
-    needs: build
-    runs-on: dockershared
-    container:
-      image: 855827059168.dkr.ecr.us-east-1.amazonaws.com/masa-ops:masa-chain-ci
+  node:
+    needs: boot-node
+    runs-on: [ "node" ]
     steps:
-      - name: Deploy
-        run: |
-          echo '${{ secrets.GCP_CREDENTIALS }}' > ~/.gcloud-api-key.json
-          gcloud auth activate-service-account --key-file ~/.gcloud-api-key.json
-          gcloud container clusters get-credentials ${{ env.KUBE_CLUSTER_NAME }} --zone ${{ env.KUBE_LOCATION }} --project ${{ env.PROJECT_ID }}
-          helm upgrade masa-oracle ./chart -n masa-oracle --install --wait --timeout 15m0s -f ./chart/dev.yaml --debug --set image.tag=${{ github.sha }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Fetch dependencies & build app
+      run: |
+        go mod tidy
+        go build -v -o masa-node ./cmd/masa-node
+    - name: Copy binary & restart service
+      run: |
+        sudo systemctl stop masa-oracle.service
+        cp ./cmd/masa-node/main.go /home/mykhaylo/masa-oracle-main/cmd/masa-node/main.go
+        echo "CONNECTION_STRING=${{needs.boot-node.outputs.CONNECTION_STRING}}" > /home/mykhaylo/masa-oracle-main/cmd/masa-node/.argconf
+        sudo systemctl daemon-reload
+        sudo systemctl start masa-oracle.service
