@@ -87,10 +87,6 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		return nil, err
 	}
 	nodeProtocol := protocol.ID(oracleProtocol)
-	//topic, err := myNetwork.NewPubSub(ctx, newHost, oracleProtocol)
-	//if err != nil {
-	//	return nil, err
-	//}
 	return &OracleNode{
 		Host:     newHost,
 		PrivKey:  privKey,
@@ -100,6 +96,11 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 }
 
 func (node *OracleNode) Start() (err error) {
+	err = node.Gossip(oracleProtocol)
+	if err != nil {
+		return err
+	}
+
 	mw, err := node.messageWriter()
 	if err != nil {
 		return err
@@ -164,16 +165,15 @@ func (node *OracleNode) Gossip(topicName string) error {
 	}
 
 	// Subscribe to a topic
-	topic, err := gossipSub.Join(topicName)
+	node.topic, err = gossipSub.Join(topicName)
 	if err != nil {
 		return err
 	}
-	node.topic = topic
-	go myNetwork.StreamConsoleTo(node.ctx, topic)
+	go myNetwork.StreamConsoleTo(node.ctx, node.topic)
 
-	sub, err := topic.Subscribe()
+	sub, err := node.topic.Subscribe()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	go func() {
@@ -182,34 +182,43 @@ func (node *OracleNode) Gossip(topicName string) error {
 			if err != nil {
 				logrus.Errorf("sub.Next: %s", err.Error())
 			}
-
 			// Skip messages from the same node
 			if msg.ReceivedFrom == node.Host.ID() {
 				continue
 			}
-
-			// Get the peer's multiaddress from the message
-			addrs, err := multiaddr.NewMultiaddr(string(msg.Data))
-			if err != nil {
-				logrus.Error("Failed to parse multiaddress from message:", err)
-				continue
+			var addrs multiaddr.Multiaddr
+			connectedness := node.Host.Network().Connectedness(msg.ReceivedFrom)
+			if connectedness == network.Connected {
+				peerInfo := node.Host.Peerstore().PeerInfo(msg.ReceivedFrom)
+				if len(peerInfo.Addrs) == 0 {
+					continue
+				}
+				addrString := fmt.Sprintf("%s/p2p/%s", peerInfo.Addrs[0].String(), peerInfo.ID.String())
+				logrus.Infof("%s : %s : %s", msg.ReceivedFrom, string(msg.Message.Data), addrString)
+				addrs, err = multiaddr.NewMultiaddr(addrString)
+				if err != nil {
+					logrus.Error("Failed to create multiaddress:", err)
+					continue
+				}
+			} else {
+				logrus.Info(msg.ReceivedFrom, ": ", string(msg.Message.Data))
 			}
 
 			// Check if the peer is already in the DHT and Peerstore
-			peerInfo, err := peer.AddrInfoFromP2pAddr(addrs)
+			peerInfo2, err := peer.AddrInfoFromP2pAddr(addrs)
 			if err != nil {
-				logrus.Error("Failed to get AddrInfo from multiaddress:", err)
+				logrus.Errorf("Failed to get AddrInfo from multiaddress: %s, %v", addrs.String(), err)
 				continue
 			}
 
-			if node.Host.Peerstore().PeerInfo(peerInfo.ID).ID == "" {
+			if node.Host.Peerstore().PeerInfo(peerInfo2.ID).ID == "" {
 				// The peer is not in the Peerstore, add it
-				node.Host.Peerstore().AddAddrs(peerInfo.ID, peerInfo.Addrs, peerstore.PermanentAddrTTL)
+				node.Host.Peerstore().AddAddrs(peerInfo2.ID, peerInfo2.Addrs, peerstore.PermanentAddrTTL)
 			}
 
-			if node.DHT.RoutingTable().Find(peerInfo.ID) != "" {
+			if node.DHT.RoutingTable().Find(peerInfo2.ID) != "" {
 				// The peer is not in the DHT, add it
-				node.DHT.RoutingTable().TryAddPeer(peerInfo.ID, false, false)
+				node.DHT.RoutingTable().TryAddPeer(peerInfo2.ID, false, false)
 			}
 		}
 	}()
