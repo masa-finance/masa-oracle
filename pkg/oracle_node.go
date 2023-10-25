@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
@@ -16,8 +17,11 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
+	"github.com/mudler/edgevpn/pkg/blockchain"
+	"github.com/mudler/edgevpn/pkg/hub"
 
 	"github.com/libp2p/go-libp2p/p2p/host/autonat"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
@@ -37,6 +41,9 @@ type OracleNode struct {
 	multiAddrs multiaddr.Multiaddr
 	topic      *pubsub.Topic
 	ctx        context.Context
+	ledger     *blockchain.Ledger
+	inputCh    chan *hub.Message
+	sync.Mutex
 }
 
 func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, error) {
@@ -80,22 +87,29 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		return nil, err
 	}
 	nodeProtocol := protocol.ID(oracleProtocol)
-	topic, err := myNetwork.NewPubSub(ctx, newHost, oracleProtocol)
-	if err != nil {
-		return nil, err
-	}
+	//topic, err := myNetwork.NewPubSub(ctx, newHost, oracleProtocol)
+	//if err != nil {
+	//	return nil, err
+	//}
 	return &OracleNode{
 		Host:     newHost,
 		PrivKey:  privKey,
 		Protocol: nodeProtocol,
 		ctx:      ctx,
-		topic:    topic,
 	}, nil
 }
 
 func (node *OracleNode) Start() (err error) {
+	mw, err := node.messageWriter()
+	if err != nil {
+		return err
+	}
+	// Create a new ledger
+	node.ledger = blockchain.New(mw, &blockchain.MemoryStore{})
+
 	node.Host.SetStreamHandler(node.Protocol, node.handleMessage)
-	node.Host.Network().Notify(&ConnectionLogger{})
+	// important to order:  make sure the ledger is already initialized
+	node.Host.Network().Notify(NewNodeEventTracker(node.ledger))
 
 	peerInfo := peer.AddrInfo{
 		ID:    node.Host.ID(),
@@ -134,9 +148,72 @@ func (node *OracleNode) Start() (err error) {
 	if err != nil {
 		return err
 	}
+	err = node.Gossip(oracleProtocol)
+	if err != nil {
+		return err
+	}
 
 	go node.sendMessageToRandomPeer()
 	return
+}
+
+func (node *OracleNode) Gossip(topicName string) error {
+	gossipSub, err := pubsub.NewGossipSub(node.ctx, node.Host)
+	if err != nil {
+		return err
+	}
+
+	// Subscribe to a topic
+	topic, err := gossipSub.Join(topicName)
+	if err != nil {
+		return err
+	}
+	node.topic = topic
+	go myNetwork.StreamConsoleTo(node.ctx, topic)
+
+	sub, err := topic.Subscribe()
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		for {
+			msg, err := sub.Next(node.ctx)
+			if err != nil {
+				logrus.Errorf("sub.Next: %s", err.Error())
+			}
+
+			// Skip messages from the same node
+			if msg.ReceivedFrom == node.Host.ID() {
+				continue
+			}
+
+			// Get the peer's multiaddress from the message
+			addrs, err := multiaddr.NewMultiaddr(string(msg.Data))
+			if err != nil {
+				logrus.Error("Failed to parse multiaddress from message:", err)
+				continue
+			}
+
+			// Check if the peer is already in the DHT and Peerstore
+			peerInfo, err := peer.AddrInfoFromP2pAddr(addrs)
+			if err != nil {
+				logrus.Error("Failed to get AddrInfo from multiaddress:", err)
+				continue
+			}
+
+			if node.Host.Peerstore().PeerInfo(peerInfo.ID).ID == "" {
+				// The peer is not in the Peerstore, add it
+				node.Host.Peerstore().AddAddrs(peerInfo.ID, peerInfo.Addrs, peerstore.PermanentAddrTTL)
+			}
+
+			if node.DHT.RoutingTable().Find(peerInfo.ID) != "" {
+				// The peer is not in the DHT, add it
+				node.DHT.RoutingTable().TryAddPeer(peerInfo.ID, false, false)
+			}
+		}
+	}()
+	return nil
 }
 
 func (node *OracleNode) handleMessage(stream network.Stream) {
@@ -192,7 +269,10 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 		return err
 	}
 	go myNetwork.Discover(node.ctx, node.Host, node.DHT, node.Protocol, node.multiAddrs)
-	node.SetupAutoNAT()
+	err = node.SetupAutoNAT()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -273,4 +353,16 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 			return
 		}
 	}
+}
+
+// messageWriter returns a new MessageWriter bound to the edgevpn instance
+// with the given options
+func (node *OracleNode) messageWriter(opts ...hub.MessageOption) (*messageWriter, error) {
+	mess := &hub.Message{}
+	mess.Apply(opts...)
+
+	return &messageWriter{
+		input: node.inputCh,
+		mess:  mess,
+	}, nil
 }

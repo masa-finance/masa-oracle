@@ -23,7 +23,7 @@ func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.T
 	if err != nil {
 		return nil, err
 	}
-	go streamConsoleTo(ctx, topic)
+	go StreamConsoleTo(ctx, topic)
 
 	sub, err := topic.Subscribe()
 	if err != nil {
@@ -59,7 +59,7 @@ func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.T
 	return topic, nil
 }
 
-func streamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
+func StreamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		s, err := reader.ReadString('\n')
