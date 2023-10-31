@@ -233,7 +233,7 @@ func (node *OracleNode) handleEvents() {
 			if data == nil {
 				continue
 			}
-			nodeData, exists := node.nodeData[data.PeerId.String()]
+			_, exists := node.nodeData[data.PeerId.String()]
 			switch data.Activity {
 			case ActivityLeft:
 				if exists {
@@ -242,7 +242,7 @@ func (node *OracleNode) handleEvents() {
 				}
 			case ActivityJoined:
 				if !exists {
-					node.nodeData[data.PeerId.String()] = nodeData
+					node.nodeData[data.PeerId.String()] = data
 					data.Joined()
 					node.changes++
 					jsnBytes, err := json.Marshal(data)
@@ -423,6 +423,7 @@ func (node *OracleNode) messageWriter(opts ...hub.MessageOption) (*messageWriter
 }
 
 func (node *OracleNode) WriteToLedger() {
+	logrus.Debug("WriteToLedger")
 	node.dataMutex.RLock()
 	// Get the timestamp of the last block in the ledger
 	lastBlockTime, _ := time.Parse(time.RFC3339, node.ledger.LastBlock().Timestamp)
