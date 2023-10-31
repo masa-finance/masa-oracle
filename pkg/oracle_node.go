@@ -3,6 +3,7 @@ package masa
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -41,9 +42,13 @@ type OracleNode struct {
 	multiAddrs multiaddr.Multiaddr
 	topic      *pubsub.Topic
 	ctx        context.Context
-	ledger     *blockchain.Ledger
-	inputCh    chan *hub.Message
 	sync.Mutex
+	ledger    *blockchain.Ledger
+	tempCh    chan *hub.Message
+	inputCh   chan *NodeData
+	nodeData  map[string]*NodeData
+	dataMutex sync.RWMutex
+	changes   int
 }
 
 func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, error) {
@@ -92,6 +97,9 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		PrivKey:  privKey,
 		Protocol: nodeProtocol,
 		ctx:      ctx,
+		inputCh:  make(chan *NodeData),
+		tempCh:   make(chan *hub.Message),
+		nodeData: make(map[string]*NodeData),
 	}, nil
 }
 
@@ -100,6 +108,7 @@ func (node *OracleNode) Start() (err error) {
 	if err != nil {
 		return err
 	}
+	go node.handleEvents()
 
 	mw, err := node.messageWriter()
 	if err != nil {
@@ -110,7 +119,7 @@ func (node *OracleNode) Start() (err error) {
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleMessage)
 	// important to order:  make sure the ledger is already initialized
-	node.Host.Network().Notify(NewNodeEventTracker(node.ledger))
+	node.Host.Network().Notify(NewNodeEventTracker(node.inputCh))
 
 	peerInfo := peer.AddrInfo{
 		ID:    node.Host.ID(),
@@ -122,14 +131,6 @@ func (node *OracleNode) Start() (err error) {
 	}
 	node.multiAddrs = multiaddrs[0]
 	fmt.Println("libp2p host address:", multiaddrs[0])
-
-	go func() {
-		<-node.ctx.Done()
-		err = node.Host.Close()
-		if err != nil {
-			return
-		}
-	}()
 
 	peersStr := os.Getenv(Peers)
 	bootstrapPeers := strings.Split(peersStr, ",")
@@ -223,6 +224,51 @@ func (node *OracleNode) Gossip(topicName string) error {
 		}
 	}()
 	return nil
+}
+
+func (node *OracleNode) handleEvents() {
+	for {
+		select {
+		case data := <-node.inputCh:
+			if data == nil {
+				continue
+			}
+			nodeData, exists := node.nodeData[data.PeerId.String()]
+			switch data.Activity {
+			case ActivityLeft:
+				if exists {
+					data.Left()
+					node.changes++
+				}
+			case ActivityJoined:
+				if !exists {
+					node.nodeData[data.PeerId.String()] = nodeData
+					data.Joined()
+					node.changes++
+					jsnBytes, err := json.Marshal(data)
+					if err != nil {
+						logrus.Errorf("Failed to marshal NodeData: %v", err)
+						continue
+					}
+					node.topic.Publish(node.ctx, jsnBytes)
+				}
+			default:
+				logrus.Errorf("Unknown activity: %d", data.Activity)
+				continue
+			}
+			// if node.changes > 10 {
+			//	node.WriteToLedger()
+			// }
+			node.WriteToLedger()
+
+		case <-node.ctx.Done():
+			<-node.ctx.Done()
+			err := node.Host.Close()
+			if err != nil {
+				return
+			}
+		}
+	}
 }
 
 func (node *OracleNode) handleMessage(stream network.Stream) {
@@ -371,7 +417,25 @@ func (node *OracleNode) messageWriter(opts ...hub.MessageOption) (*messageWriter
 	mess.Apply(opts...)
 
 	return &messageWriter{
-		input: node.inputCh,
-		mess:  mess,
+		//input: node.inputCh,
+		mess: mess,
 	}, nil
+}
+
+func (node *OracleNode) WriteToLedger() {
+	node.dataMutex.RLock()
+	// Get the timestamp of the last block in the ledger
+	lastBlockTime, _ := time.Parse(time.RFC3339, node.ledger.LastBlock().Timestamp)
+	for peerID, nodeData := range node.nodeData {
+		// Check if the NodeData has been updated since the last block was added to the ledger
+		if nodeData.LastUpdated.After(lastBlockTime) {
+			// Convert NodeData to JSON
+			data, _ := json.Marshal(nodeData)
+			node.ledger.Add(peerID, map[string]interface{}{
+				"nodeData": string(data),
+			})
+		}
+	}
+	node.changes = 0
+	node.dataMutex.RUnlock()
 }
