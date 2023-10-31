@@ -63,19 +63,19 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 	}
 	addrStr := []string{
 		"/ip4/0.0.0.0/udp/0/quic-v1",
-		//"/ip4/0.0.0.0/tcp/0",
+		// "/ip4/0.0.0.0/tcp/0",
 	}
 	if os.Getenv(PortNbr) != "" {
 		addrStr = []string{
 			fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(PortNbr)),
-			//fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
+			// fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
 		}
 	}
 
 	newHost, err := libp2p.New(
 		libp2p.Transport(quic.NewTransport),
-		//libp2p.Transport(tcp.NewTCPTransport),
-		//libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
+		// libp2p.Transport(tcp.NewTCPTransport),
+		// libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
 		libp2p.ListenAddrStrings(addrStr...),
 		libp2p.ResourceManager(rm),
 		libp2p.Identity(privKey),
@@ -281,7 +281,7 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	connection := stream.Conn()
 
 	logrus.Infof("Message from '%s': %s, remote: %s", connection.RemotePeer().String(), message, connection.RemoteMultiaddr())
-	//peerinfo, err := peer.AddrInfoFromP2pAddr(connection.RemoteMultiaddr())
+	// peerinfo, err := peer.AddrInfoFromP2pAddr(connection.RemoteMultiaddr())
 	// Send an acknowledgement
 	_, err = stream.Write([]byte("ACK\n"))
 	if err != nil {
@@ -398,7 +398,7 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 					}
 					continue
 				}
-				//publish a message on the Topic
+				// publish a message on the Topic
 				err = node.topic.Publish(node.ctx, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
 				if err != nil {
 					logrus.Error("Error publishing to topic:", err)
@@ -417,7 +417,7 @@ func (node *OracleNode) messageWriter(opts ...hub.MessageOption) (*messageWriter
 	mess.Apply(opts...)
 
 	return &messageWriter{
-		//input: node.inputCh,
+		// input: node.inputCh,
 		mess: mess,
 	}, nil
 }
@@ -428,7 +428,7 @@ func (node *OracleNode) WriteToLedger() {
 	lastBlockTime, _ := time.Parse(time.RFC3339, node.ledger.LastBlock().Timestamp)
 	for peerID, nodeData := range node.nodeData {
 		// Check if the NodeData has been updated since the last block was added to the ledger
-		if nodeData.LastUpdated.After(lastBlockTime) {
+		if lastBlockTime.IsZero() || nodeData.LastUpdated.After(lastBlockTime) {
 			// Convert NodeData to JSON
 			data, _ := json.Marshal(nodeData)
 			node.ledger.Add(peerID, map[string]interface{}{
