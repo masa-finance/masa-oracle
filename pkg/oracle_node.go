@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -182,9 +183,12 @@ func (node *OracleNode) Gossip(topicName string) error {
 			msg, err := sub.Next(node.ctx)
 			if err != nil {
 				logrus.Errorf("sub.Next: %s", err.Error())
+				continue
 			}
 			// Skip messages from the same node
 			if msg.ReceivedFrom == node.Host.ID() {
+				//logrus.Debugf("message received from: %s", msg.ReceivedFrom.String())
+				//logrus.Debug(string(msg.Message.Data))
 				continue
 			}
 			var addrs multiaddr.Multiaddr
@@ -250,7 +254,26 @@ func (node *OracleNode) handleEvents() {
 						logrus.Errorf("Failed to marshal NodeData: %v", err)
 						continue
 					}
-					node.topic.Publish(node.ctx, jsnBytes)
+					multiAddr, err := multiaddr.NewMultiaddr(data.Address())
+					if err != nil {
+						logrus.Error("Failed to create multiaddress:", err)
+						continue
+					}
+					peerInfo, err := peer.AddrInfoFromP2pAddr(multiAddr)
+					if err != nil {
+						logrus.Errorf("Failed to get AddrInfo from multiaddress: %s, %v", multiAddr.String(), err)
+					}
+
+					if node.Host.Peerstore().PeerInfo(peerInfo.ID).ID == "" {
+						// The peer is not in the Peerstore, add it
+						node.Host.Peerstore().AddAddrs(peerInfo.ID, peerInfo.Addrs, peerstore.PermanentAddrTTL)
+					}
+
+					logrus.Debugf("Publishing: %s", string(jsnBytes))
+					err = node.topic.Publish(node.ctx, jsnBytes)
+					if err != nil {
+						logrus.Error("Error publishing to topic:", err)
+					}
 				}
 			default:
 				logrus.Errorf("Unknown activity: %d", data.Activity)
@@ -285,7 +308,7 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	// Send an acknowledgement
 	_, err = stream.Write([]byte("ACK\n"))
 	if err != nil {
-		if err == network.ErrReset {
+		if errors.Is(err, network.ErrReset) {
 			logrus.Info("Stream was reset, skipping write operation")
 		} else {
 			logrus.Error("Error writing to stream:", err)
@@ -373,6 +396,11 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 		case <-ticker.C:
 			peers := node.Host.Network().Peers()
 			if len(peers) > 0 {
+				for _, peer := range peers {
+					logrus.Info("******************************************************************************")
+					logrus.Info("Peer ID: ", peer)
+					logrus.Info("******************************************************************************")
+				}
 				// Choose a random peer
 				randPeer := peers[rand.Intn(len(peers))]
 
