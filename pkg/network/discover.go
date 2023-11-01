@@ -28,15 +28,31 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 		logrus.Infof("Successfully advertised protocol")
 	}
 
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(time.Second * 15)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
+			if ctx.Err() != nil {
+				logrus.Errorf("Context error in discovery loop: %v", ctx.Err())
+			}
+			logrus.Info("Stopping peer discovery")
 			return
 		case <-ticker.C:
 			logrus.Debug("Searching for other peers...")
+
+			routingDiscovery := routing.NewRoutingDiscovery(dht)
+
+			// Advertise this node
+			logrus.Infof("Attempting to advertise protocol: %s", protocolString)
+			_, err := routingDiscovery.Advertise(ctx, protocolString)
+			if err != nil {
+				logrus.Errorf("Failed to advertise protocol: %v", err)
+			} else {
+				logrus.Infof("Successfully advertised protocol")
+			}
+
 			// Use the routing discovery to find peers.
 			peerChan, err := routingDiscovery.FindPeers(ctx, protocolString)
 			if err != nil {
@@ -57,11 +73,14 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 				logrus.Infof("Found availPeer: %s", availPeer.String())
 
 				if host.Network().Connectedness(availPeer.ID) != network.Connected {
-					_, err = host.Network().DialPeer(ctx, availPeer.ID)
-					fmt.Printf("Connected to peer %s\n", availPeer.ID.String())
+					err := host.Connect(ctx, availPeer)
+					//conn, err := host.Network().DialPeer(ctx, availPeer.ID)
 					if err != nil {
+						logrus.Warningf("Failed to connect to peer %s: %v", availPeer.ID.String(), err)
 						continue
 					}
+					logrus.Infof("Connected to peer %s", availPeer.ID.String())
+					//logrus.Infof("Connected to peer %s", conn.RemoteMultiaddr().String())
 				}
 				// Send a message with this node's multi address string to each availPeer that is found
 				stream, err := host.NewStream(ctx, availPeer.ID, protocol)
