@@ -151,11 +151,6 @@ func (node *OracleNode) Start() (err error) {
 	if err != nil {
 		return err
 	}
-	err = node.Gossip(oracleProtocol)
-	if err != nil {
-		return err
-	}
-
 	go node.sendMessageToRandomPeer()
 	return
 }
@@ -396,11 +391,11 @@ func (node *OracleNode) sendMessageToRandomPeer() {
 		case <-ticker.C:
 			peers := node.Host.Network().Peers()
 			if len(peers) > 0 {
+				logrus.Info("******************************************************************************")
 				for _, peer := range peers {
-					logrus.Info("******************************************************************************")
 					logrus.Info("Peer ID: ", peer)
-					logrus.Info("******************************************************************************")
 				}
+				logrus.Info("******************************************************************************")
 				// Choose a random peer
 				randPeer := peers[rand.Intn(len(peers))]
 
