@@ -25,7 +25,11 @@ func init() {
 	}
 	mw := io.MultiWriter(os.Stdout, f)
 	logrus.SetOutput(mw)
-	logrus.SetLevel(logrus.InfoLevel)
+	if os.Getenv("debug") == "true" {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
+	}
 
 	usr, err := user.Current()
 	if err != nil {

@@ -66,7 +66,7 @@ func NewDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mult
 				if err != nil {
 					logrus.Error("Error opening stream:", err)
 				}
-				_, err = stream.Write([]byte(fmt.Sprintf("Initial Hello from %s\n", address.String())))
+				_, err = stream.Write([]byte(fmt.Sprintf("Initial Hello from %s\n", peerAddr.String())))
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
 				}
