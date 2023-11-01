@@ -178,6 +178,9 @@ func (node *OracleNode) Gossip(topicName string) error {
 			msg, err := sub.Next(node.ctx)
 			if err != nil {
 				logrus.Errorf("sub.Next: %s", err.Error())
+				if err.Error() == "context canceled" {
+					return
+				}
 				continue
 			}
 			// Skip messages from the same node

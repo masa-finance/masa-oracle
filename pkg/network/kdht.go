@@ -17,7 +17,7 @@ func NewDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mult
 	protocol protocol.ID, address multiaddr.Multiaddr) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	if len(bootstrapPeers) == 0 {
-		options = append(options, dht.Mode(dht.ModeServer))
+		options = append(options, dht.Mode(dht.ModeAutoServer))
 	}
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {
@@ -60,15 +60,18 @@ func NewDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mult
 			defer wg.Done()
 			if err := host.Connect(ctx, *peerinfo); err != nil {
 				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
+				return
 			} else {
 				logrus.Info("Connection established with node:", *peerinfo)
 				stream, err := host.NewStream(ctx, peerinfo.ID, protocol)
 				if err != nil {
 					logrus.Error("Error opening stream:", err)
+					return
 				}
 				_, err = stream.Write([]byte(fmt.Sprintf("Initial Hello from %s\n", peerAddr.String())))
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
+					return
 				}
 			}
 		}()
