@@ -2,7 +2,7 @@ name: Build and run
 
 on:
   push:
-    branches: [ "devops-vms" ]
+    branches: [ "main" ]
 
 jobs:
   boot-node:
