@@ -6,7 +6,11 @@ Masa Oracle is a pioneering protocol designed to revolutionize the way data beha
 
 ### Prerequisites
 
-Ensure you have Go installed on your system. If not, you can download and install it from [here](https://golang.org/dl/).
+Before you begin, make sure you have the following prerequisites installed on your system:
+
+- **Go**: If not already installed, download and install it from [here](https://golang.org/dl/).
+- **Docker**: If not already installed, download and install it from [here](https://docs.docker.com/get-docker/).
+
 
 ### Running the Node
 
@@ -40,51 +44,14 @@ You should see the node's address printed on the console. This indicates that yo
 ---
 
 ## Connecting Nodes
-
-Once you have the Masa node set up, you can easily connect multiple nodes together. Here's a step-by-step guide on how to do this:
-
-
-## Running additional Nodes with Docker
-To run additional nodes on the same machine, you will need to use Docker
-First make sure to have the multi address for your running node as described above.
-You will need to update the "Dockerfile" with the multi address of your running node.
-```
- # Command to run the executable with bootnode address
- CMD ["./masa-oracle", "/ip4/192.168.1.6/tcp/4001/ws/p2p/QmQq37unSom5Vv2dzEyiRqPc8V9JUAZXFmkyQfZtW4J1Bt"]
-```
-
-### Prerequisites
-
-Ensure you have Docker installed on your system. If not, you can download and install it from [here](https://docs.docker.com/get-docker/).
-
-### Building the Docker Image
-
-1. Navigate to the project directory:
-```bash
-   cd path/to/masa-oracle
-```
-
-2. Build the Docker image:
-```bash
-   docker build -t masa-node .
-```
-
-This command builds a Docker image using the Dockerfile in the current directory and tags it as `masa-node`.
-
-### Running the Docker Container
-
-Run the Docker container with the following command:
+### Run the node:
 
 ```bash
-docker run -p 4001:4001 masa-node
+bin/masa-node /ip4/34.133.16.77/udp/4001/quic-v1/p2p/16Uiu2HAmAEDCYv5RrbLhZRmHXGWXNuSFa7YDoC5BGeN3NtDmiZEb
 ```
 
-This address is the multiaddress of the node. It provides all the necessary information for another peer to locate and communicate with this node.
+This will start a new Masa Oracle node, and it will use the multi-address for connecting to the Masa Oracle node with the IP address 34.133.16.77.
 
-## Contribution
+You are now ready to connect your Masa node with the specified node in the network. Be sure to follow any additional configuration steps and best practices specific to your use case or network requirements.
 
-Contributions are always welcome. Please fork the repository and create a pull request with your changes. Ensure that your code follows Go best practices.
-
-## License
-
-This project is licensed under the terms of the [MIT license](LICENSE).
+Remember to check the Masa Oracle repository for any updates or additional information on using the protocol.
