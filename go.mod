@@ -9,7 +9,7 @@ require (
 	github.com/libp2p/go-libp2p v0.32.0
 	github.com/libp2p/go-libp2p-kad-dht v0.25.1
 	github.com/libp2p/go-libp2p-pubsub v0.10.0
-	github.com/mudler/edgevpn v0.24.1
+	github.com/mudler/edgevpn v0.24.6
 	github.com/multiformats/go-multiaddr v0.12.0
 	github.com/sirupsen/logrus v1.9.3
 )
@@ -22,8 +22,8 @@ require (
 	github.com/bits-and-blooms/bitset v1.8.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/bytedance/sonic v1.10.1 // indirect
-	github.com/c-robinson/iplib v1.0.6 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
+	github.com/c-robinson/iplib v1.0.7 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
