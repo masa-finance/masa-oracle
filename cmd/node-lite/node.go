@@ -6,6 +6,8 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
+
+	network2 "github.com/masa-finance/masa-oracle/pkg/network"
 )
 
 func NewNodeLite() error {
@@ -19,7 +21,7 @@ func NewNodeLite() error {
 	}
 	host.SetStreamHandler("/chat/1.1.0", handleStream)
 
-	n := &discoveryNotifee{}
+	n := &network2.discoveryNotifee{}
 	service := mdns.NewMdnsService(host, "/chat/1.0.0", n)
 	if err != nil {
 		return err

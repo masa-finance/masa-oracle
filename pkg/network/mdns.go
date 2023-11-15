@@ -1,4 +1,4 @@
-package main
+package network
 
 import (
 	"github.com/libp2p/go-libp2p/core/host"
@@ -16,15 +16,16 @@ func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 	n.PeerChan <- pi
 }
 
-// Initialize the MDNS service
-func initMDNS(peerHost host.Host, rendezvous string) chan peer.AddrInfo {
+// StartMDNS Initializes and starts the MDNS service
+func StartMDNS(host host.Host, rendezvous string) chan peer.AddrInfo {
 	// register with service so that we get notified about peer discovery
-	n := &discoveryNotifee{}
-	n.PeerChan = make(chan peer.AddrInfo)
+	notifee := &discoveryNotifee{
+		PeerChan: make(chan peer.AddrInfo),
+	}
 
-	ser := mdns.NewMdnsService(peerHost, rendezvous, n)
-	if err := ser.Start(); err != nil {
+	mdnsService := mdns.NewMdnsService(host, rendezvous, notifee)
+	if err := mdnsService.Start(); err != nil {
 		panic(err)
 	}
-	return n.PeerChan
+	return notifee.PeerChan
 }

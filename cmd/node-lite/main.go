@@ -18,6 +18,7 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/network"
 )
 
 func init() {
@@ -112,7 +113,7 @@ func main() {
 
 	fmt.Printf("\n[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", "0.0.0.0", 4001, host.ID())
 
-	peerChan := initMDNS(host, "masa-chat")
+	peerChan := network.StartMDNS(host, "masa-chat")
 	for { // allows multiple peers to join
 		peer := <-peerChan // will block until we discover a peer
 		fmt.Println("Found peer:", peer, ", connecting")
