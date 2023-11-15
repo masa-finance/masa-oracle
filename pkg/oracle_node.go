@@ -123,36 +123,22 @@ func (node *OracleNode) Start() (err error) {
 	// important to order:  make sure the ledger is already initialized
 	node.Host.Network().Notify(NewNodeEventTracker(node.inputCh))
 
-	peerInfo := peer.AddrInfo{
-		ID:    node.Host.ID(),
-		Addrs: node.Host.Addrs(),
-	}
-	multiaddrs, err := peer.AddrInfoToP2pAddrs(&peerInfo)
+	node.multiAddrs, err = myNetwork.GetMultiAddressForHost(node.Host)
 	if err != nil {
 		return err
 	}
-	node.multiAddrs = multiaddrs[0]
-	fmt.Println("libp2p host address:", multiaddrs[0])
+	fmt.Println("libp2p host address:", node.multiAddrs.String())
 
-	peersStr := os.Getenv(Peers)
-	bootstrapPeers := strings.Split(peersStr, ",")
-	addrs := make([]multiaddr.Multiaddr, 0)
-	for _, peerAddr := range bootstrapPeers {
-		if peerAddr == "" {
-			continue
-		}
-		addr, err := multiaddr.NewMultiaddr(peerAddr)
-		if err != nil {
-			return err
-		}
-		addrs = append(addrs, addr)
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
+	if err != nil {
+		return err
 	}
-
-	err = node.DiscoverAndJoin(addrs)
+	err = node.DiscoverAndJoin(bootNodeAddrs)
 	if err != nil {
 		return err
 	}
 	go node.sendMessageToRandomPeer()
+	node.StartMDNSDiscovery("masa-chat")
 	return
 }
 
@@ -315,7 +301,7 @@ func (node *OracleNode) handleMessage(stream network.Stream) {
 	}
 }
 
-// Connect is useful for testing in a local environment, It should probably be removed
+// Connect is useful for testing in ai local environment, It should probably be removed
 func (node *OracleNode) Connect(targetNode *OracleNode) error {
 	targetNodeAddressInfo := host.InfoFromHost(targetNode.Host)
 

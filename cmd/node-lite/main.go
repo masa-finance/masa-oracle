@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/signal"
 	"os/user"
@@ -13,18 +12,16 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/libp2p/go-libp2p"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
-	"github.com/masa-finance/masa-oracle/pkg/network"
 )
 
 func init() {
-	f, err := os.OpenFile("masa_oracle_node.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
+	f, err := os.OpenFile("masa_node_lite.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 	mw := io.MultiWriter(os.Stdout, f)
 	logrus.SetOutput(mw)
@@ -32,7 +29,7 @@ func init() {
 
 	usr, err := user.Current()
 	if err != nil {
-		log.Fatal("could not find user.home directory")
+		logrus.Fatal("could not find user.home directory")
 	}
 	envFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_node.env")
 	keyFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_key")
@@ -92,50 +89,39 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	//crypto.VerifyEthereumCompatibility(privKey)
+	node := NewNodeLite(privKey, ctx)
+	node.Start()
 
-	// 0.0.0.0 will listen on any interface device.
-	//sourceMultiAddr, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", cfg.listenHost, cfg.listenPort))
-
-	// libp2p.New constructs a new libp2p Host.
-	// Other options can be added here.
-	host, err := libp2p.New(
-		//libp2p.ListenAddrs(sourceMultiAddr),
-		libp2p.Identity(privKey),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	// Set a function as stream handler.
-	// This function is called when a peer initiates a connection and starts a stream with this peer.
-	host.SetStreamHandler("/masa_chat/1.0.0", handleStream)
-
-	fmt.Printf("\n[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", "0.0.0.0", 4001, host.ID())
-
-	peerChan := network.StartMDNS(host, "masa-chat")
-	for { // allows multiple peers to join
-		peer := <-peerChan // will block until we discover a peer
-		fmt.Println("Found peer:", peer, ", connecting")
-
-		if err := host.Connect(ctx, peer); err != nil {
-			fmt.Println("Connection failed:", err)
-			continue
-		}
-
-		// open a stream, this stream will be handled by handleStream other end
-		stream, err := host.NewStream(ctx, peer.ID, "/masa_chat/1.0.0")
-
-		if err != nil {
-			fmt.Println("Stream open failed", err)
-		} else {
-			rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-			go writeData(rw)
-			go readData(rw)
-			fmt.Println("Connected to:", peer)
-		}
-	}
+	//
+	//// Set a function as stream handler.
+	//// This function is called when a peer initiates a connection and starts a stream with this peer.
+	//host.SetStreamHandler("/masa_chat/1.0.0", handleStream)
+	//
+	//fmt.Printf("\n[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", "0.0.0.0", 4001, host.ID())
+	//
+	//peerChan := network.StartMDNS(host, "masa-chat")
+	//for { // allows multiple peers to join
+	//	peer := <-peerChan // will block until we discover a peer
+	//	fmt.Println("Found peer:", peer, ", connecting")
+	//
+	//	if err := host.Connect(ctx, peer); err != nil {
+	//		fmt.Println("Connection failed:", err)
+	//		continue
+	//	}
+	//
+	//	// open a stream, this stream will be handled by handleStream other end
+	//	stream, err := host.NewStream(ctx, peer.ID, "/masa_chat/1.0.0")
+	//
+	//	if err != nil {
+	//		fmt.Println("Stream open failed", err)
+	//	} else {
+	//		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	//
+	//		go writeData(rw)
+	//		go readData(rw)
+	//		fmt.Println("Connected to:", peer)
+	//	}
+	//}
 	<-ctx.Done()
 }
 

@@ -2,43 +2,115 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"fmt"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
 
-	network2 "github.com/masa-finance/masa-oracle/pkg/network"
+	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 )
 
-func NewNodeLite() error {
-	//ctx := context.Background()
+const nodeLiteProtocol = "masa_node_lite_protocol/1.0.0"
 
-	// libp2p.New constructs a new libp2p Host.
-	// Other options can be added here.
-	host, err := libp2p.New()
-	if err != nil {
-		return err
-	}
-	host.SetStreamHandler("/chat/1.1.0", handleStream)
+type NodeLite struct {
+	Host       host.Host
+	PrivKey    crypto.PrivKey
+	Protocol   protocol.ID
+	multiAddrs multiaddr.Multiaddr
+	ctx        context.Context
+}
 
-	n := &network2.discoveryNotifee{}
-	service := mdns.NewMdnsService(host, "/chat/1.0.0", n)
+func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) *NodeLite {
+
+	host, err := libp2p.New(
+		libp2p.Identity(privKey),
+	)
 	if err != nil {
-		return err
+		logrus.Fatal(err)
 	}
-	if err := service.Start(); err != nil {
-		return err
+	return &NodeLite{
+		Host:       host,
+		PrivKey:    privKey,
+		Protocol:   nodeLiteProtocol,
+		multiAddrs: myNetwork.GetMultiAddressForHostQuiet(host),
+		ctx:        ctx,
 	}
 	return nil
 }
 
-func handleStream(stream network.Stream) {
+func (node *NodeLite) Start() (err error) {
+	node.StartMDNSDiscovery(string(node.Protocol))
+	return nil
+}
 
-	// Create a buffer stream for non-blocking read and write.
-	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+func (node *NodeLite) StartMDNSDiscovery(rendezvous string) {
+	peerChan := myNetwork.StartMDNS(node.Host, rendezvous)
+	go func() {
+		for {
+			select {
+			case peer := <-peerChan: // will block until we discover a peer
+				logrus.Info("Found peer:", peer, ", connecting")
 
-	go readData(rw)
-	go writeData(rw)
+				if err := node.Host.Connect(node.ctx, peer); err != nil {
+					logrus.Error("Connection failed:", err)
+					continue
+				}
 
-	// 'stream' will stay open until you close it (or the other side closes it).
+				// open a stream, this stream will be handled by handleStream other end
+				stream, err := node.Host.NewStream(node.ctx, peer.ID, node.Protocol)
+
+				if err != nil {
+					logrus.Error("Stream open failed", err)
+				} else {
+					rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+					go node.writeData(rw)
+					go node.readData(rw)
+					logrus.Info("Connected to:", peer)
+				}
+			case <-node.ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func (node *NodeLite) readData(rw *bufio.ReadWriter) {
+	for {
+		str, err := rw.ReadString('\n')
+		if err != nil {
+			logrus.Error("Error reading from buffer:", err)
+			return
+		}
+
+		if str != "" && str != "\n" {
+			logrus.Infof("MDNS Received message: %s from %s", str, node.multiAddrs.String())
+		}
+	}
+}
+
+func (node *NodeLite) writeData(rw *bufio.ReadWriter) {
+	for {
+		// Generate a message including the multiaddress of the sender
+		sendData := fmt.Sprintf("MDNS Hello from %s\n", node.multiAddrs.String())
+
+		_, err := rw.WriteString(sendData)
+		if err != nil {
+			logrus.Error("Error writing to buffer:", err)
+			return
+		}
+		err = rw.Flush()
+		if err != nil {
+			logrus.Error("Error flushing buffer:", err)
+			return
+		}
+		// Sleep for a while before sending the next message
+		time.Sleep(time.Second * 5)
+	}
 }
