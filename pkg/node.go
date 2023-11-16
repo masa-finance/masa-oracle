@@ -84,13 +84,14 @@ func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) (*NodeLite, error)
 func (node *NodeLite) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.multiAddrs.String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
+	go node.handleDiscoveredPeers()
+
 	//myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
 	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
 	if err != nil {
 		return err
 	}
 	myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, node.PeerChan)
-	go node.handleDiscoveredPeers()
 	return nil
 }
 
@@ -135,7 +136,7 @@ func (node *NodeLite) handleStream(stream network.Stream) {
 	// 'stream' will stay open until you close it (or the other side closes it).
 }
 
-func (node *NodeLite) readData(rw *bufio.ReadWriter) {
+func (node *NodeLite) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent) {
 	for {
 		str, err := rw.ReadString('\n')
 		if err != nil {
@@ -153,10 +154,10 @@ func (node *NodeLite) readData(rw *bufio.ReadWriter) {
 	}
 }
 
-func (node *NodeLite) writeData(rw *bufio.ReadWriter) {
+func (node *NodeLite) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEvent) {
 	for {
 		// Generate a message including the multiaddress of the sender
-		sendData := fmt.Sprintf("MDNS Hello from %s\n", node.multiAddrs.String())
+		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.multiAddrs.String())
 
 		_, err := rw.WriteString(sendData)
 		if err != nil {
