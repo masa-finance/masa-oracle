@@ -11,6 +11,11 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
+	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
+	"github.com/libp2p/go-libp2p/p2p/security/noise"
+	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
@@ -27,13 +32,38 @@ type NodeLite struct {
 	ctx        context.Context
 }
 
-func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) *NodeLite {
+func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) (*NodeLite, error) {
+	// Start with the default scaling limits.
+	scalingLimits := rcmgr.DefaultLimits
+	concreteLimits := scalingLimits.AutoScale()
+	limiter := rcmgr.NewFixedLimiter(concreteLimits)
+
+	resourceManager, err := rcmgr.NewResourceManager(limiter)
+	if err != nil {
+		return nil, err
+	}
+
+	addrStr := []string{
+		"/ip4/0.0.0.0/tcp/0",
+	}
 
 	host, err := libp2p.New(
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
+		libp2p.ListenAddrStrings(addrStr...),
 		libp2p.Identity(privKey),
+		libp2p.ResourceManager(resourceManager),
+		libp2p.Ping(false), // disable built-in ping
+		libp2p.ChainOptions(
+			libp2p.Security(noise.ID, noise.New),
+			libp2p.Security(libp2ptls.ID, libp2ptls.New),
+		),
+		libp2p.EnableNATService(),
+		libp2p.NATPortMap(),
+		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop
 	)
 	if err != nil {
-		logrus.Fatal(err)
+		return nil, err
 	}
 	return &NodeLite{
 		Host:       host,
@@ -41,8 +71,8 @@ func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) *NodeLite {
 		Protocol:   nodeLiteProtocol,
 		multiAddrs: myNetwork.GetMultiAddressForHostQuiet(host),
 		ctx:        ctx,
-	}
-	return nil
+	}, nil
+	return nil, nil
 }
 
 func (node *NodeLite) Start() (err error) {

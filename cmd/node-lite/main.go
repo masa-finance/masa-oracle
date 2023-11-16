@@ -89,7 +89,11 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	node := NewNodeLite(privKey, ctx)
+	node, err := NewNodeLite(privKey, ctx)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	node.Start()
 
 	//
@@ -129,8 +133,7 @@ func readData(rw *bufio.ReadWriter) {
 	for {
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			fmt.Println("Error reading from buffer")
-			panic(err)
+			logrus.Error("Error reading from buffer:", err)
 		}
 
 		if str == "" {
