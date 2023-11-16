@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
@@ -28,6 +30,7 @@ type NodeLite struct {
 	PrivKey    crypto.PrivKey
 	Protocol   protocol.ID
 	multiAddrs multiaddr.Multiaddr
+	DHT        *dht.IpfsDHT
 	Context    context.Context
 	PeerChan   chan myNetwork.PeerEvent
 }
@@ -91,7 +94,10 @@ func (node *NodeLite) Start() (err error) {
 	if err != nil {
 		return err
 	}
-	myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, node.PeerChan)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, node.PeerChan)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -99,7 +105,7 @@ func (node *NodeLite) handleDiscoveredPeers() {
 	for {
 		select {
 		case peer := <-node.PeerChan: // will block until we discover a peer
-			logrus.Info("Found peer:", peer, ", connecting")
+			logrus.Info("Peer Event for:", peer, ", Action:", peer.Action)
 
 			if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
 				logrus.Error("Connection failed:", err)
@@ -116,7 +122,6 @@ func (node *NodeLite) handleDiscoveredPeers() {
 
 				go node.writeData(rw, peer)
 				go node.readData(rw, peer)
-				logrus.Info("Connected to:", peer)
 			}
 		case <-node.Context.Done():
 			return
@@ -126,6 +131,36 @@ func (node *NodeLite) handleDiscoveredPeers() {
 
 func (node *NodeLite) handleStream(stream network.Stream) {
 	logrus.Info("Got a new stream!")
+
+	remotePeer := stream.Conn().RemotePeer()
+
+	// Check if we're already connected to the peer
+	connStatus := node.Host.Network().Connectedness(remotePeer)
+	if connStatus != network.Connected {
+		// We're not connected to the peer, so try to establish a connection
+		ctx, cancel := context.WithTimeout(node.Context, 5*time.Second)
+		defer cancel()
+		err := node.Host.Connect(ctx, peer.AddrInfo{ID: remotePeer})
+		if err != nil {
+			logrus.Warningf("Failed to connect to peer %s: %v", remotePeer, err)
+			return
+		}
+	}
+
+	// Try to add the peer to the routing table (no-op if already present).
+	added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
+	if err != nil {
+		logrus.Warningf("Failed to add peer %s to routing table: %v", remotePeer, err)
+	} else if !added {
+		logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
+	} else {
+		logrus.Infof("Successfully added peer %s to routing table", remotePeer)
+	}
+	// Check if the peer is useful after trying to add it
+	isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
+	logrus.Infof("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
+
+	logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
 
 	// Create a buffer stream for non-blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))

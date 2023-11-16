@@ -128,16 +128,3 @@ func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Du
 		}
 	}
 }
-
-/*
-1. Monitoring the DHT's health: The Kademlia DHT provides a RoutingTable method that returns the DHT's routing table. You can use this to monitor the health of your DHT, such as checking the size of the routing table, the distribution of peers across buckets, etc.
-
-2. Handling connection errors: When you connect to a peer or open a stream, it's possible that an error could occur. You're already handling these errors in your code, but you might want to consider adding retry logic or other error handling strategies.
-
-3. Responding to DHT queries: If your application is not just a client, but also a server that responds to DHT queries from other peers, you'll need to set up handlers for these queries. The libp2p DHT provides methods for handling different types of queries, such as GetValue, PutValue, FindPeer, and FindProviders.
-
-4. Periodic DHT operations: Depending on your application's needs, you might want to perform certain DHT operations periodically. For example, you might want to periodically refresh the DHT to ensure your peer's routing table is up-to-date, or periodically republish records that your peer is providing.
-*/
-
-func temp() {
-}
