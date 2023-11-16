@@ -11,7 +11,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
@@ -30,7 +29,7 @@ type NodeLite struct {
 	Protocol   protocol.ID
 	multiAddrs multiaddr.Multiaddr
 	Context    context.Context
-	PeerChan   chan peer.AddrInfo
+	PeerChan   chan myNetwork.PeerEvent
 }
 
 func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) (*NodeLite, error) {
@@ -77,7 +76,7 @@ func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) (*NodeLite, error)
 		Protocol:   nodeLiteProtocol,
 		multiAddrs: myNetwork.GetMultiAddressForHostQuiet(host),
 		Context:    ctx,
-		PeerChan:   make(chan peer.AddrInfo),
+		PeerChan:   make(chan myNetwork.PeerEvent),
 	}, nil
 	return nil, nil
 }
@@ -85,40 +84,43 @@ func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) (*NodeLite, error)
 func (node *NodeLite) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.multiAddrs.String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.StartMDNSDiscovery("masa-chat")
+	//myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
+	if err != nil {
+		return err
+	}
+	myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, node.PeerChan)
+	go node.handleDiscoveredPeers()
 	return nil
 }
 
-func (node *NodeLite) StartMDNSDiscovery(rendezvous string) {
-	myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
-	go func() {
-		for {
-			select {
-			case peer := <-node.PeerChan: // will block until we discover a peer
-				logrus.Info("Found peer:", peer, ", connecting")
+func (node *NodeLite) handleDiscoveredPeers() {
+	for {
+		select {
+		case peer := <-node.PeerChan: // will block until we discover a peer
+			logrus.Info("Found peer:", peer, ", connecting")
 
-				if err := node.Host.Connect(node.Context, peer); err != nil {
-					logrus.Error("Connection failed:", err)
-					continue
-				}
-
-				// open a stream, this stream will be handled by handleStream other end
-				stream, err := node.Host.NewStream(node.Context, peer.ID, node.Protocol)
-
-				if err != nil {
-					logrus.Error("Stream open failed", err)
-				} else {
-					rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-					go node.writeData(rw)
-					go node.readData(rw)
-					logrus.Info("Connected to:", peer)
-				}
-			case <-node.Context.Done():
-				return
+			if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
+				logrus.Error("Connection failed:", err)
+				continue
 			}
+
+			// open a stream, this stream will be handled by handleStream other end
+			stream, err := node.Host.NewStream(node.Context, peer.AddrInfo.ID, node.Protocol)
+
+			if err != nil {
+				logrus.Error("Stream open failed", err)
+			} else {
+				rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+				go node.writeData(rw)
+				go node.readData(rw)
+				logrus.Info("Connected to:", peer)
+			}
+		case <-node.Context.Done():
+			return
 		}
-	}()
+	}
 }
 
 func (node *NodeLite) handleStream(stream network.Stream) {

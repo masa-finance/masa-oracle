@@ -51,6 +51,7 @@ type OracleNode struct {
 	nodeData  map[string]*NodeData
 	dataMutex sync.RWMutex
 	changes   int
+	PeerChan  chan myNetwork.PeerEvent
 }
 
 func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, error) {
@@ -102,6 +103,7 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		inputCh:  make(chan *NodeData),
 		tempCh:   make(chan *hub.Message),
 		nodeData: make(map[string]*NodeData),
+		PeerChan: make(chan myNetwork.PeerEvent),
 	}, nil
 }
 
@@ -326,7 +328,7 @@ func (node *OracleNode) Addresses() string {
 
 func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) error {
 	var err error
-	node.DHT, err = myNetwork.NewDht(node.ctx, node.Host, bootstrapPeers, node.Protocol, node.multiAddrs)
+	node.DHT, err = myNetwork.WithDht(node.ctx, node.Host, bootstrapPeers, node.Protocol, node.PeerChan)
 	if err != nil {
 		return err
 	}
