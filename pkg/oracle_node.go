@@ -138,7 +138,6 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 	go node.sendMessageToRandomPeer()
-	node.StartMDNSDiscovery("masa-chat")
 	return
 }
 
@@ -337,38 +336,6 @@ func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) er
 		return err
 	}
 	return nil
-}
-
-func (node *OracleNode) StartMDNSDiscovery(rendezvous string) {
-	peerChan := myNetwork.StartMDNS(node.Host, rendezvous)
-	go func() {
-		for {
-			select {
-			case peer := <-peerChan: // will block until we discover a peer
-				logrus.Info("Found peer:", peer, ", connecting")
-
-				if err := node.Host.Connect(node.ctx, peer); err != nil {
-					logrus.Error("Connection failed:", err)
-					continue
-				}
-
-				// open a stream, this stream will be handled by handleStream other end
-				stream, err := node.Host.NewStream(node.ctx, peer.ID, node.Protocol)
-
-				if err != nil {
-					logrus.Error("Stream open failed", err)
-				} else {
-					rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-					go node.writeData(rw)
-					go node.readData(rw)
-					logrus.Info("Connected to:", peer)
-				}
-			case <-node.ctx.Done():
-				return
-			}
-		}
-	}()
 }
 
 func (node *OracleNode) SetupAutoNAT() error {
