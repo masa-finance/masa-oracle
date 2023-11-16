@@ -114,8 +114,8 @@ func (node *NodeLite) handleDiscoveredPeers() {
 			} else {
 				rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-				go node.writeData(rw)
-				go node.readData(rw)
+				go node.writeData(rw, peer)
+				go node.readData(rw, peer)
 				logrus.Info("Connected to:", peer)
 			}
 		case <-node.Context.Done():
@@ -130,8 +130,8 @@ func (node *NodeLite) handleStream(stream network.Stream) {
 	// Create a buffer stream for non-blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-	go node.readData(rw)
-	go node.writeData(rw)
+	go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"})
+	go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"})
 
 	// 'stream' will stay open until you close it (or the other side closes it).
 }
