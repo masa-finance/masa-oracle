@@ -89,7 +89,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	node, err := NewNodeLite(privKey, ctx)
+	node, err := masa.NewNodeLite(privKey, ctx)
 	if err != nil {
 		logrus.Fatal(err)
 	}
