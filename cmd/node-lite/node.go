@@ -9,6 +9,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -45,7 +46,8 @@ func NewNodeLite(privKey crypto.PrivKey, ctx context.Context) *NodeLite {
 }
 
 func (node *NodeLite) Start() (err error) {
-	node.StartMDNSDiscovery(string(node.Protocol))
+	node.Host.SetStreamHandler(node.Protocol, handleStream)
+	node.StartMDNSDiscovery("masa-chat")
 	return nil
 }
 
@@ -79,6 +81,18 @@ func (node *NodeLite) StartMDNSDiscovery(rendezvous string) {
 			}
 		}
 	}()
+}
+
+func handleStream(stream network.Stream) {
+	logrus.Info("Got a new stream!")
+
+	// Create a buffer stream for non-blocking read and write.
+	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+	go readData(rw)
+	go writeData(rw)
+
+	// 'stream' will stay open until you close it (or the other side closes it).
 }
 
 func (node *NodeLite) readData(rw *bufio.ReadWriter) {
