@@ -89,33 +89,34 @@ func (node *NodeLite) Start() (err error) {
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	go node.handleDiscoveredPeers()
 
-	myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
+	//myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
 	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
 	if err != nil {
 		return err
 	}
-	node.DHT, err = myNetwork.NewDHT(node.Context, node.Host, node.Protocol, nil)
+	//node.DHT, err = myNetwork.NewDHT(node.Context, node.Host, node.Protocol, nil)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, node.PeerChan)
 	if err != nil {
 		return err
 	}
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
 
-	if len(bootNodeAddrs) > 0 {
-		for _, addr := range bootNodeAddrs {
-			// connect to the peer
-			peerinfo, err := peer.AddrInfoFromP2pAddr(addr)
-			if err != nil {
-				logrus.Errorf("kdht: %s", err.Error())
-			}
-
-			if err := node.Host.Connect(node.Context, *peerinfo); err != nil {
-				logrus.Error("Failed to connect to peer: %s", err.Error())
-				continue
-			} else {
-				logrus.Infof("Connected to %s", peerinfo.ID.String())
-			}
-		}
-	}
+	//if len(bootNodeAddrs) > 0 {
+	//	for _, addr := range bootNodeAddrs {
+	//		// connect to the peer
+	//		peerinfo, err := peer.AddrInfoFromP2pAddr(addr)
+	//		if err != nil {
+	//			logrus.Errorf("kdht: %s", err.Error())
+	//		}
+	//
+	//		if err := node.Host.Connect(node.Context, *peerinfo); err != nil {
+	//			logrus.Error("Failed to connect to peer: %s", err.Error())
+	//			continue
+	//		} else {
+	//			logrus.Infof("Connected to %s", peerinfo.ID.String())
+	//		}
+	//	}
+	//}
 
 	return nil
 }

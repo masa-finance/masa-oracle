@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -22,11 +23,11 @@ const (
 )
 
 func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Multiaddr,
-	protocol protocol.ID, peerChan chan PeerEvent) (*dht.IpfsDHT, error) {
+	pId protocol.ID, peerChan chan PeerEvent) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
-	if len(bootstrapPeers) == 0 {
-		options = append(options, dht.Mode(dht.ModeAutoServer))
-	}
+	options = append(options, dht.Mode(dht.ModeAutoServer))
+	options = append(options, dht.ProtocolPrefix(pId))
+
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {
 		return nil, err
@@ -88,7 +89,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 					time.Sleep(retryDelay)
 				} else {
 					logrus.Info("Connection established with node:", *peerinfo)
-					stream, err := host.NewStream(ctx, peerinfo.ID, protocol)
+					stream, err := host.NewStream(ctx, peerinfo.ID, pId)
 					if err != nil {
 						logrus.Error("Error opening stream:", err)
 						return
@@ -113,7 +114,8 @@ func NewDHT(ctx context.Context, host host.Host, protocol protocol.ID, bootstrap
 	// if no bootstrap peers give this peer act as a bootstraping node
 	// other peers can use this peers ipfs address for peer discovery via dht
 	if len(bootstrapPeers) == 0 {
-		options = append(options, dht.Mode(dht.ModeServer))
+		log.Info("running as server")
+		options = append(options, dht.Mode(dht.ModeAutoServer))
 	}
 	options = append(options, dht.ProtocolPrefix(protocol))
 
