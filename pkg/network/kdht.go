@@ -107,6 +107,52 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 	return kademliaDHT, nil
 }
 
+func NewDHT(ctx context.Context, host host.Host, protocol protocol.ID, bootstrapPeers []multiaddr.Multiaddr) (*dht.IpfsDHT, error) {
+	var options []dht.Option
+
+	// if no bootstrap peers give this peer act as a bootstraping node
+	// other peers can use this peers ipfs address for peer discovery via dht
+	if len(bootstrapPeers) == 0 {
+		options = append(options, dht.Mode(dht.ModeServer))
+	}
+	options = append(options, dht.ProtocolPrefix(protocol))
+
+	kdht, err := dht.New(ctx, host, options...)
+	if err != nil {
+		return nil, err
+	}
+	kdht.RoutingTable().PeerAdded = func(p peer.ID) {
+		logrus.Infof("Peer added to DHT: %s", p)
+	}
+
+	kdht.RoutingTable().PeerRemoved = func(p peer.ID) {
+		logrus.Infof("Peer removed from DHT: %s", p)
+	}
+	go monitorRoutingTable(ctx, kdht, time.Minute)
+
+	if err = kdht.Bootstrap(ctx); err != nil {
+		return nil, err
+	}
+
+	var wg sync.WaitGroup
+	for _, peerAddr := range bootstrapPeers {
+		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := host.Connect(ctx, *peerinfo); err != nil {
+				logrus.Error("Error while connecting to node %q: %-v", peerinfo, err)
+			} else {
+				logrus.Info("Connection established with bootstrap node: %q", *peerinfo)
+			}
+		}()
+	}
+	wg.Wait()
+
+	return kdht, nil
+}
+
 func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
