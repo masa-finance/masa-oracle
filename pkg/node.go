@@ -98,6 +98,8 @@ func (node *NodeLite) Start() (err error) {
 	if err != nil {
 		return err
 	}
+	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
+
 	return nil
 }
 
