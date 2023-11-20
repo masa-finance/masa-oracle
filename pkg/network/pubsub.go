@@ -8,11 +8,11 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 )
 
-func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.Topic, error) {
+func WithPubSub(ctx context.Context, host host.Host, topicName string, peerChan chan PeerEvent) (*pubsub.Topic, error) {
 	gossipSub, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		return nil, err
@@ -42,15 +42,22 @@ func NewPubSub(ctx context.Context, host host.Host, topicName string) (*pubsub.T
 				continue
 			}
 			// Get the peer's IP address
-			var addrs multiaddr.Multiaddr
+			//var addrs multiaddr.Multiaddr
 			connectedness := host.Network().Connectedness(m.ReceivedFrom)
 			if connectedness == network.Connected {
 				peerInfo := host.Peerstore().PeerInfo(m.ReceivedFrom)
 				if len(peerInfo.Addrs) == 0 {
 					continue
 				}
-				addrs = peerInfo.Addrs[0]
-				logrus.Infof("%s : %s : %s", m.ReceivedFrom, string(m.Message.Data), addrs.String())
+				pe := PeerEvent{
+					AddrInfo: peer.AddrInfo{ID: peerInfo.ID},
+					Action:   PeerAdded,
+					Source:   "topic",
+				}
+				peerChan <- pe
+
+				//addrs = peerInfo.Addrs[0]
+				//logrus.Infof("%s : %s : %s", m.ReceivedFrom, string(m.Message.Data), addrs.String())
 			} else {
 				logrus.Info(m.ReceivedFrom, ": ", string(m.Message.Data))
 			}
