@@ -220,7 +220,7 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 			return
 		}
 		// Sleep for a while before sending the next message
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * 30)
 	}
 }
 
