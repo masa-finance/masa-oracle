@@ -28,7 +28,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 		logrus.Infof("Successfully advertised protocol")
 	}
 
-	ticker := time.NewTicker(time.Second * 15)
+	ticker := time.NewTicker(time.Second * 20)
 	defer ticker.Stop()
 
 	for {
@@ -45,12 +45,12 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 			routingDiscovery := routing.NewRoutingDiscovery(dht)
 
 			// Advertise this node
-			logrus.Infof("Attempting to advertise protocol: %s", protocolString)
+			logrus.Debugf("Attempting to advertise protocol: %s", protocolString)
 			_, err := routingDiscovery.Advertise(ctx, protocolString)
 			if err != nil {
 				logrus.Errorf("Failed to advertise protocol: %v", err)
 			} else {
-				logrus.Infof("Successfully advertised protocol")
+				logrus.Debugf("Successfully advertised protocol")
 			}
 
 			// Use the routing discovery to find peers.
@@ -70,11 +70,11 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					logrus.Debugf("Skipping connect to self: %s", availPeer.String())
 					continue
 				}
-				logrus.Infof("Found availPeer: %s", availPeer.String())
+				logrus.Infof("Found Available Peer: %s", availPeer.String())
 
 				if host.Network().Connectedness(availPeer.ID) != network.Connected {
-					err := host.Connect(ctx, availPeer)
-					//conn, err := host.Network().DialPeer(ctx, availPeer.ID)
+					//err := host.Connect(ctx, availPeer)
+					_, err := host.Network().DialPeer(ctx, availPeer.ID)
 					if err != nil {
 						logrus.Warningf("Failed to connect to peer %s: %v", availPeer.ID.String(), err)
 						continue

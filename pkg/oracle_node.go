@@ -3,13 +3,8 @@ package masa
 import (
 	"bufio"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"math/rand"
 	"os"
-	"strings"
-	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
@@ -19,17 +14,12 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
-	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	"github.com/mudler/edgevpn/pkg/blockchain"
-	"github.com/mudler/edgevpn/pkg/hub"
-
-	"github.com/libp2p/go-libp2p/p2p/host/autonat"
-	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
@@ -39,18 +29,12 @@ import (
 type OracleNode struct {
 	Host       host.Host
 	PrivKey    crypto.PrivKey
-	DHT        *dht.IpfsDHT
 	Protocol   protocol.ID
 	multiAddrs multiaddr.Multiaddr
+	DHT        *dht.IpfsDHT
+	Context    context.Context
+	PeerChan   chan myNetwork.PeerEvent
 	topic      *pubsub.Topic
-	ctx        context.Context
-	sync.Mutex
-	ledger    *blockchain.Ledger
-	tempCh    chan *hub.Message
-	inputCh   chan *NodeData
-	nodeData  map[string]*NodeData
-	dataMutex sync.RWMutex
-	changes   int
 }
 
 func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, error) {
@@ -59,28 +43,26 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
 
-	rm, err := rcmgr.NewResourceManager(limiter)
+	resourceManager, err := rcmgr.NewResourceManager(limiter)
 	if err != nil {
 		return nil, err
 	}
+
 	addrStr := []string{
-		//"/ip4/0.0.0.0/udp/0/quic-v1",
 		"/ip4/0.0.0.0/tcp/0",
 	}
 	if os.Getenv(PortNbr) != "" {
 		addrStr = []string{
-			//fmt.Sprintf("/ip4/0.0.0.0/udp/%s/quic-v1", os.Getenv(PortNbr)),
 			fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
 		}
 	}
 
-	newHost, err := libp2p.New(
-		//libp2p.Transport(quic.NewTransport),
+	host, err := libp2p.New(
 		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
 		libp2p.ListenAddrStrings(addrStr...),
-		libp2p.ResourceManager(rm),
 		libp2p.Identity(privKey),
+		libp2p.ResourceManager(resourceManager),
 		libp2p.Ping(false), // disable built-in ping
 		libp2p.ChainOptions(
 			libp2p.Security(noise.ID, noise.New),
@@ -93,380 +75,169 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 	if err != nil {
 		return nil, err
 	}
-	nodeProtocol := protocol.ID(oracleProtocol)
 	return &OracleNode{
-		Host:     newHost,
-		PrivKey:  privKey,
-		Protocol: nodeProtocol,
-		ctx:      ctx,
-		inputCh:  make(chan *NodeData),
-		tempCh:   make(chan *hub.Message),
-		nodeData: make(map[string]*NodeData),
+		Host:       host,
+		PrivKey:    privKey,
+		Protocol:   oracleProtocol,
+		multiAddrs: myNetwork.GetMultiAddressForHostQuiet(host),
+		Context:    ctx,
+		PeerChan:   make(chan myNetwork.PeerEvent),
 	}, nil
+	return nil, nil
 }
 
 func (node *OracleNode) Start() (err error) {
-	err = node.Gossip(oracleProtocol)
+	logrus.Infof("Starting node with ID: %s", node.multiAddrs.String())
+	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
+	//node.Host.Network().Notify(NewNodeEventTracker(node.inputCh))
+
+	go node.handleDiscoveredPeers()
+
+	myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
+
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
 	if err != nil {
 		return err
 	}
-	go node.handleEvents()
 
-	mw, err := node.messageWriter()
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, masaPrefix, node.PeerChan)
 	if err != nil {
 		return err
 	}
-	// Create a new ledger
-	node.ledger = blockchain.New(mw, &blockchain.MemoryStore{})
 
-	node.Host.SetStreamHandler(node.Protocol, node.handleMessage)
-	// important to order:  make sure the ledger is already initialized
-	node.Host.Network().Notify(NewNodeEventTracker(node.inputCh))
+	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
 
-	peerInfo := peer.AddrInfo{
-		ID:    node.Host.ID(),
-		Addrs: node.Host.Addrs(),
-	}
-	multiaddrs, err := peer.AddrInfoToP2pAddrs(&peerInfo)
-	if err != nil {
-		return err
-	}
-	node.multiAddrs = multiaddrs[0]
-	fmt.Println("libp2p host address:", multiaddrs[0])
+	node.topic, err = myNetwork.WithPubSub(node.Context, node.Host, masaNodeTopic, node.PeerChan)
 
-	peersStr := os.Getenv(Peers)
-	bootstrapPeers := strings.Split(peersStr, ",")
-	addrs := make([]multiaddr.Multiaddr, 0)
-	for _, peerAddr := range bootstrapPeers {
-		if peerAddr == "" {
-			continue
-		}
-		addr, err := multiaddr.NewMultiaddr(peerAddr)
-		if err != nil {
-			return err
-		}
-		addrs = append(addrs, addr)
-	}
-
-	err = node.DiscoverAndJoin(addrs)
-	if err != nil {
-		return err
-	}
-	go node.sendMessageToRandomPeer()
-	return
+	go node.publishMessages()
+	return nil
 }
 
-func (node *OracleNode) Gossip(topicName string) error {
-	gossipSub, err := pubsub.NewGossipSub(node.ctx, node.Host)
-	if err != nil {
-		return err
-	}
+func (node *OracleNode) handleDiscoveredPeers() {
+	for {
+		select {
+		case peer := <-node.PeerChan: // will block until we discover a peer
+			logrus.Info("Peer Event for:", peer, ", Action:", peer.Action)
 
-	// Subscribe to a topic
-	node.topic, err = gossipSub.Join(topicName)
-	if err != nil {
-		return err
-	}
-	go myNetwork.StreamConsoleTo(node.ctx, node.topic)
+			if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
+				logrus.Error("Connection failed:", err)
+				continue
+			}
 
-	sub, err := node.topic.Subscribe()
-	if err != nil {
-		return err
-	}
+			// open a stream, this stream will be handled by handleStream other end
+			stream, err := node.Host.NewStream(node.Context, peer.AddrInfo.ID, node.Protocol)
 
-	go func() {
-		for {
-			msg, err := sub.Next(node.ctx)
 			if err != nil {
-				logrus.Errorf("sub.Next: %s", err.Error())
-				if err.Error() == "context canceled" {
-					return
-				}
-				continue
-			}
-			// Skip messages from the same node
-			if msg.ReceivedFrom == node.Host.ID() {
-				//logrus.Debugf("message received from: %s", msg.ReceivedFrom.String())
-				//logrus.Debug(string(msg.Message.Data))
-				continue
-			}
-			var addrs multiaddr.Multiaddr
-			connectedness := node.Host.Network().Connectedness(msg.ReceivedFrom)
-			if connectedness == network.Connected {
-				peerInfo := node.Host.Peerstore().PeerInfo(msg.ReceivedFrom)
-				if len(peerInfo.Addrs) == 0 {
-					continue
-				}
-				addrString := fmt.Sprintf("%s/p2p/%s", peerInfo.Addrs[0].String(), peerInfo.ID.String())
-				logrus.Infof("%s : %s : %s", msg.ReceivedFrom, string(msg.Message.Data), addrString)
-				addrs, err = multiaddr.NewMultiaddr(addrString)
-				if err != nil {
-					logrus.Error("Failed to create multiaddress:", err)
-					continue
-				}
+				logrus.Error("Stream open failed", err)
 			} else {
-				logrus.Info(msg.ReceivedFrom, ": ", string(msg.Message.Data))
+				rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+				go node.writeData(rw, peer)
+				go node.readData(rw, peer)
 			}
-
-			// Check if the peer is already in the DHT and Peerstore
-			peerInfo2, err := peer.AddrInfoFromP2pAddr(addrs)
-			if err != nil {
-				logrus.Errorf("Failed to get AddrInfo from multiaddress: %s, %v", addrs.String(), err)
-				continue
-			}
-
-			if node.Host.Peerstore().PeerInfo(peerInfo2.ID).ID == "" {
-				// The peer is not in the Peerstore, add it
-				node.Host.Peerstore().AddAddrs(peerInfo2.ID, peerInfo2.Addrs, peerstore.PermanentAddrTTL)
-			}
-
-			if node.DHT.RoutingTable().Find(peerInfo2.ID) != "" {
-				// The peer is not in the DHT, add it
-				node.DHT.RoutingTable().TryAddPeer(peerInfo2.ID, false, false)
-			}
-		}
-	}()
-	return nil
-}
-
-func (node *OracleNode) handleEvents() {
-	for {
-		select {
-		case data := <-node.inputCh:
-			if data == nil {
-				continue
-			}
-			_, exists := node.nodeData[data.PeerId.String()]
-			switch data.Activity {
-			case ActivityLeft:
-				if exists {
-					data.Left()
-					node.changes++
-				}
-			case ActivityJoined:
-				if !exists {
-					node.nodeData[data.PeerId.String()] = data
-					data.Joined()
-					node.changes++
-					jsnBytes, err := json.Marshal(data)
-					if err != nil {
-						logrus.Errorf("Failed to marshal NodeData: %v", err)
-						continue
-					}
-					multiAddr, err := multiaddr.NewMultiaddr(data.Address())
-					if err != nil {
-						logrus.Error("Failed to create multiaddress:", err)
-						continue
-					}
-					peerInfo, err := peer.AddrInfoFromP2pAddr(multiAddr)
-					if err != nil {
-						logrus.Errorf("Failed to get AddrInfo from multiaddress: %s, %v", multiAddr.String(), err)
-					}
-
-					if node.Host.Peerstore().PeerInfo(peerInfo.ID).ID == "" {
-						// The peer is not in the Peerstore, add it
-						node.Host.Peerstore().AddAddrs(peerInfo.ID, peerInfo.Addrs, peerstore.PermanentAddrTTL)
-					}
-
-					logrus.Debugf("Publishing: %s", string(jsnBytes))
-					err = node.topic.Publish(node.ctx, jsnBytes)
-					if err != nil {
-						logrus.Error("Error publishing to topic:", err)
-					}
-				}
-			default:
-				logrus.Errorf("Unknown activity: %d", data.Activity)
-				continue
-			}
-			// if node.changes > 10 {
-			//	node.WriteToLedger()
-			// }
-			node.WriteToLedger()
-
-		case <-node.ctx.Done():
-			<-node.ctx.Done()
-			err := node.Host.Close()
-			if err != nil {
-				return
-			}
-		}
-	}
-}
-
-func (node *OracleNode) handleMessage(stream network.Stream) {
-	logrus.Infof("handleMessage: %s", node.Host.ID().String())
-	buf := bufio.NewReader(stream)
-	message, err := buf.ReadString('\n')
-	if err != nil {
-		logrus.Errorf("handleMessage: %s", err.Error())
-	}
-	connection := stream.Conn()
-
-	logrus.Infof("Message from '%s': %s, remote: %s", connection.RemotePeer().String(), message, connection.RemoteMultiaddr())
-	// peerinfo, err := peer.AddrInfoFromP2pAddr(connection.RemoteMultiaddr())
-	// Send an acknowledgement
-	_, err = stream.Write([]byte("ACK\n"))
-	if err != nil {
-		if errors.Is(err, network.ErrReset) {
-			logrus.Info("Stream was reset, skipping write operation")
-		} else {
-			logrus.Error("Error writing to stream:", err)
-		}
-	}
-}
-
-// Connect is useful for testing in a local environment, It should probably be removed
-func (node *OracleNode) Connect(targetNode *OracleNode) error {
-	targetNodeAddressInfo := host.InfoFromHost(targetNode.Host)
-
-	err := node.Host.Connect(context.Background(), *targetNodeAddressInfo)
-	if err != nil {
-		return err
-	}
-	logrus.Infof("connected: to %s", targetNode.Id())
-	return nil
-}
-
-func (node *OracleNode) Id() string {
-	return node.Host.ID().String()
-}
-
-func (node *OracleNode) Addresses() string {
-	addressesString := make([]string, 0)
-	for _, address := range node.Host.Addrs() {
-		addressesString = append(addressesString, address.String())
-	}
-	return strings.Join(addressesString, ", ")
-}
-
-func (node *OracleNode) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) error {
-	var err error
-	node.DHT, err = myNetwork.NewDht(node.ctx, node.Host, bootstrapPeers, node.Protocol, node.multiAddrs)
-	if err != nil {
-		return err
-	}
-	go myNetwork.Discover(node.ctx, node.Host, node.DHT, node.Protocol, node.multiAddrs)
-	err = node.SetupAutoNAT()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (node *OracleNode) SetupAutoNAT() error {
-	privKey, _, err := crypto.GenerateKeyPair(crypto.Secp256k1, 2048)
-	if err != nil {
-		return err
-	}
-	newHost, err := libp2p.New(
-		//libp2p.Transport(quic.NewTransport),
-		//libp2p.ListenAddrStrings("/ip4/0.0.0.0/udp/0/quic-v1"),
-		libp2p.Transport(tcp.NewTCPTransport),
-		libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr))),
-		libp2p.Identity(privKey),
-		libp2p.Ping(false), // disable built-in ping
-		libp2p.Security(libp2ptls.ID, libp2ptls.New),
-	)
-	if err != nil {
-		return err
-	}
-	opts := []autonat.Option{
-		autonat.EnableService(newHost.Network()),
-		autonat.WithReachability(network.ReachabilityUnknown),
-		autonat.WithoutThrottling(),
-	}
-	autoNat, err := autonat.New(node.Host, opts...)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	// Wait a bit for the service to bootstrap
-	time.Sleep(5 * time.Second)
-
-	// Get the public address
-	reachability := autoNat.Status()
-	logrus.Info("Reachability status:", reachability.String())
-	return nil
-}
-
-func (node *OracleNode) sendMessageToRandomPeer() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			peers := node.Host.Network().Peers()
-			if len(peers) > 0 {
-				logrus.Info("******************************************************************************")
-				for _, peer := range peers {
-					logrus.Info("Peer ID: ", peer)
-				}
-				logrus.Info("******************************************************************************")
-				// Choose a random peer
-				randPeer := peers[rand.Intn(len(peers))]
-
-				// Create a new stream with this peer
-				stream, err := node.Host.NewStream(node.ctx, randPeer, node.Protocol)
-				if err != nil {
-					// Check if the error is about the protocol
-					if strings.Contains(err.Error(), "failed to negotiate protocol") {
-						logrus.Info("Skipping peer due to protocol negotiation error:", err)
-						continue
-					}
-					logrus.Error("Error opening stream:", err)
-					continue
-				}
-
-				// Send a message to this peer
-				_, err = stream.Write([]byte(fmt.Sprintf("ticker Hello from %s\n", node.multiAddrs.String())))
-				if err != nil {
-					if err == network.ErrReset {
-						logrus.Info("Stream was reset, skipping write operation")
-					} else {
-						logrus.Error("Error writing to stream:", err)
-					}
-					continue
-				}
-				// publish a message on the Topic
-				err = node.topic.Publish(node.ctx, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
-				if err != nil {
-					logrus.Error("Error publishing to topic:", err)
-				}
-			}
-		case <-node.ctx.Done():
+		case <-node.Context.Done():
 			return
 		}
 	}
 }
 
-// messageWriter returns a new MessageWriter bound to the edgevpn instance
-// with the given options
-func (node *OracleNode) messageWriter(opts ...hub.MessageOption) (*messageWriter, error) {
-	mess := &hub.Message{}
-	mess.Apply(opts...)
+func (node *OracleNode) handleStream(stream network.Stream) {
+	logrus.Debug("handleStream")
 
-	return &messageWriter{
-		// input: node.inputCh,
-		mess: mess,
-	}, nil
-}
+	remotePeer := stream.Conn().RemotePeer()
 
-func (node *OracleNode) WriteToLedger() {
-	logrus.Debug("WriteToLedger")
-	node.dataMutex.RLock()
-	// Get the timestamp of the last block in the ledger
-	lastBlockTime, _ := time.Parse(time.RFC3339, node.ledger.LastBlock().Timestamp)
-	for peerID, nodeData := range node.nodeData {
-		// Check if the NodeData has been updated since the last block was added to the ledger
-		if lastBlockTime.IsZero() || nodeData.LastUpdated.After(lastBlockTime) {
-			// Convert NodeData to JSON
-			data, _ := json.Marshal(nodeData)
-			node.ledger.Add(peerID, map[string]interface{}{
-				"nodeData": string(data),
-			})
+	// Check if we're already connected to the peer
+	connStatus := node.Host.Network().Connectedness(remotePeer)
+	if connStatus != network.Connected {
+		// We're not connected to the peer, so try to establish a connection
+		ctx, cancel := context.WithTimeout(node.Context, 5*time.Second)
+		defer cancel()
+		err := node.Host.Connect(ctx, peer.AddrInfo{ID: remotePeer})
+		if err != nil {
+			logrus.Warningf("Failed to connect to peer %s: %v", remotePeer, err)
+			return
 		}
 	}
-	node.changes = 0
-	node.dataMutex.RUnlock()
+
+	//check if the peer is already in the table
+	peerInfo := node.Host.Peerstore().PeerInfo(remotePeer)
+	if len(peerInfo.Addrs) == 0 {
+		// Try to add the peer to the routing table (no-op if already present).
+		added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
+		if err != nil {
+			logrus.Warningf("Failed to add peer %s to routing table: %v", remotePeer, err)
+		} else if !added {
+			logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
+		} else {
+			logrus.Infof("Successfully added peer %s to routing table", remotePeer)
+		}
+		// Check if the peer is useful after trying to add it
+		isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
+		logrus.Infof("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
+	}
+	logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
+
+	// Create a buffer stream for non-blocking read and write.
+	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+	go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"})
+	go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"})
+
+	// 'stream' will stay open until you close it (or the other side closes it).
+}
+
+func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent) {
+	for {
+		str, err := rw.ReadString('\n')
+		if err != nil {
+			logrus.Error("Error reading from buffer:", err)
+			return
+		}
+		if str == "" {
+			return
+		}
+		if str != "\n" {
+			// Green console colour: 	\x1b[32m
+			// Reset console colour: 	\x1b[0m
+			fmt.Printf("\x1b[32m%s\x1b[0m> ", str)
+		}
+	}
+}
+
+func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEvent) {
+	for {
+		// Generate a message including the multiaddress of the sender
+		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.multiAddrs.String())
+
+		_, err := rw.WriteString(sendData)
+		if err != nil {
+			logrus.Error("Error writing to buffer:", err)
+			return
+		}
+		err = rw.Flush()
+		if err != nil {
+			logrus.Error("Error flushing buffer:", err)
+			return
+		}
+		// Sleep for a while before sending the next message
+		time.Sleep(time.Second * 30)
+	}
+}
+
+func (node *OracleNode) publishMessages() {
+	ticker := time.NewTicker(25 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// publish a message on the Topic
+			err := node.topic.Publish(node.Context, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
+			if err != nil {
+				logrus.Error("Error publishing to topic:", err)
+			}
+		case <-node.Context.Done():
+			return
+		}
+	}
 }

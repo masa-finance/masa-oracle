@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -13,22 +14,43 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Multiaddr,
-	protocol protocol.ID, address multiaddr.Multiaddr) (*dht.IpfsDHT, error) {
+const (
+	maxRetries  = 3
+	retryDelay  = time.Second * 5
+	PeerAdded   = "PeerAdded"
+	PeerRemoved = "PeerRemoved"
+)
+
+func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Multiaddr,
+	pId protocol.ID, peerChan chan PeerEvent) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
-	if len(bootstrapPeers) == 0 {
-		options = append(options, dht.Mode(dht.ModeAutoServer))
-	}
+	options = append(options, dht.Mode(dht.ModeAutoServer))
+	options = append(options, dht.ProtocolPrefix(pId))
+
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {
 		return nil, err
 	}
+	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
+
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
 		logrus.Infof("Peer added to DHT: %s", p)
+		pe := PeerEvent{
+			AddrInfo: peer.AddrInfo{ID: p},
+			Action:   PeerAdded,
+			Source:   "kdht",
+		}
+		peerChan <- pe
 	}
 
 	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
 		logrus.Infof("Peer removed from DHT: %s", p)
+		pe := PeerEvent{
+			AddrInfo: peer.AddrInfo{ID: p},
+			Action:   PeerRemoved,
+			Source:   "kdht",
+		}
+		peerChan <- pe
 	}
 
 	if err = kademliaDHT.Bootstrap(ctx); err != nil {
@@ -58,24 +80,49 @@ func NewDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mult
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := host.Connect(ctx, *peerinfo); err != nil {
-				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
-				return
-			} else {
-				logrus.Info("Connection established with node:", *peerinfo)
-				stream, err := host.NewStream(ctx, peerinfo.ID, protocol)
-				if err != nil {
-					logrus.Error("Error opening stream:", err)
-					return
-				}
-				_, err = stream.Write([]byte(fmt.Sprintf("Initial Hello from %s\n", peerAddr.String())))
-				if err != nil {
-					logrus.Error("Error writing to stream:", err)
-					return
+			for i := 0; i < maxRetries; i++ {
+				if err := host.Connect(ctx, *peerinfo); err != nil {
+					logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
+					time.Sleep(retryDelay)
+				} else {
+					logrus.Info("Connection established with node:", *peerinfo)
+					stream, err := host.NewStream(ctx, peerinfo.ID, pId)
+					if err != nil {
+						logrus.Error("Error opening stream:", err)
+						return
+					}
+					_, err = stream.Write([]byte(fmt.Sprintf("Initial Hello from %s\n", peerAddr.String())))
+					if err != nil {
+						logrus.Error("Error writing to stream:", err)
+						return
+					}
+					break
 				}
 			}
 		}()
 	}
 	wg.Wait()
 	return kademliaDHT, nil
+}
+
+func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// This block will be executed every 'interval' duration
+			routingTable := dht.RoutingTable()
+			// Log the size of the routing table
+			logrus.Infof("Routing table size: %d", routingTable.Size())
+			// Log the peer IDs in the routing table
+			for _, p := range routingTable.ListPeers() {
+				logrus.Infof("Peer in routing table: %s", p.String())
+			}
+		case <-ctx.Done():
+			// If the context is cancelled, stop the goroutine
+			return
+		}
+	}
 }
