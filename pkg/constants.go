@@ -7,6 +7,8 @@ const (
 	Peers            = "peerList"
 	oracleProtocol   = "masa_oracle_protocol/1.0.0"
 	nodeLiteProtocol = "masa_node_lite_protocol/1.0.0"
-	rendezvous       = "masa-chat"
+	masaNodeTopic    = "masa_node_topic"
+	masaPrefix       = "/masa"
+	rendezvous       = "masa-mdns"
 	PortNbr          = "portNbr"
 )

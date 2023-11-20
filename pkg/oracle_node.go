@@ -122,6 +122,7 @@ func (node *OracleNode) Start() (err error) {
 	node.ledger = blockchain.New(mw, &blockchain.MemoryStore{})
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleMessage)
+
 	// important to order:  make sure the ledger is already initialized
 	node.Host.Network().Notify(NewNodeEventTracker(node.inputCh))
 
