@@ -137,7 +137,7 @@ func (node *NodeLite) handleDiscoveredPeers() {
 }
 
 func (node *NodeLite) handleStream(stream network.Stream) {
-	logrus.Info("Got a new stream!")
+	logrus.Debug("handleStream")
 
 	remotePeer := stream.Conn().RemotePeer()
 
@@ -154,19 +154,22 @@ func (node *NodeLite) handleStream(stream network.Stream) {
 		}
 	}
 
-	// Try to add the peer to the routing table (no-op if already present).
-	added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
-	if err != nil {
-		logrus.Warningf("Failed to add peer %s to routing table: %v", remotePeer, err)
-	} else if !added {
-		logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
-	} else {
-		logrus.Infof("Successfully added peer %s to routing table", remotePeer)
+	//check if the peer is already in the table
+	peerInfo := node.Host.Peerstore().PeerInfo(remotePeer)
+	if len(peerInfo.Addrs) == 0 {
+		// Try to add the peer to the routing table (no-op if already present).
+		added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
+		if err != nil {
+			logrus.Warningf("Failed to add peer %s to routing table: %v", remotePeer, err)
+		} else if !added {
+			logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
+		} else {
+			logrus.Infof("Successfully added peer %s to routing table", remotePeer)
+		}
+		// Check if the peer is useful after trying to add it
+		isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
+		logrus.Infof("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
 	}
-	// Check if the peer is useful after trying to add it
-	isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
-	logrus.Infof("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
-
 	logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
 
 	// Create a buffer stream for non-blocking read and write.

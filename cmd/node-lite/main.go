@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -95,79 +94,5 @@ func main() {
 	}
 
 	node.Start()
-
-	//
-	//// Set a function as stream handler.
-	//// This function is called when a peer initiates a connection and starts a stream with this peer.
-	//host.SetStreamHandler("/masa_chat/1.0.0", handleStream)
-	//
-	//fmt.Printf("\n[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", "0.0.0.0", 4001, host.ID())
-	//
-	//peerChan := network.StartMDNS(host, "masa-chat")
-	//for { // allows multiple peers to join
-	//	peer := <-peerChan // will block until we discover a peer
-	//	fmt.Println("Found peer:", peer, ", connecting")
-	//
-	//	if err := host.Connect(ctx, peer); err != nil {
-	//		fmt.Println("Connection failed:", err)
-	//		continue
-	//	}
-	//
-	//	// open a stream, this stream will be handled by handleStream other end
-	//	stream, err := host.NewStream(ctx, peer.ID, "/masa_chat/1.0.0")
-	//
-	//	if err != nil {
-	//		fmt.Println("Stream open failed", err)
-	//	} else {
-	//		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-	//
-	//		go writeData(rw)
-	//		go readData(rw)
-	//		fmt.Println("Connected to:", peer)
-	//	}
-	//}
 	<-ctx.Done()
-}
-
-func readData(rw *bufio.ReadWriter) {
-	for {
-		str, err := rw.ReadString('\n')
-		if err != nil {
-			logrus.Error("Error reading from buffer:", err)
-		}
-
-		if str == "" {
-			return
-		}
-		if str != "\n" {
-			// Green console colour: 	\x1b[32m
-			// Reset console colour: 	\x1b[0m
-			fmt.Printf("\x1b[32m%s\x1b[0m> ", str)
-		}
-
-	}
-}
-
-func writeData(rw *bufio.ReadWriter) {
-	stdReader := bufio.NewReader(os.Stdin)
-
-	for {
-		fmt.Print("> ")
-		sendData, err := stdReader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Error reading from stdin")
-			panic(err)
-		}
-
-		_, err = rw.WriteString(fmt.Sprintf("%s\n", sendData))
-		if err != nil {
-			fmt.Println("Error writing to buffer")
-			panic(err)
-		}
-		err = rw.Flush()
-		if err != nil {
-			fmt.Println("Error flushing buffer")
-			panic(err)
-		}
-	}
 }
