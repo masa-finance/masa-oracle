@@ -88,7 +88,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	node, err := masa.NewNodeLite(privKey, ctx)
+	node, err := masa.NewOracleNode(privKey, ctx)
 	if err != nil {
 		logrus.Fatal(err)
 	}

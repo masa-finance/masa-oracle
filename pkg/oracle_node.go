@@ -225,7 +225,7 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 }
 
 func (node *OracleNode) publishMessages() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(25 * time.Second)
 	defer ticker.Stop()
 
 	for {
