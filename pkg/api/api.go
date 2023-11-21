@@ -40,7 +40,7 @@ func GetPeerAddresses(node *masa.OracleNode) gin.HandlerFunc {
 				addr := conn.RemoteMultiaddr()
 
 				// Add the address to the map
-				peerAddresses[peer.Pretty()] = append(peerAddresses[peer.Pretty()], addr.String())
+				peerAddresses[peer.String()] = append(peerAddresses[peer.String()], addr.String())
 			}
 		}
 
