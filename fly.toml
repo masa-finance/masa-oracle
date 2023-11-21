@@ -1,0 +1,36 @@
+# fly.toml app configuration file generated for masa-oracle on 2023-11-20T19:57:25-08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "masa-oracle"
+primary_region = "lax"
+
+[build]
+
+[http_service]
+  internal_port = 4001
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 4001
+
+  [[services.ports]]
+    port = 4001
+    handlers = ["http"]
+
+  [[services.tcp_checks]]
+    interval = "10s"
+    timeout = "2s"
+
+[[services]]
+  protocol = "udp"
+  internal_port = 4001
+
+  [[services.ports]]
+    port = 4001
