@@ -10,7 +10,12 @@ import (
 // Handler for the /peers endpoint
 func GetPeersHandler(node *masa.OracleNode) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		peers := node.DHT.RoutingTable().Peers()
+		// Get the routing table
+		routingTable := node.DHT.RoutingTable()
+
+		// Get the list of peers from the routing table
+		peers := routingTable.ListPeers()
+
 		c.JSON(http.StatusOK, gin.H{"peers": peers})
 	}
 }

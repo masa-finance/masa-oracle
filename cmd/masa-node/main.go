@@ -13,10 +13,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	api "github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
@@ -121,6 +123,18 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	// add gin router to get peers
+
+	// Set up your Gin router
+	router := gin.Default()
+
+	// Add the /peers endpoint
+	router.GET("/peers", api.GetPeersHandler(node))
+
+	// Start the server
+	go router.Run() // By default it serves on :8080
+
 	<-ctx.Done()
 }
 
