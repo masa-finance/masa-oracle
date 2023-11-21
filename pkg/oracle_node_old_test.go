@@ -56,7 +56,7 @@ func TestOracleNodeCommunication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	node1.Connect(node2)
+	//node1.Connect(node2)
 	if err != nil {
 		t.Fatal(err)
 	}
