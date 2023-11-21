@@ -19,7 +19,10 @@ func (api *API) GetPeersHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		routingTable := api.Node.DHT.RoutingTable()
 		peers := routingTable.ListPeers()
-		c.JSON(http.StatusOK, gin.H{"peers": peers})
+		c.JSON(http.StatusOK, gin.H{
+			"peers": peers,
+			"count": len(peers),
+		})
 	}
 }
 
@@ -34,6 +37,9 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 				peerAddresses[peer.String()] = append(peerAddresses[peer.String()], addr.String())
 			}
 		}
-		c.JSON(http.StatusOK, gin.H{"peerAddresses": peerAddresses})
+		c.JSON(http.StatusOK, gin.H{
+			"peerAddresses": peerAddresses,
+			"count":         len(peers),
+		})
 	}
 }
