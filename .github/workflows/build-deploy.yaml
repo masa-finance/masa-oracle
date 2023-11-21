@@ -5,8 +5,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  boot-node:
-    runs-on: [ "boot-node" ]
+  deploy:
+    runs-on: ["masa-oracle-1"]
     outputs:
       CONNECTION_STRING: ${{steps.host-selector.outputs.CONNECTION_STRING}}
     steps:
@@ -17,23 +17,23 @@ jobs:
         sudo systemctl stop masa-oracle.service
         go mod tidy
         go build -v -o masa-node ./cmd/masa-node
-        cp ./cmd/masa-node/main.go /home/mykhaylo/masa-oracle-main/cmd/masa-node/main.go
+        sudo cp -R . /home/mykhaylo/masa-oracle-main/
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
     - name: Get host address
       id: host-selector
       run: |
-        CONNECTION_STRING=$(systemctl -l --no-pager status masa-oracle.service | grep 'libp2p host address:' | awk '{print $NF}')
+        CONNECTION_STRING=$(cat /var/log/masa-oracle/log1.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
         while [ -z "$CONNECTION_STRING" ]
           do
-            CONNECTION_STRING=$(sudo systemctl -l --no-pager status masa-oracle.service | grep 'libp2p host address:' | awk '{print $NF}')
+            CONNECTION_STRING=$(cat /var/log/masa-oracle/log1.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
           done
         echo $CONNECTION_STRING
         echo "CONNECTION_STRING=$CONNECTION_STRING" >> "$GITHUB_OUTPUT"
-
-  node:
-    needs: boot-node
-    runs-on: [ "node" ]
+        
+  connect:
+    needs: deploy
+    runs-on: ["masa-oracle-2"]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -41,10 +41,10 @@ jobs:
       run: |
         go mod tidy
         go build -v -o masa-node ./cmd/masa-node
+        sudo cp -R . /home/mykhaylo/masa-oracle-main/
     - name: Copy binary & restart service
       run: |
         sudo systemctl stop masa-oracle.service
-        cp ./cmd/masa-node/main.go /home/mykhaylo/masa-oracle-main/cmd/masa-node/main.go
-        echo "CONNECTION_STRING=${{needs.boot-node.outputs.CONNECTION_STRING}}" > /home/mykhaylo/masa-oracle-main/cmd/masa-node/.argconf
+        echo "CONNECTION_STRING=${{needs.deploy.outputs.CONNECTION_STRING}}" > /home/mykhaylo/masa-oracle-main/cmd/masa-node/.argconf
         sudo systemctl daemon-reload
         sudo systemctl start masa-oracle.service
