@@ -124,7 +124,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	// BP: Add gin router to get peers (multiaddress) and get peer addresses
+	// BP: Add gin router to get peers (multiaddress) and get peer addresses @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
 
 	// Create an API instance
 	api := api.NewAPI(node)
