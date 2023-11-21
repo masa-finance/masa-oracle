@@ -126,11 +126,17 @@ func main() {
 
 	// BP: Add gin router to get peers (multiaddress) and get peer addresses
 
+	// Create an API instance
+	api := api.NewAPI(node)
+
 	// Set up your Gin router
 	router := gin.Default()
 
 	// Add the /peers endpoint
-	router.GET("/peers", api.GetPeersHandler(node))
+	router.GET("/peers", api.GetPeersHandler())
+
+	// Add the /peerAddresses endpoint
+	router.GET("/peerAddresses", api.GetPeerAddresses())
 
 	// Start the server
 	go router.Run() // By default it serves on :8080
