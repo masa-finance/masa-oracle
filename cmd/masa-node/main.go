@@ -124,7 +124,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	// add gin router to get peers
+	// BP: Add gin router to get peers
 
 	// Set up your Gin router
 	router := gin.Default()
