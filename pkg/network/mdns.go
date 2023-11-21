@@ -24,13 +24,14 @@ func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 	n.PeerChan <- pe
 }
 
-func WithMDNS(host host.Host, rendezvous string, peerChan chan PeerEvent) {
+func WithMDNS(host host.Host, rendezvous string, peerChan chan PeerEvent) error {
 	notifee := &discoveryNotifee{
 		PeerChan:   peerChan,
 		Rendezvous: rendezvous,
 	}
 	mdnsService := mdns.NewMdnsService(host, rendezvous, notifee)
 	if err := mdnsService.Start(); err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }

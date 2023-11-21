@@ -19,6 +19,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ type OracleNode struct {
 	topic      *pubsub.Topic
 }
 
-func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, error) {
+func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
@@ -48,33 +49,37 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		return nil, err
 	}
 
-	addrStr := []string{
-		"/ip4/0.0.0.0/tcp/0",
-	}
-	if os.Getenv(PortNbr) != "" {
-		addrStr = []string{
-			fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", os.Getenv(PortNbr)),
-		}
-	}
-
-	host, err := libp2p.New(
-		libp2p.Transport(tcp.NewTCPTransport),
-		libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
-		libp2p.ListenAddrStrings(addrStr...),
+	addrStr := []string{}
+	libp2pOptions := []libp2p.Option{
 		libp2p.Identity(privKey),
 		libp2p.ResourceManager(resourceManager),
 		libp2p.Ping(false), // disable built-in ping
-		libp2p.ChainOptions(
-			libp2p.Security(noise.ID, noise.New),
-			libp2p.Security(libp2ptls.ID, libp2ptls.New),
-		),
 		libp2p.EnableNATService(),
 		libp2p.NATPortMap(),
 		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop
-	)
+	}
+
+	securityOptions := []libp2p.Option{
+		libp2p.Security(noise.ID, noise.New),
+	}
+	if useUdp {
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", portNbr))
+		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))
+	}
+	if useTcp {
+		securityOptions = append(securityOptions, libp2p.Security(libp2ptls.ID, libp2ptls.New))
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", portNbr))
+		libp2pOptions = append(libp2pOptions, libp2p.Transport(tcp.NewTCPTransport))
+		libp2pOptions = append(libp2pOptions, libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport))
+	}
+	libp2pOptions = append(libp2pOptions, libp2p.ChainOptions(securityOptions...))
+	libp2pOptions = append(libp2pOptions, libp2p.ListenAddrStrings(addrStr...))
+
+	host, err := libp2p.New(libp2pOptions...)
 	if err != nil {
 		return nil, err
 	}
+
 	return &OracleNode{
 		Host:       host,
 		PrivKey:    privKey,
@@ -83,7 +88,6 @@ func NewOracleNode(privKey crypto.PrivKey, ctx context.Context) (*OracleNode, er
 		Context:    ctx,
 		PeerChan:   make(chan myNetwork.PeerEvent),
 	}, nil
-	return nil, nil
 }
 
 func (node *OracleNode) Start() (err error) {
@@ -93,14 +97,17 @@ func (node *OracleNode) Start() (err error) {
 
 	go node.handleDiscoveredPeers()
 
-	myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
+	err = myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
+	if err != nil {
+		return err
+	}
 
 	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
 	if err != nil {
 		return err
 	}
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, masaPrefix, node.PeerChan)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, oracleProtocol, masaPrefix, node.PeerChan)
 	if err != nil {
 		return err
 	}

@@ -329,7 +329,7 @@ func (node *OracleNodeOld) Addresses() string {
 
 func (node *OracleNodeOld) DiscoverAndJoin(bootstrapPeers []multiaddr.Multiaddr) error {
 	var err error
-	node.DHT, err = myNetwork.WithDht(node.ctx, node.Host, bootstrapPeers, node.Protocol, node.PeerChan)
+	node.DHT, err = myNetwork.WithDht(node.ctx, node.Host, bootstrapPeers, node.Protocol, masaPrefix, node.PeerChan)
 	if err != nil {
 		return err
 	}

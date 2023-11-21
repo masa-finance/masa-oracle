@@ -22,10 +22,10 @@ const (
 )
 
 func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Multiaddr,
-	pId protocol.ID, peerChan chan PeerEvent) (*dht.IpfsDHT, error) {
+	pId, prefix protocol.ID, peerChan chan PeerEvent) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.Mode(dht.ModeAutoServer))
-	options = append(options, dht.ProtocolPrefix(pId))
+	options = append(options, dht.ProtocolPrefix(prefix))
 
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {
