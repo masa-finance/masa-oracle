@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -88,11 +89,19 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	node, err := masa.NewOracleNode(privKey, ctx)
+	node, err := masa.NewOracleNode(ctx, privKey, getPort(masa.PortNbr), true, true)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	node.Start()
 	<-ctx.Done()
+}
+
+func getPort(name string) int {
+	valueStr := os.Getenv(name)
+	if value, err := strconv.Atoi(valueStr); err == nil {
+		return value
+	}
+	return 0
 }

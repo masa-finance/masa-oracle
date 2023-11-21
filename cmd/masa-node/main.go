@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -16,6 +18,13 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
+)
+
+var (
+	bootnodes string
+	portNbr   int
+	udp       bool
+	tcp       bool
 )
 
 func init() {
@@ -59,23 +68,32 @@ func init() {
 	if err != nil {
 		logrus.Error("Error loading .env file")
 	}
+
+	// Define flags
+	flag.StringVar(&bootnodes, "bootnodes", os.Getenv("BOOTNODES"), "A comma-separated list of multiAddress strings")
+	flag.IntVar(&portNbr, "port", getPort("portNbr"), "The port number")
+	flag.BoolVar(&udp, "udp", getEnvAsBool("UDP", false), "UDP flag")
+	flag.BoolVar(&tcp, "tcp", getEnvAsBool("TCP", false), "TCP flag")
+	flag.Parse()
+
+	err = os.Setenv(masa.Peers, bootnodes)
+	if err != nil {
+		logrus.Error(err)
+	}
+	//if neither udp nor tcp are set, default to udp
+	if !udp && !tcp {
+		udp = true
+	}
 }
 
 func main() {
-	logrus.Infof("arg size is %d", len(os.Args))
-	if len(os.Args) > 1 {
-		logrus.Infof("found arg: %s", os.Args[1])
-		err := os.Setenv(masa.Peers, os.Args[1])
-		if err != nil {
-			logrus.Error(err)
-		}
-		if len(os.Args) == 3 {
-			err := os.Setenv(masa.PortNbr, os.Args[2])
-			if err != nil {
-				logrus.Error(err)
-			}
-		}
-	}
+	// log the flags
+	bootnodesList := strings.Split(bootnodes, ",")
+	logrus.Infof("Bootnodes: %v", bootnodesList)
+	logrus.Infof("Port number: %s", portNbr)
+	logrus.Infof("UDP: %v", udp)
+	logrus.Infof("TCP: %v", tcp)
+
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -95,7 +113,7 @@ func main() {
 	}
 	//crypto.VerifyEthereumCompatibility(privKey)
 
-	node, err := masa.NewOracleNode(privKey, ctx)
+	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -104,4 +122,21 @@ func main() {
 		logrus.Fatal(err)
 	}
 	<-ctx.Done()
+}
+
+func getPort(name string) int {
+	valueStr := os.Getenv(name)
+	if value, err := strconv.Atoi(valueStr); err == nil {
+		return value
+	}
+	return 0
+}
+
+// getEnvAsBool will return the environment variable as a boolean or the default value
+func getEnvAsBool(name string, defaultVal bool) bool {
+	valueStr := os.Getenv(name)
+	if value, err := strconv.ParseBool(valueStr); err == nil {
+		return value
+	}
+	return defaultVal
 }
