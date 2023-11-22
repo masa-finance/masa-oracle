@@ -17,6 +17,14 @@ func NewAPI(node *masa.OracleNode) *API {
 
 func (api *API) GetPeersHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if api.Node == nil || api.Node.DHT == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "An unexpected error occurred.",
+			})
+			return
+		}
+
 		routingTable := api.Node.DHT.RoutingTable()
 		peers := routingTable.ListPeers()
 
@@ -40,6 +48,14 @@ func (api *API) GetPeersHandler() gin.HandlerFunc {
 
 func (api *API) GetPeerAddresses() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if api.Node == nil || api.Node.Host == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "An unexpected error occurred.",
+			})
+			return
+		}
+
 		peers := api.Node.Host.Network().Peers()
 		peerAddresses := make(map[string][]string)
 
