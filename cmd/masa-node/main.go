@@ -13,10 +13,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	api "github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
@@ -121,6 +123,24 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	// BP: Add gin router to get peers (multiaddress) and get peer addresses @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
+
+	// Create an API instance
+	api := api.NewAPI(node)
+
+	// Set up your Gin router
+	router := gin.Default()
+
+	// Add the /peers endpoint
+	router.GET("/peers", api.GetPeersHandler())
+
+	// Add the /peerAddresses endpoint
+	router.GET("/peerAddresses", api.GetPeerAddresses())
+
+	// Start the server
+	go router.Run() // By default it serves on :8080
+
 	<-ctx.Done()
 }
 
