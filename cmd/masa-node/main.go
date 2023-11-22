@@ -90,9 +90,6 @@ func init() {
 }
 
 func main() {
-	// display command line ui
-	welcome.DisplayWelcomeMessage()
-
 	// log the flags
 	bootnodesList := strings.Split(bootnodes, ",")
 	logrus.Infof("Bootnodes: %v", bootnodesList)
@@ -127,6 +124,13 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	// Get the multiaddress and IP address of the node
+	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
+	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
+
+	// Display the welcome message with the multiaddress and IP address
+	welcome.DisplayWelcomeMessage(multiAddr, ipAddr)
 
 	// BP: Add gin router to get peers (multiaddress) and get peer addresses @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
 
