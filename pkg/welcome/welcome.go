@@ -6,14 +6,25 @@ import (
 )
 
 func DisplayWelcomeMessage(multiAddr string, ipAddr string) {
-	multiAddrLine := fmt.Sprintf("#  Multiaddress: %-70s #", multiAddr)
-	ipAddrLine := fmt.Sprintf("#  IP Address: %-70s #", ipAddr)
+	borderLine := "#######################################"
 
-	fmt.Println("################################################################################")
-	fmt.Println("#                                                                              #")
-	fmt.Println("#  Welcome to the Masa Oracle Node                                             #")
-	fmt.Println(multiAddrLine)
-	fmt.Println(ipAddrLine)
-	fmt.Println("#                                                                              #")
-	fmt.Println("################################################################################")
+	fmt.Println(borderLine)
+	fmt.Println("#                                     #")
+	fmt.Println("#                                     #")
+	fmt.Println("#                                     #")
+	fmt.Println("#                                     #")
+	fmt.Println("#     __  __    _    ____    _        #")
+	fmt.Println("#    |  \\/  |  / \\  / ___|  / \\       #")
+	fmt.Println("#    | |\\/| | / _ \\ \\___ \\ / _ \\      #")
+	fmt.Println("#    | |  | |/ ___ \\ ___) / ___ \\     #")
+	fmt.Println("#    |_|  |_/_/   \\_\\____/_/   \\_\\    #")
+	fmt.Println("#                                     #")
+	fmt.Println("#                                     #")
+	fmt.Println("#                                     #")
+	fmt.Println("#                                     #")
+	fmt.Println(borderLine)
+
+	// Displaying the multi-address and IP address below the ASCII art
+	fmt.Printf("Multiaddress: %s\n", multiAddr)
+	fmt.Printf("IP Address:   %s\n", ipAddr)
 }
