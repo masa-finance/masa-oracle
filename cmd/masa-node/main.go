@@ -20,6 +20,7 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	api "github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/welcome"
 )
 
 var (
@@ -89,6 +90,9 @@ func init() {
 }
 
 func main() {
+	// display command line ui
+	welcome.DisplayWelcomeMessage()
+
 	// log the flags
 	bootnodesList := strings.Split(bootnodes, ",")
 	logrus.Infof("Bootnodes: %v", bootnodesList)
