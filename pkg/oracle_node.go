@@ -38,6 +38,10 @@ type OracleNode struct {
 	topic      *pubsub.Topic
 }
 
+func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
+	return node.multiAddrs
+}
+
 func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	scalingLimits := rcmgr.DefaultLimits
