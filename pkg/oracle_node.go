@@ -41,15 +41,14 @@ type OracleNode struct {
 	topic      *pubsub.Topic
 	AdTopic    *pubsub.Topic
 	Ads        []ad.Ad
-	Stake      int
-	Reputation int
+	Signature  string
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.multiAddrs
 }
 
-func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool) (*OracleNode, error) {
+func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, signature string) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
@@ -328,8 +327,8 @@ func (node *OracleNode) SubscribeToAds() error {
 }
 
 func (node *OracleNode) IsPublisher() bool {
-	// Define your criteria here. This is just a placeholder.
-	return node.Stake > minimumStake && node.Reputation > minimumReputation
+	// Node is a publisher if it has a non-empty signature
+	return node.Signature != ""
 }
 
 // Placeholder thresholds
