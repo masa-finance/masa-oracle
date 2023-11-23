@@ -27,6 +27,7 @@ var (
 	portNbr   int
 	udp       bool
 	tcp       bool
+	signature string
 )
 
 func init() {
@@ -76,6 +77,7 @@ func init() {
 	flag.IntVar(&portNbr, "port", getPort("portNbr"), "The port number")
 	flag.BoolVar(&udp, "udp", getEnvAsBool("UDP", false), "UDP flag")
 	flag.BoolVar(&tcp, "tcp", getEnvAsBool("TCP", false), "TCP flag")
+	flag.StringVar(&signature, "signature", "", "The signature from the staking contract")
 	flag.Parse()
 
 	err = os.Setenv(masa.Peers, bootnodes)
@@ -115,7 +117,8 @@ func main() {
 	}
 	//crypto.VerifyEthereumCompatibility(privKey)
 
-	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp)
+	// Pass the signature to the NewOracleNode function
+	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, signature)
 	if err != nil {
 		logrus.Fatal(err)
 	}
