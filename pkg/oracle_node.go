@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -284,6 +285,10 @@ func (node *OracleNode) publishMessages() {
 }
 
 func (node *OracleNode) PublishAd(ad ad.Ad) error {
+	if !node.IsPublisher() {
+		return errors.New("node does not meet publisher requirements")
+	}
+
 	node.Ads = append(node.Ads, ad)
 	adBytes, err := json.Marshal(ad)
 	if err != nil {
@@ -318,4 +323,9 @@ func (node *OracleNode) SubscribeToAds() error {
 	}()
 
 	return nil
+}
+
+func (node *OracleNode) IsPublisher() bool {
+	// Define your criteria here. This is just a placeholder.
+	return node.Stake > minimumStake && node.Reputation > minimumReputation
 }
