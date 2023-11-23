@@ -38,6 +38,10 @@ type OracleNode struct {
 	topic      *pubsub.Topic
 }
 
+func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
+	return node.multiAddrs
+}
+
 func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	scalingLimits := rcmgr.DefaultLimits
@@ -139,8 +143,8 @@ func (node *OracleNode) handleDiscoveredPeers() {
 			} else {
 				rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-				go node.writeData(rw, peer)
-				go node.readData(rw, peer)
+				go node.writeData(rw, peer, stream)
+				go node.readData(rw, peer, stream)
 			}
 		case <-node.Context.Done():
 			return
@@ -187,13 +191,20 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	// Create a buffer stream for non-blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-	go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"})
-	go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"})
+	go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
+	go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
 
 	// 'stream' will stay open until you close it (or the other side closes it).
 }
 
-func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent) {
+func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
+	defer func() {
+		err := stream.Close()
+		if err != nil {
+			logrus.Error("Error closing stream:", err)
+		}
+	}()
+
 	for {
 		str, err := rw.ReadString('\n')
 		if err != nil {
@@ -211,7 +222,14 @@ func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent
 	}
 }
 
-func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEvent) {
+func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
+	defer func() {
+		err := stream.Close()
+		if err != nil {
+			logrus.Error("Error closing stream:", err)
+		}
+	}()
+
 	for {
 		// Generate a message including the multiaddress of the sender
 		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.multiAddrs.String())

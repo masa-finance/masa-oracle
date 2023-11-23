@@ -20,6 +20,7 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	api "github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/welcome"
 )
 
 var (
@@ -123,6 +124,13 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	// Get the multiaddress and IP address of the node
+	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
+	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
+
+	// Display the welcome message with the multiaddress and IP address
+	welcome.DisplayWelcomeMessage(multiAddr, ipAddr)
 
 	// BP: Add gin router to get peers (multiaddress) and get peer addresses @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
 
