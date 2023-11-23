@@ -1,50 +1,72 @@
-name: Build and run
+name: Build and deploy (inputs)
 
 on:
   push:
     branches: [ "main" ]
 
+
+on:
+  workflow_dispatch:
+    inputs:
+      node1:
+        description: "Bootnodes parameter for node 1"
+        default: 'default'
+        type: string
+        required: true
+      node2:
+        description: "Bootnodes parameter for node 2"
+        default: 'default'
+        type: string
+        required: true
+
 jobs:
   deploy:
-    runs-on: ["masa-oracle-1"]
+    runs-on: ["masa-oracle-node-1"]
     outputs:
       CONNECTION_STRING: ${{steps.host-selector.outputs.CONNECTION_STRING}}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Copy binary & restart service
       run: |
-        sudo systemctl stop masa-oracle.service
-        go mod tidy
-        go build -v -o masa-node ./cmd/masa-node
-        sudo cp -R . /home/mykhaylo/masa-oracle-main/
+        /usr/local/go/bin/go mod tidy
+        /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
+        export BOOTNODES='${{ inputs.node1 }}'
+        if [[ "$BOOTNODES" != "default" ]]; then 
+          export BOOTNODES_ARG="--bootnodes=";
+        fi
+        sudo cp -R . /home/masa/masa-oracle/
+        sudo bash -c "cat system-service/masa-oracle.service | envsubst > /etc/systemd/system/masa-oracle.service"
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
+
     - name: Get host address
       id: host-selector
       run: |
-        CONNECTION_STRING=$(cat /var/log/masa-oracle/log1.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
+        CONNECTION_STRING=$(cat /var/log/masa-oracle/logs.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
         while [ -z "$CONNECTION_STRING" ]
           do
-            CONNECTION_STRING=$(cat /var/log/masa-oracle/log1.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
+            CONNECTION_STRING=$(cat /var/log/masa-oracle/logs.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
           done
         echo $CONNECTION_STRING
         echo "CONNECTION_STRING=$CONNECTION_STRING" >> "$GITHUB_OUTPUT"
         
   connect:
     needs: deploy
-    runs-on: ["masa-oracle-2"]
+    runs-on: ["masa-oracle-node-2"]
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Fetch dependencies & build app
-      run: |
-        go mod tidy
-        go build -v -o masa-node ./cmd/masa-node
-        sudo cp -R . /home/mykhaylo/masa-oracle-main/
+      uses: actions/checkout@v4
     - name: Copy binary & restart service
       run: |
-        sudo systemctl stop masa-oracle.service
-        echo "CONNECTION_STRING=${{needs.deploy.outputs.CONNECTION_STRING}}" > /home/mykhaylo/masa-oracle-main/cmd/masa-node/.argconf
+        /usr/local/go/bin/go mod tidy
+        /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
+        export BOOTNODES='${{ inputs.node2 }}'
+        if [[ "$BOOTNODES" != "default" ]]; then 
+          export BOOTNODES_ARG="--bootnodes=";
+          export BOOTNODES=${{needs.deploy.outputs.CONNECTION_STRING}}"
+        fi
+        sudo cp -R . /home/masa/masa-oracle/
+        sudo bash -c "cat system-service/masa-oracle.service | envsubst > /etc/systemd/system/masa-oracle.service"
         sudo systemctl daemon-reload
-        sudo systemctl start masa-oracle.service
+        sudo systemctl restart masa-oracle.service
