@@ -41,6 +41,8 @@ type OracleNode struct {
 	topic      *pubsub.Topic
 	AdTopic    *pubsub.Topic
 	Ads        []ad.Ad
+	Stake      int
+	Reputation int
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -329,3 +331,9 @@ func (node *OracleNode) IsPublisher() bool {
 	// Define your criteria here. This is just a placeholder.
 	return node.Stake > minimumStake && node.Reputation > minimumReputation
 }
+
+// Placeholder thresholds
+const (
+	minimumStake      = 100 // replace with your actual minimum stake
+	minimumReputation = 100 // replace with your actual minimum reputation
+)
