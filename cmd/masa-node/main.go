@@ -95,6 +95,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	node.Signature = signature
 	err = node.Start()
 	if err != nil {
 		logrus.Fatal(err)
