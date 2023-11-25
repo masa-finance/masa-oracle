@@ -17,6 +17,7 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/routes"
+	"github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/masa-finance/masa-oracle/pkg/welcome"
 )
 
@@ -89,6 +90,12 @@ func main() {
 		logrus.Fatal(err)
 	}
 	//crypto.VerifyEthereumCompatibility(privKey)
+
+	// Verify the signature
+	isValid := staking.VerifyStakingSignature(signature, pubKey, data)
+	if !isValid {
+		logrus.Fatal("Invalid staking signature")
+	}
 
 	// Pass the signature to the NewOracleNode function
 	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, signature)
