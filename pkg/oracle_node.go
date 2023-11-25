@@ -330,9 +330,3 @@ func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
 }
-
-// Placeholder thresholds
-const (
-	minimumStake      = 100 // replace with your actual minimum stake
-	minimumReputation = 100 // replace with your actual minimum reputation
-)
