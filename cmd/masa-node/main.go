@@ -2,9 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"log"
@@ -88,41 +85,24 @@ func main() {
 		cancel()
 	}()
 
-	privKey, pubKey, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	//crypto.VerifyEthereumCompatibility(privKey)
-
-	// Convert the libp2p public key to an Ethereum public key
-	raw, err := pubKey.Raw()
+	// Get the Ethereum address from the public key
+	ethAddress, err := crypto.VerifyEthereumCompatibility(privKey)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	unmarshalledPubKey, err := x509.ParsePKIXPublicKey(raw)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	ecdsaPubKey, ok := unmarshalledPubKey.(*ecdsa.PublicKey)
-	if !ok {
-		logrus.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	}
 
-	// Convert the Ethereum public key to a PEM-encoded public key
-	pubKeyBytes, err := x509.MarshalPKIXPublicKey(ecdsaPubKey)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	pubKeyPem := pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubKeyBytes,
-	})
-
-	// Verify the signature
-	isValid := staking.VerifyStakingSignature(signature, string(pubKeyPem), data)
-	if !isValid {
-		logrus.Fatal("Invalid staking signature")
+	// Verify the staking event
+	isValid := staking.VerifyStakingEvent(ethAddress)
+	var signature string
+	if isValid {
+		signature = "staked"
+	} else {
+		logrus.Warn("No staking event found for this address")
 	}
 
 	// Pass the signature to the NewOracleNode function
