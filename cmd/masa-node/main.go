@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -20,14 +19,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/routes"
 	"github.com/masa-finance/masa-oracle/pkg/welcome"
-)
-
-var (
-	bootnodes string
-	portNbr   int
-	udp       bool
-	tcp       bool
-	signature string
 )
 
 func init() {
@@ -70,23 +61,6 @@ func init() {
 	err = godotenv.Load(envFilePath)
 	if err != nil {
 		logrus.Error("Error loading .env file")
-	}
-
-	// Define flags
-	flag.StringVar(&bootnodes, "bootnodes", os.Getenv("BOOTNODES"), "A comma-separated list of multiAddress strings")
-	flag.IntVar(&portNbr, "port", getPort("portNbr"), "The port number")
-	flag.BoolVar(&udp, "udp", getEnvAsBool("UDP", false), "UDP flag")
-	flag.BoolVar(&tcp, "tcp", getEnvAsBool("TCP", false), "TCP flag")
-	flag.StringVar(&signature, "signature", "", "The signature from the staking contract")
-	flag.Parse()
-
-	err = os.Setenv(masa.Peers, bootnodes)
-	if err != nil {
-		logrus.Error(err)
-	}
-	//if neither udp nor tcp are set, default to udp
-	if !udp && !tcp {
-		udp = true
 	}
 }
 
