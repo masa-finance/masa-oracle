@@ -1,8 +1,6 @@
 // cli.go
 package main
 
-//test git
-
 import (
 	"encoding/json"
 	"flag"
