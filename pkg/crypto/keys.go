@@ -133,21 +133,23 @@ func GenerateSelfSignedCert(certPath, keyPath string) error {
 	return nil
 }
 
-func VerifyEthereumCompatibility(privKey crypto.PrivKey) error {
+func VerifyEthereumCompatibility(privKey crypto.PrivKey) (string, error) {
 	// Convert the libp2p private key to an Ethereum private key
 	raw, err := privKey.Raw()
 	if err != nil {
-		return err
+		return "", err
 	}
 	ecdsaPrivKey, err := ethCrypto.ToECDSA(raw)
 	if err != nil {
-		return err
+		return "", err
 	}
+
+	ethAddress := ethCrypto.PubkeyToAddress(ecdsaPrivKey.PublicKey).Hex()
 
 	// Print the private key in hexadecimal format
 	data, err := crypto.MarshalPrivateKey(privKey)
 	if err != nil {
-		return err
+		return "", err
 	}
 	fmt.Printf("Private key: \n%s\n", hex.EncodeToString(data))
 
@@ -155,5 +157,6 @@ func VerifyEthereumCompatibility(privKey crypto.PrivKey) error {
 	fmt.Println("Ethereum public key:", ecdsaPrivKey.PublicKey)
 	// Derive the Ethereum address from the private key
 	fmt.Println("Ethereum address:", ethCrypto.PubkeyToAddress(ecdsaPrivKey.PublicKey).Hex())
-	return nil
+
+	return ethAddress, nil
 }
