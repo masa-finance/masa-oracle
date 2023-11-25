@@ -26,6 +26,7 @@ var (
 	signature     string
 	bootnodes     string
 	flagBootnodes string
+	data          string
 )
 
 func init() {
@@ -37,6 +38,7 @@ func init() {
 	flag.BoolVar(&tcp, "tcp", getEnvAsBool("TCP", false), "TCP flag")
 	flag.StringVar(&signature, "signature", "", "The signature from the staking contract")
 	flag.StringVar(&flagBootnodes, "bootnodes", "", "Comma-separated list of bootnodes")
+	flag.StringVar(&data, "data", "", "The data to verify the signature against")
 	flag.Parse()
 
 	if start {
