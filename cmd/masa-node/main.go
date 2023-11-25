@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -114,21 +113,4 @@ func main() {
 	go router.Run()
 
 	<-ctx.Done()
-}
-
-func getPort(name string) int {
-	valueStr := os.Getenv(name)
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
-	}
-	return 0
-}
-
-// getEnvAsBool will return the environment variable as a boolean or the default value
-func getEnvAsBool(name string, defaultVal bool) bool {
-	valueStr := os.Getenv(name)
-	if value, err := strconv.ParseBool(valueStr); err == nil {
-		return value
-	}
-	return defaultVal
 }
