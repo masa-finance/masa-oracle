@@ -55,7 +55,7 @@
     "absolutePath": "@openzeppelin/contracts/security/Pausable.sol",
     "exportedSymbols": {
       "Context": [
-        1575
+        1640
       ],
       "Pausable": [
         646
@@ -83,7 +83,7 @@
         "nameLocation": "-1:-1:-1",
         "nodeType": "ImportDirective",
         "scope": 647,
-        "sourceUnit": 1576,
+        "sourceUnit": 1641,
         "src": "130:30:4",
         "symbolAliases": [],
         "unitAlias": ""
@@ -96,7 +96,7 @@
               "id": 543,
               "name": "Context",
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 1575,
+              "referencedDeclaration": 1640,
               "src": "632:7:4"
             },
             "id": 544,
@@ -116,7 +116,7 @@
         "id": 646,
         "linearizedBaseContracts": [
           646,
-          1575
+          1640
         ],
         "name": "Pausable",
         "nameLocation": "620:8:4",
@@ -902,7 +902,7 @@
                           "name": "_msgSender",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 1565,
+                          "referencedDeclaration": 1630,
                           "src": "2281:10:4",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_view$__$returns$_t_address_$",
@@ -1073,7 +1073,7 @@
                           "name": "_msgSender",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 1565,
+                          "referencedDeclaration": 1630,
                           "src": "2530:10:4",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_view$__$returns$_t_address_$",
@@ -1194,7 +1194,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.15",
-  "updatedAt": "2023-11-26T20:56:39.887Z",
+  "updatedAt": "2023-11-26T21:10:52.109Z",
   "devdoc": {
     "details": "Contract module which allows children to implement an emergency stop mechanism that can be triggered by an authorized account. This module is used through inheritance. It will make available the modifiers `whenNotPaused` and `whenPaused`, which can be applied to the functions of your contract. Note that they will not be pausable by simply including this module, only once the modifiers are put in place.",
     "events": {
