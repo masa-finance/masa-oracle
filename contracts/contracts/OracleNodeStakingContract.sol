@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./MasaToken.sol"; // Import the MasaToken contract
 
 contract StakingContract {
     IERC20 public token;
@@ -8,8 +11,8 @@ contract StakingContract {
 
     event Staked(address indexed user, uint256 amount);
 
-    constructor(address tokenAddress) {
-        token = IERC20(tokenAddress);
+    constructor(MasaToken tokenContract) { // Pass the MasaToken contract as a constructor argument
+        token = IERC20(address(tokenContract)); // Cast the MasaToken contract to an IERC20 interface
     }
 
     function stakeTokens(uint256 amount) public {
