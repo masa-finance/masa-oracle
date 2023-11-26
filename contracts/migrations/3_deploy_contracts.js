@@ -1,12 +1,12 @@
 const MasaToken = artifacts.require("MasaToken");
-const StakingContract = artifacts.require("StakingContract");
+const OracleNodeStakingContract = artifacts.require("OracleNodeStakingContract");
 
-module.exports = function(deployer) {
+module.exports = async function(deployer) {
   // Get the deployed instance of MasaToken
-  MasaToken.deployed().then(function(instance) {
-    // Deploy StakingContract with the address of the deployed MasaToken
-    return deployer.deploy(StakingContract, instance.address);
-  }).then(function(stakingInstance) {
-    console.log('StakingContract deployed at address:', stakingInstance.address);
-  });
+  const instance = await MasaToken.deployed();
+  
+  // Deploy OracleNodeStakingContract with the address of the deployed MasaToken
+  const stakingInstance = await deployer.deploy(OracleNodeStakingContract, instance.address);
+  
+  console.log('OracleNodeStakingContract deployed at address:', stakingInstance.address);
 };
