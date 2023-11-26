@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	infuraURL       = "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"
-	contractAddress = "0xYourContractAddress"
+	infuraURL       = "HTTP://127.0.0.1:7545"
+	contractAddress = "0x767b636793c3399B7a517A6487974Bc474db1e7B"
 	contractABI     = `[{"constant":true,"inputs":[],"name":"stakes","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"user","type":"address"},{"indexed":false,"name":"amount","type":"uint256"}],"name":"Staked","type":"event"}]`
 )
 
