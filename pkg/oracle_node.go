@@ -42,13 +42,14 @@ type OracleNode struct {
 	AdTopic    *pubsub.Topic
 	Ads        []ad.Ad
 	Signature  string
+	IsStaked   bool
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.multiAddrs
 }
 
-func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, signature string) (*OracleNode, error) {
+func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, isStaked bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
@@ -109,6 +110,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		Context:    ctx,
 		PeerChan:   make(chan myNetwork.PeerEvent),
 		AdTopic:    adTopic, // Add the ad topic to the OracleNode
+		IsStaked:   isStaked,
 	}, nil
 }
 
@@ -286,7 +288,7 @@ func (node *OracleNode) publishMessages() {
 }
 
 func (node *OracleNode) PublishAd(ad ad.Ad) error {
-	if !node.IsPublisher() {
+	if !node.IsStaked {
 		return errors.New("node does not meet publisher requirements")
 	}
 
