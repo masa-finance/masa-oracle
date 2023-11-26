@@ -97,20 +97,16 @@ func main() {
 	}
 
 	// Verify the staking event
-	isValid := staking.VerifyStakingEvent(ethAddress)
-	var signature string
-	if isValid {
-		signature = "staked"
-	} else {
+	isStaked := staking.VerifyStakingEvent(ethAddress)
+	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	// Pass the signature to the NewOracleNode function
-	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, signature)
+	// Pass the isStaked flag to the NewOracleNode function
+	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, isStaked)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	node.Signature = signature
 	err = node.Start()
 	if err != nil {
 		logrus.Fatal(err)
