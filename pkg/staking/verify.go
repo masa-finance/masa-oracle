@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	infuraURL       = "HTTP://127.0.0.1:7545"
-	contractAddress = "0x767b636793c3399B7a517A6487974Bc474db1e7B"
+	infuraURL       = "HTTP://127.0.0.1:7545"                      // this is the URL for the local dev environment this needs updating to ETH testnet address when conract is deployed or added as an environment variable
+	contractAddress = "0x767b636793c3399B7a517A6487974Bc474db1e7B" // this is the local contract address
 )
 
 type Contract struct {
@@ -24,7 +24,7 @@ type Contract struct {
 }
 
 func getContractABI() string {
-	jsonFile, err := ioutil.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json")
+	jsonFile, err := ioutil.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json") // we might want to generate go bindings for this once the contract code is mature
 	if err != nil {
 		log.Fatalf("Failed to read contract JSON: %v", err)
 	}
