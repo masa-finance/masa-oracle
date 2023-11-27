@@ -5,7 +5,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract stMASAToken is ERC20PresetMinterPauser {
+contract stMasaToken is ERC20PresetMinterPauser {
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     constructor(address admin) ERC20PresetMinterPauser("Staked Masa Token", "stMASA") {
