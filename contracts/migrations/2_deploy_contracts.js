@@ -1,7 +1,7 @@
-const stMASAToken = artifacts.require("stMASAToken");
+const stMasaToken = artifacts.require("stMasaToken");
 
 module.exports = function (deployer, network, accounts) {
     const admin = accounts[0];
 
-    deployer.deploy(stMASAToken, admin);
+    deployer.deploy(stMasaToken, admin);
 };

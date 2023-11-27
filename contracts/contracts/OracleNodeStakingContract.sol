@@ -7,12 +7,12 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; // Interface for ERC20 tokens
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; // To prevent re-entrancy attacks
 import "./MasaToken.sol"; // The token to be staked
-import "./stMASAToken.sol"; // The token representing the stake
+import "./stMasaToken.sol"; // The token representing the stake
 
 // The contract inherits from ReentrancyGuard to prevent re-entrancy attacks
 contract OracleNodeStakingContract is ReentrancyGuard {
     IERC20 public stakingToken; // The token to be staked
-    stMASAToken public stakingTokenRepresentation; // The token representing the stake
+    stMasaToken public stakingTokenRepresentation; // The token representing the stake
 
     // Mapping to keep track of the stakes of each address
     mapping(address => uint256) public stakes;
@@ -24,7 +24,7 @@ contract OracleNodeStakingContract is ReentrancyGuard {
     // The constructor sets the staking token and the token representing the stake
     constructor(address _stakingToken, address _stakingTokenRepresentation) {
         stakingToken = IERC20(_stakingToken);
-        stakingTokenRepresentation = stMASAToken(_stakingTokenRepresentation);
+        stakingTokenRepresentation = stMasaToken(_stakingTokenRepresentation);
     }
 
     // Function to stake tokens. It updates the stake, transfers the tokens to the contract, mints the token representing the stake, and emits the Staked event
