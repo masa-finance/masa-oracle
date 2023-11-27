@@ -43,4 +43,16 @@ contract stMasaToken is ERC20PresetMinterPauser {
         // Call the burn function from the parent contract
         super.burn(amount);
     }
+
+    // Override the burnFrom function to include burner role check
+    function burnFrom(address account, uint256 amount) public virtual override {
+        // Check that the caller has the burner role
+        require(hasRole(BURNER_ROLE, _msgSender()), "Must have burner role to burn from");
+
+        // Emit a log event
+        emit Log("Burner address:", _msgSender());
+
+        // Call the burnFrom function from the parent contract
+        super.burnFrom(account, amount);
+    }
 }
