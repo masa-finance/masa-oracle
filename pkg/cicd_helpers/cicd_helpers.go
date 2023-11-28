@@ -5,7 +5,7 @@ import (
     "os"
 )
 
-func setEnvVariablesForPipeline (multiAddr string) {
+func SetEnvVariablesForPipeline (multiAddr string) {
 	os.Setenv("MASA_NODE_MULTIADDRESS", multiAddr)
     fmt.Println("MASA_NODE_MULTIADDRESS:", os.Getenv("MASA_NODE_MULTIADDRESS"))
 }
