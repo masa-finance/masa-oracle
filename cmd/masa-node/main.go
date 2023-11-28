@@ -133,7 +133,7 @@ func main() {
 	welcome.DisplayWelcomeMessage(multiAddr, ipAddr)
 
 	// Set env variables for CI/CD pipelines
-    cicd_helpers.setEnvVariablesForPipeline()
+        cicd_helpers.setEnvVariablesForPipeline(multiAddr)
 
 	// BP: Add gin router to get peers (multiaddress) and get peer addresses @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
 
