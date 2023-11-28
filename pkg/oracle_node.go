@@ -3,6 +3,7 @@ package masa
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/masa-finance/masa-oracle/pkg/ad"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 )
 
@@ -36,6 +38,8 @@ type OracleNode struct {
 	Context    context.Context
 	PeerChan   chan myNetwork.PeerEvent
 	topic      *pubsub.Topic
+	AdTopic    *pubsub.Topic
+	Ads        []ad.Ad
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -84,6 +88,17 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
+	// Create a new GossipSub for the ad topic
+	ps, err := pubsub.NewGossipSub(ctx, host)
+	if err != nil {
+		return nil, err
+	}
+
+	adTopic, err := ps.Join("ad-topic")
+	if err != nil {
+		return nil, err
+	}
+
 	return &OracleNode{
 		Host:       host,
 		PrivKey:    privKey,
@@ -91,6 +106,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		multiAddrs: myNetwork.GetMultiAddressForHostQuiet(host),
 		Context:    ctx,
 		PeerChan:   make(chan myNetwork.PeerEvent),
+		AdTopic:    adTopic, // Add the ad topic to the OracleNode
 	}, nil
 }
 
@@ -265,4 +281,41 @@ func (node *OracleNode) publishMessages() {
 			return
 		}
 	}
+}
+
+func (node *OracleNode) PublishAd(ad ad.Ad) error {
+	node.Ads = append(node.Ads, ad)
+	adBytes, err := json.Marshal(ad)
+	if err != nil {
+		return err
+	}
+	return node.AdTopic.Publish(node.Context, adBytes)
+}
+
+func (node *OracleNode) SubscribeToAds() error {
+	sub, err := node.AdTopic.Subscribe()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			msg, err := sub.Next(node.Context)
+			if err != nil {
+				logrus.Errorf("sub.Next: %s", err.Error())
+				continue
+			}
+
+			var ad ad.Ad
+			if err := json.Unmarshal(msg.Data, &ad); err != nil {
+				logrus.Errorf("Failed to unmarshal ad: %s", err.Error())
+				continue
+			}
+
+			// Handle the ad here
+			fmt.Printf("Received ad: %+v\n", ad)
+		}
+	}()
+
+	return nil
 }
