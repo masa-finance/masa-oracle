@@ -3,7 +3,6 @@ package cicd_helpers
 import (
     "fmt"
     "os"
-    "strings"
 )
 
 func setEnvVariablesForPipeline (multiAddr string) {
