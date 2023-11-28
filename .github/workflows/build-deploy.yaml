@@ -17,7 +17,6 @@ on:
 jobs:
   deploynode1:
     runs-on: ["masa-oracle-node-1"]
-    id: deploynode1
     outputs:
       MASA_NODE_MULTIADDRESS: ${{steps.step2.outputs.MASA_NODE_MULTIADDRESS}}
     steps:
