@@ -85,7 +85,7 @@ func main() {
 		cancel()
 	}()
 
-	privKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privKey, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
 		logrus.Fatal(err)
 	}
