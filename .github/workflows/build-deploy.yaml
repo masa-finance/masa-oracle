@@ -17,13 +17,10 @@ on:
 jobs:
   deploynode1:
     runs-on: ["masa-oracle-node-1"]
-    outputs:
-      MASA_NODE_MULTIADDRESS: ${{steps.step2.outputs.MASA_NODE_MULTIADDRESS}}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Copy binary & restart service
-      id: step2
       run: |
         echo "node1: ${{ inputs.node1 }}"
         /usr/local/go/bin/go mod tidy
@@ -41,8 +38,6 @@ jobs:
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
-        echo "MASA_NODE_MULTIADDRESS: $MASA_NODE_MULTIADDRESS"
-        echo "MASA_NODE_MULTIADDRESS=$MASA_NODE_MULTIADDRESS" >> "$GITHUB_OUTPUT"
         
   deploynode2:
     needs: deploynode1
@@ -57,7 +52,9 @@ jobs:
         export BOOTNODES='${{ inputs.node2 }}'
         export BOOTNODES_ARG="--bootnodes=";
         if [[ "$BOOTNODES" == "default" ]]; then
-          export BOOTNODES="${{needs.deploynode1.outputs.MASA_NODE_MULTIADDRESS}}"
+          cat /home/masa/.masa/masa_oracle_node_output.env
+          source /home/masa/.masa/masa_oracle_node_output.env
+          export BOOTNODES="${MASA_NODE_MULTIADDRESS}"
         fi
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
         sudo cp -R . /home/masa/masa-oracle/
