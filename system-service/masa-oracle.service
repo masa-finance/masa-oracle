@@ -1,0 +1,20 @@
+[Unit]
+Description=masa-oracle p2p node
+After=network.target
+ConditionPathExists=/home/masa/masa-oracle
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=masa
+Group=masa
+WorkingDirectory=/home/masa/masa-oracle/cmd/masa-node
+ExecStartPre=rm -rf /var/log/masa-oracle/*
+ExecStart=/usr/local/go/bin/go run /home/masa/masa-oracle/cmd/masa-node/main.go ${BOOTNODES_ARG}${BOOTNODES} --port=4001 --udp=true --tcp=false
+Restart=on-failure
+RestartSec=10
+StandardOutput=file:/var/log/masa-oracle/logs.log
+StandardError=file:/var/log/masa-oracle/errors.log
+SyslogIdentifier=masaservice
+[Install]
+WantedBy=multi-user.target
