@@ -17,20 +17,31 @@ This GitHub Actions workflow, named "Build and Deploy," is designed to facilitat
 
 ## Inputs
 The workflow accepts the following inputs during manual triggering:
+``` yaml
+      node1argbootnode:
+        description: "Bootnodes parameter for node 1"
+        default: 'default'
+        type: string
+        required: true
+      node1argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: ''
+        type: string
+        required: false
+      node2argbootnode:
+        description: "Bootnodes parameter for node 2"
+        default: 'default'
+        type: string
+        required: true
+      node2argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: ''
+        type: string
+        required: false
+```
 
-![Alt text](./images/actions-inputs.png)
-
-- **node1:**
-  - *Description:* Bootnodes parameter for node 1
-  - *Default:* 'default'
-  - *Type:* string
-  - *Required:* yes
-
-- **node2:**
-  - *Description:* Bootnodes parameter for node 2
-  - *Default:* 'default'
-  - *Type:* string
-  - *Required:* yes
+Specify in `Bootnodes parameter for node 1` multiadress of node to which you want to connect or leave it with default value in case if you are creating dedicated network.  
+Specify in `Extra args except of --port, --udp, --tcp` extra arguments if needed  
 
 ## Dedicated peer network
 If you want run a dedicated peer network, you should leave ```default``` in the fields. Then nodes will be connected with each other.
@@ -41,7 +52,7 @@ If you want run a dedicated peer network, you should leave ```default``` in the 
 ![Alt text](./images/actions-pipeline1.png)
 
 ## Joining nodes to the existing network
-If you want join nodes to the existing network, you should run workflow and insert to the input fields connection strings. They should be sepparated by comma.
+If you want join nodes to the existing network, you should run workflow and insert to the input fields connection strings. They should be sepparated by comma.  
 ![Alt text](./images/actions-inputs2.png)
 
 **For example:** ```/ip4/137.66.11.250/udp/4001/quic-v1/p2p/16Uiu2HAmJtYy4A8pzChDQQLrPsu1SQU5apzCftCVaAjFk539CLc9,/ip4/168.220.95.86/udp/4001/quic-v1/p2p/16Uiu2HAmAb5Wac73G2QSQQfarhw95KveAaEUNX6yTXXpmmTtVmNW```
