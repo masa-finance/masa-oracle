@@ -15,14 +15,16 @@ on:
         required: true
 
 jobs:
-  deploy:
+  deploynode1:
     runs-on: ["masa-oracle-node-1"]
+    id: deploynode1
     outputs:
-      CONNECTION_STRING: ${{steps.host-selector.outputs.CONNECTION_STRING}}
+      MASA_NODE_MULTIADDRESS: ${{steps.step2.outputs.MASA_NODE_MULTIADDRESS}}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Copy binary & restart service
+      id: step2
       run: |
         echo "node1: ${{ inputs.node1 }}"
         /usr/local/go/bin/go mod tidy
@@ -40,20 +42,11 @@ jobs:
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
-
-    - name: Get host address
-      id: host-selector
-      run: |
-        CONNECTION_STRING=$(cat /var/log/masa-oracle/logs.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
-        while [ -z "$CONNECTION_STRING" ]
-          do
-            CONNECTION_STRING=$(cat /var/log/masa-oracle/logs.log | grep 'Starting node with ID:' | awk '{print $NF}' | sed 's/"$//')
-          done
-        echo $CONNECTION_STRING
-        echo "CONNECTION_STRING=$CONNECTION_STRING" >> "$GITHUB_OUTPUT"
+        echo "MASA_NODE_MULTIADDRESS: $MASA_NODE_MULTIADDRESS"
+        echo "MASA_NODE_MULTIADDRESS=$MASA_NODE_MULTIADDRESS" >> "$GITHUB_OUTPUT"
         
-  connect:
-    needs: deploy
+  deploynode2:
+    needs: deploynode1
     runs-on: ["masa-oracle-node-2"]
     steps:
     - name: Checkout code
@@ -65,7 +58,7 @@ jobs:
         export BOOTNODES='${{ inputs.node2 }}'
         export BOOTNODES_ARG="--bootnodes=";
         if [[ "$BOOTNODES" == "default" ]]; then
-          export BOOTNODES="${{needs.deploy.outputs.CONNECTION_STRING}}"
+          export BOOTNODES="${{needs.deploynode1.outputs.MASA_NODE_MULTIADDRESS}}"
         fi
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
         sudo cp -R . /home/masa/masa-oracle/
