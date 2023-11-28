@@ -42,7 +42,8 @@ jobs:
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
-        sudo systemctl restart masa-oracle.service
+        sudo systemctl restart masa-oracle.service    
+        until [ -f /home/masa/.masa/masa_oracle_node_output.env ]; do sleep 5; done 
         source /home/masa/.masa/masa_oracle_node_output.env
         echo "MASA_NODE_MULTIADDRESS: $MASA_NODE_MULTIADDRESS"
         echo "MASA_NODE_MULTIADDRESS=$MASA_NODE_MULTIADDRESS" >> "$GITHUB_OUTPUT"
