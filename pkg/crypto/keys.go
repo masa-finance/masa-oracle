@@ -18,19 +18,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, pubKey crypto.PubKey, err error) {
+func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, err error) {
 	// Check if the private key file is set in the environment
 	envKey := os.Getenv("PRIVATE_KEY")
 	if envKey != "" {
 		rawKey, err := hex.DecodeString(envKey)
 		if err != nil {
 			logrus.Errorf("Error decoding private key: %s\n", err)
-			return nil, nil, err
+			return nil, err
 		}
 		privKey, err = crypto.UnmarshalPrivateKey(rawKey)
 		if err != nil {
 			logrus.Errorf("Error unmarshalling private key: %s\n", err)
-			return nil, nil, err
+			return nil, err
 		}
 	} else {
 		// Check if the private key file exists
@@ -40,12 +40,12 @@ func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, pubKey crypt
 			rawKey, err := hex.DecodeString(string(data))
 			if err != nil {
 				logrus.Errorf("Error decoding private key: %s\n", err)
-				return nil, nil, err
+				return nil, err
 			}
 			privKey, err = crypto.UnmarshalPrivateKey(rawKey)
 			if err != nil {
 				logrus.Errorf("Error unmarshalling private key: %s\n", err)
-				return nil, nil, err
+				return nil, err
 			}
 			logrus.Infof("Loaded private key from %s", keyFile)
 
@@ -53,24 +53,22 @@ func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, pubKey crypt
 			// Generate a new private key
 			privKey, _, err = crypto.GenerateKeyPair(crypto.Secp256k1, 2048)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			// Marshal the private key to bytes
 			data, err := crypto.MarshalPrivateKey(privKey)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			encodedKey := hex.EncodeToString(data)
 			// Save the private key to the file
 			if err := os.WriteFile(keyFile, []byte(encodedKey), 0600); err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			logrus.Infof("Generated and saved a new private key to %s: %s", keyFile, privKey)
 		}
 	}
-	// After generating or reading the private key, get the public key
-	pubKey = privKey.GetPublic()
-	return privKey, pubKey, nil
+	return privKey, nil
 }
 
 func GenerateSelfSignedCert(certPath, keyPath string) error {
