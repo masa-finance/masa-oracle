@@ -3,16 +3,26 @@ name: Build and deploy (inputs)
 on:
   workflow_dispatch:
     inputs:
-      node1:
+      node1argbootnode:
         description: "Bootnodes parameter for node 1"
         default: 'default'
         type: string
         required: true
-      node2:
+      node1argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: ''
+        type: string
+        required: false
+      node2argbootnode:
         description: "Bootnodes parameter for node 2"
         default: 'default'
         type: string
         required: true
+      node2argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: ''
+        type: string
+        required: false
 
 jobs:
   deploynode1:
@@ -25,10 +35,12 @@ jobs:
     - name: Copy binary & restart service
       id: step2
       run: |
-        echo "node1: ${{ inputs.node1 }}"
+        echo "node1argbootnode: ${{ inputs.node1argbootnode }}"
+        echo "node1argextra: ${{ inputs.node1argextra }}"
         /usr/local/go/bin/go mod tidy
         /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
-        export BOOTNODES="${{ inputs.node1 }}"
+        export BOOTNODES="${{ inputs.node1argbootnode }}"
+        export EXTRA_ARGS="${{ inputs.node1argextra }}"
         if [[ "$BOOTNODES" == "default" ]]; then
           export BOOTNODES_ARG=""
           export BOOTNODES=""
@@ -56,9 +68,12 @@ jobs:
       uses: actions/checkout@v4
     - name: Copy binary & restart service
       run: |
+        echo "node1argbootnode: ${{ inputs.node1argbootnode }}"
+        echo "node1argextra: ${{ inputs.node1argextra }}"
         /usr/local/go/bin/go mod tidy
         /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
-        export BOOTNODES='${{ inputs.node2 }}'
+        export BOOTNODES="${{ inputs.node2argbootnode }}"
+        export EXTRA_ARGS="${{ inputs.node2argextra }}"
         export BOOTNODES_ARG="--bootnodes=";
         if [[ "$BOOTNODES" == "default" ]]; then
           export BOOTNODES="${{needs.deploynode1.outputs.MASA_NODE_MULTIADDRESS}}"

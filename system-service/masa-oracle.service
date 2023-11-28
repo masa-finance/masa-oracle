@@ -10,7 +10,7 @@ User=masa
 Group=masa
 WorkingDirectory=/home/masa/masa-oracle/cmd/masa-node
 ExecStartPre=bash -c "rm -rf /var/log/masa-oracle/*"
-ExecStart=/usr/local/go/bin/go run /home/masa/masa-oracle/cmd/masa-node/main.go ${BOOTNODES_ARG}${BOOTNODES} --port=4001 --udp=true --tcp=false
+ExecStart=/usr/local/go/bin/go run /home/masa/masa-oracle/cmd/masa-node/main.go ${BOOTNODES_ARG}${BOOTNODES} ${EXTRA_ARGS} --port=4001 --udp=true --tcp=false
 Restart=on-failure
 RestartSec=10
 StandardOutput=file:/var/log/masa-oracle/logs.log
