@@ -38,7 +38,7 @@ jobs:
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
         rm -rf /home/masa/masa-oracle
         mkdir /home/masa/masa-oracle
-        sudo cp -R . /home/masa/masa-oracle/
+        cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
