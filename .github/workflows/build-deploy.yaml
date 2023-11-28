@@ -64,7 +64,9 @@ jobs:
           export BOOTNODES="${{needs.deploynode1.outputs.MASA_NODE_MULTIADDRESS}}"
         fi
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
-        sudo cp -R . /home/masa/masa-oracle/
+        rm -rf /home/masa/masa-oracle
+        mkdir /home/masa/masa-oracle
+        cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
