@@ -20,17 +20,20 @@ const (
 )
 
 type Contract struct {
-	ABI string `json:"abi"`
+	ABI []interface{} `json:"abi"`
 }
 
-func getContractABI() string {
-	jsonFile, err := ioutil.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json") // we might want to generate go bindings for this once the contract code is mature
+func getContractABI() []interface{} {
+	jsonFile, err := ioutil.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json")
 	if err != nil {
 		log.Fatalf("Failed to read contract JSON: %v", err)
 	}
 
 	var contract Contract
-	json.Unmarshal(jsonFile, &contract)
+	err = json.Unmarshal(jsonFile, &contract)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal contract JSON: %v", err)
+	}
 
 	return contract.ABI
 }
@@ -42,7 +45,11 @@ func VerifyStakingEvent(userAddress string) bool {
 	}
 
 	contractABI := getContractABI()
-	parsedABI, err := abi.JSON(strings.NewReader(contractABI))
+	abiJSON, err := json.Marshal(contractABI)
+	if err != nil {
+		log.Fatalf("Failed to marshal contract ABI: %v", err)
+	}
+	parsedABI, err := abi.JSON(strings.NewReader(string(abiJSON)))
 	if err != nil {
 		log.Fatalf("Failed to parse contract ABI: %v", err)
 	}
