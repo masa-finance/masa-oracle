@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +9,6 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -19,15 +17,9 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/routes"
+	"github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/masa-finance/masa-oracle/pkg/welcome"
 	"github.com/masa-finance/masa-oracle/pkg/cicd_helpers"
-)
-
-var (
-	bootnodes string
-	portNbr   int
-	udp       bool
-	tcp       bool
 )
 
 func init() {
@@ -71,22 +63,6 @@ func init() {
 	if err != nil {
 		logrus.Error("Error loading .env file")
 	}
-
-	// Define flags
-	flag.StringVar(&bootnodes, "bootnodes", os.Getenv("BOOTNODES"), "A comma-separated list of multiAddress strings")
-	flag.IntVar(&portNbr, "port", getPort("portNbr"), "The port number")
-	flag.BoolVar(&udp, "udp", getEnvAsBool("UDP", false), "UDP flag")
-	flag.BoolVar(&tcp, "tcp", getEnvAsBool("TCP", false), "TCP flag")
-	flag.Parse()
-
-	err = os.Setenv(masa.Peers, bootnodes)
-	if err != nil {
-		logrus.Error(err)
-	}
-	//if neither udp nor tcp are set, default to udp
-	if !udp && !tcp {
-		udp = true
-	}
 }
 
 func main() {
@@ -110,13 +86,25 @@ func main() {
 		cancel()
 	}()
 
-	privKey, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	//crypto.VerifyEthereumCompatibility(privKey)
 
-	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp)
+	// Get the Ethereum address from the public key
+	ethAddress, err := crypto.VerifyEthereumCompatibility(privKey)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Verify the staking event
+	isStaked := staking.VerifyStakingEvent(ethAddress)
+	if !isStaked {
+		logrus.Warn("No staking event found for this address")
+	}
+
+	// Pass the isStaked flag to the NewOracleNode function
+	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, isStaked)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -141,21 +129,4 @@ func main() {
 	go router.Run()
 
 	<-ctx.Done()
-}
-
-func getPort(name string) int {
-	valueStr := os.Getenv(name)
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
-	}
-	return 0
-}
-
-// getEnvAsBool will return the environment variable as a boolean or the default value
-func getEnvAsBool(name string, defaultVal bool) bool {
-	valueStr := os.Getenv(name)
-	if value, err := strconv.ParseBool(valueStr); err == nil {
-		return value
-	}
-	return defaultVal
 }

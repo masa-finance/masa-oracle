@@ -24,7 +24,7 @@ cd masa-oracle
 2. Build the node and put the binary in the bin directory:
 
 ```bash
-go build -v -o bin/masa-node ./cmd/masa-node
+go build -v -o masa-node ./cmd/masa-node
 ```
 
 3. Run the node:
