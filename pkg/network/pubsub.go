@@ -12,6 +12,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type SubscriptionHandler interface {
+	HandleMessage(msg *pubsub.Message)
+}
+
+func SubscribeToTopic(ctx context.Context, topic *pubsub.Topic, handler SubscriptionHandler) error {
+	sub, err := topic.Subscribe()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			msg, err := sub.Next(ctx)
+			if err != nil {
+				logrus.Errorf("Error reading from topic: %v", err)
+				continue
+			}
+
+			// Use the handler to process the message
+			handler.HandleMessage(msg)
+		}
+	}()
+
+	return nil
+}
+
 func WithPubSub(ctx context.Context, host host.Host, topicName string, peerChan chan PeerEvent) (*pubsub.Topic, error) {
 	gossipSub, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
@@ -64,6 +90,28 @@ func WithPubSub(ctx context.Context, host host.Host, topicName string, peerChan 
 		}
 	}()
 	return topic, nil
+}
+
+type SubscriptionManager struct {
+	subscriptions map[string]*pubsub.Subscription
+}
+
+func NewSubscriptionManager() *SubscriptionManager {
+	return &SubscriptionManager{
+		subscriptions: make(map[string]*pubsub.Subscription),
+	}
+}
+
+func (sm *SubscriptionManager) AddSubscription(topic string, sub *pubsub.Subscription) {
+	sm.subscriptions[topic] = sub
+}
+
+func (sm *SubscriptionManager) RemoveSubscription(topic string) {
+	delete(sm.subscriptions, topic)
+}
+
+func (sm *SubscriptionManager) GetSubscription(topic string) *pubsub.Subscription {
+	return sm.subscriptions[topic]
 }
 
 func StreamConsoleTo(ctx context.Context, topic *pubsub.Topic) {

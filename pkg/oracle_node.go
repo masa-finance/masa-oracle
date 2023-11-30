@@ -30,16 +30,17 @@ import (
 )
 
 type OracleNode struct {
-	Host       host.Host
-	PrivKey    crypto.PrivKey
-	Protocol   protocol.ID
-	multiAddrs multiaddr.Multiaddr
-	DHT        *dht.IpfsDHT
-	Context    context.Context
-	PeerChan   chan myNetwork.PeerEvent
-	topic      *pubsub.Topic
-	AdTopic    *pubsub.Topic
-	Ads        []ad.Ad
+	Host        host.Host
+	PrivKey     crypto.PrivKey
+	Protocol    protocol.ID
+	multiAddrs  multiaddr.Multiaddr
+	DHT         *dht.IpfsDHT
+	Context     context.Context
+	PeerChan    chan myNetwork.PeerEvent
+	NodeTracker *NodeEventTracker
+	topic       *pubsub.Topic
+	AdTopic     *pubsub.Topic
+	Ads         []ad.Ad
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -98,23 +99,24 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	if err != nil {
 		return nil, err
 	}
-
 	return &OracleNode{
-		Host:       host,
-		PrivKey:    privKey,
-		Protocol:   oracleProtocol,
-		multiAddrs: myNetwork.GetMultiAddressForHostQuiet(host),
-		Context:    ctx,
-		PeerChan:   make(chan myNetwork.PeerEvent),
-		AdTopic:    adTopic, // Add the ad topic to the OracleNode
+		Host:        host,
+		PrivKey:     privKey,
+		Protocol:    oracleProtocol,
+		multiAddrs:  myNetwork.GetMultiAddressForHostQuiet(host),
+		Context:     ctx,
+		PeerChan:    make(chan myNetwork.PeerEvent),
+		NodeTracker: NewNodeEventTracker(),
+		AdTopic:     adTopic, // Add the ad topic to the OracleNode
 	}, nil
 }
 
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.multiAddrs.String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	//node.Host.Network().Notify(NewNodeEventTracker(node.inputCh))
+	node.Host.Network().Notify(node.NodeTracker)
 
+	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
 	err = myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
@@ -134,7 +136,13 @@ func (node *OracleNode) Start() (err error) {
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
 
-	node.topic, err = myNetwork.WithPubSub(node.Context, node.Host, masaNodeTopic, node.PeerChan)
+	// Subscribe to a topic with OracleNode as the handler
+	err = myNetwork.SubscribeToTopic(node.Context, node.topic, node)
+	if err != nil {
+		return err
+	}
+	// This is older code and should be removed
+	//node.topic, err = myNetwork.WithPubSub(node.Context, node.Host, masaNodeTopic, node.PeerChan)
 
 	go node.publishMessages()
 	return nil
