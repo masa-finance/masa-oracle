@@ -84,10 +84,6 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 	}
 }
 
-// api.go
-
-// ... (existing code)
-
 func (api *API) PostAd() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var newAd ad.Ad
@@ -107,7 +103,11 @@ func (api *API) PostAd() gin.HandlerFunc {
 
 func (api *API) GetAds() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, api.Node.Ads)
+		if len(api.Node.Ads) == 0 {
+			c.JSON(http.StatusOK, gin.H{"message": "No ads"})
+		} else {
+			c.JSON(http.StatusOK, api.Node.Ads)
+		}
 	}
 }
 
@@ -119,6 +119,6 @@ func (api *API) SubscribeToAds() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"status": "Subscribed to ad topic"})
+		c.JSON(http.StatusOK, gin.H{"status": "Subscribed to get ads"})
 	}
 }
