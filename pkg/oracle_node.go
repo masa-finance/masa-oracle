@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -40,13 +41,15 @@ type OracleNode struct {
 	topic      *pubsub.Topic
 	AdTopic    *pubsub.Topic
 	Ads        []ad.Ad
+	Signature  string
+	IsStaked   bool
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.multiAddrs
 }
 
-func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool) (*OracleNode, error) {
+func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, isStaked bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
@@ -107,6 +110,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		Context:    ctx,
 		PeerChan:   make(chan myNetwork.PeerEvent),
 		AdTopic:    adTopic, // Add the ad topic to the OracleNode
+		IsStaked:   isStaked,
 	}, nil
 }
 
@@ -284,6 +288,10 @@ func (node *OracleNode) publishMessages() {
 }
 
 func (node *OracleNode) PublishAd(ad ad.Ad) error {
+	if !node.IsStaked {
+		return errors.New("Node must be staked to be an ad publisher")
+	}
+
 	node.Ads = append(node.Ads, ad)
 	adBytes, err := json.Marshal(ad)
 	if err != nil {
@@ -318,4 +326,9 @@ func (node *OracleNode) SubscribeToAds() error {
 	}()
 
 	return nil
+}
+
+func (node *OracleNode) IsPublisher() bool {
+	// Node is a publisher if it has a non-empty signature
+	return node.Signature != ""
 }
