@@ -289,7 +289,7 @@ func (node *OracleNode) publishMessages() {
 
 func (node *OracleNode) PublishAd(ad ad.Ad) error {
 	if !node.IsStaked {
-		return errors.New("node does not meet publisher requirements")
+		return errors.New("Node must be staked to be an ad publisher")
 	}
 
 	node.Ads = append(node.Ads, ad)
