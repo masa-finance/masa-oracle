@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/ad"
 )
 
 type API struct {
@@ -80,5 +81,44 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 			"data":       data,
 			"totalCount": len(peers),
 		})
+	}
+}
+
+// api.go
+
+// ... (existing code)
+
+func (api *API) PostAd() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var newAd ad.Ad
+		if err := c.ShouldBindJSON(&newAd); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if err := api.Node.PublishAd(newAd); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "Ad published"})
+	}
+}
+
+func (api *API) GetAds() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, api.Node.Ads)
+	}
+}
+
+func (api *API) SubscribeToAds() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		err := api.Node.SubscribeToAds()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "Subscribed to ad topic"})
 	}
 }
