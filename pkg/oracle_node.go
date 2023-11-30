@@ -114,6 +114,8 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.multiAddrs.String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
+	node.Host.SetStreamHandler(NodeDataSyncProtocol, node.ReceiveNodeData)
+
 	node.Host.Network().Notify(node.NodeTracker)
 
 	go node.ListenToNodeTracker()
