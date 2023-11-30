@@ -26,7 +26,7 @@ The Masa Protocol leverages three core data sources, each meticulously architect
 
 3. **Onchain Data**: Masa delves into on-chain data sources to gain insights into asset ownership, historical balances, transactions, and DID credentials amongs other features.
 
-Leveraging it proprietary and privacy preserving cookieless tracking, Masa achieves a deeper resolution of a user in web3, transcending the limitations of mere address identifications. By associating all of a user's addresses through device sessions and creating a singular Masa Identity, a comprehensive behavioral view of a user is formed. This Masa Identity, with its relationships with device sessions and addresses, paints a complete picture of a user, spanning their on-chain and off-chain behaviors and interactions. This secret sauce for the first time is able to deterministically measure active users in web3. 
+Leveraging its proprietary and privacy preserving cookieless tracking, Masa achieves a deeper resolution of a user in web3, transcending the limitations of mere address identifications. By associating all of a user's addresses through device sessions and creating a singular Masa Identity, a comprehensive behavioral view of a user is formed. This Masa Identity, with its relationships with device sessions and addresses, paints a complete picture of a user, spanning their on-chain and off-chain behaviors and interactions. This secret sauce for the first time is able to deterministically measure active users in web3. 
 
 ## Masa Protocol: The Solution
 
@@ -42,7 +42,7 @@ The Masa Protocol, encompassing the Masa Oracle and other components, offers a r
 
 ## The Masa Oracle: Bridging Gaps
 
-Acting as the linchpin of the Masa Protocol, the Masa Oracle bridges the on-chain and off-chain worlds. It serves as a conduit, channeling a tokenized representation of a user's complete identity. This identity encapsulates all the relationships a user has, spanning accounts and data both on and off-chain. The Oracle's use of zkSBT ensures that this representation, while comprehensive, never compromises on privacy. The Masa Oracle enables querying and sharing of private and anymous data with any third party in a fully decentralized architecture. 
+Acting as the linchpin of the Masa Protocol, the Masa Oracle bridges the on-chain and off-chain worlds. It serves as a conduit, channeling a tokenized representation of a user's complete identity. This identity encapsulates all the relationships a user has, spanning accounts and data both on and off-chain. The Oracle's use of zkSBT ensures that this representation, while comprehensive, never compromises on privacy. The Masa Oracle enables querying and sharing of private and anonymous data with any third party in a fully decentralized architecture. 
 
 ## Node Incentivization through Masa Tokens
 
