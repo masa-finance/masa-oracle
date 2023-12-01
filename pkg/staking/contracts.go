@@ -122,26 +122,48 @@ func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
 }
 
 // Stake allows the user to stake tokens
-func (sc *StakingClient) Stake(amount *big.Int) error {
-	// Create an authenticated session
-	auth, err := bind.NewKeyedTransactorWithChainID(sc.PrivateKey, big.NewInt(1)) // Replace with actual chain ID
+func (sc *StakingClient) Stake(amount *big.Int) (*types.Receipt, error) {
+	// Fetch the chain ID dynamically
+	chainID, err := sc.EthClient.NetworkID(context.Background())
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get network ID: %v", err)
 	}
 
-	// Create an instance of the OracleNodeStakingContract
-	stakingContract, err := NewOracleNodeStakingContract(OracleNodeStakingContractAddress, sc.EthClient)
+	// Create an authenticated session
+	auth, err := bind.NewKeyedTransactorWithChainID(sc.PrivateKey, chainID)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create keyed transactor: %v", err)
+	}
+
+	// Read the ABI from a JSON file
+	abiJSON, err := ioutil.ReadFile("path/to/OracleNodeStakingContractABI.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read staking contract ABI: %v", err)
+	}
+
+	// Parse the ABI
+	parsedABI, err := abi.JSON(strings.NewReader(string(abiJSON)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse staking contract ABI: %v", err)
+	}
+
+	// Create an instance of the OracleNodeStakingContract using the parsed ABI and the contract address
+	stakingContract := bind.NewBoundContract(OracleNodeStakingContractAddress, parsedABI, sc.EthClient, sc.EthClient, sc.EthClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to bind staking contract instance: %v", err)
 	}
 
 	// Call the stake function of the OracleNodeStakingContract
-	tx, err := stakingContract.Stake(auth, amount)
+	tx, err := stakingContract.Transact(auth, "stake", amount)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to send stake transaction: %v", err)
 	}
 
 	// Wait for the transaction to be mined
-	_, err = bind.WaitMined(context.Background(), sc.EthClient, tx)
-	return err
+	receipt, err := bind.WaitMined(context.Background(), sc.EthClient, tx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for stake transaction to be mined: %v", err)
+	}
+
+	return receipt, nil
 }
