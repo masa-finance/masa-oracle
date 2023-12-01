@@ -22,11 +22,6 @@ type Config struct {
 	Bootnodes []string `json:"bootnodes"`
 }
 
-const (
-	// Define the Ethereum node endpoint as a constant
-	ethNodeEndpoint = "https://rpc.sepolia.org" // Sepolia endpoint
-)
-
 var (
 	configFile    string
 	start         bool
@@ -96,18 +91,24 @@ func init() {
 			logrus.Fatal(err)
 		}
 
-		// Use the constant ethNodeEndpoint for the Ethereum node endpoint
-		stakingClient, err := masaStaking.NewStakingClient(ethNodeEndpoint, ecdsaPrivateKey)
+		stakingClient, err := masaStaking.NewStakingClient(ecdsaPrivateKey)
 		if err != nil {
 			logrus.Fatal(err)
 		}
 
-		receipt, err := stakingClient.Stake(amount)
+		// Approve the staking contract to spend tokens on behalf of the user
+		approveReceipt, err := stakingClient.Approve(amount)
 		if err != nil {
-			logrus.Fatal(err)
+			logrus.Fatal("Failed to approve tokens for staking:", err)
 		}
+		logrus.Infof("Approve transaction receipt: %v", approveReceipt)
 
-		logrus.Infof("Stake transaction receipt: %v", receipt)
+		// Stake the tokens after approval
+		stakeReceipt, err := stakingClient.Stake(amount)
+		if err != nil {
+			logrus.Fatal("Failed to stake tokens:", err)
+		}
+		logrus.Infof("Stake transaction receipt: %v", stakeReceipt)
 	}
 }
 
