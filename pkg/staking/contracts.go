@@ -4,6 +4,7 @@ package staking
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -18,10 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-// Assuming you have the ABI of the MasaToken and OracleNodeStakingContract
-const MasaTokenABI = `...`
-const OracleNodeStakingContractABI = `...`
-
 // Addresses of the deployed contracts (replace with actual addresses)
 var MasaTokenAddress = common.HexToAddress("...")
 var OracleNodeStakingContractAddress = common.HexToAddress("...")
@@ -30,6 +27,28 @@ var OracleNodeStakingContractAddress = common.HexToAddress("...")
 type StakingClient struct {
 	EthClient  *ethclient.Client
 	PrivateKey *ecdsa.PrivateKey
+}
+
+func getStakingContractABI(jsonPath string) (abi.ABI, error) {
+	jsonFile, err := ioutil.ReadFile(jsonPath)
+	if err != nil {
+		return abi.ABI{}, fmt.Errorf("failed to read ABI: %v", err)
+	}
+
+	var contract struct {
+		ABI json.RawMessage `json:"abi"`
+	}
+	err = json.Unmarshal(jsonFile, &contract)
+	if err != nil {
+		return abi.ABI{}, fmt.Errorf("failed to unmarshal contract JSON: %v", err)
+	}
+
+	parsedABI, err := abi.JSON(strings.NewReader(string(contract.ABI)))
+	if err != nil {
+		return abi.ABI{}, fmt.Errorf("failed to parse ABI: %v", err)
+	}
+
+	return parsedABI, nil
 }
 
 // NewStakingClient creates a new StakingClient
@@ -46,16 +65,11 @@ func NewStakingClient(ethEndpoint string, privateKey *ecdsa.PrivateKey) (*Stakin
 
 // Approve allows the staking contract to spend tokens on behalf of the user
 func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
-	// Read the ABI from a JSON file
-	abiJSON, err := ioutil.ReadFile("path/to/MasaTokenABI.json")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read ABI: %v", err)
-	}
 
 	// Parse the ABI
-	parsedABI, err := abi.JSON(strings.NewReader(string(abiJSON)))
+	parsedABI, err := getStakingContractABI("contracts/build/contracts/MasaToken.json")
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse ABI: %v", err)
+		return nil, err
 	}
 
 	// Retrieve the sender's address from the private key
@@ -135,16 +149,10 @@ func (sc *StakingClient) Stake(amount *big.Int) (*types.Receipt, error) {
 		return nil, fmt.Errorf("failed to create keyed transactor: %v", err)
 	}
 
-	// Read the ABI from a JSON file
-	abiJSON, err := ioutil.ReadFile("path/to/OracleNodeStakingContractABI.json")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read staking contract ABI: %v", err)
-	}
-
 	// Parse the ABI
-	parsedABI, err := abi.JSON(strings.NewReader(string(abiJSON)))
+	parsedABI, err := getStakingContractABI("contracts/build/contracts/OracleNodeStakingContract.json")
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse staking contract ABI: %v", err)
+		return nil, err
 	}
 
 	// Create an instance of the OracleNodeStakingContract using the parsed ABI and the contract address
