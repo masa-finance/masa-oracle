@@ -4,10 +4,12 @@ package staking
 import (
 	"context"
 	"crypto/ecdsa"
+	"fmt"
 	"io/ioutil"
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -43,17 +45,17 @@ func NewStakingClient(ethEndpoint string, privateKey *ecdsa.PrivateKey) (*Stakin
 }
 
 // Approve allows the staking contract to spend tokens on behalf of the user
-func (sc *StakingClient) Approve(amount *big.Int) error {
+func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
 	// Read the ABI from a JSON file
 	abiJSON, err := ioutil.ReadFile("path/to/MasaTokenABI.json")
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to read ABI: %v", err)
 	}
 
 	// Parse the ABI
 	parsedABI, err := abi.JSON(strings.NewReader(string(abiJSON)))
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to parse ABI: %v", err)
 	}
 
 	// Retrieve the sender's address from the private key
@@ -62,44 +64,61 @@ func (sc *StakingClient) Approve(amount *big.Int) error {
 	// Get the nonce for the sender's address
 	nonce, err := sc.EthClient.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get nonce: %v", err)
 	}
 
 	// Define the value to send with the transaction, which is 0 for a token approve
 	value := big.NewInt(0)
 
-	// Define gas limit and gas price; these should be determined based on the current network conditions
-	// Placeholder values are used here and should be replaced with actual estimates
-	gasLimit := uint64(21000) // This is just a placeholder value
-	gasPrice, err := sc.EthClient.SuggestGasPrice(context.Background())
-	if err != nil {
-		return err
-	}
-
 	// Pack the data to send with the transaction
 	data, err := parsedABI.Pack("approve", OracleNodeStakingContractAddress, amount)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to pack data for approve: %v", err)
+	}
+
+	// Estimate gas limit and gas price dynamically based on the current network conditions
+	gasPrice, err := sc.EthClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to suggest gas price: %v", err)
+	}
+
+	// Estimate the gas limit for the approve function call
+	msg := ethereum.CallMsg{
+		From: fromAddress,
+		To:   &MasaTokenAddress,
+		Data: data,
+	}
+	gasLimit, err := sc.EthClient.EstimateGas(context.Background(), msg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to estimate gas: %v", err)
 	}
 
 	// Create the transaction
 	tx := types.NewTransaction(nonce, MasaTokenAddress, value, gasLimit, gasPrice, data)
 
 	// Sign the transaction
-	signedTx, err := types.SignTx(tx, types.HomesteadSigner{}, sc.PrivateKey)
+	chainID, err := sc.EthClient.NetworkID(context.Background())
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get network ID: %v", err)
+	}
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), sc.PrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign transaction: %v", err)
 	}
 
 	// Send the transaction
 	err = sc.EthClient.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to send transaction: %v", err)
 	}
 
-	// Transaction sent, you can now wait for it to be mined using the transaction hash if needed
-	_, err = bind.WaitMined(context.Background(), sc.EthClient, signedTx)
-	return err
+	// Wait for the transaction to be mined
+	receipt, err := bind.WaitMined(context.Background(), sc.EthClient, signedTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for transaction to be mined: %v", err)
+	}
+
+	return receipt, nil
 }
 
 // Stake allows the user to stake tokens
