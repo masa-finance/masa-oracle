@@ -1,6 +1,7 @@
 package masa
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/libp2p/go-libp2p/core/network"
@@ -98,4 +99,18 @@ func (net *NodeEventTracker) HandleIncomingData(data *NodeData) {
 	}
 	// Update accumulated uptime
 	existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
+}
+
+func (net *NodeEventTracker) GetAllNodeData() []NodeData {
+	// Convert the map to a slice
+	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
+	for _, nodeData := range net.nodeData {
+		nodeDataSlice = append(nodeDataSlice, *nodeData)
+	}
+
+	// Sort the slice based on the timestamp
+	sort.Slice(nodeDataSlice, func(i, j int) bool {
+		return nodeDataSlice[i].LastUpdated.Before(nodeDataSlice[j].LastUpdated)
+	})
+	return nodeDataSlice
 }

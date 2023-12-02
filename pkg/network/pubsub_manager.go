@@ -16,7 +16,7 @@ type SubscriptionHandler interface {
 	HandleMessage(msg *pubsub.Message)
 }
 
-func SubscribeToTopic(ctx context.Context, topic *pubsub.Topic, handler SubscriptionHandler) error {
+func SubscribeToTopic(ctx context.Context, host host.Host, topic *pubsub.Topic, handler SubscriptionHandler) error {
 	sub, err := topic.Subscribe()
 	if err != nil {
 		return err
@@ -29,15 +29,19 @@ func SubscribeToTopic(ctx context.Context, topic *pubsub.Topic, handler Subscrip
 				logrus.Errorf("Error reading from topic: %v", err)
 				continue
 			}
+			// Skip messages from the same node
+			if msg.ReceivedFrom == host.ID() {
+				continue
+			}
 
 			// Use the handler to process the message
 			handler.HandleMessage(msg)
 		}
 	}()
-
 	return nil
 }
 
+// WithPubSub TODO: this code is no longer used and should be removed as soon as the PubSubManager is successfully tested
 func WithPubSub(ctx context.Context, host host.Host, topicName string, peerChan chan PeerEvent) (*pubsub.Topic, error) {
 	gossipSub, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
@@ -92,26 +96,75 @@ func WithPubSub(ctx context.Context, host host.Host, topicName string, peerChan 
 	return topic, nil
 }
 
-type SubscriptionManager struct {
+type PubSubManager struct {
+	ctx           context.Context
+	topics        map[string]*pubsub.Topic
 	subscriptions map[string]*pubsub.Subscription
+	gossipSub     *pubsub.PubSub
+	host          host.Host
 }
 
-func NewSubscriptionManager() *SubscriptionManager {
-	return &SubscriptionManager{
-		subscriptions: make(map[string]*pubsub.Subscription),
+func NewPubSubManager(ctx context.Context, host host.Host) (*PubSubManager, error) {
+	gossipSub, err := pubsub.NewGossipSub(ctx, host)
+	if err != nil {
+		return nil, err
 	}
+	manager := &PubSubManager{
+		ctx:           ctx,
+		subscriptions: make(map[string]*pubsub.Subscription),
+		topics:        make(map[string]*pubsub.Topic),
+		gossipSub:     gossipSub,
+		host:          host,
+	}
+	return manager, nil
 }
 
-func (sm *SubscriptionManager) AddSubscription(topic string, sub *pubsub.Subscription) {
-	sm.subscriptions[topic] = sub
+func (sm *PubSubManager) AddSubscription(topicName string, handler SubscriptionHandler) error {
+	// Subscribe to a topic
+	topic, err := sm.gossipSub.Join(topicName)
+	if err != nil {
+		return err
+	}
+	sub, err := topic.Subscribe()
+	if err != nil {
+		return err
+	}
+	sm.topics[topicName] = topic
+	sm.subscriptions[topicName] = sub
+
+	go func() {
+		for {
+			msg, err := sub.Next(sm.ctx)
+			if err != nil {
+				logrus.Errorf("Error reading from topic: %v", err)
+				continue
+			}
+			// Skip messages from the same node
+			if msg.ReceivedFrom == sm.host.ID() {
+				continue
+			}
+			// Use the handler to process the message
+			handler.HandleMessage(msg)
+		}
+	}()
+
+	return nil
 }
 
-func (sm *SubscriptionManager) RemoveSubscription(topic string) {
+func (sm *PubSubManager) RemoveSubscription(topic string) {
 	delete(sm.subscriptions, topic)
 }
 
-func (sm *SubscriptionManager) GetSubscription(topic string) *pubsub.Subscription {
+func (sm *PubSubManager) GetSubscription(topic string) *pubsub.Subscription {
 	return sm.subscriptions[topic]
+}
+
+func (sm *PubSubManager) Publish(topic string, data []byte) error {
+	t, ok := sm.topics[topic]
+	if !ok {
+		return nil
+	}
+	return t.Publish(sm.ctx, data)
 }
 
 func StreamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
