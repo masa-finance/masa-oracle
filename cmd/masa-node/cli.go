@@ -53,10 +53,12 @@ func init() {
 
 	// Staking logic
 	if stakeAmount != "" {
-		amount, ok := new(big.Int).SetString(stakeAmount, 10)
+		// Convert the stake amount to the smallest unit, assuming 18 decimal places
+		amountBigInt, ok := new(big.Int).SetString(stakeAmount, 10)
 		if !ok {
 			logrus.Fatal("Invalid stake amount")
 		}
+		amountInSmallestUnit := new(big.Int).Mul(amountBigInt, big.NewInt(1e18))
 
 		usr, err := user.Current()
 		if err != nil {
@@ -108,7 +110,7 @@ func init() {
 		done := make(chan bool)
 		txHashChan := make(chan string, 1) // Buffer of 1 to prevent blocking
 		go startSpinner("Approving staking contract to spend tokens...", txHashChan, done)
-		approveTxHash, err = stakingClient.Approve(amount)
+		approveTxHash, err = stakingClient.Approve(amountInSmallestUnit)
 		if err != nil {
 			logrus.Fatal("Failed to approve tokens for staking:", err)
 		}
@@ -121,7 +123,7 @@ func init() {
 		done = make(chan bool)
 		txHashChan = make(chan string, 1) // Buffer of 1 to prevent blocking
 		go startSpinner("Staking tokens...", txHashChan, done)
-		stakeTxHash, err = stakingClient.Stake(amount)
+		stakeTxHash, err = stakingClient.Stake(amountInSmallestUnit)
 		if err != nil {
 			logrus.Fatal("Failed to stake tokens:", err)
 		}
