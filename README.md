@@ -88,6 +88,24 @@ The configuration file is a JSON format that includes an array of bootnodes.
 ```
 This will connect your Masa Oracle node to the specified node using the provided multi-address.
 
+## Ad Network Proof of Concept
+
+📢 Masa Oracle introduces a decentralized ad network as a proof of concept within the decentralized data protocol. This network allows publishers who are staked in the system to publish advertisements to a dedicated topic.
+
+### How It Works
+
+- Publishers must first stake tokens to participate in the ad network, ensuring a commitment to the network's integrity.
+- Once staked, publishers can publish ads to the `ad-topic` using the `PublishAd` method in the `OracleNode`.
+- Ads are structured with content and metadata, as defined in the `Ad` struct in `pkg/ad/ad.go`.
+- Only staked nodes can publish to the ad topic, as enforced by the `PublishAd` method in `OracleNode`, which checks the `IsStaked` flag before allowing publication.
+
+## Use Cases
+
+The Masa Oracle ad network can be utilized in various scenarios, such as:
+
+- **Targeted Advertising**: Leveraging the decentralized identity data to deliver personalized ads without compromising user privacy.
+- **Content Monetization**: Content creators can receive compensation directly through the protocol for hosting ads.
+- **Community Governance**: Staked nodes can vote on ad policies, ensuring that the network remains aligned with the community's values.
 
 ## Updates & Additional Information
 
