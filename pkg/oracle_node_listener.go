@@ -3,6 +3,7 @@ package masa
 import (
 	"encoding/json"
 	"log"
+	"math"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -21,7 +22,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 			}
 
 			// Publish the JSON data on the node.topic
-			err = node.topic.Publish(node.Context, jsonData)
+			err = node.PubSubManager.Publish(masaNodeTopic, jsonData)
 			if err != nil {
 				log.Printf("Error publishing node data: %v", err)
 			}
@@ -41,30 +42,47 @@ func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
 	node.NodeTracker.HandleIncomingData(&nodeData)
 }
 
-func (node *OracleNode) SubscribeToTopic() error {
-	sub, err := node.topic.Subscribe()
+type NodeDataPage struct {
+	Data         []NodeData `json:"data"`
+	PageNumber   int        `json:"pageNumber"`
+	TotalPages   int        `json:"totalPages"`
+	TotalRecords int        `json:"totalRecords"`
+}
+
+func (node *OracleNode) SendNodeDataPage(peerID peer.ID, pageNumber int) {
+	stream, err := node.Host.NewStream(node.Context, peerID, NodeDataSyncProtocol)
 	if err != nil {
-		return err
+		log.Printf("Failed to open stream to %s: %v", peerID, err)
+		return
 	}
 
-	go func() {
-		for {
-			msg, err := sub.Next(node.Context)
-			if err != nil {
-				log.Printf("Error reading from topic: %v", err)
-				continue
-			}
+	allNodeData := node.NodeTracker.GetAllNodeData()
+	totalRecords := len(allNodeData)
+	totalPages := int(math.Ceil(float64(totalRecords) / PageSize))
 
-			var nodeData NodeData
-			if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
-				log.Printf("Failed to unmarshal node data: %v", err)
-				continue
-			}
-			// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
-			node.NodeTracker.HandleIncomingData(&nodeData)
-		}
-	}()
-	return nil
+	startIndex := pageNumber * PageSize
+	endIndex := startIndex + PageSize
+	if endIndex > totalRecords {
+		endIndex = totalRecords
+	}
+
+	nodeDataPage := NodeDataPage{
+		Data:         allNodeData[startIndex:endIndex],
+		PageNumber:   pageNumber,
+		TotalPages:   totalPages,
+		TotalRecords: totalRecords,
+	}
+
+	jsonData, err := json.Marshal(nodeDataPage)
+	if err != nil {
+		log.Printf("Failed to marshal NodeDataPage: %v", err)
+		return
+	}
+
+	_, err = stream.Write(jsonData)
+	if err != nil {
+		log.Printf("Failed to send NodeDataPage to %s: %v", peerID, err)
+	}
 }
 
 func (node *OracleNode) SendNodeData(peerID peer.ID) {
@@ -74,7 +92,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		return
 	}
 
-	nodeData := node.NodeTracker.nodeData
+	nodeData := node.NodeTracker.GetAllNodeData()
 	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
 		log.Printf("Failed to marshal NodeData: %v", err)

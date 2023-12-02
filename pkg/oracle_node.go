@@ -31,19 +31,19 @@ import (
 )
 
 type OracleNode struct {
-	Host       host.Host
-	PrivKey    crypto.PrivKey
-	Protocol   protocol.ID
-	multiAddrs multiaddr.Multiaddr
-	DHT        *dht.IpfsDHT
-	Context    context.Context
-	PeerChan   chan myNetwork.PeerEvent
-	NodeTracker *NodeEventTracker
-	topic      *pubsub.Topic
-	AdTopic    *pubsub.Topic
-	Ads        []ad.Ad
-	Signature  string
-	IsStaked   bool
+	Host          host.Host
+	PrivKey       crypto.PrivKey
+	Protocol      protocol.ID
+	multiAddrs    multiaddr.Multiaddr
+	DHT           *dht.IpfsDHT
+	Context       context.Context
+	PeerChan      chan myNetwork.PeerEvent
+	NodeTracker   *NodeEventTracker
+	PubSubManager *myNetwork.PubSubManager
+	AdTopic       *pubsub.Topic
+	Ads           []ad.Ad
+	Signature     string
+	IsStaked      bool
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -61,7 +61,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	addrStr := []string{}
+	var addrStr []string
 	libp2pOptions := []libp2p.Option{
 		libp2p.Identity(privKey),
 		libp2p.ResourceManager(resourceManager),
@@ -102,16 +102,21 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	if err != nil {
 		return nil, err
 	}
+	subscriptionManager, err := myNetwork.NewPubSubManager(ctx, host)
+	if err != nil {
+		return nil, err
+	}
 	return &OracleNode{
-		Host:       host,
-		PrivKey:    privKey,
-		Protocol:   oracleProtocol,
-		multiAddrs: myNetwork.GetMultiAddressForHostQuiet(host),
-		Context:    ctx,
-		PeerChan:   make(chan myNetwork.PeerEvent),
-		NodeTracker: NewNodeEventTracker(),
-		AdTopic:    adTopic, // Add the ad topic to the OracleNode
-		IsStaked:   isStaked,
+		Host:          host,
+		PrivKey:       privKey,
+		Protocol:      oracleProtocol,
+		multiAddrs:    myNetwork.GetMultiAddressForHostQuiet(host),
+		Context:       ctx,
+		PeerChan:      make(chan myNetwork.PeerEvent),
+		NodeTracker:   NewNodeEventTracker(),
+		PubSubManager: subscriptionManager,
+		AdTopic:       adTopic, // Add the ad topic to the OracleNode
+		IsStaked:      isStaked,
 	}, nil
 }
 
@@ -141,9 +146,8 @@ func (node *OracleNode) Start() (err error) {
 	}
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
-
 	// Subscribe to a topic with OracleNode as the handler
-	err = myNetwork.SubscribeToTopic(node.Context, node.topic, node)
+	err = node.PubSubManager.AddSubscription(masaNodeTopic, NewParticipantHandler(node))
 	if err != nil {
 		return err
 	}
@@ -287,7 +291,7 @@ func (node *OracleNode) publishMessages() {
 		select {
 		case <-ticker.C:
 			// publish a message on the Topic
-			err := node.topic.Publish(node.Context, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
+			err := node.PubSubManager.Publish(masaNodeTopic, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
 			if err != nil {
 				logrus.Error("Error publishing to topic:", err)
 			}
@@ -299,7 +303,7 @@ func (node *OracleNode) publishMessages() {
 
 func (node *OracleNode) PublishAd(ad ad.Ad) error {
 	if !node.IsStaked {
-		return errors.New("Node must be staked to be an ad publisher")
+		return errors.New("node must be staked to be an ad publisher")
 	}
 
 	node.Ads = append(node.Ads, ad)
