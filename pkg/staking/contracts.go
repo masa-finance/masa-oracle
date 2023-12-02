@@ -130,6 +130,15 @@ func (sc *StakingClient) Approve(amount *big.Int) (string, error) {
 		return "", fmt.Errorf("failed to send transaction: %v", err)
 	}
 
+	// Wait for the transaction to be confirmed
+	receipt, err := bind.WaitMined(context.Background(), sc.EthClient, signedTx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get transaction receipt: %v", err)
+	}
+	if receipt.Status != 1 {
+		return "", fmt.Errorf("transaction failed: %v", receipt)
+	}
+
 	// Return the transaction hash in hexadecimal format
 	return signedTx.Hash().Hex(), nil
 }
@@ -164,6 +173,15 @@ func (sc *StakingClient) Stake(amount *big.Int) (string, error) {
 	tx, err := stakingContract.Transact(auth, "stake", amount)
 	if err != nil {
 		return "", fmt.Errorf("failed to send stake transaction: %v", err)
+	}
+
+	// Wait for the transaction to be confirmed
+	receipt, err := bind.WaitMined(context.Background(), sc.EthClient, tx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get transaction receipt: %v", err)
+	}
+	if receipt.Status != 1 {
+		return "", fmt.Errorf("transaction failed: %v", receipt)
 	}
 
 	// Return the transaction hash in hexadecimal format
