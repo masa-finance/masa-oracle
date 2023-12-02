@@ -74,54 +74,59 @@ func init() {
 		if err != nil {
 			logrus.Fatal(err)
 		}
-
 		// Function to start and stop a spinner with a message
-		startSpinner := func(msg string, txHash *string, done chan bool) {
-			go func() {
-				spinner := []string{"|", "/", "-", "\\"}
-				i := 0
-				for {
-					select {
-					case <-done:
-						if txHash != nil {
-							fmt.Printf("\r%s %s\n", msg, *txHash) // Print final message with txHash when done
-						} else {
-							fmt.Printf("\r%s\n", msg) // Print final message without txHash when done
-						}
-						return
-					default:
-						if txHash != nil {
-							fmt.Printf("\r%s %s %s", spinner[i], msg, *txHash)
-						} else {
-							fmt.Printf("\r%s %s", spinner[i], msg)
-						}
-						i = (i + 1) % len(spinner)
-						time.Sleep(100 * time.Millisecond)
+		startSpinner := func(msg string, txHashChan <-chan string, done chan bool) {
+			spinner := []string{"|", "/", "-", "\\"}
+			i := 0
+			var txHash string
+			for {
+				select {
+				case txHash = <-txHashChan: // Receive the transaction hash
+					// Do not print anything here, just update the txHash variable
+				case <-done:
+					fmt.Printf("\r%s\n", msg) // Print final message when done
+					if txHash != "" {
+						fmt.Println(txHash) // Print the transaction hash on a new line
 					}
+					return
+				default:
+					// Use carriage return `\r` to overwrite the spinner animation on the same line
+					// Remove the newline character `\n` from the print statement
+					if txHash != "" {
+						fmt.Printf("\r%s %s - %s", spinner[i], msg, txHash)
+					} else {
+						fmt.Printf("\r%s %s", spinner[i], msg)
+					}
+					i = (i + 1) % len(spinner)
+					time.Sleep(100 * time.Millisecond)
 				}
-			}()
+			}
 		}
 
 		// Approve the staking contract to spend tokens on behalf of the user
 		var approveTxHash string
 		done := make(chan bool)
-		startSpinner("Approving staking contract to spend tokens... TxHash:", &approveTxHash, done)
+		txHashChan := make(chan string, 1) // Buffer of 1 to prevent blocking
+		go startSpinner("Approving staking contract to spend tokens...", txHashChan, done)
 		approveTxHash, err = stakingClient.Approve(amount)
-		done <- true // Stop the spinner
 		if err != nil {
 			logrus.Fatal("Failed to approve tokens for staking:", err)
 		}
+		txHashChan <- approveTxHash // Send the transaction hash to the spinner
+		done <- true                // Stop the spinner
 		color.Green("Approve transaction hash: %s", approveTxHash)
 
 		// Stake the tokens after approval
 		var stakeTxHash string
 		done = make(chan bool)
-		startSpinner("Staking tokens... TxHash:", &stakeTxHash, done)
+		txHashChan = make(chan string, 1) // Buffer of 1 to prevent blocking
+		go startSpinner("Staking tokens...", txHashChan, done)
 		stakeTxHash, err = stakingClient.Stake(amount)
-		done <- true // Stop the spinner
 		if err != nil {
 			logrus.Fatal("Failed to stake tokens:", err)
 		}
+		txHashChan <- stakeTxHash // Send the transaction hash to the spinner
+		done <- true              // Stop the spinner
 		color.Green("Stake transaction hash: %s", stakeTxHash)
 
 		// Exit after staking, do not proceed to start the node
