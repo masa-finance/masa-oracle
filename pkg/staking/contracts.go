@@ -68,12 +68,12 @@ func NewStakingClient(privateKey *ecdsa.PrivateKey) (*StakingClient, error) {
 }
 
 // Approve allows the staking contract to spend tokens on behalf of the user
-func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
+func (sc *StakingClient) Approve(amount *big.Int) (string, error) {
 
 	// Parse the ABI
 	parsedABI, err := getStakingContractABI("contracts/build/contracts/MasaToken.json")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// Retrieve the sender's address from the private key
@@ -82,7 +82,7 @@ func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
 	// Get the nonce for the sender's address
 	nonce, err := sc.EthClient.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get nonce: %v", err)
+		return "", fmt.Errorf("failed to get nonce: %v", err)
 	}
 
 	// Define the value to send with the transaction, which is 0 for a token approve
@@ -91,13 +91,13 @@ func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
 	// Pack the data to send with the transaction
 	data, err := parsedABI.Pack("approve", OracleNodeStakingContractAddress, amount)
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack data for approve: %v", err)
+		return "", fmt.Errorf("failed to pack data for approve: %v", err)
 	}
 
 	// Estimate gas limit and gas price dynamically based on the current network conditions
 	gasPrice, err := sc.EthClient.SuggestGasPrice(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("failed to suggest gas price: %v", err)
+		return "", fmt.Errorf("failed to suggest gas price: %v", err)
 	}
 
 	// Estimate the gas limit for the approve function call
@@ -108,7 +108,7 @@ func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
 	}
 	gasLimit, err := sc.EthClient.EstimateGas(context.Background(), msg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to estimate gas: %v", err)
+		return "", fmt.Errorf("failed to estimate gas: %v", err)
 	}
 
 	// Create the transaction
@@ -117,65 +117,55 @@ func (sc *StakingClient) Approve(amount *big.Int) (*types.Receipt, error) {
 	// Sign the transaction
 	chainID, err := sc.EthClient.NetworkID(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get network ID: %v", err)
+		return "", fmt.Errorf("failed to get network ID: %v", err)
 	}
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), sc.PrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sign transaction: %v", err)
+		return "", fmt.Errorf("failed to sign transaction: %v", err)
 	}
 
 	// Send the transaction
 	err = sc.EthClient.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send transaction: %v", err)
+		return "", fmt.Errorf("failed to send transaction: %v", err)
 	}
 
-	// Wait for the transaction to be mined
-	receipt, err := bind.WaitMined(context.Background(), sc.EthClient, signedTx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to wait for transaction to be mined: %v", err)
-	}
-
-	return receipt, nil
+	// Return the transaction hash in hexadecimal format
+	return signedTx.Hash().Hex(), nil
 }
 
 // Stake allows the user to stake tokens
-func (sc *StakingClient) Stake(amount *big.Int) (*types.Receipt, error) {
+func (sc *StakingClient) Stake(amount *big.Int) (string, error) {
 	// Fetch the chain ID dynamically
 	chainID, err := sc.EthClient.NetworkID(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get network ID: %v", err)
+		return "", fmt.Errorf("failed to get network ID: %v", err)
 	}
 
 	// Create an authenticated session
 	auth, err := bind.NewKeyedTransactorWithChainID(sc.PrivateKey, chainID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create keyed transactor: %v", err)
+		return "", fmt.Errorf("failed to create keyed transactor: %v", err)
 	}
 
 	// Parse the ABI
 	parsedABI, err := getStakingContractABI("contracts/build/contracts/OracleNodeStakingContract.json")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// Create an instance of the OracleNodeStakingContract using the parsed ABI and the contract address
 	stakingContract := bind.NewBoundContract(OracleNodeStakingContractAddress, parsedABI, sc.EthClient, sc.EthClient, sc.EthClient)
 	if err != nil {
-		return nil, fmt.Errorf("failed to bind staking contract instance: %v", err)
+		return "", fmt.Errorf("failed to bind staking contract instance: %v", err)
 	}
 
 	// Call the stake function of the OracleNodeStakingContract
 	tx, err := stakingContract.Transact(auth, "stake", amount)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send stake transaction: %v", err)
+		return "", fmt.Errorf("failed to send stake transaction: %v", err)
 	}
 
-	// Wait for the transaction to be mined
-	receipt, err := bind.WaitMined(context.Background(), sc.EthClient, tx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to wait for stake transaction to be mined: %v", err)
-	}
-
-	return receipt, nil
+	// Return the transaction hash in hexadecimal format
+	return tx.Hash().Hex(), nil
 }
