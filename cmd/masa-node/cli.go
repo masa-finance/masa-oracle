@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/sirupsen/logrus"
+
+	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
 type Config struct {
@@ -27,6 +28,7 @@ var (
 	bootnodes     string
 	flagBootnodes string
 	data          string
+	debug         bool
 )
 
 func init() {
@@ -39,6 +41,7 @@ func init() {
 	flag.StringVar(&signature, "signature", "", "The signature from the staking contract")
 	flag.StringVar(&flagBootnodes, "bootnodes", "", "Comma-separated list of bootnodes")
 	flag.StringVar(&data, "data", "", "The data to verify the signature against")
+	flag.BoolVar(&debug, "debug", false, "Override some protections for debugging (temporary)")
 	flag.Parse()
 
 	if start {
