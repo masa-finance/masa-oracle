@@ -48,28 +48,6 @@ func init() {
 	flag.StringVar(&stakeAmount, "stake", "", "Amount of tokens to stake")
 	flag.Parse()
 
-	// Node startup logic
-	if start {
-		if flagBootnodes != "" {
-			bootnodes = flagBootnodes
-		} else {
-			config, err := loadConfig(configFile)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-			bootnodes = strings.Join(config.Bootnodes, ",")
-		}
-
-		err := os.Setenv(masa.Peers, bootnodes)
-		if err != nil {
-			logrus.Error(err)
-		}
-
-		if !udp && !tcp {
-			udp = true
-		}
-	}
-
 	// New code to handle staking
 	if stakeAmount != "" {
 		amount, ok := new(big.Int).SetString(stakeAmount, 10)
@@ -110,6 +88,28 @@ func init() {
 			logrus.Fatal("Failed to stake tokens:", err)
 		}
 		logrus.Infof("Stake transaction receipt: %v", stakeReceipt)
+	}
+
+	// Node startup logic
+	if start {
+		if flagBootnodes != "" {
+			bootnodes = flagBootnodes
+		} else {
+			config, err := loadConfig(configFile)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			bootnodes = strings.Join(config.Bootnodes, ",")
+		}
+
+		err := os.Setenv(masa.Peers, bootnodes)
+		if err != nil {
+			logrus.Error(err)
+		}
+
+		if !udp && !tcp {
+			udp = true
+		}
 	}
 }
 
