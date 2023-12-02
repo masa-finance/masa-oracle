@@ -4,6 +4,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -11,7 +12,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/fatih/color"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
 	masaStaking "github.com/masa-finance/masa-oracle/pkg/staking"
@@ -72,17 +75,54 @@ func init() {
 			logrus.Fatal(err)
 		}
 
-		approveReceipt, err := stakingClient.Approve(amount)
+		// Function to start and stop a spinner with a message
+		startSpinner := func(msg string, txHash *string, done chan bool) {
+			go func() {
+				spinner := []string{"|", "/", "-", "\\"}
+				i := 0
+				for {
+					select {
+					case <-done:
+						if txHash != nil {
+							fmt.Printf("\r%s %s\n", msg, *txHash) // Print final message with txHash when done
+						} else {
+							fmt.Printf("\r%s\n", msg) // Print final message without txHash when done
+						}
+						return
+					default:
+						if txHash != nil {
+							fmt.Printf("\r%s %s %s", spinner[i], msg, *txHash)
+						} else {
+							fmt.Printf("\r%s %s", spinner[i], msg)
+						}
+						i = (i + 1) % len(spinner)
+						time.Sleep(100 * time.Millisecond)
+					}
+				}
+			}()
+		}
+
+		// Approve the staking contract to spend tokens on behalf of the user
+		var approveTxHash string
+		done := make(chan bool)
+		startSpinner("Approving staking contract to spend tokens... TxHash:", &approveTxHash, done)
+		approveTxHash, err = stakingClient.Approve(amount)
+		done <- true // Stop the spinner
 		if err != nil {
 			logrus.Fatal("Failed to approve tokens for staking:", err)
 		}
-		logrus.Infof("Approve transaction receipt: %v", approveReceipt)
+		color.Green("Approve transaction hash: %s", approveTxHash)
 
-		stakeReceipt, err := stakingClient.Stake(amount)
+		// Stake the tokens after approval
+		var stakeTxHash string
+		done = make(chan bool)
+		startSpinner("Staking tokens... TxHash:", &stakeTxHash, done)
+		stakeTxHash, err = stakingClient.Stake(amount)
+		done <- true // Stop the spinner
 		if err != nil {
 			logrus.Fatal("Failed to stake tokens:", err)
 		}
-		logrus.Infof("Stake transaction receipt: %v", stakeReceipt)
+		color.Green("Stake transaction hash: %s", stakeTxHash)
 
 		// Exit after staking, do not proceed to start the node
 		os.Exit(0)
