@@ -48,6 +48,7 @@ func init() {
 	flag.StringVar(&stakeAmount, "stake", "", "Amount of tokens to stake")
 	flag.Parse()
 
+	// Node startup logic
 	if start {
 		if flagBootnodes != "" {
 			bootnodes = flagBootnodes
@@ -58,15 +59,15 @@ func init() {
 			}
 			bootnodes = strings.Join(config.Bootnodes, ",")
 		}
-	}
 
-	err := os.Setenv(masa.Peers, bootnodes)
-	if err != nil {
-		logrus.Error(err)
-	}
-	//if neither udp nor tcp are set, default to udp
-	if !udp && !tcp {
-		udp = true
+		err := os.Setenv(masa.Peers, bootnodes)
+		if err != nil {
+			logrus.Error(err)
+		}
+
+		if !udp && !tcp {
+			udp = true
+		}
 	}
 
 	// New code to handle staking
