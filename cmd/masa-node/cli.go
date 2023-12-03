@@ -19,8 +19,6 @@ import (
 	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
 	masaStaking "github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/sirupsen/logrus"
-
-	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
 type Config struct {
