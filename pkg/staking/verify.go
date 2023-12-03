@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	infuraURL       = "HTTP://127.0.0.1:7545"                      // this is the URL for the local dev environment this needs updating to ETH testnet address when conract is deployed or added as an environment variable
-	contractAddress = "0x767b636793c3399B7a517A6487974Bc474db1e7B" // this is the local contract address
+	infuraURL       = "https://rpc.sepolia.org"                    // update to Sepolia - this should be added as an environment variable sometime
+	contractAddress = "0xd925bc5d3eCd899a3F7B8D762397D2DC75E1187b" // this is the sepolia contract address
 )
 
 type Contract struct {
