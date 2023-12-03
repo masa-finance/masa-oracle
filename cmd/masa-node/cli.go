@@ -19,6 +19,8 @@ import (
 	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
 	masaStaking "github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/sirupsen/logrus"
+
+	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
 type Config struct {
@@ -36,6 +38,7 @@ var (
 	flagBootnodes string
 	data          string
 	stakeAmount   string
+	debug         bool
 )
 
 func init() {
@@ -49,6 +52,7 @@ func init() {
 	flag.StringVar(&flagBootnodes, "bootnodes", "", "Comma-separated list of bootnodes")
 	flag.StringVar(&data, "data", "", "The data to verify the signature against")
 	flag.StringVar(&stakeAmount, "stake", "", "Amount of tokens to stake")
+	flag.BoolVar(&debug, "debug", false, "Override some protections for debugging (temporary)")
 	flag.Parse()
 
 	// Staking logic
