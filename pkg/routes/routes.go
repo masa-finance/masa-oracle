@@ -18,5 +18,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.GET("/ads", api.GetAds())
 	router.POST("/subscribeToAds", api.SubscribeToAds())
 
+	router.GET("/nodeData", api.GetNodeDataHandler())
+
 	return router
 }

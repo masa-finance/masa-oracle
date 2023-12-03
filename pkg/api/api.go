@@ -122,3 +122,21 @@ func (api *API) SubscribeToAds() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"status": "Subscribed to get ads"})
 	}
 }
+
+func (api *API) GetNodeDataHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if api.Node == nil || api.Node.NodeTracker == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "NodeTracker is not initialized.",
+			})
+			return
+		}
+
+		nodeData := api.Node.NodeTracker.GetAllNodeData()
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    nodeData,
+		})
+	}
+}
