@@ -1,6 +1,6 @@
 # Masa Oracle: Decentralized Data Protocol
 
-Masa Oracle is a pioneering protocol designed to revolutionize the way data behavioral, and identity data is accessed, distributed, and incentivized in a decentralized manner. By leveraging the power of blockchain technology, the Masa Oracle ensures transparency, security, and fair rewards for nodes participating in the data distribution network.
+The Masa Oracle redefines the way behavioral and identity data is managed, shared, and monetized in a decentralized manner. With a focus on transparency, security, and fair compensation, Masa Oracle empowers nodes within the zk-Data Network & Marketplace to operate with integrity and trust.
 
 ## Getting Started
 
