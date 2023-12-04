@@ -15,12 +15,11 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	masa "github.com/masa-finance/masa-oracle/pkg"
-	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
-	masaStaking "github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
+	masaStaking "github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
 type Config struct {

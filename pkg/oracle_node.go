@@ -35,7 +35,8 @@ type OracleNode struct {
 	Host          host.Host
 	PrivKey       crypto.PrivKey
 	Protocol      protocol.ID
-	multiAddrs    multiaddr.Multiaddr
+	priorityAddrs multiaddr.Multiaddr
+	multiAddrs    []multiaddr.Multiaddr
 	DHT           *dht.IpfsDHT
 	Context       context.Context
 	PeerChan      chan myNetwork.PeerEvent
@@ -48,7 +49,11 @@ type OracleNode struct {
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
-	return node.multiAddrs
+	if node.priorityAddrs == nil {
+		pAddr := myNetwork.GetPriorityAddress(node.multiAddrs)
+		node.priorityAddrs = pAddr
+	}
+	return node.priorityAddrs
 }
 
 func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, isStaked bool) (*OracleNode, error) {
@@ -111,7 +116,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		Host:          host,
 		PrivKey:       privKey,
 		Protocol:      oracleProtocol,
-		multiAddrs:    myNetwork.GetMultiAddressForHostQuiet(host),
+		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(host),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
 		NodeTracker:   pubsub2.NewNodeEventTracker(),
@@ -122,7 +127,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 }
 
 func (node *OracleNode) Start() (err error) {
-	logrus.Infof("Starting node with ID: %s", node.multiAddrs.String())
+	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(NodeDataSyncProtocol, node.ReceiveNodeData)
 
@@ -146,16 +151,13 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
-	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
+	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
 	// Subscribe to a topic with OracleNode as the handler
 	err = node.PubSubManager.AddSubscription(masaNodeTopic, node.NodeTracker)
 	if err != nil {
 		return err
 	}
-	// This is older code and should be removed
-	//node.topic, err = myNetwork.WithPubSub(node.Context, node.Host, masaNodeTopic, node.PeerChan)
 
-	go node.publishMessages()
 	return nil
 }
 
@@ -267,7 +269,7 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 
 	for {
 		// Generate a message including the multiaddress of the sender
-		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.multiAddrs.String())
+		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.GetMultiAddrs().String())
 
 		_, err := rw.WriteString(sendData)
 		if err != nil {
@@ -281,24 +283,6 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 		}
 		// Sleep for a while before sending the next message
 		time.Sleep(time.Second * 30)
-	}
-}
-
-func (node *OracleNode) publishMessages() {
-	ticker := time.NewTicker(25 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			// publish a message on the Topic
-			err := node.PubSubManager.Publish(masaNodeTopic, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
-			if err != nil {
-				logrus.Error("Error publishing to topic:", err)
-			}
-		case <-node.Context.Done():
-			return
-		}
 	}
 }
 
