@@ -69,18 +69,10 @@ func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, ecdsaPrivKey
 		}
 	}
 	// After obtaining the libp2p privKey, convert it to an ECDSA private key
-	raw, err := privKey.Raw()
+	ecdsaPrivKey, err = ConvertLibp2pKeyToEthereumKey(privKey)
 	if err != nil {
-		logrus.Errorf("Error getting raw private key: %s\n", err)
 		return nil, nil, err
 	}
-
-	ecdsaPrivKey, err = ethCrypto.ToECDSA(raw)
-	if err != nil {
-		logrus.Errorf("Error converting to ECDSA private key: %s\n", err)
-		return nil, nil, err
-	}
-
 	// Save the ECDSA private key in the same directory as the libp2p key
 	ecdsaKeyFilePath := keyFile + ".ecdsa"
 	ecdsaKeyBytes := ethCrypto.FromECDSA(ecdsaPrivKey)
@@ -92,6 +84,23 @@ func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, ecdsaPrivKey
 	logrus.Infof("Saved ECDSA private key to %s", ecdsaKeyFilePath)
 
 	return privKey, ecdsaPrivKey, nil
+}
+
+func ConvertLibp2pKeyToEthereumKey(privKey crypto.PrivKey) (*ecdsa.PrivateKey, error) {
+	// After obtaining the libp2p privKey, convert it to an ECDSA private key
+	raw, err := privKey.Raw()
+	if err != nil {
+		logrus.Errorf("Error getting raw private key: %s\n", err)
+		return nil, err
+	}
+
+	ecdsaPrivKey, err := ethCrypto.ToECDSA(raw)
+	if err != nil {
+		logrus.Errorf("Error converting to ECDSA private key: %s\n", err)
+		return nil, err
+	}
+
+	return ecdsaPrivKey, nil
 }
 
 func GenerateSelfSignedCert(certPath, keyPath string) error {
@@ -155,16 +164,10 @@ func GenerateSelfSignedCert(certPath, keyPath string) error {
 }
 
 func VerifyEthereumCompatibility(privKey crypto.PrivKey) (string, error) {
-	// Convert the libp2p private key to an Ethereum private key
-	raw, err := privKey.Raw()
+	ecdsaPrivKey, err := ConvertLibp2pKeyToEthereumKey(privKey)
 	if err != nil {
 		return "", err
 	}
-	ecdsaPrivKey, err := ethCrypto.ToECDSA(raw)
-	if err != nil {
-		return "", err
-	}
-
 	ethAddress := ethCrypto.PubkeyToAddress(ecdsaPrivKey.PublicKey).Hex()
 
 	// Print the private key in hexadecimal format

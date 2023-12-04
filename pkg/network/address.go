@@ -24,7 +24,7 @@ func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	for _, addr := range multiaddrs {
 		logrus.Debug(addr.String())
 		// skip using localhost since it provides no value
-		if strings.Contains(addr.String(), "127.0.0.1") {
+		if !strings.Contains(addr.String(), "127.0.0.1") {
 			addresses = append(addresses, addr)
 		}
 	}

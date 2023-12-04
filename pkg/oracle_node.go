@@ -3,6 +3,7 @@ package masa
 import (
 	"bufio"
 	"context"
+	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,13 +28,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
+	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
 	Host          host.Host
-	PrivKey       crypto.PrivKey
+	PrivKey       *ecdsa.PrivateKey
 	Protocol      protocol.ID
 	priorityAddrs multiaddr.Multiaddr
 	multiAddrs    []multiaddr.Multiaddr
@@ -112,9 +114,14 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	if err != nil {
 		return nil, err
 	}
+	ecdsaPrivKey, err := crypto2.ConvertLibp2pKeyToEthereumKey(privKey)
+	if err != nil {
+		return nil, err
+	}
+
 	return &OracleNode{
 		Host:          host,
-		PrivKey:       privKey,
+		PrivKey:       ecdsaPrivKey,
 		Protocol:      oracleProtocol,
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(host),
 		Context:       ctx,

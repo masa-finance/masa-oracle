@@ -15,7 +15,7 @@ const (
 )
 
 type NodeData struct {
-	Multiaddr         multiaddr.Multiaddr
+	Multiaddrs        []multiaddr.Multiaddr
 	PeerId            peer.ID
 	LastJoined        time.Time
 	LastLeft          time.Time
@@ -25,10 +25,12 @@ type NodeData struct {
 	Activity          int
 }
 
-func NewNodeData(multiaddr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
+func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
+	multiaddrs := make([]multiaddr.Multiaddr, 0)
+	multiaddrs = append(multiaddrs, addr)
 	return &NodeData{
 		PeerId:            peerId,
-		Multiaddr:         multiaddr,
+		Multiaddrs:        multiaddrs,
 		LastJoined:        time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
@@ -37,7 +39,7 @@ func NewNodeData(multiaddr multiaddr.Multiaddr, peerId peer.ID, activity int) *N
 }
 
 func (n *NodeData) Address() string {
-	return fmt.Sprintf("%s/p2p/%s", n.Multiaddr.String(), n.PeerId.String())
+	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
 }
 
 func (n *NodeData) Joined() {
@@ -48,7 +50,7 @@ func (n *NodeData) Joined() {
 }
 
 func (n *NodeData) Left() {
-	logrus.Info("Node left: ", n.Multiaddr.String())
+	logrus.Info("Node left: ", n.Multiaddrs[0].String())
 	now := time.Now()
 	n.LastLeft = now
 	n.LastUpdated = now

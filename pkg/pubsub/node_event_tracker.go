@@ -55,6 +55,18 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	if !exists {
 		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 		net.nodeData[peerID] = nodeData
+	} else {
+		// If the node data exists, check if the multiaddress is already in the list
+		addrExists := false
+		for _, addr := range nodeData.Multiaddrs {
+			if addr.Equal(c.RemoteMultiaddr()) {
+				addrExists = true
+				break
+			}
+		}
+		if !addrExists {
+			nodeData.Multiaddrs = append(nodeData.Multiaddrs, c.RemoteMultiaddr())
+		}
 	}
 	nodeData.Joined()
 	net.dataMutex.Unlock()
