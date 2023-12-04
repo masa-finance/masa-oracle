@@ -1,4 +1,4 @@
-package masa
+package pubsub
 
 import (
 	"fmt"

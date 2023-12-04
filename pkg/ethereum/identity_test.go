@@ -39,7 +39,7 @@ func init() {
 
 func TestMint(t *testing.T) {
 	toAddress := "0x52f823a4dbe2Dc2934d5F5a854dCb8B407FEa24A"
-	privateKey, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privateKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
 		t.Fatal(err)
 	}

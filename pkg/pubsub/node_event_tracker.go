@@ -1,12 +1,14 @@
-package masa
+package pubsub
 
 import (
+	"encoding/json"
 	"sort"
 	"sync"
 
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
 	ma "github.com/multiformats/go-multiaddr"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type NodeEventTracker struct {
@@ -25,7 +27,7 @@ func NewNodeEventTracker() *NodeEventTracker {
 
 func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
 	// This method is called when the node starts listening on a multiaddr
-	log.WithFields(log.Fields{
+	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
 	}).Info("Started listening")
@@ -33,7 +35,7 @@ func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
 
 func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 	// This method is called when the node stops listening on a multiaddr
-	log.WithFields(log.Fields{
+	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
 	}).Info("Stopped listening")
@@ -41,7 +43,7 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
-	log.WithFields(log.Fields{
+	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
@@ -60,7 +62,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	// A node has left the network
-	log.WithFields(log.Fields{
+	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"conn":    c,
 	}).Info("Disconnected")
@@ -75,7 +77,16 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	net.dataMutex.Unlock()
 }
 
-func (net *NodeEventTracker) HandleIncomingData(data *NodeData) {
+func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
+	var nodeData NodeData
+	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
+		logrus.Errorf("failed to unmarshal node data: %v", err)
+	}
+	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
+	net.HandleNodeData(&nodeData)
+}
+
+func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 

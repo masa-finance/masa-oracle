@@ -8,6 +8,8 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 func (node *OracleNode) ListenToNodeTracker() {
@@ -33,20 +35,20 @@ func (node *OracleNode) ListenToNodeTracker() {
 }
 
 func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
-	var nodeData NodeData
+	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
 		log.Printf("Failed to unmarshal node data: %v", err)
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
-	node.NodeTracker.HandleIncomingData(&nodeData)
+	node.NodeTracker.HandleNodeData(&nodeData)
 }
 
 type NodeDataPage struct {
-	Data         []NodeData `json:"data"`
-	PageNumber   int        `json:"pageNumber"`
-	TotalPages   int        `json:"totalPages"`
-	TotalRecords int        `json:"totalRecords"`
+	Data         []pubsub2.NodeData `json:"data"`
+	PageNumber   int                `json:"pageNumber"`
+	TotalPages   int                `json:"totalPages"`
+	TotalRecords int                `json:"totalRecords"`
 }
 
 func (node *OracleNode) SendNodeDataPage(peerID peer.ID, pageNumber int) {
@@ -115,14 +117,14 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		return
 	}
 
-	var nodeData []NodeData
+	var nodeData []pubsub2.NodeData
 	if err := json.Unmarshal(jsonData[:n], &nodeData); err != nil {
 		log.Printf("Failed to unmarshal NodeData: %v", err)
 		return
 	}
 
 	for _, data := range nodeData {
-		node.NodeTracker.HandleIncomingData(&data)
+		node.NodeTracker.HandleNodeData(&data)
 	}
 }
 

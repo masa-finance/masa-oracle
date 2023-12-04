@@ -28,6 +28,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
@@ -38,8 +39,8 @@ type OracleNode struct {
 	DHT           *dht.IpfsDHT
 	Context       context.Context
 	PeerChan      chan myNetwork.PeerEvent
-	NodeTracker   *NodeEventTracker
-	PubSubManager *myNetwork.PubSubManager
+	NodeTracker   *pubsub2.NodeEventTracker
+	PubSubManager *pubsub2.Manager
 	AdTopic       *pubsub.Topic
 	Ads           []ad.Ad
 	Signature     string
@@ -102,7 +103,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	if err != nil {
 		return nil, err
 	}
-	subscriptionManager, err := myNetwork.NewPubSubManager(ctx, host)
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, host)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		multiAddrs:    myNetwork.GetMultiAddressForHostQuiet(host),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   NewNodeEventTracker(),
+		NodeTracker:   pubsub2.NewNodeEventTracker(),
 		PubSubManager: subscriptionManager,
 		AdTopic:       adTopic, // Add the ad topic to the OracleNode
 		IsStaked:      isStaked,
@@ -147,7 +148,7 @@ func (node *OracleNode) Start() (err error) {
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
 	// Subscribe to a topic with OracleNode as the handler
-	err = node.PubSubManager.AddSubscription(masaNodeTopic, NewParticipantHandler(node))
+	err = node.PubSubManager.AddSubscription(masaNodeTopic, node.NodeTracker)
 	if err != nil {
 		return err
 	}
