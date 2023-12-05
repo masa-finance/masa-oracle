@@ -44,18 +44,21 @@ type NodeData struct {
 	LastUpdated       time.Time
 	CurrentUptime     time.Duration
 	AccumulatedUptime time.Duration
+	PublicKey         string
 	Activity          int
 }
 
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
+
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
 		LastJoined:        time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
+		PublicKey:         "",
 		Activity:          activity,
 	}
 }

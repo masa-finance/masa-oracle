@@ -69,7 +69,7 @@ func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, ecdsaPrivKey
 		}
 	}
 	// After obtaining the libp2p privKey, convert it to an ECDSA private key
-	ecdsaPrivKey, err = ConvertLibp2pKeyToEthereumKey(privKey)
+	ecdsaPrivKey, err = Libp2pPrivateKeyToEcdsa(privKey)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -86,7 +86,7 @@ func GetOrCreatePrivateKey(keyFile string) (privKey crypto.PrivKey, ecdsaPrivKey
 	return privKey, ecdsaPrivKey, nil
 }
 
-func ConvertLibp2pKeyToEthereumKey(privKey crypto.PrivKey) (*ecdsa.PrivateKey, error) {
+func Libp2pPrivateKeyToEcdsa(privKey crypto.PrivKey) (*ecdsa.PrivateKey, error) {
 	// After obtaining the libp2p privKey, convert it to an ECDSA private key
 	raw, err := privKey.Raw()
 	if err != nil {
@@ -101,6 +101,37 @@ func ConvertLibp2pKeyToEthereumKey(privKey crypto.PrivKey) (*ecdsa.PrivateKey, e
 	}
 
 	return ecdsaPrivKey, nil
+}
+
+func Libp2pPubKeyToEcdsaHex(pubKey crypto.PubKey) (string, error) {
+	ecdsaPublic, err := Libp2pPubKeyToEcdsa(pubKey)
+	if err != nil {
+		return "", err
+	}
+	raw, err := x509.MarshalPKIXPublicKey(ecdsaPublic)
+	if err != nil {
+		return "", err
+	}
+	ecdsaPubKeyHex := hex.EncodeToString(raw)
+	return ecdsaPubKeyHex, nil
+}
+
+func Libp2pPubKeyToEcdsa(pubKey crypto.PubKey) (*ecdsa.PublicKey, error) {
+	raw, err := pubKey.Raw()
+	if err != nil {
+		return nil, err
+	}
+
+	unmarshalledPub, err := x509.ParsePKIXPublicKey(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	ecdsaPub, ok := unmarshalledPub.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("public key is not of type ecdsa")
+	}
+	return ecdsaPub, nil
 }
 
 func GenerateSelfSignedCert(certPath, keyPath string) error {
@@ -164,7 +195,7 @@ func GenerateSelfSignedCert(certPath, keyPath string) error {
 }
 
 func VerifyEthereumCompatibility(privKey crypto.PrivKey) (string, error) {
-	ecdsaPrivKey, err := ConvertLibp2pKeyToEthereumKey(privKey)
+	ecdsaPrivKey, err := Libp2pPrivateKeyToEcdsa(privKey)
 	if err != nil {
 		return "", err
 	}

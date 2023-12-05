@@ -51,6 +51,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	net.NodeDataChan <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 
 	peerID := c.RemotePeer().String()
+
 	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {

@@ -37,7 +37,7 @@ func init() {
 }
 
 func TestAddUser(t *testing.T) {
-	privKey, err := crypto.GetOrCreatePrivateKey(os.Getenv("private.key"))
+	privKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv("private.key"))
 	if err != nil {
 		logrus.Fatal(err)
 	}

@@ -116,7 +116,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	ecdsaPrivKey, err := crypto2.ConvertLibp2pKeyToEthereumKey(privKey)
+	ecdsaPrivKey, err := crypto2.Libp2pPrivateKeyToEcdsa(privKey)
 	if err != nil {
 		return nil, err
 	}
