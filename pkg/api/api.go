@@ -1,9 +1,14 @@
 package api
 
 import (
+	"errors"
+	"fmt"
+	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 )
@@ -14,6 +19,49 @@ type API struct {
 
 func NewAPI(node *masa.OracleNode) *API {
 	return &API{Node: node}
+}
+
+func (api *API) GetNodeDataHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		pageNbr, err := GetPathInt(c, "pageNbr")
+		if err != nil {
+			pageNbr = 0
+		}
+		pageSize, err := GetPathInt(c, "pageSize")
+		if err != nil {
+			pageSize = masa.PageSize
+		}
+
+		if api.Node == nil || api.Node.DHT == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "An unexpected error occurred.",
+			})
+			return
+		}
+		allNodeData := api.Node.NodeTracker.GetAllNodeData()
+		totalRecords := len(allNodeData)
+		totalPages := int(math.Ceil(float64(totalRecords) / masa.PageSize))
+
+		startIndex := pageNbr * pageSize
+		endIndex := startIndex + pageSize
+		if endIndex > totalRecords {
+			endIndex = totalRecords
+		}
+		nodeDataPage := masa.NodeDataPage{
+			Data:         allNodeData[startIndex:endIndex],
+			PageNumber:   pageNbr,
+			TotalPages:   totalPages,
+			TotalRecords: totalRecords,
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success":      true,
+			"data":         nodeDataPage.Data,
+			"pageNbr":      nodeDataPage.PageNumber,
+			"total":        nodeDataPage.TotalRecords,
+			"totalRecords": nodeDataPage.TotalRecords,
+		})
+	}
 }
 
 func (api *API) GetPeersHandler() gin.HandlerFunc {
@@ -86,6 +134,13 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 
 func (api *API) PostAd() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		//bodyBytes, err := io.ReadAll(c.Request.Body)
+		//if err != nil {
+		//	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		//	return
+		//}
+		//api.Node.PubSubManager.Publish(masa.AdTopic, bodyBytes)
+
 		var newAd ad.Ad
 		if err := c.ShouldBindJSON(&newAd); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -123,20 +178,10 @@ func (api *API) SubscribeToAds() gin.HandlerFunc {
 	}
 }
 
-func (api *API) GetNodeDataHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if api.Node == nil || api.Node.NodeTracker == nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "NodeTracker is not initialized.",
-			})
-			return
-		}
-
-		nodeData := api.Node.NodeTracker.GetAllNodeData()
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data":    nodeData,
-		})
+func GetPathInt(ctx *gin.Context, name string) (int, error) {
+	val, ok := ctx.GetQuery(name)
+	if !ok {
+		return 0, errors.New(fmt.Sprintf("the value for path parameter %s empty or not specified", name))
 	}
+	return strconv.Atoi(val)
 }
