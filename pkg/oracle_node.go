@@ -221,7 +221,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		// Try to add the peer to the routing table (no-op if already present).
 		added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
 		if err != nil {
-			logrus.Warningf("Failed to add peer %s to routing table: %v", remotePeer, err)
+			logrus.Debugf("Failed to add peer %s to routing table: %v", remotePeer, err)
 		} else if !added {
 			logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
 		} else {
@@ -229,15 +229,15 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		}
 		// Check if the peer is useful after trying to add it
 		isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
-		logrus.Infof("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
+		logrus.Debugf("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
 	}
 	logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
 
 	// Create a buffer stream for non-blocking read and write.
-	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-	go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
-	go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
+	//go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
+	//go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
 
 	// 'stream' will stay open until you close it (or the other side closes it).
 }

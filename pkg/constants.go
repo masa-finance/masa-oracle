@@ -12,5 +12,5 @@ const (
 	AdTopic              = "/masa/ad/1.0.0"
 	rendezvous           = "masa-mdns"
 	PortNbr              = "portNbr"
-	PageSize             = 100
+	PageSize             = 25
 )

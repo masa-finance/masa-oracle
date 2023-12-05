@@ -70,7 +70,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					logrus.Debugf("Skipping connect to self: %s", availPeer.String())
 					continue
 				}
-				logrus.Infof("Found Available Peer: %s", availPeer.String())
+				logrus.Infof("Available Peer: %s", availPeer.String())
 
 				if host.Network().Connectedness(availPeer.ID) != network.Connected {
 					//err := host.Connect(ctx, availPeer)
