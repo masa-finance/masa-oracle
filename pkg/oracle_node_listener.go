@@ -24,7 +24,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 			}
 
 			// Publish the JSON data on the node.topic
-			err = node.PubSubManager.Publish(masaNodeTopic, jsonData)
+			err = node.PubSubManager.Publish(NodeTopic, jsonData)
 			if err != nil {
 				log.Printf("Error publishing node data: %v", err)
 			}

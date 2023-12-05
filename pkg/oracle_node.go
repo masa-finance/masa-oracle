@@ -110,15 +110,16 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	if err != nil {
 		return nil, err
 	}
+
 	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, host)
 	if err != nil {
 		return nil, err
 	}
+
 	ecdsaPrivKey, err := crypto2.ConvertLibp2pKeyToEthereumKey(privKey)
 	if err != nil {
 		return nil, err
 	}
-
 	return &OracleNode{
 		Host:          host,
 		PrivKey:       ecdsaPrivKey,
@@ -160,7 +161,7 @@ func (node *OracleNode) Start() (err error) {
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
 	// Subscribe to a topic with OracleNode as the handler
-	err = node.PubSubManager.AddSubscription(masaNodeTopic, node.NodeTracker)
+	err = node.PubSubManager.AddSubscription(NodeTopic, node.NodeTracker)
 	if err != nil {
 		return err
 	}
