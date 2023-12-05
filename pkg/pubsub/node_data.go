@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,8 +15,29 @@ const (
 	ActivityLeft
 )
 
+type JSONMultiaddr struct {
+	multiaddr.Multiaddr
+}
+
+func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
+	// Unmarshal the JSON as a string
+	var multiaddrStr string
+	if err := json.Unmarshal(b, &multiaddrStr); err != nil {
+		return err
+	}
+
+	// Parse the string as a multiaddr
+	multiaddr, err := multiaddr.NewMultiaddr(multiaddrStr)
+	if err != nil {
+		return err
+	}
+
+	m.Multiaddr = multiaddr
+	return nil
+}
+
 type NodeData struct {
-	Multiaddrs        []multiaddr.Multiaddr
+	Multiaddrs        []JSONMultiaddr
 	PeerId            peer.ID
 	LastJoined        time.Time
 	LastLeft          time.Time
@@ -26,8 +48,8 @@ type NodeData struct {
 }
 
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
-	multiaddrs := make([]multiaddr.Multiaddr, 0)
-	multiaddrs = append(multiaddrs, addr)
+	multiaddrs := make([]JSONMultiaddr, 0)
+	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,

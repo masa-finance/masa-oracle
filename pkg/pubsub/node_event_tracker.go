@@ -66,7 +66,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			}
 		}
 		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, c.RemoteMultiaddr())
+			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{c.RemoteMultiaddr()})
 		}
 	}
 	nodeData.Joined()

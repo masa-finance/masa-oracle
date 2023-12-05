@@ -113,13 +113,14 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		return
 	}
 
-	var nodeData []pubsub2.NodeData
-	if err := json.Unmarshal(jsonData[:n], &nodeData); err != nil {
-		log.Printf("Failed to unmarshal NodeData: %v", err)
+	var page NodeDataPage
+	if err := json.Unmarshal(jsonData[:n], &page); err != nil {
+		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
+		logrus.Errorf("%v", string(jsonData[:n]))
 		return
 	}
 
-	for _, data := range nodeData {
+	for _, data := range page.Data {
 		node.NodeTracker.HandleNodeData(&data)
 	}
 }
