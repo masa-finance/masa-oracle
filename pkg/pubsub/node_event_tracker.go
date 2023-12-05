@@ -44,6 +44,7 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
 	logrus.WithFields(logrus.Fields{
+		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
@@ -75,6 +76,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	// A node has left the network
 	logrus.WithFields(logrus.Fields{
+		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
 	}).Info("Disconnected")
@@ -99,6 +101,7 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 }
 
 func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
+	logrus.Debugf("Handling node data for: %s", data.PeerId)
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 
@@ -125,6 +128,7 @@ func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
 }
 
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
+	logrus.Debug("Getting all node data")
 	// Convert the map to a slice
 	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
 	for _, nodeData := range net.nodeData {

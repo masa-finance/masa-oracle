@@ -8,6 +8,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sirupsen/logrus"
 
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -27,9 +28,9 @@ func (node *OracleNode) ListenToNodeTracker() {
 			if err != nil {
 				log.Printf("Error publishing node data: %v", err)
 			}
-			// If the nodeData represents a join event, call OnJoin in a separate goroutine
+			// If the nodeData represents a join event, call SendNodeData in a separate goroutine
 			if nodeData.Activity == pubsub2.ActivityJoined {
-				go node.OnJoinEvent(nodeData.PeerId)
+				go node.SendNodeData(nodeData.PeerId)
 			}
 
 		case <-node.Context.Done():
@@ -101,6 +102,8 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 }
 
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
+	logrus.Info("ReceiveNodeData")
+
 	defer stream.Close()
 
 	jsonData := make([]byte, 1024)
@@ -119,9 +122,4 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	for _, data := range nodeData {
 		node.NodeTracker.HandleNodeData(&data)
 	}
-}
-
-func (node *OracleNode) OnJoinEvent(peerID peer.ID) {
-	// Send NodeData to the new node
-	node.SendNodeData(peerID)
 }
