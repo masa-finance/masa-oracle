@@ -1,0 +1,100 @@
+name: build masa-nodes
+on:
+  push:
+    paths:
+    - 'terraform_nodes/**'
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  terraform:
+    env:
+      GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }} 
+    runs-on: ["ubuntu-latest"]
+    defaults:
+      run:
+        shell: sh
+    steps:
+    - uses: actions/checkout@v4
+    - uses: hashicorp/setup-terraform@v3
+
+    - name: Add SSH keys / Create repo tar
+      run: |
+        mkdir terraform_nodes/archive
+        touch terraform_nodes/archive/workspace.tar.gz && tar -czf terraform_nodes/archive/workspace.tar.gz --exclude=terraform_nodes/archive/workspace.tar.gz .
+        cd terraform_nodes/vm_node/
+        mkdir .ssh && cd .ssh
+        touch masa masa.pub
+        echo "$MASA_SSH_PRIVATE_KEY" >> masa
+        echo "$MASA_SSH_PUBLIC_KEY" >> masa.pub
+      env:
+        MASA_SSH_PRIVATE_KEY: ${{secrets.MASA_SSH_PRIVATE_KEY}}
+        MASA_SSH_PUBLIC_KEY: ${{secrets.MASA_SSH_PUBLIC_KEY}}
+
+    - name: Terraform fmt
+      id: fmt
+      run: cd terraform_nodes && terraform fmt -check
+      continue-on-error: true
+
+    - name: Terraform Init
+      id: init
+      run: cd terraform_nodes && terraform init
+
+    - name: Terraform Validate
+      id: validate
+      run: cd terraform_nodes && terraform validate -no-color
+
+    - name: Terraform plan
+      id: terraform_plan
+      env:
+        PIPELINE_PAT_TOKEN: ${{ secrets.PIPELINE_PAT_TOKEN }}
+      shell: bash
+      run: |
+        echo 'plan<<EOF' >> $GITHUB_OUTPUT
+        cd terraform_nodes && terraform plan -no-color -input=false -var="pat_token=$PIPELINE_PAT_TOKEN" | tail -c 500 >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
+ 
+    - name: Terraform aprrove (new_pipe_testing)
+      uses: trstringer/manual-approval@v1
+      if: github.ref == 'refs/heads/new_pipe_testing'
+      with:
+        secret: ${{ secrets.PIPELINE_PAT_TOKEN }}
+        approvers: H34D, teslashibe
+        minimum-approvals: 1
+        issue-title: "Deploying"
+        issue-body: "```${{ join(steps.terraform_plan.outputs.*, '\n') }}```"
+        exclude-workflow-initiator-as-approver: false
+        additional-approved-words: ''
+        additional-denied-words: ''
+        
+    - name: Terraform apply
+      run: |
+        cd terraform_nodes && terraform apply -no-color -input=false -var pat_token=$PIPELINE_PAT_TOKEN -auto-approve
+      env: 
+        PIPELINE_PAT_TOKEN: ${{ secrets.PIPELINE_PAT_TOKEN }}
+
+    - name: Create Pull Request
+      id: cpr
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.PIPELINE_PAT_TOKEN }}
+        add-paths	: .github/workflows/masa-oracle.yaml
+        commit-message: add masa-oracle.yaml
+        committer: GitHub <noreply@github.com>
+        signoff: false
+        base: new_pipe_testing
+        branch: masa_oracle_pipe
+        delete-branch: true
+        title: '[UPDATE] masa-oracle pipeline'
+        body: |
+          Add masa-oracle manual pipeline'
+        labels: |
+          automated
+        assignees: H34D, teslashibe
+        draft: false
