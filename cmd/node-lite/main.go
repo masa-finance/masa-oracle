@@ -85,11 +85,11 @@ func main() {
 		cancel()
 	}()
 
-	privKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privKey, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	node, err := masa.NewOracleNode(ctx, privKey, getPort(masa.PortNbr), true, true, false)
+	node, err := masa.NewOracleNode(ctx, privKey, getPort(masa.PortNbr), true, true)
 	if err != nil {
 		logrus.Fatal(err)
 	}

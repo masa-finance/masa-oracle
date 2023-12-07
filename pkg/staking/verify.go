@@ -3,11 +3,9 @@ package staking
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"math/big"
-	"os"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -26,7 +24,7 @@ type Contract struct {
 }
 
 func getContractABI() []interface{} {
-	jsonFile, err := os.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json")
+	jsonFile, err := ioutil.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json")
 	if err != nil {
 		log.Fatalf("Failed to read contract JSON: %v", err)
 	}
@@ -40,26 +38,26 @@ func getContractABI() []interface{} {
 	return contract.ABI
 }
 
-func VerifyStakingEvent(userAddress string) (bool, error) {
+func VerifyStakingEvent(userAddress string) bool {
 	client, err := ethclient.Dial(infuraURL)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to connect to the Ethereum client: %v", err))
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
 	}
 
 	contractABI := getContractABI()
 	abiJSON, err := json.Marshal(contractABI)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to marshal contract ABI: %v", err))
+		log.Fatalf("Failed to marshal contract ABI: %v", err)
 	}
 	parsedABI, err := abi.JSON(strings.NewReader(string(abiJSON)))
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to parse contract ABI: %v", err))
+		log.Fatalf("Failed to parse contract ABI: %v", err)
 	}
 
 	address := common.HexToAddress(userAddress)
 	stake, err := parsedABI.Pack("stakes", address)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to pack data for stakes call: %v", err))
+		log.Fatalf("Failed to pack data for stakes call: %v", err)
 	}
 
 	// Address correction
@@ -72,17 +70,19 @@ func VerifyStakingEvent(userAddress string) (bool, error) {
 
 	result, err := client.CallContract(context.Background(), callMsg, nil)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to call stakes function: %v", err))
+		log.Fatalf("Failed to call stakes function: %v", err)
 	}
 
 	stakesAmountInterfaces, err := parsedABI.Unpack("stakes", result)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to unpack stakes: %v", err))
+		log.Fatalf("Failed to unpack stakes: %v", err)
 	}
 
 	stakesAmount, ok := stakesAmountInterfaces[0].(*big.Int)
 	if !ok {
-		return false, errors.New("failed to assert type: stakesAmount is not *big.Int")
+		log.Fatalf("Failed to assert type: stakesAmount is not *big.Int")
 	}
-	return stakesAmount.Cmp(big.NewInt(0)) > 0, nil
+
+	return stakesAmount.Cmp(big.NewInt(0)) > 0
+
 }
