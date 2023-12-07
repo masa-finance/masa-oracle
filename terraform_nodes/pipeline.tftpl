@@ -1,0 +1,121 @@
+name: masa-oracle nodes deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+%{ for key, value in nodes ~}%{ if lookup(nodes_with_bootnodes, key, null) != null }
+      ${key}argbootnode:
+        description: "Bootnodes parameter for ${key}"
+        default: ${nodes_with_bootnodes["${key}"]}
+        type: string
+        required: true
+      ${key}argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: 'default'
+        type: string
+        required: false 
+%{ else }
+      ${key}argbootnode:
+        description: "Bootnodes parameter for ${key}"
+        default: 'default'
+        type: string
+        required: true
+      ${key}argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: 'default'
+        type: string
+        required: false
+%{ endif }%{ endfor ~}
+
+
+jobs: %{ if master_node != null }
+  master-${master_node}:
+    runs-on: ["${master_node}"]
+    outputs:
+      MASA_NODE_MULTIADDRESS: $${{steps.step2.outputs.MASA_NODE_MULTIADDRESS}}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Copy binary & restart service
+      id: step2
+      run: |
+        echo "${master_node}argbootnode: $${{ inputs.${master_node}argbootnode }}"
+        echo "${master_node}argextra: $${{ inputs.${master_node}argextra }}"
+        /usr/local/go/bin/go mod tidy
+        /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
+        export BOOTNODES="$${{ inputs.${master_node}argbootnode }}"
+        export EXTRA_ARGS="$${{ inputs.${master_node}argextra }}"
+        if [[ "$BOOTNODES" == "default" ]]; then
+          export BOOTNODES_ARG=""
+          export BOOTNODES=""
+        else
+          export BOOTNODES_ARG="--bootnodes=";
+        fi
+        echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
+        rm -rf /home/masa/masa-oracle
+        mkdir /home/masa/masa-oracle
+        cp -R . /home/masa/masa-oracle/
+        cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
+        sudo systemctl daemon-reload
+        sudo systemctl restart masa-oracle.service    
+        until [ -f /home/masa/.masa/masa_oracle_node_output.env ]; do sleep 5; done 
+        source /home/masa/.masa/masa_oracle_node_output.env
+        echo "MASA_NODE_MULTIADDRESS: $MASA_NODE_MULTIADDRESS"
+        echo "MASA_NODE_MULTIADDRESS=$MASA_NODE_MULTIADDRESS" >> "$GITHUB_OUTPUT"
+%{ if worker_nodes != null }%{ for worker_node in worker_nodes ~}
+  worker-${worker_node}:
+    needs: master-${master_node}
+    runs-on: ["${worker_node}"]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Copy binary & restart service
+      run: |
+        echo "${worker_node}argbootnode: $${{ inputs.${worker_node}argbootnode }}"
+        echo "${worker_node}argextra: $${{ inputs.${worker_node}argextra }}"
+        /usr/local/go/bin/go mod tidy
+        /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
+        export EXTRA_ARGS="$${{ inputs.${worker_node}argextra }}"
+        export BOOTNODES_ARG="--bootnodes=";
+        export BOOTNODES="$${{needs.master-${master_node}.outputs.MASA_NODE_MULTIADDRESS}}"
+        echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
+        rm -rf /home/masa/masa-oracle
+        mkdir /home/masa/masa-oracle
+        cp -R . /home/masa/masa-oracle/
+        cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
+        sudo systemctl daemon-reload
+        sudo systemctl restart masa-oracle.service
+%{ endfor ~}%{ endif }
+%{ endif }
+%{ for join_node in joining_nodes ~}
+  joined_${join_node}:
+    runs-on: ["${join_node}"]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Copy binary & restart service
+      run: |
+        echo "${join_node}argbootnode: $${{ inputs.${join_node}argbootnode }}"
+        echo "${join_node}argextra: $${{ inputs.${join_node}argextra }}"
+        /usr/local/go/bin/go mod tidy
+        /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
+        export BOOTNODES="$${{ inputs.${join_node}argbootnode }}"
+        export EXTRA_ARGS="$${{ inputs.${join_node}argextra }}"
+        export BOOTNODES_ARG="--bootnodes=";
+        if [[ "$$BOOTNODES" == "default" ]]; then
+          export BOOTNODES=""
+        fi
+        echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
+        rm -rf /home/masa/masa-oracle
+        mkdir /home/masa/masa-oracle
+        cp -R . /home/masa/masa-oracle/
+        cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
+        sudo systemctl daemon-reload
+        sudo systemctl restart masa-oracle.service
+        until [ -f /home/masa/.masa/masa_oracle_node_output.env ]; do sleep 5; done 
+        source /home/masa/.masa/masa_oracle_node_output.env
+        echo "MASA_NODE_MULTIADDRESS: $MASA_NODE_MULTIADDRESS"
+%{ endfor ~}
