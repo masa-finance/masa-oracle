@@ -1,7 +1,6 @@
 package masa
 
 import (
-	"sort"
 	"sync"
 
 	"github.com/libp2p/go-libp2p/core/network"
@@ -10,16 +9,16 @@ import (
 )
 
 type NodeEventTracker struct {
-	NodeDataChan chan *NodeData
-	nodeData     map[string]*NodeData
-	dataMutex    sync.RWMutex
-	changes      int
+	inputCh   chan *NodeData
+	nodeData  map[string]*NodeData
+	dataMutex sync.RWMutex
+	changes   int
 }
 
-func NewNodeEventTracker() *NodeEventTracker {
+func NewNodeEventTracker(inputCh chan *NodeData) *NodeEventTracker {
 	return &NodeEventTracker{
-		nodeData:     make(map[string]*NodeData),
-		NodeDataChan: make(chan *NodeData),
+		nodeData: make(map[string]*NodeData),
+		inputCh:  inputCh,
 	}
 }
 
@@ -45,17 +44,17 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
-	net.NodeDataChan <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
+	net.inputCh <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 
-	peerID := c.RemotePeer().String()
-	net.dataMutex.Lock()
-	nodeData, exists := net.nodeData[peerID]
-	if !exists {
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
-		net.nodeData[peerID] = nodeData
-	}
-	nodeData.Joined()
-	net.dataMutex.Unlock()
+	//peerID := c.RemotePeer().String()
+	//net.dataMutex.Lock()
+	//nodeData, exists := net.nodeData[peerID]
+	//if !exists {
+	//	nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
+	//	net.nodeData[peerID] = nodeData
+	//}
+	//nodeData.Joined()
+	//net.dataMutex.Unlock()
 }
 
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
@@ -64,53 +63,30 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Disconnected")
-	net.NodeDataChan <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
+	net.inputCh <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 
-	peerID := c.RemotePeer().String()
-	net.dataMutex.Lock()
-	nodeData, exists := net.nodeData[peerID]
-	if exists {
-		nodeData.Left()
-	}
-	net.dataMutex.Unlock()
+	//peerID := c.RemotePeer().String()
+	//net.dataMutex.Lock()
+	//nodeData, exists := net.nodeData[peerID]
+	//if exists {
+	//	nodeData.Left()
+	//}
+	//net.dataMutex.Unlock()
 }
 
-func (net *NodeEventTracker) HandleIncomingData(data *NodeData) {
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
-
-	existingData, ok := net.nodeData[data.PeerId.String()]
-	if !ok {
-		// If the node data does not exist in the cache and the node has left, ignore it
-		if data.LastLeft.After(data.LastJoined) {
-			return
-		}
-		// Otherwise, add it
-		net.nodeData[data.PeerId.String()] = data
-		return
-	}
-
-	// Handle discrepancies for existing nodes
-	if data.LastJoined.Before(existingData.LastJoined) && data.LastJoined.After(existingData.LastLeft) {
-		existingData.LastJoined = data.LastJoined
-	}
-	if data.LastLeft.After(existingData.LastLeft) && data.LastLeft.Before(existingData.LastJoined) {
-		existingData.LastLeft = data.LastLeft
-	}
-	// Update accumulated uptime
-	existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
-}
-
-func (net *NodeEventTracker) GetAllNodeData() []NodeData {
-	// Convert the map to a slice
-	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
-	for _, nodeData := range net.nodeData {
-		nodeDataSlice = append(nodeDataSlice, *nodeData)
-	}
-
-	// Sort the slice based on the timestamp
-	sort.Slice(nodeDataSlice, func(i, j int) bool {
-		return nodeDataSlice[i].LastUpdated.Before(nodeDataSlice[j].LastUpdated)
-	})
-	return nodeDataSlice
-}
+//func (net *NodeEventTracker) WriteToLedger() {
+//	net.dataMutex.RLock()
+//	// Get the timestamp of the last block in the ledger
+//	lastBlockTime, _ := time.Parse(time.RFC3339, net.ledger.LastBlock().Timestamp)
+//	for peerID, nodeData := range net.nodeData {
+//		// Check if the NodeData has been updated since the last block was added to the ledger
+//		if nodeData.LastUpdated.After(lastBlockTime) {
+//			// Convert NodeData to JSON
+//			data, _ := json.Marshal(nodeData)
+//			net.ledger.Add(peerID, map[string]interface{}{
+//				"nodeData": string(data),
+//			})
+//		}
+//	}
+//	net.dataMutex.RUnlock()
+//}

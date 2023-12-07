@@ -63,13 +63,3 @@ func (n *NodeData) GetCurrentUptime() time.Duration {
 func (n *NodeData) GetAccumulatedUptime() time.Duration {
 	return n.AccumulatedUptime + n.GetCurrentUptime()
 }
-
-// UpdateAccumulatedUptime updates the accumulated uptime of the node in the cases where there is a discrepancy between
-// the last left and last joined times that came in from the gossip sub events
-func (n *NodeData) UpdateAccumulatedUptime() {
-	if n.Activity == ActivityLeft {
-		n.AccumulatedUptime += n.LastLeft.Sub(n.LastJoined)
-	} else {
-		n.AccumulatedUptime += time.Since(n.LastJoined)
-	}
-}
