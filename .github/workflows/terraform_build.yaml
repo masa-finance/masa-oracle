@@ -19,7 +19,7 @@ jobs:
     runs-on: gha-arc
     defaults:
       run:
-        shell: sh
+        shell: bash
     steps:
     - uses: actions/checkout@v4
     - uses: hashicorp/setup-terraform@v3
