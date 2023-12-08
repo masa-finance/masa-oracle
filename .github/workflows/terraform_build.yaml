@@ -22,6 +22,10 @@ jobs:
         shell: bash
     steps:
     - uses: actions/checkout@v4
+    # Solves issue https://github.com/hashicorp/setup-terraform/issues/84
+    - uses: actions/setup-node@v2
+      with:
+       node-version: '16'
     - uses: hashicorp/setup-terraform@v3
 
     - name: Add SSH keys / Create repo tar
