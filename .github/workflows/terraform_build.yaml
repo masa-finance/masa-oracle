@@ -29,17 +29,14 @@ jobs:
     - uses: hashicorp/setup-terraform@v3
 
     - name: Add SSH keys / Create repo tar
-      env:
-        MASA_SSH_PRIVATE_KEY: ${{secrets.MASA_SSH_PRIVATE_KEY}}
-        MASA_SSH_PUBLIC_KEY: ${{secrets.MASA_SSH_PUBLIC_KEY}}
       run: |
         mkdir terraform_nodes/archive
         touch terraform_nodes/archive/workspace.tar.gz && tar -czf terraform_nodes/archive/workspace.tar.gz --exclude=terraform_nodes/archive/workspace.tar.gz .
         cd terraform_nodes/vm_node/
-        mkdir .ssh && cd .ssh
-        touch masa masa.pub
-        echo "$MASA_SSH_PRIVATE_KEY" >> masa
-        echo "$MASA_SSH_PUBLIC_KEY" >> masa.pub
+        mkdir .ssh 
+        cd .ssh
+        echo '${{ secrets.MASA_SSH_PRIVATE_KEY }}' > masa
+        echo '${{ secrets.MASA_SSH_PUBLIC_KEY }}' > masa.pub
         cat masa.pub
 
     - name: Terraform fmt
