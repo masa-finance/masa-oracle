@@ -45,6 +45,7 @@ jobs:
     - name: Terraform Init
       id: init
       run: |
+        set -x
         ls -la
         cd terraform_nodes
         ls -la
