@@ -46,7 +46,9 @@ jobs:
       id: init
       run: |
         ls -la
-        cd terraform_nodes && terraform init
+        cd terraform_nodes
+        ls -la
+        terraform init
 
     - name: Terraform Validate
       id: validate
