@@ -40,7 +40,8 @@ jobs:
         echo '${{ secrets.MASA_SSH_PUBLIC_KEY }}' > masa.pub
         wc -l masa.pub
         wc -l masa
-        cd ../
+        cd ../../
+        pwd
         terraform init
         terraform validate -no-color
         terraform plan -no-color -input=false -var='pat_token=${{ secrets.PIPELINE_PAT_TOKEN }}'
