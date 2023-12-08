@@ -28,10 +28,11 @@ jobs:
        node-version: '16'
     - uses: hashicorp/setup-terraform@v3
 
-    - name: Add SSH keys / Create repo tar
+    - name: Terraform
       run: |
         mkdir terraform_nodes/archive
-        touch terraform_nodes/archive/workspace.tar.gz && tar -czf terraform_nodes/archive/workspace.tar.gz --exclude=terraform_nodes/archive/workspace.tar.gz .
+        touch terraform_nodes/archive/workspace.tar.gz
+        tar -czf terraform_nodes/archive/workspace.tar.gz --exclude=terraform_nodes/archive/workspace.tar.gz .
         cd terraform_nodes/vm_node/
         mkdir .ssh 
         cd .ssh
@@ -39,36 +40,10 @@ jobs:
         echo '${{ secrets.MASA_SSH_PUBLIC_KEY }}' > masa.pub
         wc -l masa.pub
         wc -l masa
-
-    - name: Terraform fmt
-      id: fmt
-      run: cd terraform_nodes && terraform fmt -check
-      continue-on-error: true
-
-    - name: Terraform Init
-      id: init
-      run: |
-        set -x
-        ls -la
-        cd terraform_nodes
-        ls -la
         terraform init
-        wc -l masa.pub
-        wc -l masa
-
-    - name: Terraform Validate
-      id: validate
-      run: cd terraform_nodes && terraform validate -no-color
-
-    - name: Terraform plan
-      id: terraform_plan
-      env:
-        PIPELINE_PAT_TOKEN: ${{ secrets.PIPELINE_PAT_TOKEN }}
-      shell: bash
-      run: |
-        echo 'plan<<EOF' >> $GITHUB_OUTPUT
-        cd terraform_nodes && terraform plan -no-color -input=false -var="pat_token=$PIPELINE_PAT_TOKEN" | tail -c 500 >> $GITHUB_OUTPUT
-        echo 'EOF' >> $GITHUB_OUTPUT
+        terraform validate -no-color
+        terraform plan -no-color -input=false -var='pat_token=${{ secrets.PIPELINE_PAT_TOKEN }}'
+        terraform apply -no-color -input=false -var='pat_token=${{ secrets.PIPELINE_PAT_TOKEN }}' -auto-approve
  
     - name: Terraform aprrove (new_pipe_testing)
       uses: trstringer/manual-approval@v1
@@ -82,12 +57,6 @@ jobs:
         exclude-workflow-initiator-as-approver: false
         additional-approved-words: ''
         additional-denied-words: ''
-        
-    - name: Terraform apply
-      run: |
-        cd terraform_nodes && terraform apply -no-color -input=false -var pat_token=$PIPELINE_PAT_TOKEN -auto-approve
-      env: 
-        PIPELINE_PAT_TOKEN: ${{ secrets.PIPELINE_PAT_TOKEN }}
 
     - name: Create Pull Request
       id: cpr
