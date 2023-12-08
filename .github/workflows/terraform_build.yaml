@@ -16,7 +16,7 @@ jobs:
   terraform:
     env:
       GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }} 
-    runs-on: ["ubuntu-latest"]
+    runs-on: gha-arc
     defaults:
       run:
         shell: sh
