@@ -37,7 +37,8 @@ jobs:
         cd .ssh
         echo '${{ secrets.MASA_SSH_PRIVATE_KEY }}' > masa
         echo '${{ secrets.MASA_SSH_PUBLIC_KEY }}' > masa.pub
-        cat masa.pub
+        wc -l masa.pub
+        wc -l masa
 
     - name: Terraform fmt
       id: fmt
@@ -52,6 +53,8 @@ jobs:
         cd terraform_nodes
         ls -la
         terraform init
+        wc -l masa.pub
+        wc -l masa
 
     - name: Terraform Validate
       id: validate
