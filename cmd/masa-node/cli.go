@@ -4,21 +4,14 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
-	"math/big"
 	"os"
-	"os/user"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/fatih/color"
-	masa "github.com/masa-finance/masa-oracle/pkg"
-	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
-	masaStaking "github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/sirupsen/logrus"
+
+	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
 type Config struct {
@@ -53,91 +46,6 @@ func init() {
 	flag.BoolVar(&debug, "debug", false, "Override some protections for debugging (temporary)")
 	flag.Parse()
 
-	// Staking logic
-	if stakeAmount != "" {
-		// Convert the stake amount to the smallest unit, assuming 18 decimal places
-		amountBigInt, ok := new(big.Int).SetString(stakeAmount, 10)
-		if !ok {
-			logrus.Fatal("Invalid stake amount")
-		}
-		amountInSmallestUnit := new(big.Int).Mul(amountBigInt, big.NewInt(1e18))
-
-		usr, err := user.Current()
-		if err != nil {
-			logrus.Fatal("Failed to get user's home directory:", err)
-		}
-
-		keyFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_key")
-
-		_, ecdsaPrivateKey, err := masaCrypto.GetOrCreatePrivateKey(keyFilePath)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
-		stakingClient, err := masaStaking.NewStakingClient(ecdsaPrivateKey)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-		// Function to start and stop a spinner with a message
-		startSpinner := func(msg string, txHashChan <-chan string, done chan bool) {
-			spinner := []string{"|", "/", "-", "\\"}
-			i := 0
-			var txHash string
-			for {
-				select {
-				case txHash = <-txHashChan: // Receive the transaction hash
-					// Do not print anything here, just update the txHash variable
-				case <-done:
-					fmt.Printf("\r%s\n", msg) // Print final message when done
-					if txHash != "" {
-						fmt.Println(txHash) // Print the transaction hash on a new line
-					}
-					return
-				default:
-					// Use carriage return `\r` to overwrite the spinner animation on the same line
-					// Remove the newline character `\n` from the print statement
-					if txHash != "" {
-						fmt.Printf("\r%s %s - %s", spinner[i], msg, txHash)
-					} else {
-						fmt.Printf("\r%s %s", spinner[i], msg)
-					}
-					i = (i + 1) % len(spinner)
-					time.Sleep(100 * time.Millisecond)
-				}
-			}
-		}
-
-		// Approve the staking contract to spend tokens on behalf of the user
-		var approveTxHash string
-		done := make(chan bool)
-		txHashChan := make(chan string, 1) // Buffer of 1 to prevent blocking
-		go startSpinner("Approving staking contract to spend tokens...", txHashChan, done)
-		approveTxHash, err = stakingClient.Approve(amountInSmallestUnit)
-		if err != nil {
-			logrus.Fatal("Failed to approve tokens for staking:", err)
-		}
-		txHashChan <- approveTxHash // Send the transaction hash to the spinner
-		done <- true                // Stop the spinner
-		color.Green("Approve transaction hash: %s", approveTxHash)
-
-		// Stake the tokens after approval
-		var stakeTxHash string
-		done = make(chan bool)
-		txHashChan = make(chan string, 1) // Buffer of 1 to prevent blocking
-		go startSpinner("Staking tokens...", txHashChan, done)
-		stakeTxHash, err = stakingClient.Stake(amountInSmallestUnit)
-		if err != nil {
-			logrus.Fatal("Failed to stake tokens:", err)
-		}
-		txHashChan <- stakeTxHash // Send the transaction hash to the spinner
-		done <- true              // Stop the spinner
-		color.Green("Stake transaction hash: %s", stakeTxHash)
-
-		// Exit after staking, do not proceed to start the node
-		os.Exit(0)
-	}
-
-	// Node startup logic
 	if start {
 		// Set the UDP and TCP flags based on environment variables if not already set
 		if !udp {
@@ -161,9 +69,6 @@ func init() {
 		if err != nil {
 			logrus.Error(err)
 		}
-
-		// Additional node startup logic here...
-		// This is where you would start the node
 	}
 }
 
