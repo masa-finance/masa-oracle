@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 
+	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
@@ -37,12 +38,12 @@ func init() {
 }
 
 func TestAddUser(t *testing.T) {
-	privKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv("private.key"))
+	_, ecdsaPrivKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	result, err := AddUser(privKey, 31337, "testUser", "100")
+	result, err := AddUser(ecdsaPrivKey, 31337, "testUser", "100")
 	if err != nil {
 		t.Fatal(err)
 	}

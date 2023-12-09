@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"math/big"
 	"os"
@@ -9,17 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/libp2p/go-libp2p/core/crypto"
 
 	"github.com/masa-finance/masa-oracle/pkg/ethereum/contracts"
 )
 
-func AddUser(privateKey crypto.PrivKey, chainId int64, userId, reputationScore string) (string, error) {
+func AddUser(ecdsaKey *ecdsa.PrivateKey, chainId int64, userId, reputationScore string) (string, error) {
 	// Connect to an ethereum node  running locally
-	ecdsaKey, err := LibP2pToEcdsa(privateKey)
-	if err != nil {
-		return "", err
-	}
 
 	ethNodeUrl := os.Getenv("eth.node.url")
 	if ethNodeUrl == "" {
