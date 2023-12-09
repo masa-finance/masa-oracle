@@ -21,7 +21,6 @@
 # Go workspace file
 go.work
 
-
 .env
 .idea/**
 .vscode/**
@@ -39,7 +38,6 @@ masa-node
 
 # smart contracts
 node_modules
-.env
 
 # Hardhat files
 /cache
