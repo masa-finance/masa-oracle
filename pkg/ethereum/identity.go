@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"log"
@@ -13,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 
-	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
-
 	"github.com/masa-finance/masa-oracle/pkg/ethereum/contracts"
 )
 
@@ -25,7 +24,7 @@ const (
 	PaymentMethod   = "0x0000000000000000000000000000000000000000"
 )
 
-func Mint(libP2pPrivateKey libp2pCrypto.PrivKey, toAddress string) error {
+func Mint(ecdsaPrivKey *ecdsa.PrivateKey, toAddress string) error {
 	// Connect to the Ethereum client
 
 	rpcEndpoint := os.Getenv("rpc.endpoint")
@@ -60,10 +59,6 @@ func Mint(libP2pPrivateKey libp2pCrypto.PrivKey, toAddress string) error {
 	instance, err := contracts.NewEthereum(contractAddress, client)
 	if err != nil {
 		log.Fatalf("Failed to create a new instance of the contract: %v", err)
-	}
-	ecdsaPrivKey, err := LibP2pToEcdsa(libP2pPrivateKey)
-	if err != nil {
-		return err
 	}
 
 	// Create a new transactor
