@@ -8,6 +8,9 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sirupsen/logrus"
+
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 func (node *OracleNode) ListenToNodeTracker() {
@@ -20,12 +23,16 @@ func (node *OracleNode) ListenToNodeTracker() {
 				log.Printf("Error marshaling node data: %v", err)
 				continue
 			}
-
 			// Publish the JSON data on the node.topic
-			err = node.PubSubManager.Publish(masaNodeTopic, jsonData)
+			err = node.PubSubManager.Publish(NodeTopic, jsonData)
 			if err != nil {
 				log.Printf("Error publishing node data: %v", err)
 			}
+			// If the nodeData represents a join event, call SendNodeData in a separate goroutine
+			if nodeData.Activity == pubsub2.ActivityJoined {
+				go node.SendNodeData(nodeData.PeerId)
+			}
+
 		case <-node.Context.Done():
 			return
 		}
@@ -33,20 +40,20 @@ func (node *OracleNode) ListenToNodeTracker() {
 }
 
 func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
-	var nodeData NodeData
+	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
 		log.Printf("Failed to unmarshal node data: %v", err)
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
-	node.NodeTracker.HandleIncomingData(&nodeData)
+	node.NodeTracker.HandleNodeData(&nodeData)
 }
 
 type NodeDataPage struct {
-	Data         []NodeData `json:"data"`
-	PageNumber   int        `json:"pageNumber"`
-	TotalPages   int        `json:"totalPages"`
-	TotalRecords int        `json:"totalRecords"`
+	Data         []pubsub2.NodeData `json:"data"`
+	PageNumber   int                `json:"pageNumber"`
+	TotalPages   int                `json:"totalPages"`
+	TotalRecords int                `json:"totalRecords"`
 }
 
 func (node *OracleNode) SendNodeDataPage(peerID peer.ID, pageNumber int) {
@@ -65,7 +72,6 @@ func (node *OracleNode) SendNodeDataPage(peerID peer.ID, pageNumber int) {
 	if endIndex > totalRecords {
 		endIndex = totalRecords
 	}
-
 	nodeDataPage := NodeDataPage{
 		Data:         allNodeData[startIndex:endIndex],
 		PageNumber:   pageNumber,
@@ -86,26 +92,18 @@ func (node *OracleNode) SendNodeDataPage(peerID peer.ID, pageNumber int) {
 }
 
 func (node *OracleNode) SendNodeData(peerID peer.ID) {
-	stream, err := node.Host.NewStream(node.Context, peerID, NodeDataSyncProtocol)
-	if err != nil {
-		log.Printf("Failed to open stream to %s: %v", peerID, err)
-		return
-	}
+	allNodeData := node.NodeTracker.GetAllNodeData()
+	totalRecords := len(allNodeData)
+	totalPages := int(math.Ceil(float64(totalRecords) / float64(PageSize)))
 
-	nodeData := node.NodeTracker.GetAllNodeData()
-	jsonData, err := json.Marshal(nodeData)
-	if err != nil {
-		log.Printf("Failed to marshal NodeData: %v", err)
-		return
-	}
-
-	_, err = stream.Write(jsonData)
-	if err != nil {
-		log.Printf("Failed to send NodeData to %s: %v", peerID, err)
+	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
+		node.SendNodeDataPage(peerID, pageNumber)
 	}
 }
 
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
+	logrus.Info("ReceiveNodeData")
+
 	defer stream.Close()
 
 	jsonData := make([]byte, 1024)
@@ -115,20 +113,14 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		return
 	}
 
-	var nodeData []NodeData
-	if err := json.Unmarshal(jsonData[:n], &nodeData); err != nil {
-		log.Printf("Failed to unmarshal NodeData: %v", err)
+	var page NodeDataPage
+	if err := json.Unmarshal(jsonData[:n], &page); err != nil {
+		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
+		logrus.Errorf("%v", string(jsonData[:n]))
 		return
 	}
 
-	for _, data := range nodeData {
-		node.NodeTracker.HandleIncomingData(&data)
+	for _, data := range page.Data {
+		node.NodeTracker.HandleNodeData(&data)
 	}
-}
-
-func (node *OracleNode) OnJoinEvent(peerID peer.ID) {
-	// Existing join event handling code...
-
-	// Send NodeData to the new node
-	node.SendNodeData(peerID)
 }

@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"strconv"
@@ -134,46 +135,54 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 
 func (api *API) PostAd() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//bodyBytes, err := io.ReadAll(c.Request.Body)
-		//if err != nil {
-		//	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		//	return
-		//}
-		//api.Node.PubSubManager.Publish(masa.AdTopic, bodyBytes)
-
-		var newAd ad.Ad
-		if err := c.ShouldBindJSON(&newAd); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		bodyBytes, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+		if !api.Node.IsStaked {
+			c.JSON(http.StatusPreconditionRequired, gin.H{"error": "node must be staked to be an ad publisher"})
 			return
 		}
 
-		if err := api.Node.PublishAd(newAd); err != nil {
+		if err := api.Node.PubSubManager.Publish(masa.AdTopic, bodyBytes); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
 		c.JSON(http.StatusOK, gin.H{"status": "Ad published"})
 	}
 }
 
 func (api *API) GetAds() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if len(api.Node.Ads) == 0 {
-			c.JSON(http.StatusOK, gin.H{"message": "No ads"})
-		} else {
-			c.JSON(http.StatusOK, api.Node.Ads)
-		}
-	}
-}
-
-func (api *API) SubscribeToAds() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		err := api.Node.SubscribeToAds()
+		handler, err := api.Node.PubSubManager.GetHandler(masa.AdTopic)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
+		adHandler, ok := handler.(*ad.SubscriptionHandler)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "handler is not of type ad.SubscriptionHandler"})
+			return
+		}
+
+		if len(adHandler.Ads) == 0 {
+			c.JSON(http.StatusOK, gin.H{"message": "No ads"})
+		} else {
+			c.JSON(http.StatusOK, adHandler.Ads)
+		}
+	}
+}
+
+func (api *API) SubscribeToAds() gin.HandlerFunc {
+	handler := &ad.SubscriptionHandler{}
+	return func(c *gin.Context) {
+		err := api.Node.PubSubManager.AddSubscription(masa.AdTopic, handler)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"status": "Subscribed to get ads"})
 	}
 }

@@ -8,8 +8,9 @@ const (
 	oracleProtocol       = "masa_oracle_protocol/1.0.0"
 	NodeDataSyncProtocol = "/masa/nodeDataSync/1.0.0"
 	masaPrefix           = "/masa"
-	masaNodeTopic        = "/masa/gossip/1.0.0"
+	NodeTopic            = "/masa/gossip/1.0.0"
+	AdTopic              = "/masa/ad/1.0.0"
 	rendezvous           = "masa-mdns"
 	PortNbr              = "portNbr"
-	PageSize             = 100
+	PageSize             = 25
 )

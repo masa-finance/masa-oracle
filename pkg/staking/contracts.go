@@ -1,4 +1,3 @@
-// staking/contracts.go
 package staking
 
 import (
@@ -23,12 +22,12 @@ const (
 	rpcURL = "https://sepolia.infura.io/v3/74533a2e74bc430188366f3aa5715ae1" // update to Sepolia - this should be added as an environment variable sometime
 )
 
-// Addresses of the deployed contracts (replace with actual addresses)
+// MasaTokenAddress Addresses of the deployed contracts (replace with actual addresses)
 var MasaTokenAddress = common.HexToAddress("0x26775cD6D7615c8570c8421819c228225543a844")
 var OracleNodeStakingContractAddress = common.HexToAddress("0xd925bc5d3eCd899a3F7B8D762397D2DC75E1187b")
 
-// StakingClient holds the necessary details to interact with the Ethereum contracts
-type StakingClient struct {
+// Client StakingClient holds the necessary details to interact with the Ethereum contracts
+type Client struct {
 	EthClient  *ethclient.Client
 	PrivateKey *ecdsa.PrivateKey
 }
@@ -55,20 +54,20 @@ func getStakingContractABI(jsonPath string) (abi.ABI, error) {
 	return parsedABI, nil
 }
 
-// NewStakingClient creates a new StakingClient using the Sepolia RPC endpoint
-func NewStakingClient(privateKey *ecdsa.PrivateKey) (*StakingClient, error) {
+// NewClient creates a new StakingClient using the Sepolia RPC endpoint
+func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	client, err := ethclient.Dial(rpcURL) // Use the Sepolia RPC URL
 	if err != nil {
 		return nil, err
 	}
-	return &StakingClient{
+	return &Client{
 		EthClient:  client,
 		PrivateKey: privateKey,
 	}, nil
 }
 
 // Approve allows the staking contract to spend tokens on behalf of the user
-func (sc *StakingClient) Approve(amount *big.Int) (string, error) {
+func (sc *Client) Approve(amount *big.Int) (string, error) {
 
 	// Parse the ABI
 	parsedABI, err := getStakingContractABI("contracts/build/contracts/MasaToken.json")
@@ -144,7 +143,7 @@ func (sc *StakingClient) Approve(amount *big.Int) (string, error) {
 }
 
 // Stake allows the user to stake tokens
-func (sc *StakingClient) Stake(amount *big.Int) (string, error) {
+func (sc *Client) Stake(amount *big.Int) (string, error) {
 	// Fetch the chain ID dynamically
 	chainID, err := sc.EthClient.NetworkID(context.Background())
 	if err != nil {
