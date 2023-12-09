@@ -1,6 +1,7 @@
-package masa
+package pubsub
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,30 +15,56 @@ const (
 	ActivityLeft
 )
 
+type JSONMultiaddr struct {
+	multiaddr.Multiaddr
+}
+
+func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
+	// Unmarshal the JSON as a string
+	var multiaddrStr string
+	if err := json.Unmarshal(b, &multiaddrStr); err != nil {
+		return err
+	}
+
+	// Parse the string as a multiaddr
+	multiaddr, err := multiaddr.NewMultiaddr(multiaddrStr)
+	if err != nil {
+		return err
+	}
+
+	m.Multiaddr = multiaddr
+	return nil
+}
+
 type NodeData struct {
-	Multiaddr         multiaddr.Multiaddr
+	Multiaddrs        []JSONMultiaddr
 	PeerId            peer.ID
 	LastJoined        time.Time
 	LastLeft          time.Time
 	LastUpdated       time.Time
 	CurrentUptime     time.Duration
 	AccumulatedUptime time.Duration
+	PublicKey         string
 	Activity          int
 }
 
-func NewNodeData(multiaddr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
+func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
+	multiaddrs := make([]JSONMultiaddr, 0)
+	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
+
 	return &NodeData{
 		PeerId:            peerId,
-		Multiaddr:         multiaddr,
+		Multiaddrs:        multiaddrs,
 		LastJoined:        time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
+		PublicKey:         "",
 		Activity:          activity,
 	}
 }
 
 func (n *NodeData) Address() string {
-	return fmt.Sprintf("%s/p2p/%s", n.Multiaddr.String(), n.PeerId.String())
+	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
 }
 
 func (n *NodeData) Joined() {
@@ -48,7 +75,7 @@ func (n *NodeData) Joined() {
 }
 
 func (n *NodeData) Left() {
-	logrus.Info("Node left: ", n.Multiaddr.String())
+	logrus.Info("Node left: ", n.Multiaddrs[0].String())
 	now := time.Now()
 	n.LastLeft = now
 	n.LastUpdated = now

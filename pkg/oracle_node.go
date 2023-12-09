@@ -3,15 +3,13 @@ package masa
 import (
 	"bufio"
 	"context"
-	"encoding/json"
-	"errors"
+	"crypto/ecdsa"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -27,27 +25,32 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
+	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
 	Host          host.Host
-	PrivKey       crypto.PrivKey
+	PrivKey       *ecdsa.PrivateKey
 	Protocol      protocol.ID
-	multiAddrs    multiaddr.Multiaddr
+	priorityAddrs multiaddr.Multiaddr
+	multiAddrs    []multiaddr.Multiaddr
 	DHT           *dht.IpfsDHT
 	Context       context.Context
 	PeerChan      chan myNetwork.PeerEvent
-	NodeTracker   *NodeEventTracker
-	PubSubManager *myNetwork.PubSubManager
-	AdTopic       *pubsub.Topic
-	Ads           []ad.Ad
+	NodeTracker   *pubsub2.NodeEventTracker
+	PubSubManager *pubsub2.Manager
 	Signature     string
 	IsStaked      bool
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
-	return node.multiAddrs
+	if node.priorityAddrs == nil {
+		pAddr := myNetwork.GetPriorityAddress(node.multiAddrs)
+		node.priorityAddrs = pAddr
+	}
+	return node.priorityAddrs
 }
 
 func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, isStaked bool) (*OracleNode, error) {
@@ -92,36 +95,30 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	// Create a new GossipSub for the ad topic
-	ps, err := pubsub.NewGossipSub(ctx, host)
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, host)
 	if err != nil {
 		return nil, err
 	}
 
-	adTopic, err := ps.Join("ad-topic")
-	if err != nil {
-		return nil, err
-	}
-	subscriptionManager, err := myNetwork.NewPubSubManager(ctx, host)
+	ecdsaPrivKey, err := crypto2.Libp2pPrivateKeyToEcdsa(privKey)
 	if err != nil {
 		return nil, err
 	}
 	return &OracleNode{
 		Host:          host,
-		PrivKey:       privKey,
+		PrivKey:       ecdsaPrivKey,
 		Protocol:      oracleProtocol,
-		multiAddrs:    myNetwork.GetMultiAddressForHostQuiet(host),
+		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(host),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   NewNodeEventTracker(),
+		NodeTracker:   pubsub2.NewNodeEventTracker(),
 		PubSubManager: subscriptionManager,
-		AdTopic:       adTopic, // Add the ad topic to the OracleNode
 		IsStaked:      isStaked,
 	}, nil
 }
 
 func (node *OracleNode) Start() (err error) {
-	logrus.Infof("Starting node with ID: %s", node.multiAddrs.String())
+	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(NodeDataSyncProtocol, node.ReceiveNodeData)
 
@@ -145,16 +142,15 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
-	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.multiAddrs)
-	// Subscribe to a topic with OracleNode as the handler
-	err = node.PubSubManager.AddSubscription(masaNodeTopic, NewParticipantHandler(node))
+	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
+
+	// Subscribe to a topics
+	err = node.PubSubManager.AddSubscription(NodeTopic, node.NodeTracker)
 	if err != nil {
 		return err
 	}
-	// This is older code and should be removed
-	//node.topic, err = myNetwork.WithPubSub(node.Context, node.Host, masaNodeTopic, node.PeerChan)
+	err = node.PubSubManager.AddSubscription(AdTopic, &ad.SubscriptionHandler{})
 
-	go node.publishMessages()
 	return nil
 }
 
@@ -210,7 +206,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		// Try to add the peer to the routing table (no-op if already present).
 		added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
 		if err != nil {
-			logrus.Warningf("Failed to add peer %s to routing table: %v", remotePeer, err)
+			logrus.Debugf("Failed to add peer %s to routing table: %v", remotePeer, err)
 		} else if !added {
 			logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
 		} else {
@@ -218,15 +214,15 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		}
 		// Check if the peer is useful after trying to add it
 		isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
-		logrus.Infof("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
+		logrus.Debugf("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
 	}
 	logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
 
 	// Create a buffer stream for non-blocking read and write.
-	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-	go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
-	go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
+	//go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
+	//go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
 
 	// 'stream' will stay open until you close it (or the other side closes it).
 }
@@ -266,7 +262,7 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 
 	for {
 		// Generate a message including the multiaddress of the sender
-		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.multiAddrs.String())
+		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.GetMultiAddrs().String())
 
 		_, err := rw.WriteString(sendData)
 		if err != nil {
@@ -281,65 +277,6 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 		// Sleep for a while before sending the next message
 		time.Sleep(time.Second * 30)
 	}
-}
-
-func (node *OracleNode) publishMessages() {
-	ticker := time.NewTicker(25 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			// publish a message on the Topic
-			err := node.PubSubManager.Publish(masaNodeTopic, []byte(fmt.Sprintf("topic Hello from %s\n", node.multiAddrs.String())))
-			if err != nil {
-				logrus.Error("Error publishing to topic:", err)
-			}
-		case <-node.Context.Done():
-			return
-		}
-	}
-}
-
-func (node *OracleNode) PublishAd(ad ad.Ad) error {
-	if !node.IsStaked {
-		return errors.New("node must be staked to be an ad publisher")
-	}
-
-	node.Ads = append(node.Ads, ad)
-	adBytes, err := json.Marshal(ad)
-	if err != nil {
-		return err
-	}
-	return node.AdTopic.Publish(node.Context, adBytes)
-}
-
-func (node *OracleNode) SubscribeToAds() error {
-	sub, err := node.AdTopic.Subscribe()
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for {
-			msg, err := sub.Next(node.Context)
-			if err != nil {
-				logrus.Errorf("sub.Next: %s", err.Error())
-				continue
-			}
-
-			var ad ad.Ad
-			if err := json.Unmarshal(msg.Data, &ad); err != nil {
-				logrus.Errorf("Failed to unmarshal ad: %s", err.Error())
-				continue
-			}
-
-			// Handle the ad here
-			fmt.Printf("Received ad: %+v\n", ad)
-		}
-	}()
-
-	return nil
 }
 
 func (node *OracleNode) IsPublisher() bool {
