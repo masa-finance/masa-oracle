@@ -41,23 +41,9 @@ func init() {
 	}
 	envFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_node.env")
 	keyFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_key")
-
-	// Create the directories if they don't already exist
-	if _, err := os.Stat(filepath.Dir(envFilePath)); os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(envFilePath), 0755)
-		if err != nil {
-			logrus.Fatal("could not create directory:", err)
-		}
-	}
-	// Check if the .env file exists
-	if _, err := os.Stat(envFilePath); os.IsNotExist(err) {
-		// If not, create it with default values
-		builder := strings.Builder{}
-		builder.WriteString(fmt.Sprintf("%s=%s\n", masa.KeyFileKey, keyFilePath))
-		err = os.WriteFile(envFilePath, []byte(builder.String()), 0644)
-		if err != nil {
-			logrus.Fatal("could not write to .env file:", err)
-		}
+	err = setUpFiles(envFilePath, keyFilePath)
+	if err != nil {
+		logrus.Fatal(err)
 	}
 	err = godotenv.Load(envFilePath)
 	if err != nil {
@@ -86,15 +72,17 @@ func main() {
 		cancel()
 	}()
 
-	privKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
 		logrus.Fatal(err)
 	}
-
-	// Get the Ethereum address from the public key
-	ethAddress, err := crypto.VerifyEthereumCompatibility(privKey)
-	if err != nil {
-		logrus.Fatal(err)
+	if stakeAmount != "" {
+		// Exit after staking, do not proceed to start the node
+		err = handleStaking(ecdsaPrivKey)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		os.Exit(0)
 	}
 
 	var isStaked bool
@@ -127,10 +115,33 @@ func main() {
 	// Set env variables for CI/CD pipelines
 	cicd_helpers.SetEnvVariablesForPipeline(multiAddr)
 
-	// BP: Add gin router to get peers (multiaddress) and get peer addresses @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
-
+	// BP: Add gin router to get peers (multiaddress) and get peer addresses
+	// @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
 	router := routes.SetupRoutes(node)
 	go router.Run()
 
 	<-ctx.Done()
+}
+
+func setUpFiles(envFilePath, keyFilePath string) error {
+	// Create the directories if they don't already exist
+	if _, err := os.Stat(filepath.Dir(envFilePath)); os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(envFilePath), 0755)
+		if err != nil {
+			logrus.Error("could not create directory:")
+			return err
+		}
+	}
+	// Check if the .env file exists
+	if _, err := os.Stat(envFilePath); os.IsNotExist(err) {
+		// If not, create it with default values
+		builder := strings.Builder{}
+		builder.WriteString(fmt.Sprintf("%s=%s\n", masa.KeyFileKey, keyFilePath))
+		err = os.WriteFile(envFilePath, []byte(builder.String()), 0644)
+		if err != nil {
+			logrus.Error("could not write to .env file:")
+			return err
+		}
+	}
+	return nil
 }

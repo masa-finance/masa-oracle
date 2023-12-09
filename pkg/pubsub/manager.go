@@ -3,6 +3,7 @@ package pubsub
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"os"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -18,6 +19,7 @@ type Manager struct {
 	ctx           context.Context
 	topics        map[string]*pubsub.Topic
 	subscriptions map[string]*pubsub.Subscription
+	handlers      map[string]SubscriptionHandler
 	gossipSub     *pubsub.PubSub
 	host          host.Host
 }
@@ -31,19 +33,28 @@ func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) {
 		ctx:           ctx,
 		subscriptions: make(map[string]*pubsub.Subscription),
 		topics:        make(map[string]*pubsub.Topic),
+		handlers:      make(map[string]SubscriptionHandler),
 		gossipSub:     gossipSub,
 		host:          host,
 	}
 	return manager, nil
 }
 
-func SetUpSubscriptions() {
+// SetUpSubscriptions can be used to set up a default set of subscriptions where the handler can be created separately
+func (sm *Manager) SetUpSubscriptions() {
+}
 
+func (sm *Manager) createTopic(topicName string) (*pubsub.Topic, error) {
+	topic, err := sm.gossipSub.Join(topicName)
+	if err != nil {
+		return nil, err
+	}
+	sm.topics[topicName] = topic
+	return topic, nil
 }
 
 func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler) error {
-	// Subscribe to a topic
-	topic, err := sm.gossipSub.Join(topicName)
+	topic, err := sm.createTopic(topicName)
 	if err != nil {
 		return err
 	}
@@ -51,8 +62,8 @@ func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler
 	if err != nil {
 		return err
 	}
-	sm.topics[topicName] = topic
 	sm.subscriptions[topicName] = sub
+	sm.handlers[topicName] = handler
 
 	go func() {
 		for {
@@ -73,20 +84,41 @@ func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler
 	return nil
 }
 
-func (sm *Manager) RemoveSubscription(topic string) {
-	delete(sm.subscriptions, topic)
-}
+func (sm *Manager) RemoveSubscription(topic string) error {
+	sub, ok := sm.subscriptions[topic]
+	if !ok {
+		return fmt.Errorf("no subscription for topic %s", topic)
+	}
+	// Close the subscription
+	sub.Cancel()
 
-func (sm *Manager) GetSubscription(topic string) *pubsub.Subscription {
-	return sm.subscriptions[topic]
+	// Remove the subscription and handler
+	delete(sm.subscriptions, topic)
+	delete(sm.handlers, topic)
+	return nil
+}
+func (sm *Manager) GetSubscription(topic string) (*pubsub.Subscription, error) {
+	sub, ok := sm.subscriptions[topic]
+	if !ok {
+		return nil, fmt.Errorf("no subscription for topic %s", topic)
+	}
+	return sub, nil
 }
 
 func (sm *Manager) Publish(topic string, data []byte) error {
 	t, ok := sm.topics[topic]
 	if !ok {
-		return nil
+		return fmt.Errorf("no topic named %s", topic)
 	}
 	return t.Publish(sm.ctx, data)
+}
+
+func (sm *Manager) GetHandler(topic string) (SubscriptionHandler, error) {
+	handler, ok := sm.handlers[topic]
+	if !ok {
+		return nil, fmt.Errorf("no handler for topic %s", topic)
+	}
+	return handler, nil
 }
 
 func StreamConsoleTo(ctx context.Context, topic *pubsub.Topic) {

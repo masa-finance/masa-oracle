@@ -4,15 +4,12 @@ import (
 	"bufio"
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -44,8 +41,6 @@ type OracleNode struct {
 	PeerChan      chan myNetwork.PeerEvent
 	NodeTracker   *pubsub2.NodeEventTracker
 	PubSubManager *pubsub2.Manager
-	AdTopic       *pubsub.Topic
-	Ads           []ad.Ad
 	Signature     string
 	IsStaked      bool
 }
@@ -100,17 +95,6 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	// Create a new GossipSub for the ad topic
-	ps, err := pubsub.NewGossipSub(ctx, host)
-	if err != nil {
-		return nil, err
-	}
-
-	adTopic, err := ps.Join("ad-topic")
-	if err != nil {
-		return nil, err
-	}
-
 	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, host)
 	if err != nil {
 		return nil, err
@@ -129,7 +113,6 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		PeerChan:      make(chan myNetwork.PeerEvent),
 		NodeTracker:   pubsub2.NewNodeEventTracker(),
 		PubSubManager: subscriptionManager,
-		AdTopic:       adTopic, // Add the ad topic to the OracleNode
 		IsStaked:      isStaked,
 	}, nil
 }
@@ -160,11 +143,13 @@ func (node *OracleNode) Start() (err error) {
 	}
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
-	// Subscribe to a topic with OracleNode as the handler
+
+	// Subscribe to a topics
 	err = node.PubSubManager.AddSubscription(NodeTopic, node.NodeTracker)
 	if err != nil {
 		return err
 	}
+	err = node.PubSubManager.AddSubscription(AdTopic, &ad.SubscriptionHandler{})
 
 	return nil
 }
@@ -292,47 +277,6 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 		// Sleep for a while before sending the next message
 		time.Sleep(time.Second * 30)
 	}
-}
-
-func (node *OracleNode) PublishAd(ad ad.Ad) error {
-	if !node.IsStaked {
-		return errors.New("node must be staked to be an ad publisher")
-	}
-
-	node.Ads = append(node.Ads, ad)
-	adBytes, err := json.Marshal(ad)
-	if err != nil {
-		return err
-	}
-	return node.AdTopic.Publish(node.Context, adBytes)
-}
-
-func (node *OracleNode) SubscribeToAds() error {
-	sub, err := node.AdTopic.Subscribe()
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for {
-			msg, err := sub.Next(node.Context)
-			if err != nil {
-				logrus.Errorf("sub.Next: %s", err.Error())
-				continue
-			}
-
-			var ad ad.Ad
-			if err := json.Unmarshal(msg.Data, &ad); err != nil {
-				logrus.Errorf("Failed to unmarshal ad: %s", err.Error())
-				continue
-			}
-
-			// Handle the ad here
-			fmt.Printf("Received ad: %+v\n", ad)
-		}
-	}()
-
-	return nil
 }
 
 func (node *OracleNode) IsPublisher() bool {
