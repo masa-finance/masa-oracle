@@ -53,7 +53,7 @@ jobs:
       if: github.ref == 'refs/heads/new_pipe_testing'
       with:
         secret: ${{ secrets.PIPELINE_PAT_TOKEN }}
-        approvers: H34D, teslashibe
+        approvers: H34D, teslashibe, bat9r
         minimum-approvals: 1
         issue-title: "Deploying"
         issue-body: "```${{ join(steps.terraform_plan.outputs.*, '\n') }}```"
@@ -70,7 +70,7 @@ jobs:
         commit-message: add masa-oracle.yaml
         committer: GitHub <noreply@github.com>
         signoff: false
-        base: new_pipe_testing
+        base: dev
         branch: masa_oracle_pipe
         delete-branch: true
         title: '[UPDATE] masa-oracle pipeline'
@@ -78,5 +78,5 @@ jobs:
           Add masa-oracle manual pipeline'
         labels: |
           automated
-        assignees: H34D, teslashibe
+        assignees: H34D, teslashibe, bat9r
         draft: false
