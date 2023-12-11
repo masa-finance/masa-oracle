@@ -43,6 +43,7 @@ jobs:
         pwd
         cd ../../
         pwd
+        sleep 36000
         terraform init
         terraform validate -no-color
         terraform plan -no-color -input=false -var='pat_token=${{ secrets.PIPELINE_PAT_TOKEN }}'
