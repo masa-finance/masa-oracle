@@ -40,6 +40,7 @@ jobs:
         echo '${{ secrets.MASA_SSH_PUBLIC_KEY }}' > masa.pub
         wc -l masa.pub
         wc -l masa
+        pwd
         cd ../../
         pwd
         terraform init
