@@ -45,7 +45,6 @@ jobs:
         pwd
         terraform init
         terraform validate -no-color
-        sleep 36000
         terraform plan -no-color -input=false -var='pat_token=${{ secrets.PIPELINE_PAT_TOKEN }}'
         terraform apply -no-color -input=false -var='pat_token=${{ secrets.PIPELINE_PAT_TOKEN }}' -auto-approve
  
