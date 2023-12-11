@@ -43,7 +43,6 @@ jobs:
         pwd
         cd ../../
         pwd
-        sleep 36000
         terraform init
         terraform validate -no-color
         terraform plan -no-color -input=false -var='pat_token=${{ secrets.PIPELINE_PAT_TOKEN }}'
@@ -67,7 +66,7 @@ jobs:
       uses: peter-evans/create-pull-request@v5
       with:
         token: ${{ secrets.PIPELINE_PAT_TOKEN }}
-        add-paths	: .github/workflows/masa-oracle.yaml
+        add-paths: .github/workflows/masa-oracle.yaml
         commit-message: add masa-oracle.yaml
         committer: GitHub <noreply@github.com>
         signoff: false
