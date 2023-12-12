@@ -1,7 +1,9 @@
 package masa
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"math"
 
@@ -56,13 +58,7 @@ type NodeDataPage struct {
 	TotalRecords int                `json:"totalRecords"`
 }
 
-func (node *OracleNode) SendNodeDataPage(peerID peer.ID, pageNumber int) {
-	stream, err := node.Host.NewStream(node.Context, peerID, NodeDataSyncProtocol)
-	if err != nil {
-		log.Printf("Failed to open stream to %s: %v", peerID, err)
-		return
-	}
-
+func (node *OracleNode) SendNodeDataPage(stream network.Stream, pageNumber int) {
 	allNodeData := node.NodeTracker.GetAllNodeData()
 	totalRecords := len(allNodeData)
 	totalPages := int(math.Ceil(float64(totalRecords) / PageSize))
@@ -87,7 +83,7 @@ func (node *OracleNode) SendNodeDataPage(peerID peer.ID, pageNumber int) {
 
 	_, err = stream.Write(jsonData)
 	if err != nil {
-		log.Printf("Failed to send NodeDataPage to %s: %v", peerID, err)
+		log.Printf("Failed to send NodeDataPage: %v", err)
 	}
 }
 
@@ -96,8 +92,15 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	totalRecords := len(allNodeData)
 	totalPages := int(math.Ceil(float64(totalRecords) / float64(PageSize)))
 
+	stream, err := node.Host.NewStream(node.Context, peerID, NodeDataSyncProtocol)
+	if err != nil {
+		log.Printf("Failed to open stream to %s: %v", peerID, err)
+		return
+	}
+	defer stream.Close() // Ensure the stream is closed after sending the data
+
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
-		node.SendNodeDataPage(peerID, pageNumber)
+		node.SendNodeDataPage(stream, pageNumber)
 	}
 }
 
@@ -106,17 +109,34 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 
 	defer stream.Close()
 
-	jsonData := make([]byte, 1024)
-	n, err := stream.Read(jsonData)
-	if err != nil {
-		log.Printf("Failed to read NodeData from %s: %v", stream.Conn().RemotePeer(), err)
-		return
-	}
+	// Log the peer.ID of the remote peer
+	remotePeerID := stream.Conn().RemotePeer()
+	logrus.Infof("Received NodeData from %s", remotePeerID)
 
+	jsonData := make([]byte, 1024)
+
+	var buffer bytes.Buffer
+	// Loop until all data is read from the stream
+	for {
+		n, err := stream.Read(jsonData)
+		// when the other side closes the connection right away we get the EOF right away, so you have to write
+		// to the buffer before checking for the EOF
+		if n > 0 {
+			buffer.Write(jsonData[:n])
+		}
+		if err != nil {
+			if err == io.EOF {
+				// All data has been read
+				break
+			}
+			log.Printf("Failed to read NodeData from %s: %v", remotePeerID, err)
+			return
+		}
+	}
 	var page NodeDataPage
-	if err := json.Unmarshal(jsonData[:n], &page); err != nil {
-		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
-		logrus.Errorf("%v", string(jsonData[:n]))
+	if err := json.Unmarshal(buffer.Bytes(), &page); err != nil {
+		logrus.Errorf("Failed to unmarshal NodeData page: %v", err)
+		logrus.Errorf("%v", buffer.String())
 		return
 	}
 

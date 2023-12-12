@@ -2,6 +2,8 @@ package pubsub
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"sort"
 	"sync"
 
@@ -19,10 +21,15 @@ type NodeEventTracker struct {
 }
 
 func NewNodeEventTracker() *NodeEventTracker {
-	return &NodeEventTracker{
+	net := &NodeEventTracker{
 		nodeData:     make(map[string]*NodeData),
 		NodeDataChan: make(chan *NodeData),
 	}
+	err := net.LoadNodeData()
+	if err != nil {
+		logrus.Error("Error loading node data", err)
+	}
+	return net
 }
 
 func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
@@ -125,7 +132,7 @@ func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
 		existingData.LastLeft = data.LastLeft
 	}
 	// Update accumulated uptime
-	existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
+	//existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
 }
 
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
@@ -133,7 +140,10 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	// Convert the map to a slice
 	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
 	for _, nodeData := range net.nodeData {
-		nodeDataSlice = append(nodeDataSlice, *nodeData)
+		nd := *nodeData
+		nd.CurrentUptime = nodeData.GetCurrentUptime()
+		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+		nodeDataSlice = append(nodeDataSlice, nd)
 	}
 
 	// Sort the slice based on the timestamp
@@ -141,4 +151,58 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 		return nodeDataSlice[i].LastUpdated.Before(nodeDataSlice[j].LastUpdated)
 	})
 	return nodeDataSlice
+}
+
+func (net *NodeEventTracker) DumpNodeData() {
+	// Lock the nodeData map for concurrent read
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
+
+	// Convert the nodeData map to JSON
+	data, err := json.Marshal(net.nodeData)
+	if err != nil {
+		// Handle error
+	}
+
+	// Write the JSON data to a file
+	filePath := os.Getenv("nodeBackupPath")
+	if filePath == "" {
+		filePath = "node_data.json"
+	}
+	err = os.WriteFile(filePath, data, 0644)
+	if err != nil {
+		logrus.Error(fmt.Sprintf("could not write to file: %s", filePath), err)
+	}
+}
+
+func (net *NodeEventTracker) LoadNodeData() error {
+	// Read the JSON data from a file
+	filePath := os.Getenv("nodeBackupPath")
+	if filePath == "" {
+		filePath = "node_data.json"
+	}
+	// Check if the file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		logrus.Warn(fmt.Sprintf("file does not exist: %s", filePath))
+		return nil
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		logrus.Error(fmt.Sprintf("could not read from file: %s", filePath), err)
+		return err
+	}
+	// Convert the JSON data to a map
+	nodeData := make(map[string]*NodeData)
+	err = json.Unmarshal(data, &nodeData)
+	if err != nil {
+		logrus.Error("could not unmarshal JSON data", err)
+		return err
+	}
+	// Lock the nodeData map for concurrent write
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+
+	// Replace the nodeData map with the new map
+	net.nodeData = nodeData
+	return nil
 }
