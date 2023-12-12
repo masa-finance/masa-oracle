@@ -37,15 +37,18 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 }
 
 type NodeData struct {
-	Multiaddrs        []JSONMultiaddr
-	PeerId            peer.ID
-	LastJoined        time.Time
-	LastLeft          time.Time
-	LastUpdated       time.Time
-	CurrentUptime     time.Duration
-	AccumulatedUptime time.Duration
-	PublicKey         string
-	Activity          int
+	Multiaddrs           []JSONMultiaddr `json:"multiaddrs"`
+	PeerId               peer.ID         `json:"peerId"`
+	LastJoined           time.Time       `json:"lastJoined"`
+	LastLeft             time.Time       `json:"lastLeft"`
+	LastUpdated          time.Time       `json:"lastUpdated"`
+	CurrentUptime        time.Duration   `json:"currentUptime"`
+	CurrentUptimeStr     string          `json:"readableCurrentUptime"`
+	AccumulatedUptime    time.Duration   `json:"accumulatedUptime"`
+	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime"`
+	PublicKey            string          `json:"-"`
+	Activity             int             `json:"activity"`
+	IsActive             bool            `json:"isActive"`
 }
 
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
@@ -71,6 +74,7 @@ func (n *NodeData) Joined() {
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
+	n.IsActive = true
 	logrus.Info("Node joined: ", n.Address())
 }
 
@@ -81,6 +85,7 @@ func (n *NodeData) Left() {
 	n.LastUpdated = now
 	n.AccumulatedUptime += n.GetCurrentUptime()
 	n.CurrentUptime = 0
+	n.IsActive = false
 }
 
 func (n *NodeData) GetCurrentUptime() time.Duration {

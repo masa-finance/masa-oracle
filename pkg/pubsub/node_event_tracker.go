@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -143,6 +144,8 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 		nd := *nodeData
 		nd.CurrentUptime = nodeData.GetCurrentUptime()
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+		nd.CurrentUptimeStr = prettyDuration(nd.CurrentUptime)
+		nd.AccumulatedUptimeStr = prettyDuration(nd.AccumulatedUptime)
 		nodeDataSlice = append(nodeDataSlice, nd)
 	}
 
@@ -207,4 +210,21 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	logrus.Info("Loaded node data from file")
 	net.nodeData = nodeData
 	return nil
+}
+
+func prettyDuration(d time.Duration) string {
+	d = d.Round(time.Minute)
+	min := int64(d / time.Minute)
+	h := min / 60
+	min %= 60
+	days := h / 24
+	h %= 24
+
+	if days > 0 {
+		return fmt.Sprintf("%d days %d hours %d minutes", days, h, min)
+	}
+	if h > 0 {
+		return fmt.Sprintf("%d hours %d minutes", h, min)
+	}
+	return fmt.Sprintf("%d minutes", min)
 }
