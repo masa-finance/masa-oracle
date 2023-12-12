@@ -169,6 +169,7 @@ func (net *NodeEventTracker) DumpNodeData() {
 	if filePath == "" {
 		filePath = "node_data.json"
 	}
+	logrus.Infof("writing node data to file: %s", filePath)
 	err = os.WriteFile(filePath, data, 0644)
 	if err != nil {
 		logrus.Error(fmt.Sprintf("could not write to file: %s", filePath), err)
@@ -203,6 +204,7 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	defer net.dataMutex.Unlock()
 
 	// Replace the nodeData map with the new map
+	logrus.Info("Loaded node data from file")
 	net.nodeData = nodeData
 	return nil
 }

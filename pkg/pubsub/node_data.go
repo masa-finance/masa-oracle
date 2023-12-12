@@ -84,7 +84,14 @@ func (n *NodeData) Left() {
 }
 
 func (n *NodeData) GetCurrentUptime() time.Duration {
-	return time.Since(n.LastJoined)
+	var dur time.Duration
+	// If the node is currently active, return the time since the last joined time
+	if n.Activity == ActivityJoined {
+		dur = time.Since(n.LastJoined)
+	} else if n.Activity == ActivityLeft {
+		dur = 0
+	}
+	return dur
 }
 
 func (n *NodeData) GetAccumulatedUptime() time.Duration {
