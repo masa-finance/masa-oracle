@@ -77,6 +77,8 @@ jobs:
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 1"
+        cat masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service    
@@ -104,6 +106,8 @@ jobs:
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 2"
+        cat masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
@@ -131,6 +135,8 @@ jobs:
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 3"
+        cat masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
@@ -159,6 +165,8 @@ jobs:
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 3"
+        cat masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
