@@ -121,6 +121,7 @@ func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(NodeDataSyncProtocol, node.ReceiveNodeData)
+	node.Host.SetStreamHandler(NodeGossipTopic, node.GossipNodeData)
 
 	node.Host.Network().Notify(node.NodeTracker)
 
@@ -145,7 +146,7 @@ func (node *OracleNode) Start() (err error) {
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
 
 	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(NodeTopic, node.NodeTracker)
+	err = node.PubSubManager.AddSubscription(NodeGossipTopic, node.NodeTracker)
 	if err != nil {
 		return err
 	}
