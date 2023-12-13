@@ -49,6 +49,7 @@ func init() {
 	if err != nil {
 		logrus.Error("Error loading .env file")
 	}
+	os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, ".masa", masa.NodeBackupFileName))
 }
 
 func main() {
@@ -61,16 +62,6 @@ func main() {
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
-
-	// Listen for SIGINT (CTRL+C)
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-
-	// Cancel the context when SIGINT is received
-	go func() {
-		<-c
-		cancel()
-	}()
 
 	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
 	if err != nil {
@@ -114,6 +105,17 @@ func main() {
 
 	// Set env variables for CI/CD pipelines
 	cicd_helpers.SetEnvVariablesForPipeline(multiAddr)
+
+	// Listen for SIGINT (CTRL+C)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	// Cancel the context when SIGINT is received
+	go func() {
+		<-c
+		node.NodeTracker.DumpNodeData()
+		cancel()
+	}()
 
 	// BP: Add gin router to get peers (multiaddress) and get peer addresses
 	// @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints

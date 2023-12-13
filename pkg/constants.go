@@ -13,4 +13,6 @@ const (
 	rendezvous           = "masa-mdns"
 	PortNbr              = "portNbr"
 	PageSize             = 25
+	NodeBackupFileName   = "nodeBackup.json"
+	NodeBackupPath       = "nodeBackupPath"
 )

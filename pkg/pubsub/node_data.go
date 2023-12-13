@@ -37,18 +37,21 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 }
 
 type NodeData struct {
-	Multiaddrs        []JSONMultiaddr
-	PeerId            peer.ID
-	LastJoined        time.Time
-	LastLeft          time.Time
-	LastUpdated       time.Time
-	CurrentUptime     time.Duration
-	AccumulatedUptime time.Duration
-	PublicKey         string
-	Activity          int
+	Multiaddrs           []JSONMultiaddr `json:"multiaddrs"`
+	PeerId               peer.ID         `json:"peerId"`
+	LastJoined           time.Time       `json:"lastJoined"`
+	LastLeft             time.Time       `json:"lastLeft"`
+	LastUpdated          time.Time       `json:"lastUpdated"`
+	CurrentUptime        time.Duration   `json:"currentUptime"`
+	CurrentUptimeStr     string          `json:"readableCurrentUptime"`
+	AccumulatedUptime    time.Duration   `json:"accumulatedUptime"`
+	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime"`
+	PublicKey            string          `json:"publicKey"`
+	Activity             int             `json:"activity"`
+	IsActive             bool            `json:"isActive"`
 }
 
-func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
+func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
 
@@ -58,7 +61,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeDa
 		LastJoined:        time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
-		PublicKey:         "",
+		PublicKey:         publicKey,
 		Activity:          activity,
 	}
 }
@@ -71,6 +74,7 @@ func (n *NodeData) Joined() {
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
+	n.IsActive = true
 	logrus.Info("Node joined: ", n.Address())
 }
 
@@ -81,10 +85,18 @@ func (n *NodeData) Left() {
 	n.LastUpdated = now
 	n.AccumulatedUptime += n.GetCurrentUptime()
 	n.CurrentUptime = 0
+	n.IsActive = false
 }
 
 func (n *NodeData) GetCurrentUptime() time.Duration {
-	return time.Since(n.LastJoined)
+	var dur time.Duration
+	// If the node is currently active, return the time since the last joined time
+	if n.Activity == ActivityJoined {
+		dur = time.Since(n.LastJoined)
+	} else if n.Activity == ActivityLeft {
+		dur = 0
+	}
+	return dur
 }
 
 func (n *NodeData) GetAccumulatedUptime() time.Duration {
