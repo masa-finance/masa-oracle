@@ -10,8 +10,11 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
 type NodeEventTracker struct {
@@ -56,14 +59,14 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
-	net.NodeDataChan <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 
+	pubKeyHex := getPublicKey(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
 	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
+		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityJoined)
 		net.nodeData[peerID] = nodeData
 	} else {
 		// If the node data exists, check if the multiaddress is already in the list
@@ -78,6 +81,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{c.RemoteMultiaddr()})
 		}
 	}
+	net.NodeDataChan <- nodeData
 	nodeData.Joined()
 	net.dataMutex.Unlock()
 }
@@ -89,14 +93,20 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Disconnected")
-	net.NodeDataChan <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 
+	pubKeyHex := getPublicKey(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
+
 	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
-	if exists {
-		nodeData.Left()
+	if !exists {
+		// this should never happen
+		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
+		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityLeft)
 	}
+	net.NodeDataChan <- nodeData
+	nodeData.Left()
+
 	net.dataMutex.Unlock()
 }
 
@@ -227,4 +237,25 @@ func prettyDuration(d time.Duration) string {
 		return fmt.Sprintf("%d hours %d minutes", h, min)
 	}
 	return fmt.Sprintf("%d minutes", min)
+}
+
+func getPublicKey(remotePeer peer.ID, n network.Network) string {
+	var publicKeyHex string
+	var err error
+
+	// Get the public key of the remote peer
+	pubKey := n.Peerstore().PubKey(remotePeer)
+	if pubKey == nil {
+		logrus.WithFields(logrus.Fields{
+			"Peer": remotePeer.String(),
+		}).Warn("No public key found for peer")
+	} else {
+		publicKeyHex, err = crypto.Libp2pPubKeyToEcdsaHex(pubKey)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Peer": remotePeer.String(),
+			}).Warn("Error getting public key")
+		}
+	}
+	return publicKeyHex
 }

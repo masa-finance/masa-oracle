@@ -51,7 +51,7 @@ type NodeData struct {
 	IsActive             bool            `json:"isActive"`
 }
 
-func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeData {
+func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
 
@@ -61,7 +61,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, activity int) *NodeDa
 		LastJoined:        time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
-		PublicKey:         "",
+		PublicKey:         publicKey,
 		Activity:          activity,
 	}
 }
