@@ -11,7 +11,7 @@ on:
         required: true
       node1argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: 'default'
+        default: ''
         type: string
         required: false 
 
@@ -22,7 +22,7 @@ on:
         required: true
       node2argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: 'default'
+        default: ''
         type: string
         required: false 
 
@@ -33,7 +33,7 @@ on:
         required: true
       node3argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: 'default'
+        default: ''
         type: string
         required: false
 
@@ -44,7 +44,7 @@ on:
         required: true
       node4argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: 'default'
+        default: ''
         type: string
         required: false
 
