@@ -135,29 +135,14 @@ func Libp2pPubKeyToEcdsa(pubKey crypto.PubKey) (*ecdsa.PublicKey, error) {
 	return ecdsaPubKey, nil
 }
 
-func Libp2pPubKeyToEcdsaHex(pubKey crypto.PubKey) (string, error) {
+func Libp2pPubKeyToEthAddress(pubKey crypto.PubKey) (string, error) {
 	ecdsaPublic, err := Libp2pPubKeyToEcdsa(pubKey)
 	if err != nil {
 		return "", err
 	}
-	pubKeyBytes := ethCrypto.FromECDSAPub(ecdsaPublic)
-	ecdsaPubKeyHex := hex.EncodeToString(pubKeyBytes)
+	ethAddress := ethCrypto.PubkeyToAddress(*ecdsaPublic).Hex()
 
-	return ecdsaPubKeyHex, nil
-}
-
-func HexToECDSAPubKey(pubKeyHex string) (*ecdsa.PublicKey, error) {
-	pubKeyBytes, err := hex.DecodeString(pubKeyHex)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding hex string: %v", err)
-	}
-
-	ecdsaPubKey, err := ethCrypto.UnmarshalPubkey(pubKeyBytes)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling public key: %v", err)
-	}
-
-	return ecdsaPubKey, nil
+	return ethAddress, nil
 }
 
 // VerifyEthereumCompatibility Really only useful for printing key values, I think this could be removed.

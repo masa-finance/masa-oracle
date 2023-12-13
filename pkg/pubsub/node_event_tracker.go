@@ -60,17 +60,17 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"conn":    c,
 	}).Info("Connected")
 
-	pubKeyHex := getPublicKey(c.RemotePeer(), n)
+	ethAddress := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
 	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityJoined)
+		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ethAddress, ActivityJoined)
 		net.nodeData[peerID] = nodeData
 	} else {
-		if nodeData.PublicKey == "" {
-			nodeData.PublicKey = pubKeyHex
+		if nodeData.EthAddress == "" {
+			nodeData.EthAddress = ethAddress
 		}
 		// If the node data exists, check if the multiaddress is already in the list
 		addrExists := false
@@ -97,7 +97,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"conn":    c,
 	}).Info("Disconnected")
 
-	pubKeyHex := getPublicKey(c.RemotePeer(), n)
+	pubKeyHex := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
 	net.dataMutex.Lock()
@@ -137,7 +137,6 @@ func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
 		net.nodeData[data.PeerId.String()] = data
 		return
 	}
-
 	// Handle discrepancies for existing nodes
 	if data.LastJoined.Before(existingData.LastJoined) && data.LastJoined.After(existingData.LastLeft) {
 		existingData.LastJoined = data.LastJoined
@@ -242,7 +241,7 @@ func prettyDuration(d time.Duration) string {
 	return fmt.Sprintf("%d minutes", min)
 }
 
-func getPublicKey(remotePeer peer.ID, n network.Network) string {
+func getEthAddress(remotePeer peer.ID, n network.Network) string {
 	var publicKeyHex string
 	var err error
 
@@ -253,7 +252,7 @@ func getPublicKey(remotePeer peer.ID, n network.Network) string {
 			"Peer": remotePeer.String(),
 		}).Warn("No public key found for peer")
 	} else {
-		publicKeyHex, err = crypto.Libp2pPubKeyToEcdsaHex(pubKey)
+		publicKeyHex, err = crypto.Libp2pPubKeyToEthAddress(pubKey)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Peer": remotePeer.String(),

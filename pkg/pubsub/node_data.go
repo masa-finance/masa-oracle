@@ -46,7 +46,7 @@ type NodeData struct {
 	CurrentUptimeStr     string          `json:"readableCurrentUptime"`
 	AccumulatedUptime    time.Duration   `json:"accumulatedUptime"`
 	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime"`
-	PublicKey            string          `json:"publicKey"`
+	EthAddress           string          `json:"ethAddress"`
 	Activity             int             `json:"activity"`
 	IsActive             bool            `json:"isActive"`
 }
@@ -61,7 +61,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		LastJoined:        time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
-		PublicKey:         publicKey,
+		EthAddress:        publicKey,
 		Activity:          activity,
 	}
 }

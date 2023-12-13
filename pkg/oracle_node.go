@@ -13,7 +13,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
@@ -184,40 +183,40 @@ func (node *OracleNode) handleDiscoveredPeers() {
 }
 
 func (node *OracleNode) handleStream(stream network.Stream) {
-	logrus.Debug("handleStream")
-
-	remotePeer := stream.Conn().RemotePeer()
-
-	// Check if we're already connected to the peer
-	connStatus := node.Host.Network().Connectedness(remotePeer)
-	if connStatus != network.Connected {
-		// We're not connected to the peer, so try to establish a connection
-		ctx, cancel := context.WithTimeout(node.Context, 5*time.Second)
-		defer cancel()
-		err := node.Host.Connect(ctx, peer.AddrInfo{ID: remotePeer})
-		if err != nil {
-			logrus.Warningf("Failed to connect to peer %s: %v", remotePeer, err)
-			return
-		}
-	}
-
-	//check if the peer is already in the table
-	peerInfo := node.Host.Peerstore().PeerInfo(remotePeer)
-	if len(peerInfo.Addrs) == 0 {
-		// Try to add the peer to the routing table (no-op if already present).
-		added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
-		if err != nil {
-			logrus.Debugf("Failed to add peer %s to routing table: %v", remotePeer, err)
-		} else if !added {
-			logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
-		} else {
-			logrus.Infof("Successfully added peer %s to routing table", remotePeer)
-		}
-		// Check if the peer is useful after trying to add it
-		isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
-		logrus.Debugf("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
-	}
-	logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
+	data := node.handleStreamData(stream)
+	logrus.Info("handleStream -> Received data:", string(data))
+	//remotePeer := stream.Conn().RemotePeer()
+	//
+	//// Check if we're already connected to the peer
+	//connStatus := node.Host.Network().Connectedness(remotePeer)
+	//if connStatus != network.Connected {
+	//	// We're not connected to the peer, so try to establish a connection
+	//	ctx, cancel := context.WithTimeout(node.Context, 5*time.Second)
+	//	defer cancel()
+	//	err := node.Host.Connect(ctx, peer.AddrInfo{ID: remotePeer})
+	//	if err != nil {
+	//		logrus.Warningf("Failed to connect to peer %s: %v", remotePeer, err)
+	//		return
+	//	}
+	//}
+	//
+	////check if the peer is already in the table
+	//peerInfo := node.Host.Peerstore().PeerInfo(remotePeer)
+	//if len(peerInfo.Addrs) == 0 {
+	//	// Try to add the peer to the routing table (no-op if already present).
+	//	added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
+	//	if err != nil {
+	//		logrus.Debugf("Failed to add peer %s to routing table: %v", remotePeer, err)
+	//	} else if !added {
+	//		logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
+	//	} else {
+	//		logrus.Infof("Successfully added peer %s to routing table", remotePeer)
+	//	}
+	//	// Check if the peer is useful after trying to add it
+	//	isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
+	//	logrus.Debugf("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
+	//}
+	//logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
 
 	// Create a buffer stream for non-blocking read and write.
 	//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))

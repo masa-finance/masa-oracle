@@ -93,6 +93,11 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					logrus.Error("Error writing to stream:", err)
 					continue
 				}
+				// Close the stream when done with it
+				if err := stream.Close(); err != nil {
+					logrus.Error("Error closing stream:", err)
+				}
+
 			case <-ctx.Done():
 				logrus.Info("Stopping peer discovery")
 				return
