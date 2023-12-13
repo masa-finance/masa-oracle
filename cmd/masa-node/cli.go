@@ -4,7 +4,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -74,7 +73,7 @@ func init() {
 
 func loadConfig(file string) (*Config, error) {
 	var config Config
-	configFile, err := ioutil.ReadFile(file)
+	configFile, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}

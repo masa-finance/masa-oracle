@@ -2,11 +2,11 @@ package crypto
 
 import (
 	"crypto/ecdsa"
-	"crypto/x509"
 	"encoding/hex"
 	"fmt"
 	"os"
 
+	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
@@ -126,17 +126,13 @@ func Libp2pPubKeyToEcdsa(pubKey crypto.PubKey) (*ecdsa.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	unmarshalledPub, err := x509.ParsePKIXPublicKey(raw)
+	secpPubKey, err := secp.ParsePubKey(raw)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing public key: %v", err)
 	}
 
-	ecdsaPub, ok := unmarshalledPub.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, fmt.Errorf("public key is not of type ecdsa")
-	}
-	return ecdsaPub, nil
+	ecdsaPubKey := secpPubKey.ToECDSA()
+	return ecdsaPubKey, nil
 }
 
 func Libp2pPubKeyToEcdsaHex(pubKey crypto.PubKey) (string, error) {
@@ -144,12 +140,24 @@ func Libp2pPubKeyToEcdsaHex(pubKey crypto.PubKey) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	raw, err := x509.MarshalPKIXPublicKey(ecdsaPublic)
-	if err != nil {
-		return "", err
-	}
-	ecdsaPubKeyHex := hex.EncodeToString(raw)
+	pubKeyBytes := ethCrypto.FromECDSAPub(ecdsaPublic)
+	ecdsaPubKeyHex := hex.EncodeToString(pubKeyBytes)
+
 	return ecdsaPubKeyHex, nil
+}
+
+func HexToECDSAPubKey(pubKeyHex string) (*ecdsa.PublicKey, error) {
+	pubKeyBytes, err := hex.DecodeString(pubKeyHex)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding hex string: %v", err)
+	}
+
+	ecdsaPubKey, err := ethCrypto.UnmarshalPubkey(pubKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling public key: %v", err)
+	}
+
+	return ecdsaPubKey, nil
 }
 
 // VerifyEthereumCompatibility Really only useful for printing key values, I think this could be removed.
