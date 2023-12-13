@@ -11,7 +11,7 @@ on:
         required: true
       node1argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: 'default'
+        default: ''
         type: string
         required: false 
 
@@ -22,7 +22,7 @@ on:
         required: true
       node2argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: 'default'
+        default: ''
         type: string
         required: false 
 
@@ -33,7 +33,18 @@ on:
         required: true
       node3argextra:
         description: "Extra args except of --port, --udp, --tcp"
+        default: ''
+        type: string
+        required: false
+
+      node4argbootnode:
+        description: "Bootnodes parameter for node4"
         default: 'default'
+        type: string
+        required: true
+      node4argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: ''
         type: string
         required: false
 
@@ -66,6 +77,8 @@ jobs:
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 1"
+        cat masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service    
@@ -73,6 +86,31 @@ jobs:
         source /home/masa/.masa/masa_oracle_node_output.env
         echo "MASA_NODE_MULTIADDRESS: $MASA_NODE_MULTIADDRESS"
         echo "MASA_NODE_MULTIADDRESS=$MASA_NODE_MULTIADDRESS" >> "$GITHUB_OUTPUT"
+  worker-node4:
+    needs: master-node3
+    runs-on: ["node4"]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Copy binary & restart service
+      run: |
+        echo "node4argbootnode: ${{ inputs.node4argbootnode }}"
+        echo "node4argextra: ${{ inputs.node4argextra }}"
+        /usr/local/go/bin/go mod tidy
+        /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
+        export EXTRA_ARGS="${{ inputs.node4argextra }}"
+        export BOOTNODES_ARG="--bootnodes=";
+        export BOOTNODES="${{needs.master-node3.outputs.MASA_NODE_MULTIADDRESS}}"
+        echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
+        rm -rf /home/masa/masa-oracle
+        mkdir /home/masa/masa-oracle
+        cp -R . /home/masa/masa-oracle/
+        cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 2"
+        cat masa-oracle.service
+        sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
+        sudo systemctl daemon-reload
+        sudo systemctl restart masa-oracle.service
 
 
   joined_node1:
@@ -97,6 +135,8 @@ jobs:
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 3"
+        cat masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
@@ -125,6 +165,8 @@ jobs:
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
+        echo "Debug service 3"
+        cat masa-oracle.service
         sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
         sudo systemctl daemon-reload
         sudo systemctl restart masa-oracle.service
