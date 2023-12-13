@@ -186,7 +186,6 @@ func (api *API) SubscribeToAds() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"status": "Subscribed to get ads"})
 	}
 }
-
 func GetPathInt(ctx *gin.Context, name string) (int, error) {
 	val, ok := ctx.GetQuery(name)
 	if !ok {

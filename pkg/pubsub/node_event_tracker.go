@@ -2,13 +2,19 @@ package pubsub
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"sort"
 	"sync"
+	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
 type NodeEventTracker struct {
@@ -19,10 +25,15 @@ type NodeEventTracker struct {
 }
 
 func NewNodeEventTracker() *NodeEventTracker {
-	return &NodeEventTracker{
+	net := &NodeEventTracker{
 		nodeData:     make(map[string]*NodeData),
 		NodeDataChan: make(chan *NodeData),
 	}
+	err := net.LoadNodeData()
+	if err != nil {
+		logrus.Error("Error loading node data", err)
+	}
+	return net
 }
 
 func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
@@ -48,16 +59,19 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
-	net.NodeDataChan <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 
+	pubKeyHex := getPublicKey(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
 	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
+		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityJoined)
 		net.nodeData[peerID] = nodeData
 	} else {
+		if nodeData.PublicKey == "" {
+			nodeData.PublicKey = pubKeyHex
+		}
 		// If the node data exists, check if the multiaddress is already in the list
 		addrExists := false
 		for _, addr := range nodeData.Multiaddrs {
@@ -70,6 +84,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{c.RemoteMultiaddr()})
 		}
 	}
+	net.NodeDataChan <- nodeData
 	nodeData.Joined()
 	net.dataMutex.Unlock()
 }
@@ -81,14 +96,20 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Disconnected")
-	net.NodeDataChan <- NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ActivityJoined)
 
+	pubKeyHex := getPublicKey(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
+
 	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
-	if exists {
-		nodeData.Left()
+	if !exists {
+		// this should never happen
+		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
+		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityLeft)
 	}
+	net.NodeDataChan <- nodeData
+	nodeData.Left()
+
 	net.dataMutex.Unlock()
 }
 
@@ -125,7 +146,7 @@ func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
 		existingData.LastLeft = data.LastLeft
 	}
 	// Update accumulated uptime
-	existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
+	//existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
 }
 
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
@@ -133,7 +154,12 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	// Convert the map to a slice
 	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
 	for _, nodeData := range net.nodeData {
-		nodeDataSlice = append(nodeDataSlice, *nodeData)
+		nd := *nodeData
+		nd.CurrentUptime = nodeData.GetCurrentUptime()
+		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+		nd.CurrentUptimeStr = prettyDuration(nd.CurrentUptime)
+		nd.AccumulatedUptimeStr = prettyDuration(nd.AccumulatedUptime)
+		nodeDataSlice = append(nodeDataSlice, nd)
 	}
 
 	// Sort the slice based on the timestamp
@@ -141,4 +167,98 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 		return nodeDataSlice[i].LastUpdated.Before(nodeDataSlice[j].LastUpdated)
 	})
 	return nodeDataSlice
+}
+
+func (net *NodeEventTracker) DumpNodeData() {
+	// Lock the nodeData map for concurrent read
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
+
+	// Convert the nodeData map to JSON
+	data, err := json.Marshal(net.nodeData)
+	if err != nil {
+		// Handle error
+	}
+
+	// Write the JSON data to a file
+	filePath := os.Getenv("nodeBackupPath")
+	if filePath == "" {
+		filePath = "node_data.json"
+	}
+	logrus.Infof("writing node data to file: %s", filePath)
+	err = os.WriteFile(filePath, data, 0644)
+	if err != nil {
+		logrus.Error(fmt.Sprintf("could not write to file: %s", filePath), err)
+	}
+}
+
+func (net *NodeEventTracker) LoadNodeData() error {
+	// Read the JSON data from a file
+	filePath := os.Getenv("nodeBackupPath")
+	if filePath == "" {
+		filePath = "node_data.json"
+	}
+	// Check if the file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		logrus.Warn(fmt.Sprintf("file does not exist: %s", filePath))
+		return nil
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		logrus.Error(fmt.Sprintf("could not read from file: %s", filePath), err)
+		return err
+	}
+	// Convert the JSON data to a map
+	nodeData := make(map[string]*NodeData)
+	err = json.Unmarshal(data, &nodeData)
+	if err != nil {
+		logrus.Error("could not unmarshal JSON data", err)
+		return err
+	}
+	// Lock the nodeData map for concurrent write
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+
+	// Replace the nodeData map with the new map
+	logrus.Info("Loaded node data from file")
+	net.nodeData = nodeData
+	return nil
+}
+
+func prettyDuration(d time.Duration) string {
+	d = d.Round(time.Minute)
+	min := int64(d / time.Minute)
+	h := min / 60
+	min %= 60
+	days := h / 24
+	h %= 24
+
+	if days > 0 {
+		return fmt.Sprintf("%d days %d hours %d minutes", days, h, min)
+	}
+	if h > 0 {
+		return fmt.Sprintf("%d hours %d minutes", h, min)
+	}
+	return fmt.Sprintf("%d minutes", min)
+}
+
+func getPublicKey(remotePeer peer.ID, n network.Network) string {
+	var publicKeyHex string
+	var err error
+
+	// Get the public key of the remote peer
+	pubKey := n.Peerstore().PubKey(remotePeer)
+	if pubKey == nil {
+		logrus.WithFields(logrus.Fields{
+			"Peer": remotePeer.String(),
+		}).Warn("No public key found for peer")
+	} else {
+		publicKeyHex, err = crypto.Libp2pPubKeyToEcdsaHex(pubKey)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Peer": remotePeer.String(),
+			}).Warnf("Error getting public key %v", err)
+		}
+	}
+	return publicKeyHex
 }
