@@ -15,11 +15,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/cicd_helpers"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/routes"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/masa-finance/masa-oracle/pkg/welcome"
-	"github.com/masa-finance/masa-oracle/pkg/cicd_helpers"
 )
 
 func init() {
@@ -56,7 +56,7 @@ func main() {
 	// log the flags
 	bootnodesList := strings.Split(bootnodes, ",")
 	logrus.Infof("Bootnodes: %v", bootnodesList)
-	logrus.Infof("Port number: %s", portNbr)
+	logrus.Infof("Port number: %d", portNbr)
 	logrus.Infof("UDP: %v", udp)
 	logrus.Infof("TCP: %v", tcp)
 
@@ -76,8 +76,12 @@ func main() {
 		os.Exit(0)
 	}
 
+	var isStaked bool
 	// Verify the staking event
-	isStaked := staking.VerifyStakingEvent(ethAddress)
+	isStaked, err = staking.VerifyStakingEvent(ethAddress)
+	if err != nil {
+		logrus.Error(err)
+	}
 	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
