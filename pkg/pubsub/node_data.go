@@ -46,7 +46,7 @@ type NodeData struct {
 	CurrentUptimeStr     string          `json:"readableCurrentUptime"`
 	AccumulatedUptime    time.Duration   `json:"accumulatedUptime"`
 	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime"`
-	PublicKey            string          `json:"-"`
+	PublicKey            string          `json:"publicKey"`
 	Activity             int             `json:"activity"`
 	IsActive             bool            `json:"isActive"`
 }

@@ -69,6 +69,9 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityJoined)
 		net.nodeData[peerID] = nodeData
 	} else {
+		if nodeData.PublicKey == "" {
+			nodeData.PublicKey = pubKeyHex
+		}
 		// If the node data exists, check if the multiaddress is already in the list
 		addrExists := false
 		for _, addr := range nodeData.Multiaddrs {
@@ -254,7 +257,7 @@ func getPublicKey(remotePeer peer.ID, n network.Network) string {
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Peer": remotePeer.String(),
-			}).Warn("Error getting public key")
+			}).Warnf("Error getting public key %v", err)
 		}
 	}
 	return publicKeyHex
