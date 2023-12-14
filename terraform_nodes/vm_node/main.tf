@@ -60,6 +60,10 @@ resource "google_compute_instance" "default" {
       "bash removal_script.sh",
     ]
   }
+  service_account {
+    email  = masa-oracle-vm@masa-chain.iam.gserviceaccount.com 
+    scopes = ["cloud-platform", "logging-write", "monitoring-write"]
+  }
 
   tags = [
     "masa", "pipe"
