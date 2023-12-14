@@ -41,3 +41,18 @@ sudo chown -R masa:masa /home/masa/actions-runner
 sudo -u masa ./config.sh --url https://github.com/${github_name}/${repo_name} --token $token --name ${name} --labels ${name} --runnergroup default --work _work
 sudo -u masa sudo /home/masa/actions-runner/svc.sh install
 sudo -u masa sudo /home/masa/actions-runner/svc.sh start
+
+# Install ops agent for logging
+curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+sudo bash -c 'sudo echo "logging:                                       
+  receivers:
+    masa-oracle:
+      type: files
+      include_paths:
+      - /var/log/masa-oracle/*
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [masa-oracle]" >> /etc/google-cloud-ops-agent/config.yaml'
+sudo systemctl restart google-cloud-ops-agent.service
