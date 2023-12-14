@@ -60,14 +60,16 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"conn":    c,
 	}).Info("Connected")
 
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+
 	ethAddress := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
-	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
 		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ethAddress, ActivityJoined)
-		net.nodeData[peerID] = nodeData
+		net.nodeData[nodeData.PeerId.String()] = nodeData
 	} else {
 		if nodeData.EthAddress == "" {
 			nodeData.EthAddress = ethAddress
@@ -86,7 +88,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	}
 	net.NodeDataChan <- nodeData
 	nodeData.Joined()
-	net.dataMutex.Unlock()
 }
 
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
@@ -119,10 +120,10 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 		logrus.Errorf("failed to unmarshal node data: %v", err)
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
-	net.HandleNodeData(&nodeData)
+	net.HandleNodeData(nodeData)
 }
 
-func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
+func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
@@ -134,7 +135,8 @@ func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
 			return
 		}
 		// Otherwise, add it
-		net.nodeData[data.PeerId.String()] = data
+		logrus.Debugf("Adding new node data: %s", data.PeerId.String())
+		net.nodeData[data.PeerId.String()] = &data
 		return
 	}
 	// Handle discrepancies for existing nodes
@@ -217,7 +219,13 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	// Lock the nodeData map for concurrent write
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
-
+	// remove invalids from an earlier bug
+	for key, value := range nodeData {
+		if key != value.PeerId.String() {
+			logrus.Warnf("peer ID mismatch: %s != %s", key, value.PeerId)
+			delete(nodeData, key)
+		}
+	}
 	// Replace the nodeData map with the new map
 	logrus.Info("Loaded node data from file")
 	net.nodeData = nodeData

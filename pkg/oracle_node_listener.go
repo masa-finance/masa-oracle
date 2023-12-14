@@ -47,7 +47,7 @@ func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
-	node.NodeTracker.HandleNodeData(&nodeData)
+	node.NodeTracker.HandleNodeData(nodeData)
 }
 
 type NodeDataPage struct {
@@ -114,7 +114,7 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	}
 
 	for _, data := range page.Data {
-		node.NodeTracker.HandleNodeData(&data)
+		node.NodeTracker.HandleNodeData(data)
 	}
 }
 
@@ -127,7 +127,7 @@ func (node *OracleNode) GossipNodeData(stream network.Stream) {
 		logrus.Errorf("%s", string(data))
 		return
 	}
-	node.NodeTracker.HandleNodeData(&nodeData)
+	node.NodeTracker.HandleNodeData(nodeData)
 }
 
 func (node *OracleNode) handleStreamData(stream network.Stream) []byte {
