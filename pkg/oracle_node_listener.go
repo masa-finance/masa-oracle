@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"math"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -22,13 +21,13 @@ func (node *OracleNode) ListenToNodeTracker() {
 			// Marshal the nodeData into JSON
 			jsonData, err := json.Marshal(nodeData)
 			if err != nil {
-				log.Printf("Error marshaling node data: %v", err)
+				logrus.Errorf("Error marshaling node data: %v", err)
 				continue
 			}
 			// Publish the JSON data on the node.topic
-			err = node.PubSubManager.Publish(NodeTopic, jsonData)
+			err = node.PubSubManager.Publish(NodeGossipTopic, jsonData)
 			if err != nil {
-				log.Printf("Error publishing node data: %v", err)
+				logrus.Errorf("Error publishing node data: %v", err)
 			}
 			// If the nodeData represents a join event, call SendNodeData in a separate goroutine
 			if nodeData.Activity == pubsub2.ActivityJoined {
@@ -44,11 +43,11 @@ func (node *OracleNode) ListenToNodeTracker() {
 func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
 	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
-		log.Printf("Failed to unmarshal node data: %v", err)
+		logrus.Errorf("Failed to unmarshal node data: %v", err)
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
-	node.NodeTracker.HandleNodeData(&nodeData)
+	node.NodeTracker.HandleNodeData(nodeData)
 }
 
 type NodeDataPage struct {
@@ -77,13 +76,13 @@ func (node *OracleNode) SendNodeDataPage(stream network.Stream, pageNumber int) 
 
 	jsonData, err := json.Marshal(nodeDataPage)
 	if err != nil {
-		log.Printf("Failed to marshal NodeDataPage: %v", err)
+		logrus.Errorf("Failed to marshal NodeDataPage: %v", err)
 		return
 	}
 
 	_, err = stream.Write(jsonData)
 	if err != nil {
-		log.Printf("Failed to send NodeDataPage: %v", err)
+		logrus.Errorf("Failed to send NodeDataPage: %v", err)
 	}
 }
 
@@ -94,7 +93,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 
 	stream, err := node.Host.NewStream(node.Context, peerID, NodeDataSyncProtocol)
 	if err != nil {
-		log.Printf("Failed to open stream to %s: %v", peerID, err)
+		logrus.Errorf("Failed to open stream to %s: %v", peerID, err)
 		return
 	}
 	defer stream.Close() // Ensure the stream is closed after sending the data
@@ -106,13 +105,37 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	logrus.Info("ReceiveNodeData")
+	data := node.handleStreamData(stream)
+	var page NodeDataPage
+	if err := json.Unmarshal(data, &page); err != nil {
+		logrus.Errorf("Failed to unmarshal NodeData page: %v", err)
+		logrus.Errorf("%s", string(data))
+		return
+	}
 
+	for _, data := range page.Data {
+		node.NodeTracker.HandleNodeData(data)
+	}
+}
+
+func (node *OracleNode) GossipNodeData(stream network.Stream) {
+	logrus.Info("GossipNodeData")
+	data := node.handleStreamData(stream)
+	var nodeData pubsub2.NodeData
+	if err := json.Unmarshal(data, &nodeData); err != nil {
+		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
+		logrus.Errorf("%s", string(data))
+		return
+	}
+	node.NodeTracker.HandleNodeData(nodeData)
+}
+
+func (node *OracleNode) handleStreamData(stream network.Stream) []byte {
 	defer stream.Close()
 
 	// Log the peer.ID of the remote peer
 	remotePeerID := stream.Conn().RemotePeer()
-	logrus.Infof("Received NodeData from %s", remotePeerID)
-
+	logrus.Infof("received stream from %s", remotePeerID)
 	jsonData := make([]byte, 1024)
 
 	var buffer bytes.Buffer
@@ -129,18 +152,9 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 				// All data has been read
 				break
 			}
-			log.Printf("Failed to read NodeData from %s: %v", remotePeerID, err)
-			return
+			logrus.Errorf("Failed to read stream from %s: %v", remotePeerID, err)
+			return nil
 		}
 	}
-	var page NodeDataPage
-	if err := json.Unmarshal(buffer.Bytes(), &page); err != nil {
-		logrus.Errorf("Failed to unmarshal NodeData page: %v", err)
-		logrus.Errorf("%v", buffer.String())
-		return
-	}
-
-	for _, data := range page.Data {
-		node.NodeTracker.HandleNodeData(&data)
-	}
+	return buffer.Bytes()
 }

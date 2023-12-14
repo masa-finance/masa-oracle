@@ -26,7 +26,7 @@ func GenerateEthKey() {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.EthAddress")
 	}
 
 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
