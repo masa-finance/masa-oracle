@@ -46,7 +46,7 @@ type NodeData struct {
 	CurrentUptimeStr     string          `json:"readableCurrentUptime"`
 	AccumulatedUptime    time.Duration   `json:"accumulatedUptime"`
 	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime"`
-	PublicKey            string          `json:"publicKey"`
+	EthAddress           string          `json:"ethAddress"`
 	Activity             int             `json:"activity"`
 	IsActive             bool            `json:"isActive"`
 }
@@ -61,7 +61,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		LastJoined:        time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
-		PublicKey:         publicKey,
+		EthAddress:        publicKey,
 		Activity:          activity,
 	}
 }
@@ -74,6 +74,7 @@ func (n *NodeData) Joined() {
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
+	n.Activity = ActivityJoined
 	n.IsActive = true
 	logrus.Info("Node joined: ", n.Address())
 }
@@ -85,6 +86,7 @@ func (n *NodeData) Left() {
 	n.LastUpdated = now
 	n.AccumulatedUptime += n.GetCurrentUptime()
 	n.CurrentUptime = 0
+	n.Activity = ActivityLeft
 	n.IsActive = false
 }
 
