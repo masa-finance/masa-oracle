@@ -74,6 +74,7 @@ func (n *NodeData) Joined() {
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
+	n.Activity = ActivityJoined
 	n.IsActive = true
 	logrus.Info("Node joined: ", n.Address())
 }
@@ -85,6 +86,7 @@ func (n *NodeData) Left() {
 	n.LastUpdated = now
 	n.AccumulatedUptime += n.GetCurrentUptime()
 	n.CurrentUptime = 0
+	n.Activity = ActivityLeft
 	n.IsActive = false
 }
 
