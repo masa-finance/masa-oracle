@@ -30,6 +30,10 @@ resource "google_compute_instance" "default" {
     }
   }
 
+  labels = {
+    app = masa-oracle
+  }
+
   metadata = {
     ssh-keys = "masa:${file("${path.module}/.ssh/masa.pub")}"
   }
