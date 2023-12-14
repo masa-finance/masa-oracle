@@ -1,8 +1,8 @@
 name: build masa-nodes
 on:
   push:
-#    paths:
-#    - 'terraform_nodes/**'
+    paths:
+    - 'terraform_nodes/**'
     branches:
       - dev
 
