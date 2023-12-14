@@ -52,7 +52,7 @@ jobs: %{ if master_node != null }
           export BOOTNODES_ARG="--bootnodes=";
         fi
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
-        rm -rf /home/masa/masa-oracle
+        sudo rm -rf /home/masa/masa-oracle
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
@@ -82,7 +82,7 @@ jobs: %{ if master_node != null }
         export BOOTNODES_ARG="--bootnodes=";
         export BOOTNODES="$${{needs.master-${master_node}.outputs.MASA_NODE_MULTIADDRESS}}"
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
-        rm -rf /home/masa/masa-oracle
+        sudo rm -rf /home/masa/masa-oracle
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
@@ -112,7 +112,7 @@ jobs: %{ if master_node != null }
           export BOOTNODES=""
         fi
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
-        rm -rf /home/masa/masa-oracle
+        sudo rm -rf /home/masa/masa-oracle
         mkdir /home/masa/masa-oracle
         cp -R . /home/masa/masa-oracle/
         cat system-service/masa-oracle.service | envsubst > masa-oracle.service
