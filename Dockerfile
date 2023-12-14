@@ -20,4 +20,4 @@ RUN go build -v -o masa-node ./cmd/masa-node
 EXPOSE 4001
 
 # Command to run the executable with bootnode address
-CMD ["./masa-node", "--bootnodes=/ip4/137.66.11.250/udp/4001/quic-v1/p2p/16Uiu2HAmJtYy4A8pzChDQQLrPsu1SQU5apzCftCVaAjFk539CLc9,/ip4/168.220.95.86/udp/4001/quic-v1/p2p/16Uiu2HAmNr4aSznspSGfqMtTBDauiyvRqArvEYRPUQArpCFtdy2P" "-port=4001", "--udp=true"]
+CMD ["./masa-node", "--bootnodes=/ip4/104.198.43.138/udp/4001/quic-v1/p2p/16Uiu2HAkxiP8jjdHQWeCxTr7pD6BvoPkS8Z1skjCy9vdSRMACDcc,/ip4/35.224.231.145/udp/4001/quic-v1/p2p/16Uiu2HAm47nBiewWLLzCREtY8vwPQtr5jTqyrEoUo6WnngwhsQuR", "--port=4001", "--udp=true", "--start=true"]
