@@ -31,7 +31,7 @@ resource "google_compute_instance" "default" {
   }
 
   labels = {
-    app = masa-oracle
+    "app" = "masa-oracle"
   }
 
   metadata = {
