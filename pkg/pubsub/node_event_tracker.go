@@ -60,17 +60,19 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"conn":    c,
 	}).Info("Connected")
 
-	pubKeyHex := getPublicKey(c.RemotePeer(), n)
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+
+	ethAddress := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
-	net.dataMutex.Lock()
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityJoined)
-		net.nodeData[peerID] = nodeData
+		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ethAddress, ActivityJoined)
+		net.nodeData[nodeData.PeerId.String()] = nodeData
 	} else {
-		if nodeData.PublicKey == "" {
-			nodeData.PublicKey = pubKeyHex
+		if nodeData.EthAddress == "" {
+			nodeData.EthAddress = ethAddress
 		}
 		// If the node data exists, check if the multiaddress is already in the list
 		addrExists := false
@@ -86,7 +88,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	}
 	net.NodeDataChan <- nodeData
 	nodeData.Joined()
-	net.dataMutex.Unlock()
 }
 
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
@@ -97,7 +98,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"conn":    c,
 	}).Info("Disconnected")
 
-	pubKeyHex := getPublicKey(c.RemotePeer(), n)
+	pubKeyHex := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
 	net.dataMutex.Lock()
@@ -119,10 +120,10 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 		logrus.Errorf("failed to unmarshal node data: %v", err)
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
-	net.HandleNodeData(&nodeData)
+	net.HandleNodeData(nodeData)
 }
 
-func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
+func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
@@ -134,10 +135,10 @@ func (net *NodeEventTracker) HandleNodeData(data *NodeData) {
 			return
 		}
 		// Otherwise, add it
-		net.nodeData[data.PeerId.String()] = data
+		logrus.Debugf("Adding new node data: %s", data.PeerId.String())
+		net.nodeData[data.PeerId.String()] = &data
 		return
 	}
-
 	// Handle discrepancies for existing nodes
 	if data.LastJoined.Before(existingData.LastJoined) && data.LastJoined.After(existingData.LastLeft) {
 		existingData.LastJoined = data.LastJoined
@@ -218,7 +219,13 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	// Lock the nodeData map for concurrent write
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
-
+	// remove invalids from an earlier bug
+	for key, value := range nodeData {
+		if key != value.PeerId.String() {
+			logrus.Warnf("peer ID mismatch: %s != %s", key, value.PeerId)
+			delete(nodeData, key)
+		}
+	}
 	// Replace the nodeData map with the new map
 	logrus.Info("Loaded node data from file")
 	net.nodeData = nodeData
@@ -242,7 +249,7 @@ func prettyDuration(d time.Duration) string {
 	return fmt.Sprintf("%d minutes", min)
 }
 
-func getPublicKey(remotePeer peer.ID, n network.Network) string {
+func getEthAddress(remotePeer peer.ID, n network.Network) string {
 	var publicKeyHex string
 	var err error
 
@@ -253,7 +260,7 @@ func getPublicKey(remotePeer peer.ID, n network.Network) string {
 			"Peer": remotePeer.String(),
 		}).Warn("No public key found for peer")
 	} else {
-		publicKeyHex, err = crypto.Libp2pPubKeyToEcdsaHex(pubKey)
+		publicKeyHex, err = crypto.Libp2pPubKeyToEthAddress(pubKey)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Peer": remotePeer.String(),
