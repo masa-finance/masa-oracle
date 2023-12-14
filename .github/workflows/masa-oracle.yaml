@@ -48,17 +48,6 @@ on:
         type: string
         required: false
 
-      node5argbootnode:
-        description: "Bootnodes parameter for node5"
-        default: 'default'
-        type: string
-        required: true
-      node5argextra:
-        description: "Extra args except of --port, --udp, --tcp"
-        default: ''
-        type: string
-        required: false
-
 
 jobs: 
   master-node3:
@@ -110,31 +99,6 @@ jobs:
         /usr/local/go/bin/go mod tidy
         /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
         export EXTRA_ARGS="${{ inputs.node4argextra }}"
-        export BOOTNODES_ARG="--bootnodes=";
-        export BOOTNODES="${{needs.master-node3.outputs.MASA_NODE_MULTIADDRESS}}"
-        echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
-        rm -rf /home/masa/masa-oracle
-        mkdir /home/masa/masa-oracle
-        cp -R . /home/masa/masa-oracle/
-        cat system-service/masa-oracle.service | envsubst > masa-oracle.service
-        echo "Debug service 2"
-        cat masa-oracle.service
-        sudo mv masa-oracle.service /etc/systemd/system/masa-oracle.service
-        sudo systemctl daemon-reload
-        sudo systemctl restart masa-oracle.service
-  worker-node5:
-    needs: master-node3
-    runs-on: ["node5"]
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: Copy binary & restart service
-      run: |
-        echo "node5argbootnode: ${{ inputs.node5argbootnode }}"
-        echo "node5argextra: ${{ inputs.node5argextra }}"
-        /usr/local/go/bin/go mod tidy
-        /usr/local/go/bin/go build -v -o masa-node ./cmd/masa-node
-        export EXTRA_ARGS="${{ inputs.node5argextra }}"
         export BOOTNODES_ARG="--bootnodes=";
         export BOOTNODES="${{needs.master-node3.outputs.MASA_NODE_MULTIADDRESS}}"
         echo "ARG: $BOOTNODES_ARG NODES: $BOOTNODES"
