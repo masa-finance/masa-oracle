@@ -89,40 +89,6 @@ func tagProject(projectDir, version string) error {
 	return nil
 }
 
-func buildProject(projectDir string) error {
-	// Define the target platforms
-	platforms := []struct {
-		goos, goarch, ext string
-	}{
-		{"linux", "amd64", ""},
-		{"darwin", "amd64", ""},
-		{"windows", "amd64", ".exe"},
-	}
-
-	// Build the project for each platform
-	for _, platform := range platforms {
-		// Set the target platform
-		err := os.Setenv("GOOS", platform.goos)
-		if err != nil {
-			return err
-		}
-		err = os.Setenv("GOARCH", platform.goarch)
-		if err != nil {
-			return err
-		}
-
-		// Define the output path
-		outputPath := filepath.Join(projectDir, "bin", "masa-oracle-"+platform.goos+platform.ext)
-
-		// Execute go build
-		if err := runCommand("go", "build", "-o", outputPath, "."); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func runCommand(command string, args ...string) error {
 	fmt.Printf("Running command: %s %v\n", command, args)
 	cmd := exec.Command(command, args...)
@@ -131,7 +97,7 @@ func runCommand(command string, args ...string) error {
 	return cmd.Run()
 }
 
-func TagAndBuild(projectDir, version, branch, commitMessage string) (err error) {
+func TagProject(projectDir, version, branch, commitMessage string) (err error) {
 	if projectDir == "" {
 		usr, err := user.Current()
 		if err != nil {
@@ -148,10 +114,6 @@ func TagAndBuild(projectDir, version, branch, commitMessage string) (err error) 
 		return err
 	}
 	err = tagProject(projectDir, version)
-	if err != nil {
-		return err
-	}
-	err = buildProject(projectDir)
 	if err != nil {
 		return err
 	}
@@ -175,8 +137,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Call TagAndBuild with the parsed arguments
-	err := TagAndBuild(*projectDir, *version, *branch, *commitMessage)
+	// Call TagProject with the parsed arguments
+	err := TagProject(*projectDir, *version, *branch, *commitMessage)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
