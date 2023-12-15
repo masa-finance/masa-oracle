@@ -1,6 +1,7 @@
 package masa
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -80,7 +81,7 @@ func (node *OracleNode) SendNodeDataPage(stream network.Stream, pageNumber int) 
 		return
 	}
 
-	_, err = stream.Write(jsonData)
+	_, err = stream.Write(append(jsonData, '\n'))
 	if err != nil {
 		logrus.Errorf("Failed to send NodeDataPage: %v", err)
 	}
@@ -105,16 +106,25 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	logrus.Info("ReceiveNodeData")
-	data := node.handleStreamData(stream)
-	var page NodeDataPage
-	if err := json.Unmarshal(data, &page); err != nil {
-		logrus.Errorf("Failed to unmarshal NodeData page: %v", err)
-		logrus.Errorf("%s", string(data))
-		return
+
+	scanner := bufio.NewScanner(stream)
+	//scanner.Scan() stops when it hits a new line
+	for scanner.Scan() {
+		data := scanner.Bytes()
+		var page NodeDataPage
+		if err := json.Unmarshal(data, &page); err != nil {
+			logrus.Errorf("Failed to unmarshal NodeData page: %v", err)
+			logrus.Errorf("%s", string(data))
+			continue
+		}
+
+		for _, data := range page.Data {
+			node.NodeTracker.HandleNodeData(data)
+		}
 	}
 
-	for _, data := range page.Data {
-		node.NodeTracker.HandleNodeData(data)
+	if err := scanner.Err(); err != nil {
+		logrus.Errorf("Failed to read stream: %v", err)
 	}
 }
 
