@@ -11,7 +11,7 @@ on:
         required: true
       ${key}argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: ''
+        default: '--start=true'
         type: string
         required: false 
 %{ else }
@@ -22,7 +22,7 @@ on:
         required: true
       ${key}argextra:
         description: "Extra args except of --port, --udp, --tcp"
-        default: ''
+        default: '--start=true'
         type: string
         required: false
 %{ endif }%{ endfor ~}
