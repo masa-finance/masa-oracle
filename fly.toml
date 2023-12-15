@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for masa-oracle-fly-2 on 2023-12-14T13:26:09-08:00
+# fly.toml app configuration file generated for masa-oracle-fly-1 on 2023-12-15T11:02:59-08:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "masa-oracle-fly-2"
+app = "masa-oracle-fly-1"
 primary_region = "lax"
 
 [build]
