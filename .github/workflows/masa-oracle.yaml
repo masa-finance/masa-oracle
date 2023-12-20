@@ -48,6 +48,28 @@ on:
         type: string
         required: false 
 
+      node5argbootnode:
+        description: "Bootnodes parameter for node4"
+        default: /ip4/35.224.231.145/udp/4001/quic-v1/p2p/16Uiu2HAm47nBiewWLLzCREtY8vwPQtr5jTqyrEoUo6WnngwhsQuR,/ip4/104.198.43.138/udp/4001/quic-v1/p2p/16Uiu2HAkxiP8jjdHQWeCxTr7pD6BvoPkS8Z1skjCy9vdSRMACDcc
+        type: string
+        required: true
+      node4argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: '--start=true'
+        type: string
+        required: false 
+
+      node6argbootnode:
+        description: "Bootnodes parameter for node4"
+        default: /ip4/35.224.231.145/udp/4001/quic-v1/p2p/16Uiu2HAm47nBiewWLLzCREtY8vwPQtr5jTqyrEoUo6WnngwhsQuR,/ip4/104.198.43.138/udp/4001/quic-v1/p2p/16Uiu2HAkxiP8jjdHQWeCxTr7pD6BvoPkS8Z1skjCy9vdSRMACDcc
+        type: string
+        required: true
+      node4argextra:
+        description: "Extra args except of --port, --udp, --tcp"
+        default: '--start=true'
+        type: string
+        required: false 
+
 
 jobs: 
   joined_node1:
