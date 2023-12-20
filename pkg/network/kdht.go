@@ -2,8 +2,6 @@ package network
 
 import (
 	"context"
-	"fmt"
-	"sync"
 	"time"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -57,7 +55,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
 	for _, peerAddr := range bootstrapPeers {
 		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil {
@@ -76,31 +73,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 		} else {
 			logrus.Infof("Successfully added bootstrap peer %s to DHT", peerinfo.ID)
 		}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := host.Connect(ctx, *peerinfo); err != nil {
-				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
-				time.Sleep(retryDelay)
-			} else {
-				logrus.Info("Connection established with node:", *peerinfo)
-				stream, err := host.NewStream(ctx, peerinfo.ID, pId)
-				if err != nil {
-					logrus.Error("Error opening stream:", err)
-					return
-				}
-				defer stream.Close() // Close the stream when done
-
-				_, err = stream.Write([]byte(fmt.Sprintf("Initial Hello from %s\n", peerAddr.String())))
-				if err != nil {
-					logrus.Error("Error writing to stream:", err)
-					return
-				}
-			}
-		}()
 	}
-	wg.Wait()
 	return kademliaDHT, nil
 }
 
