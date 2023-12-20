@@ -79,13 +79,16 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 
 		wg.Add(1)
 		go func() {
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel() // Cancel the context when done to release resources
+
 			defer wg.Done()
-			if err := host.Connect(ctx, *peerinfo); err != nil {
+			if err := host.Connect(ctxWithTimeout, *peerinfo); err != nil {
 				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
 				time.Sleep(retryDelay)
 			} else {
 				logrus.Info("Connection established with node:", *peerinfo)
-				stream, err := host.NewStream(ctx, peerinfo.ID, pId)
+				stream, err := host.NewStream(ctxWithTimeout, peerinfo.ID, pId)
 				if err != nil {
 					logrus.Error("Error opening stream:", err)
 					return

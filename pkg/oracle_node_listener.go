@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"io"
 	"math"
+	"os"
+	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -30,8 +32,12 @@ func (node *OracleNode) ListenToNodeTracker() {
 			if err != nil {
 				logrus.Errorf("Error publishing node data: %v", err)
 			}
-			// If the nodeData represents a join event, call SendNodeData in a separate goroutine
-			if nodeData.Activity == pubsub2.ActivityJoined {
+			// If the nodeData represents a join event and
+			// the node is a boot node or (we don't want boot nodes to wait)
+			// the node start time is greater than 5 minutes ago,
+			// call SendNodeData in a separate goroutine
+			if nodeData.Activity == pubsub2.ActivityJoined &&
+				(os.Getenv(Peers) == "" || time.Now().Sub(node.StartTime) > 5*time.Minute) {
 				go node.SendNodeData(nodeData.PeerId)
 			}
 
@@ -58,8 +64,8 @@ type NodeDataPage struct {
 	TotalRecords int                `json:"totalRecords"`
 }
 
-func (node *OracleNode) SendNodeDataPage(stream network.Stream, pageNumber int) {
-	allNodeData := node.NodeTracker.GetAllNodeData()
+func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream network.Stream, pageNumber int) {
+	logrus.Debugf("SendNodeDataPage --> %s: Page: %d", stream.Conn().RemotePeer(), pageNumber)
 	totalRecords := len(allNodeData)
 	totalPages := int(math.Ceil(float64(totalRecords) / PageSize))
 
@@ -100,7 +106,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	defer stream.Close() // Ensure the stream is closed after sending the data
 
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
-		node.SendNodeDataPage(stream, pageNumber)
+		node.SendNodeDataPage(allNodeData, stream, pageNumber)
 	}
 }
 
