@@ -42,6 +42,7 @@ type OracleNode struct {
 	PubSubManager *pubsub2.Manager
 	Signature     string
 	IsStaked      bool
+	StartTime     time.Time
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -150,7 +151,7 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 	err = node.PubSubManager.AddSubscription(AdTopic, &ad.SubscriptionHandler{})
-
+	node.StartTime = time.Now()
 	return nil
 }
 
