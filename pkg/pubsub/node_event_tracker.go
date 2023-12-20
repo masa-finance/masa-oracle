@@ -147,11 +147,14 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		existingData.LastLeft = data.LastLeft
 	}
 	// Update accumulated uptime
-	//existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
+	// existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
 }
 
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	logrus.Debug("Getting all node data")
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+
 	// Convert the map to a slice
 	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
 	for _, nodeData := range net.nodeData {
