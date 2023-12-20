@@ -64,8 +64,8 @@ type NodeDataPage struct {
 	TotalRecords int                `json:"totalRecords"`
 }
 
-func (node *OracleNode) SendNodeDataPage(stream network.Stream, pageNumber int) {
-	allNodeData := node.NodeTracker.GetAllNodeData()
+func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream network.Stream, pageNumber int) {
+	logrus.Debugf("SendNodeDataPage --> %s: Page: %d", stream.Conn().RemotePeer(), pageNumber)
 	totalRecords := len(allNodeData)
 	totalPages := int(math.Ceil(float64(totalRecords) / PageSize))
 
@@ -106,7 +106,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	defer stream.Close() // Ensure the stream is closed after sending the data
 
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
-		node.SendNodeDataPage(stream, pageNumber)
+		node.SendNodeDataPage(allNodeData, stream, pageNumber)
 	}
 }
 
