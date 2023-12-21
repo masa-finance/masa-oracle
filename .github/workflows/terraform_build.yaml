@@ -17,13 +17,14 @@ jobs:
     env:
       GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }} 
     runs-on: gha-arc
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
     steps:
     - uses: actions/checkout@v4
     # Solves issue https://github.com/hashicorp/setup-terraform/issues/84
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v4
       with:
        node-version: '16'
     - uses: hashicorp/setup-terraform@v3
