@@ -71,6 +71,10 @@ func (n *NodeData) Address() string {
 }
 
 func (n *NodeData) Joined() {
+	if n.Activity == ActivityJoined {
+		logrus.Warnf("Node %s is already marked as joined", n.Address())
+		return
+	}
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
@@ -80,7 +84,10 @@ func (n *NodeData) Joined() {
 }
 
 func (n *NodeData) Left() {
-	logrus.Info("Node left: ", n.Multiaddrs[0].String())
+	if n.Activity == ActivityLeft {
+		logrus.Warnf("Node %s is already marked as left", n.Address())
+		return
+	}
 	now := time.Now()
 	n.LastLeft = now
 	n.LastUpdated = now
@@ -88,6 +95,7 @@ func (n *NodeData) Left() {
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
+	logrus.Info("Node left: ", n.Address())
 }
 
 func (n *NodeData) GetCurrentUptime() time.Duration {
