@@ -172,8 +172,8 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 		nd := *nodeData
 		nd.CurrentUptime = nodeData.GetCurrentUptime()
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-		nd.CurrentUptimeStr = prettyDuration(nd.CurrentUptime)
-		nd.AccumulatedUptimeStr = prettyDuration(nd.AccumulatedUptime)
+		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
+		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
 		nodeDataSlice = append(nodeDataSlice, nd)
 	}
 
@@ -195,8 +195,8 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 			nd := *nodeData
 			nd.CurrentUptime = nodeData.GetCurrentUptime()
 			nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-			nd.CurrentUptimeStr = prettyDuration(nd.CurrentUptime)
-			nd.AccumulatedUptimeStr = prettyDuration(nd.AccumulatedUptime)
+			nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
+			nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
 			updatedNodeData = append(updatedNodeData, nd)
 		}
 	}
@@ -269,7 +269,7 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	return nil
 }
 
-func prettyDuration(d time.Duration) string {
+func PrettyDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
 	min := int64(d / time.Minute)
 	h := min / 60
