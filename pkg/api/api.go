@@ -65,6 +65,31 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 	}
 }
 
+func (api *API) GetNodeHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		peerID := c.Param("peerID") // Get the peer ID from the URL parameters
+		if api.Node == nil || api.Node.NodeTracker == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "An unexpected error occurred.",
+			})
+			return
+		}
+		nodeData := api.Node.NodeTracker.GetNodeData(peerID)
+		if nodeData == nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "Node not found",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    nodeData,
+		})
+	}
+}
+
 func (api *API) GetPeersHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if api.Node == nil || api.Node.DHT == nil {

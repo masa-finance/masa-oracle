@@ -150,6 +150,17 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	// existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
 }
 
+func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
+
+	nodeData, exists := net.nodeData[peerID]
+	if !exists {
+		return nil
+	}
+	return nodeData
+}
+
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	logrus.Debug("Getting all node data")
 	net.dataMutex.Lock()
@@ -171,6 +182,29 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 		return nodeDataSlice[i].LastUpdated.Before(nodeDataSlice[j].LastUpdated)
 	})
 	return nodeDataSlice
+}
+
+func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
+
+	// Filter allNodeData to only include nodes that have been updated since the given time
+	var updatedNodeData []NodeData
+	for _, nodeData := range net.nodeData {
+		if nodeData.LastUpdated.After(since) {
+			nd := *nodeData
+			nd.CurrentUptime = nodeData.GetCurrentUptime()
+			nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+			nd.CurrentUptimeStr = prettyDuration(nd.CurrentUptime)
+			nd.AccumulatedUptimeStr = prettyDuration(nd.AccumulatedUptime)
+			updatedNodeData = append(updatedNodeData, nd)
+		}
+	}
+	// Sort the slice based on the timestamp
+	sort.Slice(updatedNodeData, func(i, j int) bool {
+		return updatedNodeData[i].LastUpdated.Before(updatedNodeData[j].LastUpdated)
+	})
+	return updatedNodeData
 }
 
 func (net *NodeEventTracker) DumpNodeData() {
