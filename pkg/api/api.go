@@ -12,6 +12,7 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/ad"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type API struct {
@@ -83,9 +84,15 @@ func (api *API) GetNodeHandler() gin.HandlerFunc {
 			})
 			return
 		}
+		nd := *nodeData
+		nd.CurrentUptime = nodeData.GetCurrentUptime()
+		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+		nd.CurrentUptimeStr = pubsub.PrettyDuration(nd.CurrentUptime)
+		nd.AccumulatedUptimeStr = pubsub.PrettyDuration(nd.AccumulatedUptime)
+
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
-			"data":    nodeData,
+			"data":    nd,
 		})
 	}
 }
