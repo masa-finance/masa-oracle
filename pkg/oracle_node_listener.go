@@ -94,8 +94,16 @@ func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream 
 }
 
 func (node *OracleNode) SendNodeData(peerID peer.ID) {
-	allNodeData := node.NodeTracker.GetAllNodeData()
-	totalRecords := len(allNodeData)
+	recipientNodeData := node.NodeTracker.GetNodeData(peerID.String())
+	var nodeData []pubsub2.NodeData
+	if recipientNodeData == nil {
+		nodeData = node.NodeTracker.GetAllNodeData()
+	} else {
+		// set the time to LastLeft minus 5 minutes
+		sinceTime := recipientNodeData.LastLeft.Add(-5 * time.Minute)
+		nodeData = node.NodeTracker.GetUpdatedNodes(sinceTime)
+	}
+	totalRecords := len(nodeData)
 	totalPages := int(math.Ceil(float64(totalRecords) / float64(PageSize)))
 
 	stream, err := node.Host.NewStream(node.Context, peerID, NodeDataSyncProtocol)
@@ -106,7 +114,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	defer stream.Close() // Ensure the stream is closed after sending the data
 
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
-		node.SendNodeDataPage(allNodeData, stream, pageNumber)
+		node.SendNodeDataPage(nodeData, stream, pageNumber)
 	}
 }
 

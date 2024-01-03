@@ -16,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
+	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
@@ -43,6 +44,7 @@ type OracleNode struct {
 	Signature     string
 	IsStaked      bool
 	StartTime     time.Time
+	IDService     identify.IDService
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -90,12 +92,18 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	libp2pOptions = append(libp2pOptions, libp2p.ChainOptions(securityOptions...))
 	libp2pOptions = append(libp2pOptions, libp2p.ListenAddrStrings(addrStr...))
 
-	host, err := libp2p.New(libp2pOptions...)
+	hst, err := libp2p.New(libp2pOptions...)
 	if err != nil {
 		return nil, err
 	}
 
-	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, host)
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new Identify service
+	ids, err := identify.NewIDService(hst)
 	if err != nil {
 		return nil, err
 	}
@@ -105,15 +113,16 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 	return &OracleNode{
-		Host:          host,
+		Host:          hst,
 		PrivKey:       ecdsaPrivKey,
 		Protocol:      oracleProtocol,
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(host),
+		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
 		NodeTracker:   pubsub2.NewNodeEventTracker(),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
+		IDService:     ids,
 	}, nil
 }
 
@@ -186,46 +195,20 @@ func (node *OracleNode) handleDiscoveredPeers() {
 func (node *OracleNode) handleStream(stream network.Stream) {
 	data := node.handleStreamData(stream)
 	logrus.Info("handleStream -> Received data:", string(data))
-	//remotePeer := stream.Conn().RemotePeer()
-	//
-	//// Check if we're already connected to the peer
-	//connStatus := node.Host.Network().Connectedness(remotePeer)
-	//if connStatus != network.Connected {
-	//	// We're not connected to the peer, so try to establish a connection
-	//	ctx, cancel := context.WithTimeout(node.Context, 5*time.Second)
-	//	defer cancel()
-	//	err := node.Host.Connect(ctx, peer.AddrInfo{ID: remotePeer})
-	//	if err != nil {
-	//		logrus.Warningf("Failed to connect to peer %s: %v", remotePeer, err)
-	//		return
-	//	}
-	//}
-	//
-	////check if the peer is already in the table
-	//peerInfo := node.Host.Peerstore().PeerInfo(remotePeer)
-	//if len(peerInfo.Addrs) == 0 {
-	//	// Try to add the peer to the routing table (no-op if already present).
-	//	added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
-	//	if err != nil {
-	//		logrus.Debugf("Failed to add peer %s to routing table: %v", remotePeer, err)
-	//	} else if !added {
-	//		logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
-	//	} else {
-	//		logrus.Infof("Successfully added peer %s to routing table", remotePeer)
-	//	}
-	//	// Check if the peer is useful after trying to add it
-	//	isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
-	//	logrus.Debugf("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
-	//}
-	//logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
+	remotePeer := stream.Conn().RemotePeer()
 
-	// Create a buffer stream for non-blocking read and write.
-	//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	// Wait for the Identify protocol to complete
+	<-node.IDService.IdentifyWait(stream.Conn())
 
-	//go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
-	//go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
-
-	// 'stream' will stay open until you close it (or the other side closes it).
+	// Now the public key should be available in the Peerstore
+	pubKey := node.Host.Peerstore().PubKey(remotePeer)
+	if pubKey == nil {
+		logrus.Warnf("No public key found for peer %s", remotePeer)
+	} else {
+		logrus.Infof("Public key found for peer %s", remotePeer.String())
+	}
+	//data := node.handleStreamData(stream)
+	//logrus.Info("handleStream -> Received data:", string(data))
 }
 
 func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
