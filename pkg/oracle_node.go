@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -115,11 +116,11 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	return &OracleNode{
 		Host:          hst,
 		PrivKey:       ecdsaPrivKey,
-		Protocol:      oracleProtocol,
+		Protocol:      ProtocolWithVersion(oracleProtocol),
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(),
+		NodeTracker:   pubsub2.NewNodeEventTracker(Version),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
 		IDService:     ids,
@@ -129,9 +130,11 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(NodeDataSyncProtocol, node.ReceiveNodeData)
-	node.Host.SetStreamHandler(NodeGossipTopic, node.GossipNodeData)
-
+	node.Host.SetStreamHandler(ProtocolWithVersion(NodeDataSyncProtocol), node.ReceiveNodeData)
+	//if node.IsStaked then allow them to be added to the NodeData -- move to node tracker
+	if node.IsStaked {
+		node.Host.SetStreamHandler(ProtocolWithVersion(NodeGossipTopic), node.GossipNodeData)
+	}
 	node.Host.Network().Notify(node.NodeTracker)
 
 	go node.ListenToNodeTracker()
@@ -147,7 +150,7 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, oracleProtocol, masaPrefix, node.PeerChan)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, masaPrefix, node.PeerChan, node.IsStaked)
 	if err != nil {
 		return err
 	}
@@ -193,8 +196,19 @@ func (node *OracleNode) handleDiscoveredPeers() {
 }
 
 func (node *OracleNode) handleStream(stream network.Stream) {
-	data := node.handleStreamData(stream)
-	logrus.Info("handleStream -> Received data:", string(data))
+	message, err := node.handleStreamData(stream)
+	if err != nil {
+		logrus.Error("Error handling stream data:", err)
+		return
+	}
+	// Deserialize the JSON message to a NodeData struct
+	var nodeData pubsub2.NodeData
+	err = json.Unmarshal(message, &nodeData)
+	if err != nil {
+		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
+		logrus.Errorf("%s", string(message))
+		return
+	}
 	remotePeer := stream.Conn().RemotePeer()
 
 	// Wait for the Identify protocol to complete
@@ -207,8 +221,17 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	} else {
 		logrus.Infof("Public key found for peer %s", remotePeer.String())
 	}
-	//data := node.handleStreamData(stream)
-	//logrus.Info("handleStream -> Received data:", string(data))
+	// Store the IsStaked status in the map
+	node.NodeTracker.IsStakedCond.L.Lock()
+	node.NodeTracker.IsStakedStatus[stream.Conn().RemotePeer().String()] = nodeData.IsStaked
+	node.NodeTracker.IsStakedCond.L.Unlock()
+
+	// Signal that the IsStaked status is available
+	node.NodeTracker.IsStakedCond.Signal()
+	if pubKey == nil && nodeData.IsStaked {
+		node.NodeTracker.AddPublicKey(nodeData.PeerId, nodeData.EthAddress)
+	}
+	logrus.Info("handleStream -> Received data:", string(message))
 }
 
 func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
@@ -266,4 +289,8 @@ func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEven
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
+}
+
+func (node *OracleNode) Version() string {
+	return Version
 }
