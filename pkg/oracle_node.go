@@ -1,7 +1,6 @@
 package masa
 
 import (
-	"bufio"
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
@@ -178,16 +177,15 @@ func (node *OracleNode) handleDiscoveredPeers() {
 				continue
 			}
 
-			// open a stream, this stream will be handled by handleStream other end
+			//open a stream, this stream will be handled by handleStream other end
 			stream, err := node.Host.NewStream(node.Context, peer.AddrInfo.ID, node.Protocol)
-
 			if err != nil {
 				logrus.Error("Stream open failed", err)
-			} else {
-				rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-				go node.writeData(rw, peer, stream)
-				go node.readData(rw, peer, stream)
+			}
+			sendData := pubsub2.GetSelfNodeDataJson(node.Host, node.IsStaked)
+			_, err = stream.Write(sendData)
+			if err != nil {
+				return
 			}
 		case <-node.Context.Done():
 			return
@@ -210,16 +208,9 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		return
 	}
 	remotePeer := stream.Conn().RemotePeer()
-
-	// Wait for the Identify protocol to complete
-	<-node.IDService.IdentifyWait(stream.Conn())
-
-	// Now the public key should be available in the Peerstore
-	pubKey := node.Host.Peerstore().PubKey(remotePeer)
-	if pubKey == nil {
-		logrus.Warnf("No public key found for peer %s", remotePeer)
-	} else {
-		logrus.Infof("Public key found for peer %s", remotePeer.String())
+	if remotePeer.String() != nodeData.PeerId.String() {
+		logrus.Warnf("Received data from unexpected peer %s", remotePeer)
+		return
 	}
 	// Store the IsStaked status in the map
 	node.NodeTracker.IsStakedCond.L.Lock()
@@ -228,62 +219,10 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 	// Signal that the IsStaked status is available
 	node.NodeTracker.IsStakedCond.Signal()
-	if pubKey == nil && nodeData.IsStaked {
+	if nodeData.IsStaked {
 		node.NodeTracker.AddPublicKey(nodeData.PeerId, nodeData.EthAddress)
 	}
 	logrus.Info("handleStream -> Received data:", string(message))
-}
-
-func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
-	defer func() {
-		err := stream.Close()
-		if err != nil {
-			logrus.Error("Error closing stream:", err)
-		}
-	}()
-
-	for {
-		str, err := rw.ReadString('\n')
-		if err != nil {
-			logrus.Error("Error reading from buffer:", err)
-			return
-		}
-		if str == "" {
-			return
-		}
-		if str != "\n" {
-			// Green console colour: 	\x1b[32m
-			// Reset console colour: 	\x1b[0m
-			fmt.Printf("\x1b[32m%s\x1b[0m> ", str)
-		}
-	}
-}
-
-func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
-	defer func() {
-		err := stream.Close()
-		if err != nil {
-			logrus.Error("Error closing stream:", err)
-		}
-	}()
-
-	for {
-		// Generate a message including the multiaddress of the sender
-		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.GetMultiAddrs().String())
-
-		_, err := rw.WriteString(sendData)
-		if err != nil {
-			logrus.Error("Error writing to buffer:", err)
-			return
-		}
-		err = rw.Flush()
-		if err != nil {
-			logrus.Error("Error flushing buffer:", err)
-			return
-		}
-		// Sleep for a while before sending the next message
-		time.Sleep(time.Second * 30)
-	}
 }
 
 func (node *OracleNode) IsPublisher() bool {

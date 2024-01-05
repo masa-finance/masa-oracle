@@ -49,7 +49,11 @@ func init() {
 	if err != nil {
 		logrus.Error("Error loading .env file")
 	}
-	os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, ".masa", masa.NodeBackupFileName))
+	backupFileName := fmt.Sprintf("%s_%s", masa.Version, masa.NodeBackupFileName)
+	err = os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, ".masa", backupFileName))
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
 func main() {
@@ -120,7 +124,12 @@ func main() {
 	// BP: Add gin router to get peers (multiaddress) and get peer addresses
 	// @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
 	router := routes.SetupRoutes(node)
-	go router.Run()
+	go func() {
+		err := router.Run()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+	}()
 
 	<-ctx.Done()
 }
