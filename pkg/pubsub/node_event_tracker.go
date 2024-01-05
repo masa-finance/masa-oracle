@@ -18,16 +18,20 @@ import (
 )
 
 type NodeEventTracker struct {
-	NodeDataChan chan *NodeData
-	nodeData     map[string]*NodeData
-	dataMutex    sync.RWMutex
-	changes      int
+	NodeDataChan   chan *NodeData
+	nodeData       map[string]*NodeData
+	dataMutex      sync.RWMutex
+	IsStakedStatus map[string]bool
+	IsStakedCond   *sync.Cond
+	version        string
 }
 
-func NewNodeEventTracker() *NodeEventTracker {
+func NewNodeEventTracker(version string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:     make(map[string]*NodeData),
 		NodeDataChan: make(chan *NodeData),
+		IsStakedCond: sync.NewCond(&sync.Mutex{}),
+		version:      version,
 	}
 	err := net.LoadNodeData()
 	if err != nil {
@@ -60,11 +64,21 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"conn":    c,
 	}).Info("Connected")
 
+	peerID := c.RemotePeer().String()
+	isStaked, ok := net.waitForStakedStatus(peerID, time.Second*10)
+	if !ok {
+		logrus.Errorf("Timeout waiting for IsStaked status for node: %s", peerID)
+		return
+	}
+	if !isStaked {
+		logrus.Infof("Ignoring unstaked node: %s", peerID)
+		return
+	}
+
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 
 	ethAddress := getEthAddress(c.RemotePeer(), n)
-	peerID := c.RemotePeer().String()
 
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
@@ -114,6 +128,18 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	net.dataMutex.Unlock()
 }
 
+func (net *NodeEventTracker) AddPublicKey(peerID peer.ID, publicKey string) {
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+
+	nodeData, exists := net.nodeData[peerID.String()]
+	if !exists {
+		logrus.Warnf("Node data does not exist for peer: %s", peerID)
+		return
+	}
+	nodeData.EthAddress = publicKey
+}
+
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
@@ -146,8 +172,6 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	if data.LastLeft.After(existingData.LastLeft) && data.LastLeft.Before(existingData.LastJoined) {
 		existingData.LastLeft = data.LastLeft
 	}
-	// Update accumulated uptime
-	// existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
 }
 
 func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
@@ -221,7 +245,7 @@ func (net *NodeEventTracker) DumpNodeData() {
 	// Write the JSON data to a file
 	filePath := os.Getenv("nodeBackupPath")
 	if filePath == "" {
-		filePath = "node_data.json"
+		filePath = fmt.Sprintf("%s_node_data.json", net.version)
 	}
 	logrus.Infof("writing node data to file: %s", filePath)
 	err = os.WriteFile(filePath, data, 0644)
@@ -234,7 +258,7 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	// Read the JSON data from a file
 	filePath := os.Getenv("nodeBackupPath")
 	if filePath == "" {
-		filePath = "node_data.json"
+		filePath = fmt.Sprintf("%s_node_data.json", net.version)
 	}
 	// Check if the file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -305,4 +329,26 @@ func getEthAddress(remotePeer peer.ID, n network.Network) string {
 		}
 	}
 	return publicKeyHex
+}
+
+func (net *NodeEventTracker) waitForStakedStatus(peerID string, timeout time.Duration) (bool, bool) {
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	for {
+		net.IsStakedCond.L.Lock()
+		isStaked, ok := net.IsStakedStatus[peerID]
+		net.IsStakedCond.L.Unlock()
+
+		if ok {
+			return isStaked, true
+		}
+
+		select {
+		case <-time.After(time.Second):
+			// Check the status again after a second
+		case <-timer.C:
+			return false, false // Timeout
+		}
+	}
 }
