@@ -49,6 +49,7 @@ type NodeData struct {
 	EthAddress           string          `json:"ethAddress"`
 	Activity             int             `json:"activity"`
 	IsActive             bool            `json:"isActive"`
+	IsStaked             bool            `json:"isStaked"`
 }
 
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {

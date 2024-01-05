@@ -21,26 +21,27 @@ func (node *OracleNode) ListenToNodeTracker() {
 	for {
 		select {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
-			// Marshal the nodeData into JSON
-			jsonData, err := json.Marshal(nodeData)
-			if err != nil {
-				logrus.Errorf("Error marshaling node data: %v", err)
-				continue
+			if node.IsStaked {
+				// Marshal the nodeData into JSON
+				jsonData, err := json.Marshal(nodeData)
+				if err != nil {
+					logrus.Errorf("Error marshaling node data: %v", err)
+					continue
+				}
+				// Publish the JSON data on the node.topic
+				err = node.PubSubManager.Publish(TopiclWithVersion(NodeGossipTopic), jsonData)
+				if err != nil {
+					logrus.Errorf("Error publishing node data: %v", err)
+				}
+				// If the nodeData represents a join event and
+				// the node is a boot node or (we don't want boot nodes to wait)
+				// the node start time is greater than 5 minutes ago,
+				// call SendNodeData in a separate goroutine
+				if nodeData.Activity == pubsub2.ActivityJoined &&
+					(os.Getenv(Peers) == "" || time.Now().Sub(node.StartTime) > 5*time.Minute) {
+					go node.SendNodeData(nodeData.PeerId)
+				}
 			}
-			// Publish the JSON data on the node.topic
-			err = node.PubSubManager.Publish(NodeGossipTopic, jsonData)
-			if err != nil {
-				logrus.Errorf("Error publishing node data: %v", err)
-			}
-			// If the nodeData represents a join event and
-			// the node is a boot node or (we don't want boot nodes to wait)
-			// the node start time is greater than 5 minutes ago,
-			// call SendNodeData in a separate goroutine
-			if nodeData.Activity == pubsub2.ActivityJoined &&
-				(os.Getenv(Peers) == "" || time.Now().Sub(node.StartTime) > 5*time.Minute) {
-				go node.SendNodeData(nodeData.PeerId)
-			}
-
 		case <-node.Context.Done():
 			return
 		}
@@ -106,7 +107,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	totalRecords := len(nodeData)
 	totalPages := int(math.Ceil(float64(totalRecords) / float64(PageSize)))
 
-	stream, err := node.Host.NewStream(node.Context, peerID, NodeDataSyncProtocol)
+	stream, err := node.Host.NewStream(node.Context, peerID, ProtocolWithVersion(NodeDataSyncProtocol))
 	if err != nil {
 		logrus.Errorf("Failed to open stream to %s: %v", peerID, err)
 		return
@@ -144,7 +145,11 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 
 func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	logrus.Info("GossipNodeData")
-	data := node.handleStreamData(stream)
+	data, err := node.handleStreamData(stream)
+	if err != nil {
+		logrus.Errorf("Failed to read stream: %v", err)
+		return
+	}
 	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(data, &nodeData); err != nil {
 		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
@@ -154,31 +159,29 @@ func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	node.NodeTracker.HandleNodeData(nodeData)
 }
 
-func (node *OracleNode) handleStreamData(stream network.Stream) []byte {
+func (node *OracleNode) handleStreamData(stream network.Stream) ([]byte, error) {
 	defer stream.Close()
 
 	// Log the peer.ID of the remote peer
 	remotePeerID := stream.Conn().RemotePeer()
 	logrus.Infof("received stream from %s", remotePeerID)
-	jsonData := make([]byte, 1024)
+	jsonData := make([]byte, 4096)
 
 	var buffer bytes.Buffer
 	// Loop until all data is read from the stream
 	for {
 		n, err := stream.Read(jsonData)
+		if err != nil && err != io.EOF {
+			logrus.Errorf("Failed to read stream from %s: %v", remotePeerID, err)
+			return nil, err
+		}
 		// when the other side closes the connection right away we get the EOF right away, so you have to write
 		// to the buffer before checking for the EOF
-		if n > 0 {
-			buffer.Write(jsonData[:n])
-		}
-		if err != nil {
-			if err == io.EOF {
-				// All data has been read
-				break
-			}
-			logrus.Errorf("Failed to read stream from %s: %v", remotePeerID, err)
-			return nil
+		buffer.Write(jsonData[:n])
+		if err == io.EOF {
+			// All data has been read
+			break
 		}
 	}
-	return buffer.Bytes()
+	return buffer.Bytes(), nil
 }
