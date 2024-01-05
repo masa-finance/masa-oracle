@@ -94,7 +94,11 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	node.Start()
+	err = node.Start()
+	if err != nil {
+		logrus.Fatal(err)
+		return
+	}
 	<-ctx.Done()
 }
 

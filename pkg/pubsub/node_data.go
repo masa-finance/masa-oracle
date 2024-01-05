@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
 const (
@@ -26,29 +29,29 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	// Parse the string as a multiaddr
-	multiaddr, err := multiaddr.NewMultiaddr(multiaddrStr)
+	// Parse the string as a ma
+	ma, err := multiaddr.NewMultiaddr(multiaddrStr)
 	if err != nil {
 		return err
 	}
 
-	m.Multiaddr = multiaddr
+	m.Multiaddr = ma
 	return nil
 }
 
 type NodeData struct {
-	Multiaddrs           []JSONMultiaddr `json:"multiaddrs"`
+	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
 	PeerId               peer.ID         `json:"peerId"`
-	LastJoined           time.Time       `json:"lastJoined"`
-	LastLeft             time.Time       `json:"lastLeft"`
-	LastUpdated          time.Time       `json:"lastUpdated"`
-	CurrentUptime        time.Duration   `json:"currentUptime"`
-	CurrentUptimeStr     string          `json:"readableCurrentUptime"`
-	AccumulatedUptime    time.Duration   `json:"accumulatedUptime"`
-	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime"`
-	EthAddress           string          `json:"ethAddress"`
-	Activity             int             `json:"activity"`
-	IsActive             bool            `json:"isActive"`
+	LastJoined           time.Time       `json:"lastJoined,omitempty"`
+	LastLeft             time.Time       `json:"lastLeft,omitempty"`
+	LastUpdated          time.Time       `json:"lastUpdated,omitempty"`
+	CurrentUptime        time.Duration   `json:"currentUptime,omitempty"`
+	CurrentUptimeStr     string          `json:"readableCurrentUptime,omitempty"`
+	AccumulatedUptime    time.Duration   `json:"accumulatedUptime,omitempty"`
+	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime,omitempty"`
+	EthAddress           string          `json:"ethAddress,omitempty"`
+	Activity             int             `json:"activity,omitempty"`
+	IsActive             bool            `json:"isActive,omitempty"`
 	IsStaked             bool            `json:"isStaked"`
 }
 
@@ -122,4 +125,38 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 	} else {
 		n.AccumulatedUptime += time.Since(n.LastJoined)
 	}
+}
+
+func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
+	var publicKeyHex string
+	var err error
+	// Get the public key of the host node
+	pubKey := host.Peerstore().PubKey(host.ID())
+	if pubKey == nil {
+		logrus.WithFields(logrus.Fields{
+			"Peer": host.ID().String(),
+		}).Warn("No public key found for peer")
+	} else {
+		publicKeyHex, err = crypto.Libp2pPubKeyToEthAddress(pubKey)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Peer": host.ID().String(),
+			}).Warnf("Error getting public key %v", err)
+		}
+	}
+
+	// Create and populate NodeData
+	nodeData := NodeData{
+		PeerId:     host.ID(),
+		IsStaked:   isStaked,
+		EthAddress: publicKeyHex,
+	}
+
+	// Convert NodeData to JSON
+	jsonData, err := json.Marshal(nodeData)
+	if err != nil {
+		logrus.Error("Error marshalling NodeData:", err)
+		return nil
+	}
+	return jsonData
 }

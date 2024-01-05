@@ -28,10 +28,11 @@ type NodeEventTracker struct {
 
 func NewNodeEventTracker(version string) *NodeEventTracker {
 	net := &NodeEventTracker{
-		nodeData:     make(map[string]*NodeData),
-		NodeDataChan: make(chan *NodeData),
-		IsStakedCond: sync.NewCond(&sync.Mutex{}),
-		version:      version,
+		nodeData:       make(map[string]*NodeData),
+		NodeDataChan:   make(chan *NodeData),
+		IsStakedCond:   sync.NewCond(&sync.Mutex{}),
+		IsStakedStatus: make(map[string]bool),
+		version:        version,
 	}
 	err := net.LoadNodeData()
 	if err != nil {
@@ -295,19 +296,19 @@ func (net *NodeEventTracker) LoadNodeData() error {
 
 func PrettyDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
-	min := int64(d / time.Minute)
-	h := min / 60
-	min %= 60
+	minute := int64(d / time.Minute)
+	h := minute / 60
+	minute %= 60
 	days := h / 24
 	h %= 24
 
 	if days > 0 {
-		return fmt.Sprintf("%d days %d hours %d minutes", days, h, min)
+		return fmt.Sprintf("%d days %d hours %d minutes", days, h, minute)
 	}
 	if h > 0 {
-		return fmt.Sprintf("%d hours %d minutes", h, min)
+		return fmt.Sprintf("%d hours %d minutes", h, minute)
 	}
-	return fmt.Sprintf("%d minutes", min)
+	return fmt.Sprintf("%d minutes", minute)
 }
 
 func getEthAddress(remotePeer peer.ID, n network.Network) string {

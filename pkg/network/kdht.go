@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -82,6 +80,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 		}
 
 		wg.Add(1)
+		counter := 0
 		go func() {
 			ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel() // Cancel the context when done to release resources
@@ -89,6 +88,10 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 			defer wg.Done()
 			if err := host.Connect(ctxWithTimeout, *peerinfo); err != nil {
 				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
+				counter++
+				if counter >= maxRetries {
+					return
+				}
 				time.Sleep(retryDelay)
 			} else {
 				logrus.Info("Connection established with node:", *peerinfo)
@@ -104,7 +107,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 					}
 				}(stream) // Close the stream when done
 
-				_, err = stream.Write(getSelfNodeDataJson(host, isStaked))
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
 					return
@@ -114,40 +117,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 	}
 	wg.Wait()
 	return kademliaDHT, nil
-}
-
-func getSelfNodeDataJson(host host.Host, isStaked bool) []byte {
-	var publicKeyHex string
-	var err error
-	// Get the public key of the host node
-	pubKey := host.Peerstore().PubKey(host.ID())
-	if pubKey == nil {
-		logrus.WithFields(logrus.Fields{
-			"Peer": host.ID().String(),
-		}).Warn("No public key found for peer")
-	} else {
-		publicKeyHex, err = crypto.Libp2pPubKeyToEthAddress(pubKey)
-		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"Peer": host.ID().String(),
-			}).Warnf("Error getting public key %v", err)
-		}
-	}
-
-	// Create and populate NodeData
-	nodeData := pubsub.NodeData{
-		PeerId:     host.ID(),
-		IsStaked:   isStaked,
-		EthAddress: publicKeyHex,
-	}
-
-	// Convert NodeData to JSON
-	jsonData, err := json.Marshal(nodeData)
-	if err != nil {
-		logrus.Error("Error marshalling NodeData:", err)
-		return nil
-	}
-	return jsonData
 }
 
 func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Duration) {
