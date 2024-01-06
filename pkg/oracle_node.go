@@ -16,7 +16,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
-	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
@@ -44,7 +43,6 @@ type OracleNode struct {
 	Signature     string
 	IsStaked      bool
 	StartTime     time.Time
-	IDService     identify.IDService
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -102,12 +100,6 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	// Create a new Identify service
-	ids, err := identify.NewIDService(hst)
-	if err != nil {
-		return nil, err
-	}
-
 	ecdsaPrivKey, err := crypto2.Libp2pPrivateKeyToEcdsa(privKey)
 	if err != nil {
 		return nil, err
@@ -122,7 +114,6 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		NodeTracker:   pubsub2.NewNodeEventTracker(Version),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
-		IDService:     ids,
 	}, nil
 }
 
