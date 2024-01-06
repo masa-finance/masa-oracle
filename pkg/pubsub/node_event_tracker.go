@@ -129,18 +129,6 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	net.dataMutex.Unlock()
 }
 
-func (net *NodeEventTracker) AddPublicKey(peerID peer.ID, publicKey string) {
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
-
-	nodeData, exists := net.nodeData[peerID.String()]
-	if !exists {
-		logrus.Warnf("Node data does not exist for peer: %s", peerID)
-		return
-	}
-	nodeData.EthAddress = publicKey
-}
-
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
@@ -167,11 +155,23 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		return
 	}
 	// Handle discrepancies for existing nodes
-	if data.LastJoined.Before(existingData.LastJoined) && data.LastJoined.After(existingData.LastLeft) {
+	if !data.LastJoined.IsZero() &&
+		data.LastJoined.Before(existingData.LastJoined) &&
+		data.LastJoined.After(existingData.LastLeft) {
 		existingData.LastJoined = data.LastJoined
 	}
-	if data.LastLeft.After(existingData.LastLeft) && data.LastLeft.Before(existingData.LastJoined) {
+	if !data.LastLeft.IsZero() &&
+		data.LastLeft.After(existingData.LastLeft) &&
+		data.LastLeft.Before(existingData.LastJoined) {
 		existingData.LastLeft = data.LastLeft
+	}
+	if existingData.EthAddress == "" && data.EthAddress != "" {
+		existingData.EthAddress = data.EthAddress
+	}
+	if data.IsStaked && !existingData.IsStaked {
+		existingData.IsStaked = data.IsStaked
+	} else if !data.IsStaked && existingData.IsStaked {
+		logrus.Warnf("Received unstaked status for node: %s", data.PeerId)
 	}
 }
 
