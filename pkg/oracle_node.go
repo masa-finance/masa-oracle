@@ -185,6 +185,7 @@ func (node *OracleNode) handleDiscoveredPeers() {
 			sendData := pubsub2.GetSelfNodeDataJson(node.Host, node.IsStaked)
 			_, err = stream.Write(sendData)
 			if err != nil {
+				logrus.Error("Stream write failed", err)
 				return
 			}
 		case <-node.Context.Done():
@@ -219,9 +220,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 	// Signal that the IsStaked status is available
 	node.NodeTracker.IsStakedCond.Signal()
-	if nodeData.IsStaked {
-		node.NodeTracker.AddPublicKey(nodeData.PeerId, nodeData.EthAddress)
-	}
+	node.NodeTracker.HandleNodeData(nodeData)
 	logrus.Info("handleStream -> Received data:", string(message))
 }
 
