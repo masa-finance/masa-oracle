@@ -157,11 +157,11 @@ func (node *OracleNode) Start() (err error) {
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
 
 	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(NodeGossipTopic, node.NodeTracker)
+	err = node.PubSubManager.AddSubscription(TopiclWithVersion(NodeGossipTopic), node.NodeTracker)
 	if err != nil {
 		return err
 	}
-	err = node.PubSubManager.AddSubscription(AdTopic, &ad.SubscriptionHandler{})
+	err = node.PubSubManager.AddSubscription(TopiclWithVersion(AdTopic), &ad.SubscriptionHandler{})
 	node.StartTime = time.Now()
 	return nil
 }
