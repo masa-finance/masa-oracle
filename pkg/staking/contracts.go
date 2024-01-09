@@ -3,14 +3,10 @@ package staking
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,42 +14,12 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-type ContractAddresses struct {
-	Sepolia struct {
-		MasaToken         string `json:"MasaToken"`
-		OracleNodeStaking string `json:"OracleNodeStaking"`
-		StakingMasaToken  string `json:"StakingMasaToken"`
-	} `json:"sepolia"`
-}
-
 var MasaTokenAddress common.Address
 var OracleNodeStakingContractAddress common.Address
 
 type Client struct {
 	EthClient  *ethclient.Client
 	PrivateKey *ecdsa.PrivateKey
-}
-
-func getABI(jsonPath string) (abi.ABI, error) {
-	jsonFile, err := ioutil.ReadFile(jsonPath)
-	if err != nil {
-		return abi.ABI{}, fmt.Errorf("failed to read ABI: %v", err)
-	}
-
-	var contract struct {
-		ABI json.RawMessage `json:"abi"`
-	}
-	err = json.Unmarshal(jsonFile, &contract)
-	if err != nil {
-		return abi.ABI{}, fmt.Errorf("failed to unmarshal ABI JSON: %v", err)
-	}
-
-	parsedABI, err := abi.JSON(strings.NewReader(string(contract.ABI)))
-	if err != nil {
-		return abi.ABI{}, fmt.Errorf("failed to parse ABI: %v", err)
-	}
-
-	return parsedABI, nil
 }
 
 func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
@@ -65,7 +31,7 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
 	OracleNodeStakingContractAddress = common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
 
-	rpcURL := GetRPCURL() // Use the getRPCURL function to get the environment variable
+	rpcURL := GetRPCURL()
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
@@ -77,7 +43,7 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 }
 
 func (sc *Client) Approve(amount *big.Int) (string, error) {
-	parsedABI, err := getABI("contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/MasaToken.sol/MasaToken.json")
+	parsedABI, err := GetABI("contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/MasaToken.sol/MasaToken.json")
 	if err != nil {
 		return "", err
 	}
@@ -147,7 +113,7 @@ func (sc *Client) Stake(amount *big.Int) (string, error) {
 		return "", fmt.Errorf("failed to create keyed transactor: %v", err)
 	}
 
-	parsedABI, err := getABI("contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/OracleNodeStaking.sol/OracleNodeStaking.json")
+	parsedABI, err := GetABI("contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/OracleNodeStaking.sol/OracleNodeStaking.json")
 	if err != nil {
 		return "", err
 	}

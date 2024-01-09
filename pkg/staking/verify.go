@@ -2,40 +2,14 @@ package staking
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
-	"os"
-	"strings"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
-
-func getContractABI() (abi.ABI, error) {
-	jsonFile, err := os.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json")
-	if err != nil {
-		return abi.ABI{}, fmt.Errorf("Failed to read contract JSON: %v", err)
-	}
-
-	var contract struct {
-		ABI json.RawMessage `json:"abi"`
-	}
-	err = json.Unmarshal(jsonFile, &contract)
-	if err != nil {
-		return abi.ABI{}, fmt.Errorf("Failed to unmarshal contract JSON: %v", err)
-	}
-
-	parsedABI, err := abi.JSON(strings.NewReader(string(contract.ABI)))
-	if err != nil {
-		return abi.ABI{}, fmt.Errorf("Failed to parse contract ABI: %v", err)
-	}
-
-	return parsedABI, nil
-}
 
 func VerifyStakingEvent(userAddress string) (bool, error) {
 	rpcURL := GetRPCURL()
@@ -44,7 +18,7 @@ func VerifyStakingEvent(userAddress string) (bool, error) {
 		return false, fmt.Errorf("Failed to connect to the Ethereum client: %v", err)
 	}
 
-	parsedABI, err := getContractABI()
+	parsedABI, err := GetABI(OracleNodeStakingABIPath) // Use the GetABI function from abi.go
 	if err != nil {
 		return false, err
 	}
