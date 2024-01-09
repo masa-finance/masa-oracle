@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"path/filepath"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -22,9 +23,35 @@ const (
 	rpcURL = "https://sepolia.infura.io/v3/74533a2e74bc430188366f3aa5715ae1" // update to Sepolia - this should be added as an environment variable sometime
 )
 
-// MasaTokenAddress Addresses of the deployed contracts (replace with actual addresses)
-var MasaTokenAddress = common.HexToAddress("0x26775cD6D7615c8570c8421819c228225543a844")
-var OracleNodeStakingContractAddress = common.HexToAddress("0xd925bc5d3eCd899a3F7B8D762397D2DC75E1187b")
+// ContractAddresses holds the addresses for the contracts
+type ContractAddresses struct {
+	Sepolia struct {
+		MasaToken         string `json:"MasaToken"`
+		OracleNodeStaking string `json:"OracleNodeStaking"`
+		StakingMasaToken  string `json:"StakingMasaToken"`
+	} `json:"sepolia"`
+}
+
+// LoadContractAddresses loads the contract addresses from the JSON file
+func LoadContractAddresses() (*ContractAddresses, error) {
+	path := filepath.Join("contracts", "node_modules", "@masa-finance", "masa-contracts-oracle", "addresses.json")
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var addresses ContractAddresses
+	err = json.Unmarshal(data, &addresses)
+	if err != nil {
+		return nil, err
+	}
+
+	return &addresses, nil
+}
+
+// MasaTokenAddress and OracleNodeStakingContractAddress are now set during client initialization
+var MasaTokenAddress common.Address
+var OracleNodeStakingContractAddress common.Address
 
 // Client StakingClient holds the necessary details to interact with the Ethereum contracts
 type Client struct {
@@ -56,7 +83,16 @@ func getStakingContractABI(jsonPath string) (abi.ABI, error) {
 
 // NewClient creates a new StakingClient using the Sepolia RPC endpoint
 func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
-	client, err := ethclient.Dial(rpcURL) // Use the Sepolia RPC URL
+	addresses, err := LoadContractAddresses()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load contract addresses: %v", err)
+	}
+
+	// Set the global variables with the loaded contract addresses
+	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
+	OracleNodeStakingContractAddress = common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
+
+	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
 	}
