@@ -2,82 +2,52 @@ package staking
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
-	"os"
-	"strings"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-const (
-	infuraURL       = "https://rpc.sepolia.org"                    // update to Sepolia - this should be added as an environment variable sometime
-	contractAddress = "0xd925bc5d3eCd899a3F7B8D762397D2DC75E1187b" // this is the sepolia contract address
-)
-
-type Contract struct {
-	ABI []interface{} `json:"abi"`
-}
-
-func getContractABI() []interface{} {
-	jsonFile, err := os.ReadFile("contracts/build/contracts/OracleNodeStakingContract.json")
-	if err != nil {
-		log.Fatalf("Failed to read contract JSON: %v", err)
-	}
-
-	var contract Contract
-	err = json.Unmarshal(jsonFile, &contract)
-	if err != nil {
-		log.Fatalf("Failed to unmarshal contract JSON: %v", err)
-	}
-
-	return contract.ABI
-}
-
 func VerifyStakingEvent(userAddress string) (bool, error) {
-	client, err := ethclient.Dial(infuraURL)
+	rpcURL := GetRPCURL()
+	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to connect to the Ethereum client: %v", err))
+		return false, fmt.Errorf("Failed to connect to the Ethereum client: %v", err)
 	}
 
-	contractABI := getContractABI()
-	abiJSON, err := json.Marshal(contractABI)
+	parsedABI, err := GetABI(OracleNodeStakingABIPath) // Use the GetABI function from abi.go
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to marshal contract ABI: %v", err))
-	}
-	parsedABI, err := abi.JSON(strings.NewReader(string(abiJSON)))
-	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to parse contract ABI: %v", err))
+		return false, err
 	}
 
 	address := common.HexToAddress(userAddress)
 	stake, err := parsedABI.Pack("stakes", address)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to pack data for stakes call: %v", err))
+		return false, fmt.Errorf("Failed to pack data for stakes call: %v", err)
 	}
 
-	// Address correction
-	contractAddr := common.HexToAddress(contractAddress)
+	addresses, err := LoadContractAddresses()
+	if err != nil {
+		return false, fmt.Errorf("Failed to load contract addresses: %v", err)
+	}
+	contractAddr := common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
 
 	callMsg := ethereum.CallMsg{
-		To:   &contractAddr, // Adjusted to use a pointer
+		To:   &contractAddr,
 		Data: stake,
 	}
 
 	result, err := client.CallContract(context.Background(), callMsg, nil)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to call stakes function: %v", err))
+		return false, fmt.Errorf("Failed to call stakes function: %v", err)
 	}
 
 	stakesAmountInterfaces, err := parsedABI.Unpack("stakes", result)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to unpack stakes: %v", err))
+		return false, fmt.Errorf("Failed to unpack stakes: %v", err)
 	}
 
 	stakesAmount, ok := stakesAmountInterfaces[0].(*big.Int)
