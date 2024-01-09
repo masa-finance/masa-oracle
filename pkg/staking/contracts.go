@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -19,9 +20,9 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-const (
-	rpcURL = "https://sepolia.infura.io/v3/74533a2e74bc430188366f3aa5715ae1"
-)
+func getRPCURL() string {
+	return os.Getenv("RPC_URL")
+}
 
 type ContractAddresses struct {
 	Sepolia struct {
@@ -86,6 +87,7 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
 	OracleNodeStakingContractAddress = common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
 
+	rpcURL := getRPCURL() // Use the getRPCURL function to get the environment variable
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
