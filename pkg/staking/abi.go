@@ -19,7 +19,7 @@ type ContractAddresses struct {
 	Sepolia struct {
 		MasaToken         string `json:"MasaToken"`
 		OracleNodeStaking string `json:"OracleNodeStaking"`
-		StakingMasaToken  string `json:"StakingMasaToken"`
+		StakedMasaToken   string `json:"StakedMasaToken"`
 	} `json:"sepolia"`
 }
 
