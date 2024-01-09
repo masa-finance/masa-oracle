@@ -6,13 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
-	"os"
-	"path/filepath"
 	"strings"
-
-	"github.com/joho/godotenv"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -23,39 +18,12 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func init() {
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
-}
-
-func getRPCURL() string {
-	return os.Getenv("RPC_URL")
-}
-
 type ContractAddresses struct {
 	Sepolia struct {
 		MasaToken         string `json:"MasaToken"`
 		OracleNodeStaking string `json:"OracleNodeStaking"`
 		StakingMasaToken  string `json:"StakingMasaToken"`
 	} `json:"sepolia"`
-}
-
-func LoadContractAddresses() (*ContractAddresses, error) {
-	path := filepath.Join("contracts", "node_modules", "@masa-finance", "masa-contracts-oracle", "addresses.json")
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var addresses ContractAddresses
-	err = json.Unmarshal(data, &addresses)
-	if err != nil {
-		return nil, err
-	}
-
-	return &addresses, nil
 }
 
 var MasaTokenAddress common.Address
@@ -97,7 +65,7 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
 	OracleNodeStakingContractAddress = common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
 
-	rpcURL := getRPCURL() // Use the getRPCURL function to get the environment variable
+	rpcURL := GetRPCURL() // Use the getRPCURL function to get the environment variable
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
