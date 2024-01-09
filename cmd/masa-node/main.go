@@ -91,7 +91,7 @@ func main() {
 	}
 
 	// Pass the isStaked flag to the NewOracleNode function
-	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, isStaked)
+	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, true)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -156,3 +156,5 @@ func setUpFiles(envFilePath, keyFilePath string) error {
 	}
 	return nil
 }
+
+// Add node type for startup notification of what kind of node you are running and what that means

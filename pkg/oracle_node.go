@@ -3,7 +3,6 @@ package masa
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -186,20 +185,11 @@ func (node *OracleNode) handleDiscoveredPeers() {
 }
 
 func (node *OracleNode) handleStream(stream network.Stream) {
-	message, err := node.handleStreamData(stream)
+	remotePeer, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
-		logrus.Error("Error handling stream data:", err)
+		logrus.Errorf("Failed to read stream: %v", err)
 		return
 	}
-	// Deserialize the JSON message to a NodeData struct
-	var nodeData pubsub2.NodeData
-	err = json.Unmarshal(message, &nodeData)
-	if err != nil {
-		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
-		logrus.Errorf("%s", string(message))
-		return
-	}
-	remotePeer := stream.Conn().RemotePeer()
 	if remotePeer.String() != nodeData.PeerId.String() {
 		logrus.Warnf("Received data from unexpected peer %s", remotePeer)
 		return
@@ -212,7 +202,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	// Signal that the IsStaked status is available
 	node.NodeTracker.IsStakedCond.Signal()
 	node.NodeTracker.HandleNodeData(nodeData)
-	logrus.Info("handleStream -> Received data:", string(message))
+	logrus.Info("handleStream -> Received data from:", remotePeer.String())
 }
 
 func (node *OracleNode) IsPublisher() bool {

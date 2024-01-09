@@ -133,6 +133,7 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
 		logrus.Errorf("failed to unmarshal node data: %v", err)
+		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
 	net.HandleNodeData(nodeData)
@@ -154,17 +155,28 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		net.nodeData[data.PeerId.String()] = &data
 		return
 	}
+	// Check for replay attacks using LastUpdated
+	if !data.LastUpdated.After(existingData.LastUpdated) {
+		logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
+		return
+	}
+	existingData.LastUpdated = data.LastUpdated
+	maxDifference := time.Minute * 5
+
 	// Handle discrepancies for existing nodes
 	if !data.LastJoined.IsZero() &&
 		data.LastJoined.Before(existingData.LastJoined) &&
-		data.LastJoined.After(existingData.LastLeft) {
+		data.LastJoined.After(existingData.LastLeft) &&
+		time.Since(data.LastJoined) < maxDifference {
 		existingData.LastJoined = data.LastJoined
 	}
 	if !data.LastLeft.IsZero() &&
 		data.LastLeft.After(existingData.LastLeft) &&
-		data.LastLeft.Before(existingData.LastJoined) {
+		data.LastLeft.Before(existingData.LastJoined) &&
+		time.Since(data.LastLeft) < maxDifference {
 		existingData.LastLeft = data.LastLeft
 	}
+
 	if existingData.EthAddress == "" && data.EthAddress != "" {
 		existingData.EthAddress = data.EthAddress
 	}
@@ -352,4 +364,9 @@ func (net *NodeEventTracker) waitForStakedStatus(peerID string, timeout time.Dur
 			return false, false // Timeout
 		}
 	}
+}
+
+func (net *NodeEventTracker) IsStaked(peerID string) bool {
+	peerNd := net.GetNodeData(peerID)
+	return peerNd.IsStaked
 }
