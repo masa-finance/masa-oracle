@@ -368,5 +368,8 @@ func (net *NodeEventTracker) waitForStakedStatus(peerID string, timeout time.Dur
 
 func (net *NodeEventTracker) IsStaked(peerID string) bool {
 	peerNd := net.GetNodeData(peerID)
+	if peerNd == nil {
+		return false
+	}
 	return peerNd.IsStaked
 }
