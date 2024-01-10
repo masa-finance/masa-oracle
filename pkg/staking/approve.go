@@ -1,4 +1,3 @@
-// approve.go
 package staking
 
 import (
