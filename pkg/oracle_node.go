@@ -143,9 +143,13 @@ func (node *OracleNode) Start() (err error) {
 	if err != nil {
 		return err
 	}
-
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
-
+	// if this is the original boot node then add it to the node tracker on startup
+	if os.Getenv(Peers) == "" && node.NodeTracker.GetNodeData(node.Host.ID().String()) == nil {
+		publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
+		nodeData := pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+		node.NodeTracker.HandleNodeData(*nodeData)
+	}
 	// Subscribe to a topics
 	err = node.PubSubManager.AddSubscription(TopiclWithVersion(NodeGossipTopic), node.NodeTracker)
 	if err != nil {
@@ -198,10 +202,10 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	node.NodeTracker.IsStakedCond.L.Lock()
 	node.NodeTracker.IsStakedStatus[stream.Conn().RemotePeer().String()] = nodeData.IsStaked
 	node.NodeTracker.IsStakedCond.L.Unlock()
-
 	// Signal that the IsStaked status is available
 	node.NodeTracker.IsStakedCond.Signal()
 	node.NodeTracker.HandleNodeData(nodeData)
+
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())
 }
 

@@ -21,6 +21,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 	for {
 		select {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
+			time.Sleep(1 * time.Second)
 			if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) {
 				// Marshal the nodeData into JSON
 				jsonData, err := json.Marshal(nodeData)

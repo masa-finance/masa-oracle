@@ -91,7 +91,7 @@ func main() {
 	}
 
 	// Pass the isStaked flag to the NewOracleNode function
-	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, true)
+	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, isStaked)
 	if err != nil {
 		logrus.Fatal(err)
 	}
