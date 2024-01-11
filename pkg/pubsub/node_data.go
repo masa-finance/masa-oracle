@@ -53,6 +53,7 @@ type NodeData struct {
 	Activity             int             `json:"activity,omitempty"`
 	IsActive             bool            `json:"isActive,omitempty"`
 	IsStaked             bool            `json:"isStaked"`
+	SelfIdentified       bool            `json:"-"`
 }
 
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
@@ -68,6 +69,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		AccumulatedUptime: 0,
 		EthAddress:        publicKey,
 		Activity:          activity,
+		SelfIdentified:    false,
 	}
 }
 

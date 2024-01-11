@@ -200,7 +200,7 @@ func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub
 	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(buffer.Bytes(), &nodeData); err != nil {
 		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
-		logrus.Errorf("%s", string(buffer.Bytes()))
+		logrus.Errorf("%s", buffer.String())
 		return "", pubsub2.NodeData{}, err
 	}
 	return remotePeerID, nodeData, nil

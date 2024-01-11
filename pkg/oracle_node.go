@@ -118,6 +118,12 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
+
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
+	if err != nil {
+		return err
+	}
+
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(ProtocolWithVersion(NodeDataSyncProtocol), node.ReceiveNodeData)
 	//if node.IsStaked then allow them to be added to the NodeData -- move to node tracker
@@ -129,22 +135,17 @@ func (node *OracleNode) Start() (err error) {
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, masaPrefix, node.PeerChan, node.IsStaked)
+	if err != nil {
+		return err
+	}
 	err = myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
 	if err != nil {
 		return err
 	}
 
-	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
-	if err != nil {
-		return err
-	}
-
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, masaPrefix, node.PeerChan, node.IsStaked)
-	if err != nil {
-		return err
-	}
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
-	// if this is the original boot node then add it to the node tracker on startup
+	// if this is the original boot node then add it to the node tracker
 	if os.Getenv(Peers) == "" && node.NodeTracker.GetNodeData(node.Host.ID().String()) == nil {
 		publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
 		nodeData := pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
@@ -156,6 +157,9 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 	err = node.PubSubManager.AddSubscription(TopiclWithVersion(AdTopic), &ad.SubscriptionHandler{})
+	if err != nil {
+		return err
+	}
 	node.StartTime = time.Now()
 	return nil
 }
@@ -168,6 +172,11 @@ func (node *OracleNode) handleDiscoveredPeers() {
 
 			if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
 				logrus.Error("Connection failed:", err)
+				//close the connection
+				err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
+				if err != nil {
+					logrus.Error(err)
+				}
 				continue
 			}
 
@@ -198,14 +207,10 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Warnf("Received data from unexpected peer %s", remotePeer)
 		return
 	}
-	// Store the IsStaked status in the map
-	node.NodeTracker.IsStakedCond.L.Lock()
-	node.NodeTracker.IsStakedStatus[stream.Conn().RemotePeer().String()] = nodeData.IsStaked
-	node.NodeTracker.IsStakedCond.L.Unlock()
-	// Signal that the IsStaked status is available
-	node.NodeTracker.IsStakedCond.Signal()
-	node.NodeTracker.HandleNodeData(nodeData)
-
+	err = node.NodeTracker.AddSelfIdentity(nodeData)
+	if err != nil {
+		return
+	}
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())
 }
 
