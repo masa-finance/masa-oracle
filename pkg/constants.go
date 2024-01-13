@@ -21,7 +21,7 @@ const (
 	PageSize             = 25
 	NodeBackupFileName   = "nodeBackup.json"
 	NodeBackupPath       = "nodeBackupPath"
-	Version              = "v.0.0.4-alpha"
+	Version              = "v0.0.4-alpha"
 )
 
 func ProtocolWithVersion(protocolName string) protocol.ID {
