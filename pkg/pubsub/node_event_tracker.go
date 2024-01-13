@@ -18,21 +18,17 @@ import (
 )
 
 type NodeEventTracker struct {
-	NodeDataChan   chan *NodeData
-	nodeData       map[string]*NodeData
-	dataMutex      sync.RWMutex
-	IsStakedStatus map[string]bool
-	IsStakedCond   *sync.Cond
-	version        string
+	NodeDataChan chan *NodeData
+	nodeData     map[string]*NodeData
+	dataMutex    sync.RWMutex
+	version      string
 }
 
 func NewNodeEventTracker(version string) *NodeEventTracker {
 	net := &NodeEventTracker{
-		nodeData:       make(map[string]*NodeData),
-		NodeDataChan:   make(chan *NodeData),
-		IsStakedCond:   sync.NewCond(&sync.Mutex{}),
-		IsStakedStatus: make(map[string]bool),
-		version:        version,
+		nodeData:     make(map[string]*NodeData),
+		NodeDataChan: make(chan *NodeData),
+		version:      version,
 	}
 	err := net.LoadNodeData()
 	if err != nil {
@@ -64,26 +60,21 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
+	multiAddress := c.RemoteMultiaddr()
+	remotePeer := c.RemotePeer()
+	ethAddress := getEthAddress(remotePeer, n)
 
-	peerID := c.RemotePeer().String()
-	isStaked, ok := net.waitForStakedStatus(peerID, time.Second*10)
-	if !ok {
-		logrus.Errorf("Timeout waiting for IsStaked status for node: %s", peerID)
-		return
-	}
-	if !isStaked {
-		logrus.Infof("Ignoring unstaked node: %s", peerID)
-		return
-	}
+	net.onConnect(multiAddress, remotePeer, ethAddress)
+}
 
+func (net *NodeEventTracker) onConnect(multiAddress ma.Multiaddr, remotePeer peer.ID, ethAddress string) {
+	peerID := remotePeer.String()
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 
-	ethAddress := getEthAddress(c.RemotePeer(), n)
-
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ethAddress, ActivityJoined)
+		nodeData = NewNodeData(multiAddress, remotePeer, ethAddress, ActivityJoined)
 		net.nodeData[nodeData.PeerId.String()] = nodeData
 	} else {
 		if nodeData.EthAddress == "" {
@@ -92,13 +83,13 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		// If the node data exists, check if the multiaddress is already in the list
 		addrExists := false
 		for _, addr := range nodeData.Multiaddrs {
-			if addr.Equal(c.RemoteMultiaddr()) {
+			if addr.Equal(multiAddress) {
 				addrExists = true
 				break
 			}
 		}
 		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{c.RemoteMultiaddr()})
+			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
 		}
 	}
 	net.NodeDataChan <- nodeData
@@ -133,6 +124,7 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
 		logrus.Errorf("failed to unmarshal node data: %v", err)
+		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
 	net.HandleNodeData(nodeData)
@@ -154,17 +146,29 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		net.nodeData[data.PeerId.String()] = &data
 		return
 	}
+	// Check for replay attacks using LastUpdated
+	if !data.LastUpdated.After(existingData.LastUpdated) {
+		logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
+		return
+	}
+	existingData.LastUpdated = data.LastUpdated
+
+	maxDifference := time.Minute * 5
+
 	// Handle discrepancies for existing nodes
 	if !data.LastJoined.IsZero() &&
 		data.LastJoined.Before(existingData.LastJoined) &&
-		data.LastJoined.After(existingData.LastLeft) {
+		data.LastJoined.After(existingData.LastLeft) &&
+		time.Since(data.LastJoined) < maxDifference {
 		existingData.LastJoined = data.LastJoined
 	}
 	if !data.LastLeft.IsZero() &&
 		data.LastLeft.After(existingData.LastLeft) &&
-		data.LastLeft.Before(existingData.LastJoined) {
+		data.LastLeft.Before(existingData.LastJoined) &&
+		time.Since(data.LastLeft) < maxDifference {
 		existingData.LastLeft = data.LastLeft
 	}
+
 	if existingData.EthAddress == "" && data.EthAddress != "" {
 		existingData.EthAddress = data.EthAddress
 	}
@@ -194,6 +198,9 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	// Convert the map to a slice
 	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
 	for _, nodeData := range net.nodeData {
+		if !nodeData.IsStaked {
+			continue
+		}
 		nd := *nodeData
 		nd.CurrentUptime = nodeData.GetCurrentUptime()
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
@@ -215,14 +222,9 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 
 	// Filter allNodeData to only include nodes that have been updated since the given time
 	var updatedNodeData []NodeData
-	for _, nodeData := range net.nodeData {
+	for _, nodeData := range net.GetAllNodeData() {
 		if nodeData.LastUpdated.After(since) {
-			nd := *nodeData
-			nd.CurrentUptime = nodeData.GetCurrentUptime()
-			nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-			nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
-			nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
-			updatedNodeData = append(updatedNodeData, nd)
+			updatedNodeData = append(updatedNodeData, nodeData)
 		}
 	}
 	// Sort the slice based on the timestamp
@@ -332,24 +334,37 @@ func getEthAddress(remotePeer peer.ID, n network.Network) string {
 	return publicKeyHex
 }
 
-func (net *NodeEventTracker) waitForStakedStatus(peerID string, timeout time.Duration) (bool, bool) {
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-
-	for {
-		net.IsStakedCond.L.Lock()
-		isStaked, ok := net.IsStakedStatus[peerID]
-		net.IsStakedCond.L.Unlock()
-
-		if ok {
-			return isStaked, true
-		}
-
-		select {
-		case <-time.After(time.Second):
-			// Check the status again after a second
-		case <-timer.C:
-			return false, false // Timeout
-		}
+func (net *NodeEventTracker) IsStaked(peerID string) bool {
+	peerNd := net.GetNodeData(peerID)
+	if peerNd == nil {
+		return false
 	}
+	return peerNd.IsStaked
+}
+
+func (net *NodeEventTracker) AddSelfIdentity(nodeData NodeData) error {
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+	dataChanged := false
+
+	nd, exists := net.nodeData[nodeData.PeerId.String()]
+	if !exists {
+		return fmt.Errorf("node data does not exist for peer: %s", nodeData.PeerId)
+	}
+	if !nd.SelfIdentified {
+		dataChanged = true
+		nd.SelfIdentified = true
+	}
+	if !nd.IsStaked && nodeData.IsStaked {
+		dataChanged = true
+		nd.IsStaked = nodeData.IsStaked
+	}
+	if nd.EthAddress == "" && nodeData.EthAddress != "" {
+		dataChanged = true
+		nd.EthAddress = nodeData.EthAddress
+	}
+	if dataChanged {
+		net.NodeDataChan <- nd
+	}
+	return nil
 }
