@@ -186,8 +186,13 @@ func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub
 	for {
 		n, err := stream.Read(jsonData)
 		if err != nil && err != io.EOF {
-			logrus.Errorf("Failed to read stream from %s: %v", remotePeerID, err)
-			return "", pubsub2.NodeData{}, err
+			//try to read the data from the buffer, if it serializes to NodeData, return it
+			var nodeData pubsub2.NodeData
+			if err2 := json.Unmarshal(buffer.Bytes(), &nodeData); err2 != nil {
+				logrus.Errorf("Failed to read stream from %s: %v", remotePeerID, err)
+				return "", pubsub2.NodeData{}, err
+			}
+			return remotePeerID, nodeData, nil
 		}
 		// when the other side closes the connection right away we get the EOF right away, so you have to write
 		// to the buffer before checking for the EOF
