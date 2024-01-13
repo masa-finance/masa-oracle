@@ -169,27 +169,17 @@ func (node *OracleNode) handleDiscoveredPeers() {
 		select {
 		case peer := <-node.PeerChan: // will block until we discover a peer
 			logrus.Info("Peer Event for:", peer, ", Action:", peer.Action)
-
-			if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
-				logrus.Error("Connection failed:", err)
-				//close the connection
-				err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
-				if err != nil {
-					logrus.Error(err)
+			// If the peer is a new peer, connect to it
+			if peer.Action == myNetwork.PeerAdded {
+				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
+					logrus.Error("Connection failed:", err)
+					//close the connection
+					err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
+					if err != nil {
+						logrus.Error(err)
+					}
+					continue
 				}
-				continue
-			}
-
-			//open a stream, this stream will be handled by handleStream other end
-			stream, err := node.Host.NewStream(node.Context, peer.AddrInfo.ID, node.Protocol)
-			if err != nil {
-				logrus.Error("Stream open failed", err)
-			}
-			sendData := pubsub2.GetSelfNodeDataJson(node.Host, node.IsStaked)
-			_, err = stream.Write(sendData)
-			if err != nil {
-				logrus.Error("Stream write failed", err)
-				return
 			}
 		case <-node.Context.Done():
 			return
