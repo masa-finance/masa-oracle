@@ -68,6 +68,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 }
 
 func (net *NodeEventTracker) onConnect(multiAddress ma.Multiaddr, remotePeer peer.ID, ethAddress string) {
+	logrus.Debug("Connect")
 	peerID := remotePeer.String()
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
@@ -97,6 +98,8 @@ func (net *NodeEventTracker) onConnect(multiAddress ma.Multiaddr, remotePeer pee
 }
 
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
+	logrus.Debug("Disconnect")
+
 	// A node has left the network
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
@@ -108,6 +111,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	peerID := c.RemotePeer().String()
 
 	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
 		// this should never happen
@@ -117,7 +121,6 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	net.NodeDataChan <- nodeData
 	nodeData.Left()
 
-	net.dataMutex.Unlock()
 }
 
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
@@ -192,8 +195,8 @@ func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
 
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	logrus.Debug("Getting all node data")
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
 
 	// Convert the map to a slice
 	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
@@ -217,9 +220,6 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 }
 
 func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
-	net.dataMutex.RLock()
-	defer net.dataMutex.RUnlock()
-
 	// Filter allNodeData to only include nodes that have been updated since the given time
 	var updatedNodeData []NodeData
 	for _, nodeData := range net.GetAllNodeData() {
@@ -343,6 +343,7 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 }
 
 func (net *NodeEventTracker) AddSelfIdentity(nodeData NodeData) error {
+	logrus.Debug("Adding self identity")
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 	dataChanged := false
