@@ -1,20 +1,9 @@
 {
-  "name": "masa-oracle-contracts",
-  "version": "1.0.0",
-  "description": "Contracts for the Masa Oracle Node",
-  "main": "truffle-config.js",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "name": "masa-contracts",
+  "version": "0.0.4-alpha",
+  "main": "index.js",
+  "license": "MIT",
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.3",
-    "@truffle/hdwallet-provider": "^2.1.15",
-    "dotenv": "^16.3.1"
+    "@masa-finance/masa-contracts-oracle": "^0.1.1"
   }
 }

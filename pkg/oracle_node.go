@@ -1,7 +1,6 @@
 package masa
 
 import (
-	"bufio"
 	"context"
 	"crypto/ecdsa"
 	"fmt"
@@ -90,12 +89,12 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	libp2pOptions = append(libp2pOptions, libp2p.ChainOptions(securityOptions...))
 	libp2pOptions = append(libp2pOptions, libp2p.ListenAddrStrings(addrStr...))
 
-	host, err := libp2p.New(libp2pOptions...)
+	hst, err := libp2p.New(libp2pOptions...)
 	if err != nil {
 		return nil, err
 	}
 
-	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, host)
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst)
 	if err != nil {
 		return nil, err
 	}
@@ -105,13 +104,13 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 	return &OracleNode{
-		Host:          host,
+		Host:          hst,
 		PrivKey:       ecdsaPrivKey,
-		Protocol:      oracleProtocol,
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(host),
+		Protocol:      ProtocolWithVersion(oracleProtocol),
+		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(),
+		NodeTracker:   pubsub2.NewNodeEventTracker(Version),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
 	}, nil
@@ -119,38 +118,48 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
-	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(NodeDataSyncProtocol, node.ReceiveNodeData)
-	node.Host.SetStreamHandler(NodeGossipTopic, node.GossipNodeData)
-
-	node.Host.Network().Notify(node.NodeTracker)
-
-	go node.ListenToNodeTracker()
-	go node.handleDiscoveredPeers()
-
-	err = myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
-	if err != nil {
-		return err
-	}
 
 	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
 	if err != nil {
 		return err
 	}
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, oracleProtocol, masaPrefix, node.PeerChan)
+	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
+	node.Host.SetStreamHandler(ProtocolWithVersion(NodeDataSyncProtocol), node.ReceiveNodeData)
+	//if node.IsStaked then allow them to be added to the NodeData -- move to node tracker
+	if node.IsStaked {
+		node.Host.SetStreamHandler(ProtocolWithVersion(NodeGossipTopic), node.GossipNodeData)
+	}
+	node.Host.Network().Notify(node.NodeTracker)
+
+	go node.ListenToNodeTracker()
+	go node.handleDiscoveredPeers()
+
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, masaPrefix, node.PeerChan, node.IsStaked)
+	if err != nil {
+		return err
+	}
+	err = myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
 	if err != nil {
 		return err
 	}
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
-
+	// if this is the original boot node then add it to the node tracker
+	if os.Getenv(Peers) == "" && node.NodeTracker.GetNodeData(node.Host.ID().String()) == nil {
+		publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
+		nodeData := pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+		node.NodeTracker.HandleNodeData(*nodeData)
+	}
 	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(NodeGossipTopic, node.NodeTracker)
+	err = node.PubSubManager.AddSubscription(TopiclWithVersion(NodeGossipTopic), node.NodeTracker)
 	if err != nil {
 		return err
 	}
-	err = node.PubSubManager.AddSubscription(AdTopic, &ad.SubscriptionHandler{})
+	err = node.PubSubManager.AddSubscription(TopiclWithVersion(AdTopic), &ad.SubscriptionHandler{})
+	if err != nil {
+		return err
+	}
 	node.StartTime = time.Now()
 	return nil
 }
@@ -163,19 +172,24 @@ func (node *OracleNode) handleDiscoveredPeers() {
 
 			if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
 				logrus.Error("Connection failed:", err)
+				//close the connection
+				err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
+				if err != nil {
+					logrus.Error(err)
+				}
 				continue
 			}
 
-			// open a stream, this stream will be handled by handleStream other end
+			//open a stream, this stream will be handled by handleStream other end
 			stream, err := node.Host.NewStream(node.Context, peer.AddrInfo.ID, node.Protocol)
-
 			if err != nil {
 				logrus.Error("Stream open failed", err)
-			} else {
-				rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-				go node.writeData(rw, peer, stream)
-				go node.readData(rw, peer, stream)
+			}
+			sendData := pubsub2.GetSelfNodeDataJson(node.Host, node.IsStaked)
+			_, err = stream.Write(sendData)
+			if err != nil {
+				logrus.Error("Stream write failed", err)
+				return
 			}
 		case <-node.Context.Done():
 			return
@@ -184,103 +198,27 @@ func (node *OracleNode) handleDiscoveredPeers() {
 }
 
 func (node *OracleNode) handleStream(stream network.Stream) {
-	data := node.handleStreamData(stream)
-	logrus.Info("handleStream -> Received data:", string(data))
-	//remotePeer := stream.Conn().RemotePeer()
-	//
-	//// Check if we're already connected to the peer
-	//connStatus := node.Host.Network().Connectedness(remotePeer)
-	//if connStatus != network.Connected {
-	//	// We're not connected to the peer, so try to establish a connection
-	//	ctx, cancel := context.WithTimeout(node.Context, 5*time.Second)
-	//	defer cancel()
-	//	err := node.Host.Connect(ctx, peer.AddrInfo{ID: remotePeer})
-	//	if err != nil {
-	//		logrus.Warningf("Failed to connect to peer %s: %v", remotePeer, err)
-	//		return
-	//	}
-	//}
-	//
-	////check if the peer is already in the table
-	//peerInfo := node.Host.Peerstore().PeerInfo(remotePeer)
-	//if len(peerInfo.Addrs) == 0 {
-	//	// Try to add the peer to the routing table (no-op if already present).
-	//	added, err := node.DHT.RoutingTable().TryAddPeer(remotePeer, true, true)
-	//	if err != nil {
-	//		logrus.Debugf("Failed to add peer %s to routing table: %v", remotePeer, err)
-	//	} else if !added {
-	//		logrus.Warningf("Failed to add peer %s to routing table", remotePeer)
-	//	} else {
-	//		logrus.Infof("Successfully added peer %s to routing table", remotePeer)
-	//	}
-	//	// Check if the peer is useful after trying to add it
-	//	isUsefulAfter := node.DHT.RoutingTable().UsefulNewPeer(remotePeer)
-	//	logrus.Debugf("Is peer %s useful after adding: %v", remotePeer, isUsefulAfter)
-	//}
-	//logrus.Infof("Routing table size: %d", node.DHT.RoutingTable().Size())
-
-	// Create a buffer stream for non-blocking read and write.
-	//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-	//go node.readData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
-	//go node.writeData(rw, myNetwork.PeerEvent{Source: "StreamHandler"}, stream)
-
-	// 'stream' will stay open until you close it (or the other side closes it).
-}
-
-func (node *OracleNode) readData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
-	defer func() {
-		err := stream.Close()
-		if err != nil {
-			logrus.Error("Error closing stream:", err)
-		}
-	}()
-
-	for {
-		str, err := rw.ReadString('\n')
-		if err != nil {
-			logrus.Error("Error reading from buffer:", err)
-			return
-		}
-		if str == "" {
-			return
-		}
-		if str != "\n" {
-			// Green console colour: 	\x1b[32m
-			// Reset console colour: 	\x1b[0m
-			fmt.Printf("\x1b[32m%s\x1b[0m> ", str)
-		}
+	remotePeer, nodeData, err := node.handleStreamData(stream)
+	if err != nil {
+		logrus.Errorf("Failed to read stream: %v", err)
+		return
 	}
-}
-
-func (node *OracleNode) writeData(rw *bufio.ReadWriter, event myNetwork.PeerEvent, stream network.Stream) {
-	defer func() {
-		err := stream.Close()
-		if err != nil {
-			logrus.Error("Error closing stream:", err)
-		}
-	}()
-
-	for {
-		// Generate a message including the multiaddress of the sender
-		sendData := fmt.Sprintf("%s: Hello from %s\n", event.Source, node.GetMultiAddrs().String())
-
-		_, err := rw.WriteString(sendData)
-		if err != nil {
-			logrus.Error("Error writing to buffer:", err)
-			return
-		}
-		err = rw.Flush()
-		if err != nil {
-			logrus.Error("Error flushing buffer:", err)
-			return
-		}
-		// Sleep for a while before sending the next message
-		time.Sleep(time.Second * 30)
+	if remotePeer.String() != nodeData.PeerId.String() {
+		logrus.Warnf("Received data from unexpected peer %s", remotePeer)
+		return
 	}
+	err = node.NodeTracker.AddSelfIdentity(nodeData)
+	if err != nil {
+		return
+	}
+	logrus.Info("handleStream -> Received data from:", remotePeer.String())
 }
 
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
+}
+
+func (node *OracleNode) Version() string {
+	return Version
 }
