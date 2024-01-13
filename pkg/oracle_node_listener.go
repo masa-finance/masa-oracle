@@ -21,7 +21,8 @@ func (node *OracleNode) ListenToNodeTracker() {
 	for {
 		select {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
-			if node.IsStaked {
+			time.Sleep(1 * time.Second)
+			if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) {
 				// Marshal the nodeData into JSON
 				jsonData, err := json.Marshal(nodeData)
 				if err != nil {
@@ -95,6 +96,12 @@ func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream 
 }
 
 func (node *OracleNode) SendNodeData(peerID peer.ID) {
+	// Check if the node is staked before proceeding
+	if !node.NodeTracker.IsStaked(peerID.String()) {
+		logrus.Warnf("Node %s is not staked. Aborting SendNodeData.", peerID)
+		return
+	}
+
 	recipientNodeData := node.NodeTracker.GetNodeData(peerID.String())
 	var nodeData []pubsub2.NodeData
 	if recipientNodeData == nil {
@@ -112,7 +119,12 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		logrus.Errorf("Failed to open stream to %s: %v", peerID, err)
 		return
 	}
-	defer stream.Close() // Ensure the stream is closed after sending the data
+	defer func(stream network.Stream) {
+		err := stream.Close()
+		if err != nil {
+
+		}
+	}(stream) // Ensure the stream is closed after sending the data
 
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
 		node.SendNodeDataPage(nodeData, stream, pageNumber)
@@ -145,22 +157,24 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 
 func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	logrus.Info("GossipNodeData")
-	data, err := node.handleStreamData(stream)
+	remotePeerId, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
 		logrus.Errorf("Failed to read stream: %v", err)
 		return
 	}
-	var nodeData pubsub2.NodeData
-	if err := json.Unmarshal(data, &nodeData); err != nil {
-		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
-		logrus.Errorf("%s", string(data))
-		return
+	// Only allow gossip about a node from other nodes
+	if remotePeerId.String() != nodeData.PeerId.String() {
+		node.NodeTracker.HandleNodeData(nodeData)
 	}
-	node.NodeTracker.HandleNodeData(nodeData)
 }
 
-func (node *OracleNode) handleStreamData(stream network.Stream) ([]byte, error) {
-	defer stream.Close()
+func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub2.NodeData, error) {
+	defer func(stream network.Stream) {
+		err := stream.Close()
+		if err != nil {
+			logrus.Errorf("Failed to close stream: %v", err)
+		}
+	}(stream)
 
 	// Log the peer.ID of the remote peer
 	remotePeerID := stream.Conn().RemotePeer()
@@ -173,7 +187,7 @@ func (node *OracleNode) handleStreamData(stream network.Stream) ([]byte, error) 
 		n, err := stream.Read(jsonData)
 		if err != nil && err != io.EOF {
 			logrus.Errorf("Failed to read stream from %s: %v", remotePeerID, err)
-			return nil, err
+			return "", pubsub2.NodeData{}, err
 		}
 		// when the other side closes the connection right away we get the EOF right away, so you have to write
 		// to the buffer before checking for the EOF
@@ -183,5 +197,11 @@ func (node *OracleNode) handleStreamData(stream network.Stream) ([]byte, error) 
 			break
 		}
 	}
-	return buffer.Bytes(), nil
+	var nodeData pubsub2.NodeData
+	if err := json.Unmarshal(buffer.Bytes(), &nodeData); err != nil {
+		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
+		logrus.Errorf("%s", buffer.String())
+		return "", pubsub2.NodeData{}, err
+	}
+	return remotePeerID, nodeData, nil
 }
