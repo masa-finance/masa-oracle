@@ -2,16 +2,18 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 const (
@@ -22,7 +24,7 @@ const (
 )
 
 func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Multiaddr,
-	pId, prefix protocol.ID, peerChan chan PeerEvent) (*dht.IpfsDHT, error) {
+	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
@@ -78,6 +80,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 		}
 
 		wg.Add(1)
+		counter := 0
 		go func() {
 			ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel() // Cancel the context when done to release resources
@@ -85,17 +88,26 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 			defer wg.Done()
 			if err := host.Connect(ctxWithTimeout, *peerinfo); err != nil {
 				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
+				counter++
+				if counter >= maxRetries {
+					return
+				}
 				time.Sleep(retryDelay)
 			} else {
 				logrus.Info("Connection established with node:", *peerinfo)
-				stream, err := host.NewStream(ctxWithTimeout, peerinfo.ID, pId)
+				stream, err := host.NewStream(ctxWithTimeout, peerinfo.ID, protocolId)
 				if err != nil {
 					logrus.Error("Error opening stream:", err)
 					return
 				}
-				defer stream.Close() // Close the stream when done
+				defer func(stream network.Stream) {
+					err := stream.Close()
+					if err != nil {
+						logrus.Error("Error closing stream:", err)
+					}
+				}(stream) // Close the stream when done
 
-				_, err = stream.Write([]byte(fmt.Sprintf("Initial Hello from %s\n", peerAddr.String())))
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
 				if err != nil {
 					logrus.Error("Error writing to stream:", err)
 					return

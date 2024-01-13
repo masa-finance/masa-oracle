@@ -21,13 +21,14 @@ type NodeEventTracker struct {
 	NodeDataChan chan *NodeData
 	nodeData     map[string]*NodeData
 	dataMutex    sync.RWMutex
-	changes      int
+	version      string
 }
 
-func NewNodeEventTracker() *NodeEventTracker {
+func NewNodeEventTracker(version string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:     make(map[string]*NodeData),
 		NodeDataChan: make(chan *NodeData),
+		version:      version,
 	}
 	err := net.LoadNodeData()
 	if err != nil {
@@ -59,16 +60,21 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
+	multiAddress := c.RemoteMultiaddr()
+	remotePeer := c.RemotePeer()
+	ethAddress := getEthAddress(remotePeer, n)
 
+	net.onConnect(multiAddress, remotePeer, ethAddress)
+}
+
+func (net *NodeEventTracker) onConnect(multiAddress ma.Multiaddr, remotePeer peer.ID, ethAddress string) {
+	peerID := remotePeer.String()
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 
-	ethAddress := getEthAddress(c.RemotePeer(), n)
-	peerID := c.RemotePeer().String()
-
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), ethAddress, ActivityJoined)
+		nodeData = NewNodeData(multiAddress, remotePeer, ethAddress, ActivityJoined)
 		net.nodeData[nodeData.PeerId.String()] = nodeData
 	} else {
 		if nodeData.EthAddress == "" {
@@ -77,13 +83,13 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		// If the node data exists, check if the multiaddress is already in the list
 		addrExists := false
 		for _, addr := range nodeData.Multiaddrs {
-			if addr.Equal(c.RemoteMultiaddr()) {
+			if addr.Equal(multiAddress) {
 				addrExists = true
 				break
 			}
 		}
 		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{c.RemoteMultiaddr()})
+			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
 		}
 	}
 	net.NodeDataChan <- nodeData
@@ -118,6 +124,7 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
 		logrus.Errorf("failed to unmarshal node data: %v", err)
+		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
 	net.HandleNodeData(nodeData)
@@ -139,15 +146,48 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		net.nodeData[data.PeerId.String()] = &data
 		return
 	}
+	// Check for replay attacks using LastUpdated
+	if !data.LastUpdated.After(existingData.LastUpdated) {
+		logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
+		return
+	}
+	existingData.LastUpdated = data.LastUpdated
+
+	maxDifference := time.Minute * 5
+
 	// Handle discrepancies for existing nodes
-	if data.LastJoined.Before(existingData.LastJoined) && data.LastJoined.After(existingData.LastLeft) {
+	if !data.LastJoined.IsZero() &&
+		data.LastJoined.Before(existingData.LastJoined) &&
+		data.LastJoined.After(existingData.LastLeft) &&
+		time.Since(data.LastJoined) < maxDifference {
 		existingData.LastJoined = data.LastJoined
 	}
-	if data.LastLeft.After(existingData.LastLeft) && data.LastLeft.Before(existingData.LastJoined) {
+	if !data.LastLeft.IsZero() &&
+		data.LastLeft.After(existingData.LastLeft) &&
+		data.LastLeft.Before(existingData.LastJoined) &&
+		time.Since(data.LastLeft) < maxDifference {
 		existingData.LastLeft = data.LastLeft
 	}
-	// Update accumulated uptime
-	// existingData.AccumulatedUptime = existingData.GetAccumulatedUptime()
+
+	if existingData.EthAddress == "" && data.EthAddress != "" {
+		existingData.EthAddress = data.EthAddress
+	}
+	if data.IsStaked && !existingData.IsStaked {
+		existingData.IsStaked = data.IsStaked
+	} else if !data.IsStaked && existingData.IsStaked {
+		logrus.Warnf("Received unstaked status for node: %s", data.PeerId)
+	}
+}
+
+func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
+
+	nodeData, exists := net.nodeData[peerID]
+	if !exists {
+		return nil
+	}
+	return nodeData
 }
 
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
@@ -158,11 +198,14 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	// Convert the map to a slice
 	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
 	for _, nodeData := range net.nodeData {
+		if !nodeData.IsStaked {
+			continue
+		}
 		nd := *nodeData
 		nd.CurrentUptime = nodeData.GetCurrentUptime()
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-		nd.CurrentUptimeStr = prettyDuration(nd.CurrentUptime)
-		nd.AccumulatedUptimeStr = prettyDuration(nd.AccumulatedUptime)
+		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
+		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
 		nodeDataSlice = append(nodeDataSlice, nd)
 	}
 
@@ -171,6 +214,24 @@ func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 		return nodeDataSlice[i].LastUpdated.Before(nodeDataSlice[j].LastUpdated)
 	})
 	return nodeDataSlice
+}
+
+func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
+
+	// Filter allNodeData to only include nodes that have been updated since the given time
+	var updatedNodeData []NodeData
+	for _, nodeData := range net.GetAllNodeData() {
+		if nodeData.LastUpdated.After(since) {
+			updatedNodeData = append(updatedNodeData, nodeData)
+		}
+	}
+	// Sort the slice based on the timestamp
+	sort.Slice(updatedNodeData, func(i, j int) bool {
+		return updatedNodeData[i].LastUpdated.Before(updatedNodeData[j].LastUpdated)
+	})
+	return updatedNodeData
 }
 
 func (net *NodeEventTracker) DumpNodeData() {
@@ -187,7 +248,7 @@ func (net *NodeEventTracker) DumpNodeData() {
 	// Write the JSON data to a file
 	filePath := os.Getenv("nodeBackupPath")
 	if filePath == "" {
-		filePath = "node_data.json"
+		filePath = fmt.Sprintf("%s_node_data.json", net.version)
 	}
 	logrus.Infof("writing node data to file: %s", filePath)
 	err = os.WriteFile(filePath, data, 0644)
@@ -200,7 +261,7 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	// Read the JSON data from a file
 	filePath := os.Getenv("nodeBackupPath")
 	if filePath == "" {
-		filePath = "node_data.json"
+		filePath = fmt.Sprintf("%s_node_data.json", net.version)
 	}
 	// Check if the file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -235,21 +296,21 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	return nil
 }
 
-func prettyDuration(d time.Duration) string {
+func PrettyDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
-	min := int64(d / time.Minute)
-	h := min / 60
-	min %= 60
+	minute := int64(d / time.Minute)
+	h := minute / 60
+	minute %= 60
 	days := h / 24
 	h %= 24
 
 	if days > 0 {
-		return fmt.Sprintf("%d days %d hours %d minutes", days, h, min)
+		return fmt.Sprintf("%d days %d hours %d minutes", days, h, minute)
 	}
 	if h > 0 {
-		return fmt.Sprintf("%d hours %d minutes", h, min)
+		return fmt.Sprintf("%d hours %d minutes", h, minute)
 	}
-	return fmt.Sprintf("%d minutes", min)
+	return fmt.Sprintf("%d minutes", minute)
 }
 
 func getEthAddress(remotePeer peer.ID, n network.Network) string {
@@ -271,4 +332,39 @@ func getEthAddress(remotePeer peer.ID, n network.Network) string {
 		}
 	}
 	return publicKeyHex
+}
+
+func (net *NodeEventTracker) IsStaked(peerID string) bool {
+	peerNd := net.GetNodeData(peerID)
+	if peerNd == nil {
+		return false
+	}
+	return peerNd.IsStaked
+}
+
+func (net *NodeEventTracker) AddSelfIdentity(nodeData NodeData) error {
+	net.dataMutex.Lock()
+	defer net.dataMutex.Unlock()
+	dataChanged := false
+
+	nd, exists := net.nodeData[nodeData.PeerId.String()]
+	if !exists {
+		return fmt.Errorf("node data does not exist for peer: %s", nodeData.PeerId)
+	}
+	if !nd.SelfIdentified {
+		dataChanged = true
+		nd.SelfIdentified = true
+	}
+	if !nd.IsStaked && nodeData.IsStaked {
+		dataChanged = true
+		nd.IsStaked = nodeData.IsStaked
+	}
+	if nd.EthAddress == "" && nodeData.EthAddress != "" {
+		dataChanged = true
+		nd.EthAddress = nodeData.EthAddress
+	}
+	if dataChanged {
+		net.NodeDataChan <- nd
+	}
+	return nil
 }
