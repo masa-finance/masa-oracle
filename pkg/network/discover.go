@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -19,7 +18,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 	logrus.Infof("Discovering peers for protocol: %s", protocolString)
 	routingDiscovery := routing.NewRoutingDiscovery(dht)
 
-	// Advertise this node
+	// Advertise this node right away, then it will re-advertise with each ticker interval
 	logrus.Infof("Attempting to advertise protocol: %s", protocolString)
 	_, err := routingDiscovery.Advertise(ctx, protocolString)
 	if err != nil {
@@ -82,27 +81,10 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					logrus.Infof("Connected to peer %s", availPeer.ID.String())
 					//logrus.Infof("Connected to peer %s", conn.RemoteMultiaddr().String())
 				}
-				// Send a message with this node's multi address string to each availPeer that is found
-				stream, err := host.NewStream(ctx, availPeer.ID, protocol)
-				if err != nil {
-					logrus.Error("Error opening stream:", err)
-					continue
-				}
-				_, err = stream.Write([]byte(fmt.Sprintf("Discovery Hello from %s", address.String())))
-				if err != nil {
-					logrus.Error("Error writing to stream:", err)
-					continue
-				}
-				// Close the stream when done with it
-				if err := stream.Close(); err != nil {
-					logrus.Error("Error closing stream:", err)
-				}
-
 			case <-ctx.Done():
 				logrus.Info("Stopping peer discovery")
 				return
 			}
 		}
 	}
-	logrus.Infof("found %d peers", len(host.Network().Peers()))
 }

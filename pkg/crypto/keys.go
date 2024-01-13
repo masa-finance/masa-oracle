@@ -9,6 +9,7 @@ import (
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 )
 
@@ -171,4 +172,21 @@ func logAndReturnError(format string, args ...interface{}) error {
 	err := fmt.Errorf(format, args...)
 	logrus.Error(err)
 	return err
+}
+
+func GetPublicKeyForHost(host host.Host) (publicKeyHex string, err error) {
+	pubKey := host.Peerstore().PubKey(host.ID())
+	if pubKey == nil {
+		logrus.WithFields(logrus.Fields{
+			"Peer": host.ID().String(),
+		}).Warn("No public key found for peer")
+	} else {
+		publicKeyHex, err = Libp2pPubKeyToEthAddress(pubKey)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Peer": host.ID().String(),
+			}).Warnf("Error getting public key %v", err)
+		}
+	}
+	return
 }
