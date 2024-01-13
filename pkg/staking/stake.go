@@ -1,4 +1,3 @@
-// stake.go
 package staking
 
 import (

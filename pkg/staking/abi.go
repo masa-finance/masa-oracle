@@ -1,4 +1,3 @@
-// pkg/staking/abi.go
 package staking
 
 import (

@@ -156,3 +156,5 @@ func setUpFiles(envFilePath, keyFilePath string) error {
 	}
 	return nil
 }
+
+// Add node type for startup notification of what kind of node you are running and what that means
