@@ -53,6 +53,7 @@ type NodeData struct {
 	Activity             int             `json:"activity,omitempty"`
 	IsActive             bool            `json:"isActive,omitempty"`
 	IsStaked             bool            `json:"isStaked"`
+	SelfIdentified       bool            `json:"-"`
 }
 
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
@@ -63,10 +64,12 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
 		LastJoined:        time.Now(),
+		LastUpdated:       time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
 		EthAddress:        publicKey,
 		Activity:          activity,
+		SelfIdentified:    false,
 	}
 }
 
@@ -128,22 +131,7 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 }
 
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
-	var publicKeyHex string
-	var err error
-	// Get the public key of the host node
-	pubKey := host.Peerstore().PubKey(host.ID())
-	if pubKey == nil {
-		logrus.WithFields(logrus.Fields{
-			"Peer": host.ID().String(),
-		}).Warn("No public key found for peer")
-	} else {
-		publicKeyHex, err = crypto.Libp2pPubKeyToEthAddress(pubKey)
-		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"Peer": host.ID().String(),
-			}).Warnf("Error getting public key %v", err)
-		}
-	}
+	publicKeyHex, _ := crypto.GetPublicKeyForHost(host)
 
 	// Create and populate NodeData
 	nodeData := NodeData{
