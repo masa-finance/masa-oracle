@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
-	github.com/ethereum/go-ethereum v1.13.8
+	github.com/ethereum/go-ethereum v1.13.10
 	github.com/fatih/color v1.16.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.5.1
