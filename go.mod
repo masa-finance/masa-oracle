@@ -11,7 +11,7 @@ require (
 	github.com/libp2p/go-libp2p v0.32.2
 	github.com/libp2p/go-libp2p-kad-dht v0.25.2
 	github.com/libp2p/go-libp2p-pubsub v0.10.0
-	github.com/multiformats/go-multiaddr v0.12.0
+	github.com/multiformats/go-multiaddr v0.12.1
 	github.com/sirupsen/logrus v1.9.3
 )
 
