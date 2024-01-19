@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -81,8 +82,9 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 
 		wg.Add(1)
 		counter := 0
+		peerConnectionCount := 0
 		go func() {
-			ctxWithTimeout, cancel := context.WithTimeout(ctx, 15*time.Second)
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel() // Cancel the context when done to release resources
 
 			defer wg.Done()
@@ -100,6 +102,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 					logrus.Error("Error opening stream:", err)
 					return
 				}
+				peerConnectionCount++
 				defer func(stream network.Stream) {
 					err := stream.Close()
 					if err != nil {
@@ -114,6 +117,9 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 				}
 			}
 		}()
+		if peerConnectionCount > 0 {
+			log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
+		}
 	}
 	wg.Wait()
 	return kademliaDHT, nil
@@ -129,7 +135,7 @@ func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Du
 			// This block will be executed every 'interval' duration
 			routingTable := dht.RoutingTable()
 			// Log the size of the routing table
-			logrus.Debugf("Routing table size: %d", routingTable.Size())
+			logrus.Infof("Routing table size: %d", routingTable.Size())
 			// Log the peer IDs in the routing table
 			for _, p := range routingTable.ListPeers() {
 				logrus.Debugf("Peer in routing table: %s", p.String())

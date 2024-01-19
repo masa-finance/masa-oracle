@@ -175,11 +175,11 @@ func (node *OracleNode) handleDiscoveredPeers() {
 	for {
 		select {
 		case peer := <-node.PeerChan: // will block until we discover a peer
-			logrus.Info("Peer Event for:", peer, ", Action:", peer.Action)
+			logrus.Debugf("Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
 			// If the peer is a new peer, connect to it
 			if peer.Action == myNetwork.PeerAdded {
 				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
-					logrus.Error("Connection failed:", err)
+					logrus.Errorf("Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)
 					//close the connection
 					err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
 					if err != nil {
