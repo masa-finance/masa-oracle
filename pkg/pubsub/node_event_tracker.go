@@ -183,8 +183,8 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 }
 
 func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
-	net.dataMutex.RLock()
-	defer net.dataMutex.RUnlock()
+	//net.dataMutex.RLock()
+	//defer net.dataMutex.RUnlock()
 
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
