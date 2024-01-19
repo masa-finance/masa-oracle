@@ -149,14 +149,21 @@ func (node *OracleNode) Start() (err error) {
 	if os.Getenv(Peers) == "" && node.NodeTracker.GetNodeData(node.Host.ID().String()) == nil {
 		publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
 		nodeData := pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+		nodeData.IsStaked = node.IsStaked
 		node.NodeTracker.HandleNodeData(*nodeData)
+		time.Sleep(1 * time.Second)
+		err = node.NodeTracker.AddSelfIdentity(*nodeData)
+		if err != nil {
+			//don't fail here, it's not critical
+			logrus.Error(err)
+		}
 	}
 	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(TopiclWithVersion(NodeGossipTopic), node.NodeTracker)
+	err = node.PubSubManager.AddSubscription(TopicWithVersion(NodeGossipTopic), node.NodeTracker)
 	if err != nil {
 		return err
 	}
-	err = node.PubSubManager.AddSubscription(TopiclWithVersion(AdTopic), &ad.SubscriptionHandler{})
+	err = node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), &ad.SubscriptionHandler{})
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,10 @@ import (
 )
 
 func VerifyStakingEvent(userAddress string) (bool, error) {
-	rpcURL := GetRPCURL()
+	rpcURL, err := GetRPCURL()
+	if err != nil {
+		return false, err
+	}
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return false, fmt.Errorf("failed to connect to the Ethereum client: %v", err)

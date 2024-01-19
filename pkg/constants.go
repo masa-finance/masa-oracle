@@ -28,6 +28,6 @@ func ProtocolWithVersion(protocolName string) protocol.ID {
 	return protocol.ID(fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version))
 }
 
-func TopiclWithVersion(protocolName string) string {
+func TopicWithVersion(protocolName string) string {
 	return fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version)
 }
