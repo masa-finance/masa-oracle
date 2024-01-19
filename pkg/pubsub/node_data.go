@@ -78,21 +78,33 @@ func (n *NodeData) Address() string {
 }
 
 func (n *NodeData) Joined() {
-	//if n.Activity == ActivityJoined {
-	//	logrus.Warnf("Node %s is already marked as joined", n.Address())
-	//	return
-	//}
+	if n.Activity == ActivityJoined {
+		if n.IsStaked {
+			logrus.Warnf("Node %s is already marked as joined", n.Address())
+		} else {
+			logrus.Debugf("Node %s is already marked as joined", n.Address())
+		}
+		return
+	}
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
 	n.Activity = ActivityJoined
 	n.IsActive = true
-	logrus.Info("Node joined: ", n.Address())
+	if n.IsStaked {
+		logrus.Info("Node joined: ", n.Address())
+	} else {
+		logrus.Debug("Node joined: ", n.Address())
+	}
 }
 
 func (n *NodeData) Left() {
 	if n.Activity == ActivityLeft {
-		logrus.Warnf("Node %s is already marked as left", n.Address())
+		if n.IsStaked {
+			logrus.Warnf("Node %s is already marked as left", n.Address())
+		} else {
+			logrus.Debugf("Node %s is already marked as left", n.Address())
+		}
 		return
 	}
 	now := time.Now()
@@ -102,7 +114,11 @@ func (n *NodeData) Left() {
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
-	logrus.Info("Node left: ", n.Address())
+	if n.IsStaked {
+		logrus.Info("Node left: ", n.Address())
+	} else {
+		logrus.Debug("Node left: ", n.Address())
+	}
 }
 
 func (n *NodeData) GetCurrentUptime() time.Duration {

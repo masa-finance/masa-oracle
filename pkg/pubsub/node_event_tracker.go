@@ -55,19 +55,10 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
-	logrus.WithFields(logrus.Fields{
-		"Peer":    c.RemotePeer().String(),
-		"network": n,
-		"conn":    c,
-	}).Info("Connected")
 	multiAddress := c.RemoteMultiaddr()
 	remotePeer := c.RemotePeer()
 	ethAddress := getEthAddress(remotePeer, n)
 
-	net.onConnect(multiAddress, remotePeer, ethAddress)
-}
-
-func (net *NodeEventTracker) onConnect(multiAddress ma.Multiaddr, remotePeer peer.ID, ethAddress string) {
 	logrus.Debug("Connect")
 	peerID := remotePeer.String()
 	net.dataMutex.Lock()
@@ -93,19 +84,25 @@ func (net *NodeEventTracker) onConnect(multiAddress ma.Multiaddr, remotePeer pee
 			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
 		}
 	}
+	if nodeData.IsStaked {
+		logrus.WithFields(logrus.Fields{
+			"Peer":    c.RemotePeer().String(),
+			"network": n,
+			"conn":    c,
+		}).Info("Connected")
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"Peer":    c.RemotePeer().String(),
+			"network": n,
+			"conn":    c,
+		}).Debug("Connected")
+	}
 	net.NodeDataChan <- nodeData
 	nodeData.Joined()
 }
 
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	logrus.Debug("Disconnect")
-
-	// A node has left the network
-	logrus.WithFields(logrus.Fields{
-		"Peer":    c.RemotePeer().String(),
-		"network": n,
-		"conn":    c,
-	}).Info("Disconnected")
 
 	pubKeyHex := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
@@ -117,6 +114,19 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		// this should never happen
 		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
 		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityLeft)
+	}
+	if nodeData.IsStaked {
+		logrus.WithFields(logrus.Fields{
+			"Peer":    c.RemotePeer().String(),
+			"network": n,
+			"conn":    c,
+		}).Info("Disconnected")
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"Peer":    c.RemotePeer().String(),
+			"network": n,
+			"conn":    c,
+		}).Debug("Disconnected")
 	}
 	net.NodeDataChan <- nodeData
 	nodeData.Left()
@@ -359,6 +369,9 @@ func (net *NodeEventTracker) AddSelfIdentity(nodeData NodeData) error {
 	if !nd.IsStaked && nodeData.IsStaked {
 		dataChanged = true
 		nd.IsStaked = nodeData.IsStaked
+		logrus.WithFields(logrus.Fields{
+			"Peer": nd.PeerId.String(),
+		}).Info("Connected")
 	}
 	if nd.EthAddress == "" && nodeData.EthAddress != "" {
 		dataChanged = true
