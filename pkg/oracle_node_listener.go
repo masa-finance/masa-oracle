@@ -30,7 +30,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 					continue
 				}
 				// Publish the JSON data on the node.topic
-				err = node.PubSubManager.Publish(TopiclWithVersion(NodeGossipTopic), jsonData)
+				err = node.PubSubManager.Publish(TopicWithVersion(NodeGossipTopic), jsonData)
 				if err != nil {
 					logrus.Errorf("Error publishing node data: %v", err)
 				}

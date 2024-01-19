@@ -51,7 +51,7 @@ type NodeData struct {
 	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime,omitempty"`
 	EthAddress           string          `json:"ethAddress,omitempty"`
 	Activity             int             `json:"activity,omitempty"`
-	IsActive             bool            `json:"isActive,omitempty"`
+	IsActive             bool            `json:"isActive"`
 	IsStaked             bool            `json:"isStaked"`
 	SelfIdentified       bool            `json:"-"`
 }
@@ -78,10 +78,10 @@ func (n *NodeData) Address() string {
 }
 
 func (n *NodeData) Joined() {
-	if n.Activity == ActivityJoined {
-		logrus.Warnf("Node %s is already marked as joined", n.Address())
-		return
-	}
+	//if n.Activity == ActivityJoined {
+	//	logrus.Warnf("Node %s is already marked as joined", n.Address())
+	//	return
+	//}
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
