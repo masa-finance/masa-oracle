@@ -61,6 +61,8 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 	}
 
 	var wg sync.WaitGroup
+	peerConnectionCount := 0
+
 	for _, peerAddr := range bootstrapPeers {
 		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil {
@@ -82,7 +84,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 
 		wg.Add(1)
 		counter := 0
-		peerConnectionCount := 0
 		go func() {
 			ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel() // Cancel the context when done to release resources
@@ -117,11 +118,11 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 				}
 			}
 		}()
-		if peerConnectionCount > 0 {
-			log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
-		}
 	}
 	wg.Wait()
+	if len(bootstrapPeers) > 0 && peerConnectionCount == 0 {
+		log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
+	}
 	return kademliaDHT, nil
 }
 

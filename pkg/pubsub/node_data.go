@@ -63,7 +63,6 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
-		LastJoined:        time.Now(),
 		LastUpdated:       time.Now(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
@@ -78,7 +77,7 @@ func (n *NodeData) Address() string {
 }
 
 func (n *NodeData) Joined() {
-	if n.Activity == ActivityJoined {
+	if n.Activity == ActivityJoined && n.IsActive {
 		if n.IsStaked {
 			logrus.Warnf("Node %s is already marked as joined", n.Address())
 		} else {

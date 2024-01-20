@@ -130,7 +130,6 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	}
 	net.NodeDataChan <- nodeData
 	nodeData.Left()
-
 }
 
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
@@ -161,8 +160,14 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	}
 	// Check for replay attacks using LastUpdated
 	if !data.LastUpdated.After(existingData.LastUpdated) {
-		logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
-		return
+		if existingData.IsStaked {
+			logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
+			return
+		} else {
+			//this is the boot node and local data is incorrect, take the value from the boot node
+			net.nodeData[data.PeerId.String()] = &data
+			return
+		}
 	}
 	existingData.LastUpdated = data.LastUpdated
 
