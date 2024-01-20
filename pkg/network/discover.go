@@ -9,11 +9,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
 
-func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol protocol.ID, address multiaddr.Multiaddr) {
+func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol protocol.ID) {
 	protocolString := string(protocol)
 	logrus.Infof("Discovering peers for protocol: %s", protocolString)
 	routingDiscovery := routing.NewRoutingDiscovery(dht)
@@ -22,7 +21,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 	logrus.Infof("Attempting to advertise protocol: %s", protocolString)
 	_, err := routingDiscovery.Advertise(ctx, protocolString)
 	if err != nil {
-		logrus.Errorf("Failed to advertise protocol: %v", err)
+		logrus.Warnf("Failed to advertise protocol: %v", err)
 	} else {
 		logrus.Infof("Successfully advertised protocol")
 	}
@@ -47,9 +46,9 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 			logrus.Debugf("Attempting to advertise protocol: %s", protocolString)
 			_, err := routingDiscovery.Advertise(ctx, protocolString)
 			if err != nil {
-				logrus.Errorf("Failed to advertise protocol: %v", err)
+				logrus.Warnf("Failed to advertise protocol: %v", err)
 			} else {
-				logrus.Debugf("Successfully advertised protocol")
+				logrus.Infof("Successfully advertised protocol")
 			}
 
 			// Use the routing discovery to find peers.
