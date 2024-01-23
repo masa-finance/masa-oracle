@@ -30,7 +30,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 					continue
 				}
 				// Publish the JSON data on the node.topic
-				err = node.PubSubManager.Publish(TopiclWithVersion(NodeGossipTopic), jsonData)
+				err = node.PubSubManager.Publish(TopicWithVersion(NodeGossipTopic), jsonData)
 				if err != nil {
 					logrus.Errorf("Error publishing node data: %v", err)
 				}
@@ -96,9 +96,12 @@ func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream 
 }
 
 func (node *OracleNode) SendNodeData(peerID peer.ID) {
+	if peerID == node.Host.ID() {
+		return
+	}
 	// Check if the node is staked before proceeding
 	if !node.NodeTracker.IsStaked(peerID.String()) {
-		logrus.Warnf("Node %s is not staked. Aborting SendNodeData.", peerID)
+		logrus.Debugf("Node %s is not staked. Aborting SendNodeData.", peerID)
 		return
 	}
 
@@ -122,10 +125,10 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	defer func(stream network.Stream) {
 		err := stream.Close()
 		if err != nil {
-
+			logrus.Errorf("Failed to close stream: %v", err)
 		}
 	}(stream) // Ensure the stream is closed after sending the data
-
+	logrus.Infof("Sending %d node data records to %s", totalRecords, peerID)
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
 		node.SendNodeDataPage(nodeData, stream, pageNumber)
 	}
@@ -145,8 +148,8 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 			continue
 		}
 
-		for _, data := range page.Data {
-			node.NodeTracker.HandleNodeData(data)
+		for _, nd := range page.Data {
+			node.NodeTracker.HandleNodeData(nd)
 		}
 	}
 
@@ -166,16 +169,13 @@ func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	if remotePeerId.String() != nodeData.PeerId.String() {
 		node.NodeTracker.HandleNodeData(nodeData)
 	}
+	err = stream.Close()
+	if err != nil {
+		logrus.Errorf("Failed to close stream: %v", err)
+	}
 }
 
 func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub2.NodeData, error) {
-	defer func(stream network.Stream) {
-		err := stream.Close()
-		if err != nil {
-			logrus.Errorf("Failed to close stream: %v", err)
-		}
-	}(stream)
-
 	// Log the peer.ID of the remote peer
 	remotePeerID := stream.Conn().RemotePeer()
 	logrus.Infof("received stream from %s", remotePeerID)

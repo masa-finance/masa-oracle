@@ -25,7 +25,10 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
 	OracleNodeStakingContractAddress = common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
 
-	rpcURL := GetRPCURL()
+	rpcURL, err := GetRPCURL()
+	if err != nil {
+		return nil, err
+	}
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err

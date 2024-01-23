@@ -2,12 +2,17 @@ package staking
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 )
 
-func GetRPCURL() string {
-	return os.Getenv("RPC_URL")
+func GetRPCURL() (string, error) {
+	url := os.Getenv("RPC_URL")
+	if url == "" {
+		return "", errors.New("RPC_URL environment variable is not set")
+	}
+	return url, nil
 }
 
 func LoadContractAddresses() (*ContractAddresses, error) {

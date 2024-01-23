@@ -177,7 +177,7 @@ func (api *API) PostAd() gin.HandlerFunc {
 			return
 		}
 
-		if err := api.Node.PubSubManager.Publish(masa.TopiclWithVersion(masa.AdTopic), bodyBytes); err != nil {
+		if err := api.Node.PubSubManager.Publish(masa.TopicWithVersion(masa.AdTopic), bodyBytes); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -210,7 +210,7 @@ func (api *API) GetAds() gin.HandlerFunc {
 func (api *API) SubscribeToAds() gin.HandlerFunc {
 	handler := &ad.SubscriptionHandler{}
 	return func(c *gin.Context) {
-		err := api.Node.PubSubManager.AddSubscription(masa.TopiclWithVersion(masa.AdTopic), handler)
+		err := api.Node.PubSubManager.AddSubscription(masa.TopicWithVersion(masa.AdTopic), handler)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
