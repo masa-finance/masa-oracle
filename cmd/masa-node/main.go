@@ -105,7 +105,7 @@ func main() {
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 
 	// Display the welcome message with the multiaddress and IP address
-	welcome.DisplayWelcomeMessage(multiAddr, ipAddr)
+	welcome.DisplayWelcomeMessage(multiAddr, ipAddr, isStaked)
 
 	// Set env variables for CI/CD pipelines
 	cicd_helpers.SetEnvVariablesForPipeline(multiAddr)
@@ -117,6 +117,10 @@ func main() {
 	// Cancel the context when SIGINT is received
 	go func() {
 		<-c
+		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+		if nodeData != nil {
+			nodeData.Left()
+		}
 		node.NodeTracker.DumpNodeData()
 		cancel()
 	}()
