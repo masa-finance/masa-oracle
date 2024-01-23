@@ -144,19 +144,25 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
-	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol, node.GetMultiAddrs())
+	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
 	// if this is the original boot node then add it to the node tracker
-	if os.Getenv(Peers) == "" && node.NodeTracker.GetNodeData(node.Host.ID().String()) == nil {
-		publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
-		nodeData := pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+	if os.Getenv(Peers) == "" {
+		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+		if nodeData == nil {
+			publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
+			nodeData := pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+			nodeData.IsStaked = node.IsStaked
+			nodeData.SelfIdentified = true
+		}
+		nodeData.Joined()
 		node.NodeTracker.HandleNodeData(*nodeData)
 	}
 	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(TopiclWithVersion(NodeGossipTopic), node.NodeTracker)
+	err = node.PubSubManager.AddSubscription(TopicWithVersion(NodeGossipTopic), node.NodeTracker)
 	if err != nil {
 		return err
 	}
-	err = node.PubSubManager.AddSubscription(TopiclWithVersion(AdTopic), &ad.SubscriptionHandler{})
+	err = node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), &ad.SubscriptionHandler{})
 	if err != nil {
 		return err
 	}
@@ -168,11 +174,11 @@ func (node *OracleNode) handleDiscoveredPeers() {
 	for {
 		select {
 		case peer := <-node.PeerChan: // will block until we discover a peer
-			logrus.Info("Peer Event for:", peer, ", Action:", peer.Action)
+			logrus.Debugf("Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
 			// If the peer is a new peer, connect to it
 			if peer.Action == myNetwork.PeerAdded {
 				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
-					logrus.Error("Connection failed:", err)
+					logrus.Errorf("Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)
 					//close the connection
 					err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
 					if err != nil {
