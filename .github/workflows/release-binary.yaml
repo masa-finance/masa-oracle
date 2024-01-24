@@ -21,7 +21,7 @@ jobs:
       run: go build -v -o masa-node ./cmd/masa-node
 
     - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v0
+      uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
