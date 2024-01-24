@@ -21,7 +21,7 @@ jobs:
       run: go build -v -o masa-node ./cmd/masa-node
 
     - name: Install Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v4
+      uses: google-github-actions/setup-gcloud@v2
       with:
         version: 'latest'
         project_id: ${{ env.GCP_PROJECT_ID }}
