@@ -1,0 +1,75 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+      - test
+      - dev
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.ref == 'refs/heads/main' && 'main' || github.ref == 'refs/heads/test' && 'test' || 'dev' }}
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Build Binary
+      run: go build -v -o masa-node ./cmd/masa-node
+    
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: Install Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        version: 'latest'
+        project_id: ${{ vars.GCP_PROJECT_ID }}
+
+    - name: Upload Binary and config for contracts npm modules to GCP
+      run: |
+        BINARY_NAME=$(git rev-parse --short HEAD)
+        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/$BINARY_NAME/masa-node
+        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/masa-node
+        gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/$BINARY_NAME/
+        gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/
+
+    - name: Set environment output
+      id: set-env
+      run: echo "::set-output name=environment::${{ github.ref_name }}"
+
+  deploy:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.build-and-release.outputs.environment }}
+    steps:
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: Update Instance Metadata
+      run: |
+        ENVIRONMENT="${{ github.ref_name }}"
+        echo "Looking for instances with env metadata: $ENVIRONMENT"
+        INSTANCES=$(gcloud compute instances list --filter="metadata.items.env=$ENVIRONMENT" --format="get(name)")
+
+        echo "Found instances: $INSTANCES"
+
+        for INSTANCE in $INSTANCES; do
+          ZONE=$(gcloud compute instances list --filter="name=($INSTANCE)" --format="get(zone)" --limit=1)
+          echo "Updating instance: $INSTANCE in zone: $ZONE"
+          gcloud compute instances add-metadata $INSTANCE --metadata masa-oracle-redeploy=latest --zone=$(echo $ZONE | tr -d '\n')
+        done
+
