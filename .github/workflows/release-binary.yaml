@@ -37,10 +37,10 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
       with:
         version: 'latest'
-        project_id: ${{ env.GCP_PROJECT_ID }}
+        project_id: ${{ vars.GCP_PROJECT_ID }}
 
     - name: Upload Binary to GCP
       run: |
         BINARY_NAME=$(git rev-parse --short HEAD)
-        gsutil cp ./masa-node gs://${{ env.GCP_BUCKET_NAME }}/${{ github.ref_name }}/$BINARY_NAME
+        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/$BINARY_NAME
 
