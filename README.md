@@ -35,7 +35,20 @@ cd masa-oracle
 ```bash
 go build -v -o masa-node ./cmd/masa-node
 ```
+3. Install node_modules in contracts directory
 
+```bash
+cd contracts/ && yarn install
+```
+4. Export RPC_URL to environment variable, can do 1 of 2 ways.
+
+```bash
+nano /Users/{USER}/.masa/masa_oracle_node.env and set RPC_URL=https://ethereum-sepolia.publicnode.com
+```
+
+```bash
+export RPC_URL=https://ethereum-sepolia.publicnode.com
+```
 ## Staking Tokens
 
 🔐 To participate in the network and earn rewards, you must first stake your tokens:
