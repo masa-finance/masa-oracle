@@ -1,15 +1,17 @@
-name: TESTNET masa-oracle binary
+name: release binary
 
 on:
   push:
     branches:
+      - main
       - test
+      - dev
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: 
-      name: test
+      name: ${{ github.ref == 'refs/heads/main' && 'main' || github.ref == 'refs/heads/test' && 'test' || 'dev' }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Go
