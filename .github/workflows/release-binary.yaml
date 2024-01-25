@@ -45,5 +45,8 @@ jobs:
       run: |
         BINARY_NAME=$(git rev-parse --short HEAD)
         gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/$BINARY_NAME
-        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/latest
+        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/masa-node
+        gsutil cp  gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/masa-node
+        gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/
+
 
