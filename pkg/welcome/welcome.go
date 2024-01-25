@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func DisplayWelcomeMessage(multiAddr, ipAddr string, isStaked bool) {
+func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool) {
 	// ANSI escape code for yellow text
 	yellow := "\033[33m"
 	// ANSI escape code for blue text
@@ -35,5 +35,6 @@ func DisplayWelcomeMessage(multiAddr, ipAddr string, isStaked bool) {
 	// Displaying the multi-address and IP address in blue
 	fmt.Printf(blue+"Multiaddress: %s\n"+reset, multiAddr)
 	fmt.Printf(blue+"IP Address:   %s\n"+reset, ipAddr)
+	fmt.Printf(blue+"Public Key:   %s\n"+reset, publicKeyHex)
 	fmt.Printf(blue+"Is Staked:    %t\n"+reset, isStaked)
 }

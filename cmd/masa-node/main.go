@@ -103,9 +103,10 @@ func main() {
 	// Get the multiaddress and IP address of the node
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
+	publicKeyHex, _ := crypto.GetPublicKeyForHost(node.Host)
 
 	// Display the welcome message with the multiaddress and IP address
-	welcome.DisplayWelcomeMessage(multiAddr, ipAddr, isStaked)
+	welcome.DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex, isStaked)
 
 	// Set env variables for CI/CD pipelines
 	cicd_helpers.SetEnvVariablesForPipeline(multiAddr)
