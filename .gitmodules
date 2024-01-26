@@ -1,3 +1,0 @@
-[submodule ".github/masa-oracle-workflows"]
-	path = .github/masa-oracle-workflows
-	url = git@github.com:masa-finance/masa-oracle-workflows.git
