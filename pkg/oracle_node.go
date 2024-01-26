@@ -150,7 +150,7 @@ func (node *OracleNode) Start() (err error) {
 		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nodeData == nil {
 			publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
-			nodeData := pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+			nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 			nodeData.IsStaked = node.IsStaked
 			nodeData.SelfIdentified = true
 		}

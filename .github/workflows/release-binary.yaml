@@ -41,8 +41,12 @@ jobs:
         version: 'latest'
         project_id: ${{ vars.GCP_PROJECT_ID }}
 
-    - name: Upload Binary to GCP
+    - name: Upload Binary and config for contracts npm modules to GCP
       run: |
         BINARY_NAME=$(git rev-parse --short HEAD)
-        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/$BINARY_NAME
+        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/$BINARY_NAME/masa-node
+        gsutil cp ./masa-node gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/masa-node
+        gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/$BINARY_NAME/
+        gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/${{ github.ref_name }}/
+
 
