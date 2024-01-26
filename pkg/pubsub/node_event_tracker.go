@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/opentracing/opentracing-go/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
@@ -55,36 +56,21 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
-	multiAddress := c.RemoteMultiaddr()
 	remotePeer := c.RemotePeer()
-	ethAddress := getEthAddress(remotePeer, n)
-
-	logrus.Debug("Connect")
 	peerID := remotePeer.String()
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 
 	nodeData, exists := net.nodeData[peerID]
-	if !nodeData.IsStaked {
-		return
-	}
 	if !exists {
-		nodeData = NewNodeData(multiAddress, remotePeer, ethAddress, ActivityJoined)
-		net.nodeData[nodeData.PeerId.String()] = nodeData
+		return
 	} else {
-		if nodeData.EthAddress == "" {
-			nodeData.EthAddress = ethAddress
-		}
-		// If the node data exists, check if the multiaddress is already in the list
-		addrExists := false
-		for _, addr := range nodeData.Multiaddrs {
-			if addr.Equal(multiAddress) {
-				addrExists = true
-				break
+		if nodeData.IsStaked {
+			err := net.AddOrUpdateNodeData(nodeData)
+			if err != nil {
+				log.Error(err)
+				return
 			}
-		}
-		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
 		}
 	}
 	logrus.WithFields(logrus.Fields{
@@ -92,7 +78,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
-	net.NodeDataChan <- nodeData
 	nodeData.Joined()
 }
 
@@ -350,7 +335,7 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 	return peerNd.IsStaked
 }
 
-func (net *NodeEventTracker) AddSelfIdentity(nodeData *NodeData) error {
+func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData) error {
 	logrus.Debug("Adding self identity")
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
@@ -358,28 +343,41 @@ func (net *NodeEventTracker) AddSelfIdentity(nodeData *NodeData) error {
 
 	nd, exists := net.nodeData[nodeData.PeerId.String()]
 	if !exists {
-		nd.SelfIdentified = true
+		nodeData.SelfIdentified = true
 		net.nodeData[nodeData.PeerId.String()] = nodeData
 		nodeData.Joined()
-		dataChanged = true
-	}
-	if !nd.SelfIdentified {
-		dataChanged = true
-		nd.SelfIdentified = true
-	}
-	if !nd.IsStaked && nodeData.IsStaked {
-		dataChanged = true
-		nd.IsStaked = nodeData.IsStaked
-		logrus.WithFields(logrus.Fields{
-			"Peer": nd.PeerId.String(),
-		}).Info("Connected")
-	}
-	if nd.EthAddress == "" && nodeData.EthAddress != "" {
-		dataChanged = true
-		nd.EthAddress = nodeData.EthAddress
-	}
-	if dataChanged {
-		net.NodeDataChan <- nd
+		net.NodeDataChan <- nodeData
+	} else {
+		if !nd.SelfIdentified {
+			dataChanged = true
+			nd.SelfIdentified = true
+		}
+		if !nd.IsStaked && nodeData.IsStaked {
+			dataChanged = true
+			nd.IsStaked = nodeData.IsStaked
+			logrus.WithFields(logrus.Fields{
+				"Peer": nd.PeerId.String(),
+			}).Info("Connected")
+		}
+		if nd.EthAddress == "" && nodeData.EthAddress != "" {
+			dataChanged = true
+			nd.EthAddress = nodeData.EthAddress
+		}
+		// If the node data exists, check if the multiaddress is already in the list
+		multiAddress := nodeData.Multiaddrs[0].Multiaddr
+		addrExists := false
+		for _, addr := range nodeData.Multiaddrs {
+			if addr.Equal(multiAddress) {
+				addrExists = true
+				break
+			}
+		}
+		if !addrExists {
+			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+		}
+		if dataChanged {
+			net.NodeDataChan <- nd
+		}
 	}
 	return nil
 }
