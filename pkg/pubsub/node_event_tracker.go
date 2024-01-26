@@ -65,6 +65,9 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	defer net.dataMutex.Unlock()
 
 	nodeData, exists := net.nodeData[peerID]
+	if !nodeData.IsStaked {
+		return
+	}
 	if !exists {
 		nodeData = NewNodeData(multiAddress, remotePeer, ethAddress, ActivityJoined)
 		net.nodeData[nodeData.PeerId.String()] = nodeData
@@ -84,19 +87,11 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
 		}
 	}
-	if nodeData.IsStaked {
-		logrus.WithFields(logrus.Fields{
-			"Peer":    c.RemotePeer().String(),
-			"network": n,
-			"conn":    c,
-		}).Info("Connected")
-	} else {
-		logrus.WithFields(logrus.Fields{
-			"Peer":    c.RemotePeer().String(),
-			"network": n,
-			"conn":    c,
-		}).Debug("Connected")
-	}
+	logrus.WithFields(logrus.Fields{
+		"Peer":    c.RemotePeer().String(),
+		"network": n,
+		"conn":    c,
+	}).Info("Connected")
 	net.NodeDataChan <- nodeData
 	nodeData.Joined()
 }
@@ -110,24 +105,19 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 	nodeData, exists := net.nodeData[peerID]
+	if !nodeData.IsStaked {
+		return
+	}
 	if !exists {
 		// this should never happen
 		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
 		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityLeft)
 	}
-	if nodeData.IsStaked {
-		logrus.WithFields(logrus.Fields{
-			"Peer":    c.RemotePeer().String(),
-			"network": n,
-			"conn":    c,
-		}).Info("Disconnected")
-	} else {
-		logrus.WithFields(logrus.Fields{
-			"Peer":    c.RemotePeer().String(),
-			"network": n,
-			"conn":    c,
-		}).Debug("Disconnected")
-	}
+	logrus.WithFields(logrus.Fields{
+		"Peer":    c.RemotePeer().String(),
+		"network": n,
+		"conn":    c,
+	}).Info("Disconnected")
 	net.NodeDataChan <- nodeData
 	nodeData.Left()
 }
@@ -144,6 +134,9 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
+	if !data.IsStaked {
+		return
+	}
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
 
@@ -198,8 +191,8 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 }
 
 func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
-	//net.dataMutex.RLock()
-	//defer net.dataMutex.RUnlock()
+	net.dataMutex.RLock()
+	defer net.dataMutex.RUnlock()
 
 	nodeData, exists := net.nodeData[peerID]
 	if !exists {
@@ -357,7 +350,7 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 	return peerNd.IsStaked
 }
 
-func (net *NodeEventTracker) AddSelfIdentity(nodeData NodeData) error {
+func (net *NodeEventTracker) AddSelfIdentity(nodeData *NodeData) error {
 	logrus.Debug("Adding self identity")
 	net.dataMutex.Lock()
 	defer net.dataMutex.Unlock()
@@ -365,7 +358,10 @@ func (net *NodeEventTracker) AddSelfIdentity(nodeData NodeData) error {
 
 	nd, exists := net.nodeData[nodeData.PeerId.String()]
 	if !exists {
-		return fmt.Errorf("node data does not exist for peer: %s", nodeData.PeerId)
+		nd.SelfIdentified = true
+		net.nodeData[nodeData.PeerId.String()] = nodeData
+		nodeData.Joined()
+		dataChanged = true
 	}
 	if !nd.SelfIdentified {
 		dataChanged = true
