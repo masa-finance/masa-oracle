@@ -1,3 +1,0 @@
-[submodule ".github/workflows"]
-	path = .github/workflows
-	url = git@github.com:masa-finance/deploy-workflows.git
