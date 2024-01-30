@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"sync"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -20,14 +19,13 @@ import (
 
 type NodeEventTracker struct {
 	NodeDataChan chan *NodeData
-	nodeData     map[string]*NodeData
-	dataMutex    sync.RWMutex
+	nodeData     *SafeMap
 	version      string
 }
 
 func NewNodeEventTracker(version string) *NodeEventTracker {
 	net := &NodeEventTracker{
-		nodeData:     make(map[string]*NodeData),
+		nodeData:     NewSafeMap(),
 		NodeDataChan: make(chan *NodeData),
 		version:      version,
 	}
@@ -58,10 +56,8 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
 	remotePeer := c.RemotePeer()
 	peerID := remotePeer.String()
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
 
-	nodeData, exists := net.nodeData[peerID]
+	nodeData, exists := net.nodeData.Get(peerID)
 	if !exists {
 		return
 	} else {
@@ -87,9 +83,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	pubKeyHex := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
-	nodeData, exists := net.nodeData[peerID]
+	nodeData, exists := net.nodeData.Get(peerID)
 	if !nodeData.IsStaked {
 		return
 	}
@@ -122,10 +116,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	if !data.IsStaked {
 		return
 	}
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
-
-	existingData, ok := net.nodeData[data.PeerId.String()]
+	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {
 		// If the node data does not exist in the cache and the node has left, ignore it
 		if data.LastLeft.After(data.LastJoined) {
@@ -133,7 +124,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		}
 		// Otherwise, add it
 		logrus.Debugf("Adding new node data: %s", data.PeerId.String())
-		net.nodeData[data.PeerId.String()] = &data
+		net.nodeData.Set(data.PeerId.String(), &data)
 		return
 	}
 	// Check for replay attacks using LastUpdated
@@ -143,7 +134,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 			return
 		} else {
 			//this is the boot node and local data is incorrect, take the value from the boot node
-			net.nodeData[data.PeerId.String()] = &data
+			net.nodeData.Set(data.PeerId.String(), &data)
 			return
 		}
 	}
@@ -176,10 +167,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 }
 
 func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
-	net.dataMutex.RLock()
-	defer net.dataMutex.RUnlock()
-
-	nodeData, exists := net.nodeData[peerID]
+	nodeData, exists := net.nodeData.Get(peerID)
 	if !exists {
 		return nil
 	}
@@ -188,28 +176,7 @@ func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
 
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	logrus.Debug("Getting all node data")
-	net.dataMutex.RLock()
-	defer net.dataMutex.RUnlock()
-
-	// Convert the map to a slice
-	nodeDataSlice := make([]NodeData, 0, len(net.nodeData))
-	for _, nodeData := range net.nodeData {
-		if !nodeData.IsStaked {
-			continue
-		}
-		nd := *nodeData
-		nd.CurrentUptime = nodeData.GetCurrentUptime()
-		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
-		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
-		nodeDataSlice = append(nodeDataSlice, nd)
-	}
-
-	// Sort the slice based on the timestamp
-	sort.Slice(nodeDataSlice, func(i, j int) bool {
-		return nodeDataSlice[i].LastUpdated.Before(nodeDataSlice[j].LastUpdated)
-	})
-	return nodeDataSlice
+	return net.nodeData.GetStakedNodesSlice()
 }
 
 func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
@@ -228,25 +195,15 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 }
 
 func (net *NodeEventTracker) DumpNodeData() {
-	// Lock the nodeData map for concurrent read
-	net.dataMutex.RLock()
-	defer net.dataMutex.RUnlock()
-
-	// Convert the nodeData map to JSON
-	data, err := json.Marshal(net.nodeData)
-	if err != nil {
-		// Handle error
-	}
-
 	// Write the JSON data to a file
 	filePath := os.Getenv("nodeBackupPath")
 	if filePath == "" {
 		filePath = fmt.Sprintf("%s_node_data.json", net.version)
 	}
 	logrus.Infof("writing node data to file: %s", filePath)
-	err = os.WriteFile(filePath, data, 0644)
+	err := net.nodeData.DumpNodeData(filePath)
 	if err != nil {
-		logrus.Error(fmt.Sprintf("could not write to file: %s", filePath), err)
+		logrus.Error("could not dump node data", err)
 	}
 }
 
@@ -261,49 +218,12 @@ func (net *NodeEventTracker) LoadNodeData() error {
 		logrus.Warn(fmt.Sprintf("file does not exist: %s", filePath))
 		return nil
 	}
-	data, err := os.ReadFile(filePath)
+	err := net.nodeData.LoadNodeData(filePath)
 	if err != nil {
-		logrus.Error(fmt.Sprintf("could not read from file: %s", filePath), err)
+		logrus.Error("could not load node data", err)
 		return err
 	}
-	// Convert the JSON data to a map
-	nodeData := make(map[string]*NodeData)
-	err = json.Unmarshal(data, &nodeData)
-	if err != nil {
-		logrus.Error("could not unmarshal JSON data", err)
-		return err
-	}
-	// Lock the nodeData map for concurrent write
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
-	// remove invalids from an earlier bug
-	for key, value := range nodeData {
-		if key != value.PeerId.String() {
-			logrus.Warnf("peer ID mismatch: %s != %s", key, value.PeerId)
-			delete(nodeData, key)
-		}
-	}
-	// Replace the nodeData map with the new map
-	logrus.Info("Loaded node data from file")
-	net.nodeData = nodeData
 	return nil
-}
-
-func PrettyDuration(d time.Duration) string {
-	d = d.Round(time.Minute)
-	minute := int64(d / time.Minute)
-	h := minute / 60
-	minute %= 60
-	days := h / 24
-	h %= 24
-
-	if days > 0 {
-		return fmt.Sprintf("%d days %d hours %d minutes", days, h, minute)
-	}
-	if h > 0 {
-		return fmt.Sprintf("%d hours %d minutes", h, minute)
-	}
-	return fmt.Sprintf("%d minutes", minute)
 }
 
 func getEthAddress(remotePeer peer.ID, n network.Network) string {
@@ -337,14 +257,12 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData) error {
 	logrus.Debug("Adding self identity")
-	net.dataMutex.Lock()
-	defer net.dataMutex.Unlock()
 	dataChanged := false
 
-	nd, exists := net.nodeData[nodeData.PeerId.String()]
+	nd, exists := net.nodeData.Get(nodeData.PeerId.String())
 	if !exists {
 		nodeData.SelfIdentified = true
-		net.nodeData[nodeData.PeerId.String()] = nodeData
+		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
 		nodeData.Joined()
 		net.NodeDataChan <- nodeData
 	} else {
