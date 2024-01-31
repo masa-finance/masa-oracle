@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
@@ -196,6 +197,10 @@ func (node *OracleNode) handleDiscoveredPeers() {
 func (node *OracleNode) handleStream(stream network.Stream) {
 	remotePeer, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "un-staked") {
+			//just ignore the error
+			return
+		}
 		logrus.Errorf("Failed to read stream: %v", err)
 		return
 	}
@@ -203,8 +208,12 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Warnf("Received data from unexpected peer %s", remotePeer)
 		return
 	}
-	err = node.NodeTracker.AddSelfIdentity(nodeData)
+	multiAddr := stream.Conn().RemoteMultiaddr()
+	newNodeData := pubsub2.NewNodeData(multiAddr, remotePeer, nodeData.EthAddress, pubsub2.ActivityJoined)
+	newNodeData.IsStaked = nodeData.IsStaked
+	err = node.NodeTracker.AddOrUpdateNodeData(newNodeData)
 	if err != nil {
+		logrus.Error(err)
 		return
 	}
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())

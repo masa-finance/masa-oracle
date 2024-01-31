@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"math"
 	"os"
@@ -207,6 +209,9 @@ func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub
 		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
 		logrus.Errorf("%s", buffer.String())
 		return "", pubsub2.NodeData{}, err
+	}
+	if !nodeData.IsStaked {
+		return "", pubsub2.NodeData{}, errors.New(fmt.Sprintf("un-staked node is ignored: %s", nodeData.PeerId))
 	}
 	return remotePeerID, nodeData, nil
 }
