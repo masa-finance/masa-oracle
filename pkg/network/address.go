@@ -25,6 +25,7 @@ func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	if err != nil {
 		return nil, err
 	}
+	logrus.Debug("Multiaddresses from AddrInfoToP2pAddrs: ", multiaddrs)
 	addresses := make([]multiaddr.Multiaddr, 0)
 	for _, addr := range multiaddrs {
 		logrus.Debug(addr.String())
@@ -85,6 +86,9 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 		logrus.Warn("No address matches the priority criteria, returning the first entry")
 		baseAddr = addrs[0]
 	}
+	logrus.Debug("Best public address: ", bestPublicAddr)
+	logrus.Debug("Best private address: ", bestPrivateAddr)
+	logrus.Debug("Base address: ", baseAddr)
 	gcpAddr := replaceGCPAddress(baseAddr)
 	if gcpAddr != nil {
 		baseAddr = gcpAddr
@@ -114,6 +118,8 @@ func replaceGCPAddress(addr multiaddr.Multiaddr) multiaddr.Multiaddr {
 			return nil
 		}
 	}
+	logrus.Debug("Got external IP: ", gotExternalIP)
+	logrus.Debug("Address after replacing IP component: ", bestAddr)
 	return bestAddr
 }
 
@@ -188,6 +194,7 @@ func getGCPExternalIP() (bool, string) {
 
 	// Check if the metadata server returns a successful status code
 	if resp.StatusCode != http.StatusOK {
+		logrus.Debug("Metadata server response status: ", resp.StatusCode)
 		return false, ""
 	}
 
@@ -196,5 +203,6 @@ func getGCPExternalIP() (bool, string) {
 	if err != nil {
 		return true, ""
 	}
+	logrus.Debug("External IP from metadata server: ", string(body))
 	return true, string(body)
 }
