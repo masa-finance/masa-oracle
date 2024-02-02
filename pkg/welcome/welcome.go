@@ -3,6 +3,8 @@ package welcome
 
 import (
 	"fmt"
+
+	"github.com/sirupsen/logrus"
 )
 
 func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool) {
@@ -37,4 +39,9 @@ func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool
 	fmt.Printf(blue+"IP Address:   %s\n"+reset, ipAddr)
 	fmt.Printf(blue+"Public Key:   %s\n"+reset, publicKeyHex)
 	fmt.Printf(blue+"Is Staked:    %t\n"+reset, isStaked)
+
+	logrus.Infof("Multiaddress: %s", multiAddr)
+	logrus.Infof("IP Address:   %s\n", ipAddr)
+	logrus.Infof("Public Key:   %s\n", publicKeyHex)
+	logrus.Infof("Is Staked:    %t\n", isStaked)
 }

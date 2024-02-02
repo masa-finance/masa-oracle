@@ -196,5 +196,10 @@ func getGCPExternalIP() (bool, string) {
 	if err != nil {
 		return true, ""
 	}
-	return true, string(body)
+	result := string(body)
+	//check if the result is a valid IP
+	if net.ParseIP(result) == nil {
+		return false, ""
+	}
+	return true, result
 }

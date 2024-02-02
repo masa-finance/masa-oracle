@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
 const (
@@ -143,23 +140,4 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 	} else {
 		n.AccumulatedUptime += time.Since(n.LastJoined)
 	}
-}
-
-func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
-	publicKeyHex, _ := crypto.GetPublicKeyForHost(host)
-
-	// Create and populate NodeData
-	nodeData := NodeData{
-		PeerId:     host.ID(),
-		IsStaked:   isStaked,
-		EthAddress: publicKeyHex,
-	}
-
-	// Convert NodeData to JSON
-	jsonData, err := json.Marshal(nodeData)
-	if err != nil {
-		logrus.Error("Error marshalling NodeData:", err)
-		return nil
-	}
-	return jsonData
 }

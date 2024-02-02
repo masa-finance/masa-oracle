@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -111,7 +113,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 					}
 				}(stream) // Close the stream when done
 				if isStaked {
-					_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+					_, err = stream.Write(GetSelfNodeDataJson(host, isStaked))
 					if err != nil {
 						logrus.Error("Error writing to stream:", err)
 						return
@@ -125,6 +127,26 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 		log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
 	}
 	return kademliaDHT, nil
+}
+
+func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
+	publicKeyHex, _ := crypto.GetPublicKeyForHost(host)
+	ma := GetPriorityAddress(GetMultiAddressesForHostQuiet(host))
+	// Create and populate NodeData
+	nodeData := pubsub.NodeData{
+		Multiaddrs: []pubsub.JSONMultiaddr{{ma}},
+		PeerId:     host.ID(),
+		IsStaked:   isStaked,
+		EthAddress: publicKeyHex,
+	}
+
+	// Convert NodeData to JSON
+	jsonData, err := json.Marshal(nodeData)
+	if err != nil {
+		logrus.Error("Error marshalling NodeData:", err)
+		return nil
+	}
+	return jsonData
 }
 
 func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Duration) {
