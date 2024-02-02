@@ -1,0 +1,24 @@
+# Exclude version control system directories
+.git
+.svn
+.hg
+
+# Exclude build and temporary files
+*.log
+*.swp
+.DS_Store
+
+# Exclude editor-specific files
+.vscode
+.idea
+
+# Exclude configuration files that may contain secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+
+# Exclude documentation and README files
+*.md
