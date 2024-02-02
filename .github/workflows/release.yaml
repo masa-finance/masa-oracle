@@ -61,8 +61,15 @@ jobs:
 
     - name: Update Instance Metadata
       run: |
-        ENVIRONMENT="${{ needs.build-and-release.outputs.environment }}"
-        for INSTANCE in $(gcloud compute instances list --filter="tags.env=${ENVIRONMENT}" --format="get(name)"); do
-          gcloud compute instances add-metadata $INSTANCE --metadata=masa-oracle-redeploy=latest --zone=$(gcloud compute instances list --filter="name=($INSTANCE)" --format="get(zone)")
+        ENVIRONMENT="${{ github.ref_name }}"
+        echo "Looking for instances with env metadata: $ENVIRONMENT"
+        INSTANCES=$(gcloud compute instances list --filter="metadata.items.env=$ENVIRONMENT" --format="get(name)")
+
+        echo "Found instances: $INSTANCES"
+
+        for INSTANCE in $INSTANCES; do
+          ZONE=$(gcloud compute instances list --filter="name=($INSTANCE)" --format="get(zone)" --limit=1)
+          echo "Updating instance: $INSTANCE in zone: $ZONE"
+          gcloud compute instances add-metadata $INSTANCE --metadata masa-oracle-redeploy=latest --zone=$(echo $ZONE | tr -d '\n')
         done
 
