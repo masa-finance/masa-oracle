@@ -51,7 +51,6 @@ jobs:
   deploy:
     needs: build-and-release
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.update_metadata == 'true' }}
     environment:
       name: ${{ needs.build-and-release.outputs.environment }}
     steps:
