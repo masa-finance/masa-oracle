@@ -10,6 +10,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -113,7 +114,7 @@ func main() {
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	// Cancel the context when SIGINT is received
 	go func() {
