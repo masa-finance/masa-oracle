@@ -12,20 +12,18 @@ Before you begin, ensure you have the following installed on your system:
 
 - **Docker**: You'll need Docker to build and run containers. Download and install Docker for your operating system from [Docker's official website](https://www.docker.com/products/docker-desktop).
 - **Docker Compose**: This project uses Docker Compose to manage multi-container Docker applications. Docker Desktop for Windows and Mac includes Docker Compose. On Linux, you may need to install it separately following the instructions [here](https://docs.docker.com/compose/install/).
-- **Git** (optional): While not strictly necessary, Git is useful for cloning the repository if provided by the project maintainers. Alternatively, you can download the project files directly.
+- **Git** 
 
 ## Getting Started
 
 ### 1. Clone the Repository
 
-If the project is hosted in a Git repository, start by cloning it to your local machine. Open a terminal and run:
+Start by cloning the masa-node repository to your local machine. Open a terminal and run:
 
 ```bash
-git clone <repository-url>
-cd <repository-folder>
+git clone git@github.com:masa-finance/masa-oracle.git
+cd masa-oracle
 ```
-
-Replace `<repository-url>` with the actual URL of the Git repository and `<repository-folder>` with the name of the folder where the repository is cloned.
 
 ### 2. Environment Configuration
 
