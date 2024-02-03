@@ -6,8 +6,8 @@ services:
       - "4001:4001"
       - "8080:8080"
     environment:
-      BOOTNODES: "/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa"
-      RPC_URL: "https://sepolia.infura.io/v3/74533a2e74bc430188366f3aa5715ae1"
+      BOOTNODES: "${BOOTNODES}"
+      RPC_URL: "${RPC_URL}"
     volumes:
       - .:/app
       - .masa-keys:/home/masa/.masa
