@@ -83,6 +83,14 @@ When the transactions have settled, you can stake
 
 ```docker-compose run --build --rm masa-node /usr/bin/masa-node --stake 1000```
 
+## Restart your Node
+
+Stop your running daemonized node:
+```docker compose down```
+
+Start it up again with the -d flag: (If you have changed settings you may wish to --force-recreate)
+```docker compose up --build --force-recreate -d```
+
 ## Updating the Node
 
 To update your node, pull the latest changes from the Git repository (if applicable), then rebuild and restart your Docker containers:
