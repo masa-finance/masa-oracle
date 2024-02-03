@@ -64,7 +64,24 @@ This command displays the logs of the MASA node container. Look for any error me
 
 ## Accessing Generated Keys
 
-The MASA node generates keys that are stored in the `.masa-keys/` directory in your project directory. This directory is mapped from `/home/masa/.masa/` inside the Docker container, ensuring that your keys are safely stored on your host machine.
+The MASA node generates keys that are stored in the `.masa-keys/` directory in your project directory. 
+This directory is mapped from `/home/masa/.masa/` inside the Docker container, ensuring that your keys are safely stored on your host machine.
+
+## Funding the Node (in order to Stake)
+
+Find the public key of your node in the logs:
+the logs:
+
+```bash
+docker-compose logs -f masa-node
+```
+Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
+
+When the transactions have settled, you can stake
+
+## Staking the Node
+
+```docker-compose run --build --rm masa-node /usr/bin/masa-node --stake 1000```
 
 ## Updating the Node
 
