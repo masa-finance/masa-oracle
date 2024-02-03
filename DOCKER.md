@@ -1,7 +1,3 @@
-Below is a comprehensive README guide designed to help new users set up and run their own MASA node using Docker. This guide includes step-by-step instructions and covers any prerequisites needed.
-
----
-
 # MASA Node Docker Setup Guide
 
 Welcome to the MASA Node Docker setup guide. This document will walk you through the process of setting up and running your own MASA node in a Docker environment. Follow these steps to get up and running quickly.
