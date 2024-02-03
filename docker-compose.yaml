@@ -10,4 +10,16 @@ services:
       RPC_URL: "https://sepolia.infura.io/v3/74533a2e74bc430188366f3aa5715ae1"
     volumes:
       - .:/app
+      - .masa-keys:/home/masa/.masa
+
+volumes:
+  masa-keys:
+    # This is a named volume. You can specify additional options here if needed,
+    # such as setting a specific driver, driver options, or even labeling.
+    # For most users, the simple declaration is sufficient.
+    # Example with explicit driver (usually not required):
+    # driver: local
+    # Example with labels (optional):
+    # labels:
+    #   - "com.example.description=MASA node key storage"
 

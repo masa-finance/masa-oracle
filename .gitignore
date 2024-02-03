@@ -50,3 +50,6 @@ node_modules
 # solidity-coverage files
 /coverage
 /coverage.json
+
+# masa-keys generated and used with Docker
+.masa-keys

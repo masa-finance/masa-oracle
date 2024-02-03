@@ -5,6 +5,10 @@ FROM ubuntu:22.04 as base
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y curl sudo gpg lsb-release software-properties-common
 
 # Node.js and Yarn setup for the final image
+# Note: Moved WORKDIR /app to be general for both Go binary and Node.js setup
+WORKDIR /app
+
+# Install Node.js, Yarn, and jq
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
@@ -43,8 +47,22 @@ COPY --from=builder /app/masa-node /usr/bin/masa-node
 # Set execute permissions on the masa-node binary
 RUN chmod +x /usr/bin/masa-node
 
-# Set WORKDIR to /home/masa in the final image
+# Set WORKDIR back to /app in the final image
+WORKDIR /app
+
+# Copy your Node.js application (contracts directory) to the container
+# Assuming your Node.js project files (including package.json) are located in a 'contracts' directory in your project root
+COPY contracts/ ./contracts/
+
+# Install Node.js dependencies for the contracts
+# Note: Assuming you're running 'npm install' for Node.js project setup
+RUN cd contracts && npm install
+
+# Set WORKDIR to /home/masa for runtime
 WORKDIR /home/masa
+
+# Ensure the masa user owns the .masa directory and /app for any runtime needs
+RUN chown -R masa:masa /home/masa /app
 
 # Switch to user 'masa' in the final image
 USER masa
@@ -57,5 +75,5 @@ EXPOSE 4001
 EXPOSE 8080
 
 # Set default command (adjust MASANODE_CMD based on your setup)
-CMD /usr/bin/masa-node --port=4001 --udp=true --tcp=false --start --bootnodes=${BOOTNODES}
+CMD ["/usr/bin/masa-node", "--port=4001", "--udp=true", "--tcp=false", "--start", "--bootnodes=${BOOTNODES}"]
 
