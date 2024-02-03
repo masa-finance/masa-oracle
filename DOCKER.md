@@ -101,11 +101,3 @@ docker-compose build
 docker-compose down
 docker-compose up -d
 ```
-
-## Troubleshooting
-
-If you encounter any issues during setup, ensure you have followed all steps correctly and check the Docker and Docker Compose documentation for additional help. For specific issues related to the MASA node, consult the project's support channels or documentation.
-
----
-
-This README guide provides a comprehensive overview for new users to set up and run their MASA node using Docker. It covers prerequisites, environment configuration, building, running, and updating the node, as well as accessing generated keys and troubleshooting common issues.
