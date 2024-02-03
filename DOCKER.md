@@ -32,8 +32,6 @@ BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1USt
 RPC_URL=https://ethereum-sepolia.publicnode.com	
 ```
 
-Replace `<bootnodes-value>` and `<rpc-url-value>` with the actual values.
-
 ### 3. Building the Docker Image
 
 With Docker and Docker Compose installed and your `.env` file configured, build the Docker image using the following command:
