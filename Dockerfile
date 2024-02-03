@@ -75,5 +75,5 @@ EXPOSE 4001
 EXPOSE 8080
 
 # Set default command (adjust MASANODE_CMD based on your setup)
-CMD ["/usr/bin/masa-node", "--port=4001", "--udp=true", "--tcp=false", "--start", "--bootnodes=${BOOTNODES}"]
+CMD /usr/bin/masa-node --port=4001 --udp=true --tcp=false --start --bootnodes=${BOOTNODES}
 
