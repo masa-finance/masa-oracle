@@ -86,9 +86,11 @@ When the transactions have settled, you can stake
 ## Restart your Node
 
 Stop your running daemonized node:
+
 ```docker compose down```
 
-Start it up again with the -d flag: (If you have changed settings you may wish to --force-recreate)
+Start it up again with the -d flag: (If you have changed settings you may wish to `--force-recreate`)
+
 ```docker compose up --build --force-recreate -d```
 
 ## Updating the Node
