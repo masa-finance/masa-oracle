@@ -25,6 +25,12 @@ Before diving in, ensure these prerequisites are installed:
 
 ### Installation
 
+## Docker Setup
+
+For users interested in deploying the Masa Oracle node using Docker, we provide a comprehensive guide that covers everything from prerequisites to running your node. See [Docker Setup Instructions](DOCKER.md) for detailed steps.
+
+## Build and run locally:
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/masa-finance/masa-oracle.git
