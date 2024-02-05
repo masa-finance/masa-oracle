@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  masa-node:
+    build: .
+    ports:
+      - "4001:4001"
+      - "8080:8080"
+    environment:
+      BOOTNODES: "${BOOTNODES}"
+      RPC_URL: "${RPC_URL}"
+    volumes:
+      - .:/app
+      - .masa-keys:/home/masa/.masa
+
+volumes:
+  masa-keys:
+    # This is a named volume. You can specify additional options here if needed,
+    # such as setting a specific driver, driver options, or even labeling.
+    # For most users, the simple declaration is sufficient.
+    # Example with explicit driver (usually not required):
+    # driver: local
+    # Example with labels (optional):
+    # labels:
+    #   - "com.example.description=MASA node key storage"
+
