@@ -23,6 +23,7 @@ For Docker setup, make sure you have:
 - **Docker**: Download and install Docker from [Docker's official website](https://www.docker.com/products/docker-desktop).
 - **Docker Compose**: Installed with Docker Desktop for Windows and Mac. On Linux, install separately as per the instructions [here](https://docs.docker.com/compose/install/).
 - **Git**: Required for cloning the repository.
+- For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md) 
 
 ### Installation
 
@@ -59,6 +60,18 @@ For Docker setup, make sure you have:
    docker-compose up -d
    ```
 
+## Funding the Node (in order to Stake)
+
+Find the public key of your node in the logs:
+the logs:
+
+```bash
+docker-compose logs -f masa-node
+```
+Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
+
+When the transactions have settled, you can stake
+
 ### Staking Tokens
 
 - For local setup, stake tokens with:
@@ -81,7 +94,7 @@ For Docker setup, make sure you have:
   docker-compose logs -f masa-node
   ```
 
-After setting up, your node's address will be displayed, indicating it's ready to connect with other Masa nodes. Follow any additional configuration steps and best practices as per your use case or network requirements.
+After setting up your node, its address will be displayed, indicating it's ready to connect with other Masa nodes. Follow any additional configuration steps and best practices as per your use case or network requirements.
 
 ## Updates & Additional Information
 
