@@ -1,6 +1,6 @@
 # Masa Oracle: Decentralized Data Protocol 🌐
 
-The Masa Oracle defines how private behavioral and identity data is accessed, shared, and rewarded in a decentralized and private way. The Masa Oracle guarantees transparency, security, and equitable compensation for nodes that participate in the Masa zk-Data Network & Marketplace.
+The Masa Oracle governs the access, sharing, and rewarding of private behavioral and identity data in a decentralized and private manner. . The Masa Oracle Network ensures transparency and security of data sharing, while  enabling equitable compensation for nodes that participate in the Masa zk-Data Network & Marketplace.
 
 ## Contents
 - [Getting Started](#getting-started)
@@ -94,7 +94,7 @@ When the transactions have settled, you can stake
   docker-compose logs -f masa-node
   ```
 
-After setting up, your node's address will be displayed, indicating it's ready to connect with other Masa nodes. Follow any additional configuration steps and best practices as per your use case or network requirements.
+After setting up your node, its address will be displayed, indicating it's ready to connect with other Masa nodes. Follow any additional configuration steps and best practices as per your use case or network requirements.
 
 ## Updates & Additional Information
 
