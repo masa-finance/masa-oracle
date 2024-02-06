@@ -211,7 +211,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	multiAddr := stream.Conn().RemoteMultiaddr()
 	newNodeData := pubsub2.NewNodeData(multiAddr, remotePeer, nodeData.EthAddress, pubsub2.ActivityJoined)
 	newNodeData.IsStaked = nodeData.IsStaked
-	err = node.NodeTracker.AddOrUpdateNodeData(newNodeData)
+	err = node.NodeTracker.AddOrUpdateNodeData(newNodeData, false)
 	if err != nil {
 		logrus.Error(err)
 		return

@@ -62,7 +62,8 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		return
 	} else {
 		if nodeData.IsStaked {
-			err := net.AddOrUpdateNodeData(nodeData)
+			nodeData.Joined()
+			err := net.AddOrUpdateNodeData(nodeData, true)
 			if err != nil {
 				log.Error(err)
 				return
@@ -74,7 +75,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Connected")
-	nodeData.Joined()
 }
 
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
@@ -97,8 +97,8 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"network": n,
 		"conn":    c,
 	}).Info("Disconnected")
-	net.NodeDataChan <- nodeData
 	nodeData.Left()
+	net.NodeDataChan <- nodeData
 }
 
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
@@ -109,6 +109,10 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
 	net.HandleNodeData(nodeData)
+}
+
+func (net *NodeEventTracker) RefreshFromBoot(data NodeData) {
+	net.nodeData.Set(data.PeerId.String(), &data)
 }
 
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
@@ -255,7 +259,7 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 	return peerNd.IsStaked
 }
 
-func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData) error {
+func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debug("Adding self identity")
 	dataChanged := false
 
@@ -293,7 +297,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData) error {
 		if !addrExists {
 			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
 		}
-		if dataChanged {
+		if dataChanged || forceGossip {
 			net.NodeDataChan <- nd
 		}
 	}

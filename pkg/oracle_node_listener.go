@@ -151,7 +151,7 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		}
 
 		for _, nd := range page.Data {
-			node.NodeTracker.HandleNodeData(nd)
+			node.NodeTracker.RefreshFromBoot(nd)
 		}
 	}
 
