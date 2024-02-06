@@ -1,135 +1,89 @@
 # Masa Oracle: Decentralized Data Protocol 🌐
 
-The Masa Oracle defines how private behavioral and identity data is accessed, shared, and rewarded in a decentralized and private way. The Masa Oracle guarantees transparency, security, and equitable compensation for nodes that particiapte in the Masa zk-Data Network & Marketplace.
+The Masa Oracle defines how private behavioral and identity data is accessed, shared, and rewarded in a decentralized and private way. The Masa Oracle guarantees transparency, security, and equitable compensation for nodes that participate in the Masa zk-Data Network & Marketplace.
 
 ## Contents
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
+  - [Docker Setup](#docker-setup)
 - [Staking Tokens](#staking-tokens)
 - [Running the Node](#running-the-node)
-- [Command-Line Interface (CLI)](#command-line-interface-cli)
-- [Configuration](#configuration)
-- [Connecting Nodes](#connecting-nodes)
-- [Ad Network Proof of Concept](#ad-network-proof-of-concept)
-- [Use Cases](#use-cases)
 - [Updates & Additional Information](#updates--additional-information)
 
 ## Getting Started
 
 ### Prerequisites
 
-Before diving in, ensure these prerequisites are installed:
+Ensure these prerequisites are installed for a local setup:
 - **Go**: Grab it from [Go's official site](https://golang.org/dl/).
-- **Docker**: Install from [Docker's official docs](https://docs.docker.com/get-docker/).
+- **Yarn**: Install it via [Yarn's official site](https://classic.yarnpkg.com/en/docs/install/).
+
+For Docker setup, make sure you have:
+- **Docker**: Download and install Docker from [Docker's official website](https://www.docker.com/products/docker-desktop).
+- **Docker Compose**: Installed with Docker Desktop for Windows and Mac. On Linux, install separately as per the instructions [here](https://docs.docker.com/compose/install/).
+- **Git**: Required for cloning the repository.
 
 ### Installation
 
-## Docker Setup
+#### Local Setup
 
-For users interested in deploying the Masa Oracle node using Docker, we provide a comprehensive guide that covers everything from prerequisites to running your node. See [Docker Setup Instructions](DOCKER.md) for detailed steps.
+1. Clone the repository and build the node executable:
+   ```bash
+   git clone https://github.com/masa-finance/masa-oracle.git
+   cd masa-oracle
+   go build -v -o masa-node ./cmd/masa-node
+   cd contracts/ && yarn install
+   ```
+2. Set the RPC_URL environment variable:
+   ```bash
+   export RPC_URL=https://ethereum-sepolia.publicnode.com
+   ```
+   or edit `/Users/{USER}/.masa/masa_oracle_node.env` to set `RPC_URL`.
 
-## Build and run locally:
+#### Docker Setup
 
 1. Clone the repository:
-```bash
-git clone https://github.com/masa-finance/masa-oracle.git
-cd masa-oracle
-```
+   ```bash
+   git clone git@github.com:masa-finance/masa-oracle.git
+   cd masa-oracle
+   ```
+2. Configure environment variables in a `.env` file at the project root:
+   ```env
+   BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
+   RPC_URL=https://ethereum-sepolia.publicnode.com	
+   ```
+3. Build the Docker image and run the node:
+   ```bash
+   docker-compose build
+   docker-compose up -d
+   ```
 
-2. Build the node executable:
-```bash
-go build -v -o masa-node ./cmd/masa-node
-```
-3. Install node_modules in contracts directory
+### Staking Tokens
 
-```bash
-cd contracts/ && yarn install
-```
-4. Export RPC_URL to environment variable, can do 1 of 2 ways.
+- For local setup, stake tokens with:
+  ```bash
+  ./masa-node --stake 1000
+  ```
+- For Docker setup, stake tokens with:
+  ```bash
+  docker-compose run --rm masa-node /usr/bin/masa-node --stake 1000
+  ```
 
-```bash
-nano /Users/{USER}/.masa/masa_oracle_node.env and set RPC_URL=https://ethereum-sepolia.publicnode.com
-```
+### Running the Node
 
-```bash
-export RPC_URL=https://ethereum-sepolia.publicnode.com
-```
-## Staking Tokens
+- **Local Setup**: Connect your node to the Masa network:
+  ```bash
+  ./masa-node --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa --port=4001 --udp=true --tcp=false --start=true
+  ```
+- **Docker Setup**: Your node will start automatically with `docker-compose up -d`. Verify it's running correctly:
+  ```bash
+  docker-compose logs -f masa-node
+  ```
 
-🔐 To participate in the network and earn rewards, you must first stake your tokens:
-```bash
-./masa-node --stake 100
-```
-This command initiates the staking process, allowing the staking contract to spend tokens on your behalf and then stakes the specified amount.
-
-## Running the Node
-
-🚀 To start your node and join the Masa network:
-```bash
-./masa-node --start
-```
-This command will start the node using the list of bootnodes specified in the configuration file, if available.
-
-## Command-Line Interface (CLI)
-
-Customize your node's behavior with various flags:
-```bash
-./masa-node --bootnodes=node1,node2,node3 --port=8080 --udp=true --tcp=false
-```
-- `--bootnodes=node1,node2,node3`: Connect to specified bootnodes.
-- `--port=8080`: Listen on port `8080`.
-- `--udp=true`: Enable UDP protocol.
-- `--tcp=false`: Disable TCP protocol.
-
-Defaults are used if flags are not set:
-
-- `bootnodes`: Falls back to `BOOTNODES` env variable or an empty string.
-- `port`: Defaults to `portNbr` env variable or `0`.
-- `udp`: Defaults to `UDP` env variable or `false`.
-- `tcp`: Defaults to `TCP` env variable or `false`.
-
-## Configuration
-
-🔧 To use a custom configuration file:
-
-```bash
-./masa-node --config=path/to/config.json
-```
-
-The configuration file is a JSON format that includes an array of bootnodes.
-
-## Connecting Nodes
-
-🔗 To connect to a specific node in the network:
-```bash
-./masa-node --bootnodes=/ip4/34.133.16.77/udp/4001/quic-v1/p2p/16Uiu2HAmAEDCYv5RrbLhZRmHXGWXNuSFa7YDoC5BGeN3NtDmiZEb --port=4001 --udp=true --tcp=false
-```
-This will connect your Masa Oracle node to the specified node using the provided multi-address.
-
-## Ad Network Proof of Concept
-
-📢 Masa Oracle introduces a decentralized ad network as a proof of concept within the decentralized data protocol. This network allows publishers who are staked in the system to publish advertisements to a dedicated topic.
-
-### How It Works
-
-- Publishers must first stake tokens to participate in the ad network, ensuring a commitment to the network's integrity.
-- Once staked, publishers can publish ads to the `ad-topic` using the `PublishAd` method in the `OracleNode`.
-- Ads are structured with content and metadata, as defined in the `Ad` struct in `pkg/ad/ad.go`.
-- Only staked nodes can publish to the ad topic, as enforced by the `PublishAd` method in `OracleNode`, which checks the `IsStaked` flag before allowing publication.
-
-## Use Cases
-
-The Masa Oracle ad network can be utilized in various scenarios, such as:
-
-- **Targeted Advertising**: Leveraging the decentralized identity data to deliver personalized ads without compromising user privacy.
-- **Content Monetization**: Content creators can receive compensation directly through the protocol for hosting ads.
-- **Community Governance**: Staked nodes can vote on ad policies, ensuring that the network remains aligned with the community's values.
+After setting up, your node's address will be displayed, indicating it's ready to connect with other Masa nodes. Follow any additional configuration steps and best practices as per your use case or network requirements.
 
 ## Updates & Additional Information
 
-📢 Stay tuned to the Masa Oracle repository for updates and more details on how to use the protocol effectively.
+Stay tuned to the Masa Oracle repository for updates and additional details on effectively using the protocol. For Docker users, update your node by pulling the latest changes from the Git repository, then rebuild and restart your Docker containers.
 
----
-
-After setting up, your node's address will be displayed, indicating it's ready to connect with other Masa nodes. Follow any additional configuration steps and best practices as per your use case or network requirements.
