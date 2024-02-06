@@ -59,6 +59,18 @@ For Docker setup, make sure you have:
    docker-compose up -d
    ```
 
+## Funding the Node (in order to Stake)
+
+Find the public key of your node in the logs:
+the logs:
+
+```bash
+docker-compose logs -f masa-node
+```
+Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
+
+When the transactions have settled, you can stake
+
 ### Staking Tokens
 
 - For local setup, stake tokens with:
