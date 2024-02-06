@@ -23,6 +23,7 @@ For Docker setup, make sure you have:
 - **Docker**: Download and install Docker from [Docker's official website](https://www.docker.com/products/docker-desktop).
 - **Docker Compose**: Installed with Docker Desktop for Windows and Mac. On Linux, install separately as per the instructions [here](https://docs.docker.com/compose/install/).
 - **Git**: Required for cloning the repository.
+- For complete instructions on building, staking, and running a node with Docker, please see DOCKER.md.
 
 ### Installation
 
