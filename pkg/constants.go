@@ -22,6 +22,7 @@ const (
 	NodeBackupFileName   = "nodeBackup.json"
 	NodeBackupPath       = "nodeBackupPath"
 	Version              = "v0.0.4-alpha"
+	DefaultRPCURL        = "https://ethereum-sepolia.publicnode.com"
 )
 
 func ProtocolWithVersion(protocolName string) protocol.ID {

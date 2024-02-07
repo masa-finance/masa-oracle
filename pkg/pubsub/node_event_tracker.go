@@ -80,17 +80,14 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	logrus.Debug("Disconnect")
 
-	pubKeyHex := getEthAddress(c.RemotePeer(), n)
 	peerID := c.RemotePeer().String()
 
 	nodeData, exists := net.nodeData.Get(peerID)
-	if !nodeData.IsStaked {
-		return
-	}
 	if !exists {
 		// this should never happen
 		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
-		nodeData = NewNodeData(c.RemoteMultiaddr(), c.RemotePeer(), pubKeyHex, ActivityLeft)
+	} else if !nodeData.IsStaked {
+		return
 	}
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
