@@ -154,6 +154,7 @@ func setUpFiles(envFilePath, keyFilePath string) error {
 		// If not, create it with default values
 		builder := strings.Builder{}
 		builder.WriteString(fmt.Sprintf("%s=%s\n", masa.KeyFileKey, keyFilePath))
+		builder.WriteString(fmt.Sprintf("RPC_URL=%s\n", masa.DefaultRPCURL))
 		err = os.WriteFile(envFilePath, []byte(builder.String()), 0644)
 		if err != nil {
 			logrus.Error("could not write to .env file:")

@@ -53,7 +53,11 @@ func init() {
 		if !tcp {
 			tcp = getEnvAsBool("TCP", false)
 		}
-
+		// if neither UDP nor TCP are set, default to UDP
+		if !udp && !tcp {
+			udp = true
+			tcp = false
+		}
 		if flagBootnodes != "" {
 			bootnodes = flagBootnodes
 		} else {
