@@ -86,6 +86,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	if !exists {
 		// this should never happen
 		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
+		return
 	} else if !nodeData.IsStaked {
 		return
 	}
@@ -164,6 +165,11 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		existingData.IsStaked = data.IsStaked
 	} else if !data.IsStaked && existingData.IsStaked {
 		logrus.Warnf("Received unstaked status for node: %s", data.PeerId)
+	}
+	err := net.AddOrUpdateNodeData(existingData, true)
+	if err != nil {
+		logrus.Error(err)
+		return
 	}
 }
 
