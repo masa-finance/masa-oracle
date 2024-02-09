@@ -197,11 +197,14 @@ func getGCPExternalIP() (bool, string) {
 		logrus.Debug("Metadata server response status: ", resp.StatusCode)
 		return false, ""
 	}
-
 	//Read the external IP from the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return true, ""
+	}
+	// Check that the response is a valid IP address
+	if net.ParseIP(string(body)) == nil {
+		return false, ""
 	}
 	logrus.Debug("External IP from metadata server: ", string(body))
 	return true, string(body)

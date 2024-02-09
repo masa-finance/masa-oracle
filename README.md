@@ -1,6 +1,6 @@
 # Masa Oracle: Decentralized Data Protocol 🌐
 
-The Masa Oracle governs the access, sharing, and rewarding of private behavioral and identity data in a decentralized and private manner. . The Masa Oracle Network ensures transparency and security of data sharing, while  enabling equitable compensation for nodes that participate in the Masa zk-Data Network & Marketplace.
+The Masa Oracle governs the access, sharing, and rewarding of private behavioral and identity data in a decentralized and private manner. The Masa Oracle Network ensures transparency and security of data sharing, while  enabling equitable compensation for nodes that participate in the Masa zk-Data Network and Marketplace.
 
 ## Contents
 - [Getting Started](#getting-started)
@@ -18,56 +18,42 @@ The Masa Oracle governs the access, sharing, and rewarding of private behavioral
 Ensure these prerequisites are installed for a local setup:
 - **Go**: Grab it from [Go's official site](https://golang.org/dl/).
 - **Yarn**: Install it via [Yarn's official site](https://classic.yarnpkg.com/en/docs/install/).
-
-For Docker setup, make sure you have:
-- **Docker**: Download and install Docker from [Docker's official website](https://www.docker.com/products/docker-desktop).
-- **Docker Compose**: Installed with Docker Desktop for Windows and Mac. On Linux, install separately as per the instructions [here](https://docs.docker.com/compose/install/).
 - **Git**: Required for cloning the repository.
 - For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md) 
 
 ### Installation
 
-#### Local Setup
-
-1. Clone the repository and build the node executable:
-   ```bash
-   git clone https://github.com/masa-finance/masa-oracle.git
-   cd masa-oracle
-   go build -v -o masa-node ./cmd/masa-node
-   cd contracts/ && yarn install
-   ```
-2. Set the RPC_URL environment variable:
-   ```bash
-   export RPC_URL=https://ethereum-sepolia.publicnode.com
-   ```
-   or edit `/Users/{USER}/.masa/masa_oracle_node.env` to set `RPC_URL`.
 
 #### Docker Setup
 
-1. Clone the repository:
-   ```bash
-   git clone git@github.com:masa-finance/masa-oracle.git
-   cd masa-oracle
-   ```
-2. Configure environment variables in a `.env` file at the project root:
-   ```env
-   BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
-   RPC_URL=https://ethereum-sepolia.publicnode.com	
-   ```
-3. Build the Docker image and run the node:
-   ```bash
-   docker-compose build
-   docker-compose up -d
+For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md) 
+
+#### Local Setup
+
+1. Clone the repository
+```
+git clone https://github.com/masa-finance/masa-oracle.git
+```
+2. Build the go code into the masa-node binary:
+```
+go build -v -o masa-node ./cmd/masa-node
+```
+3. Go into the contracts directory and build the contract npm modules that the go binary uses:
+```
+cd contracts/ 
+npm install
+cd ../
+```
+4. Start up masa-node. Later you'll want to set masa-node up as a service and export the RPC_URL and BOOTNODES you want to use in the environment your service runs in, but for now, you can set them in the command line to start the service up:
+
+RPC_URL=https://ethereum-sepolia.publicnode.com masa-node masa-node --start
    ```
 
 ## Funding the Node (in order to Stake)
 
-Find the public key of your node in the logs:
-the logs:
 
-```bash
-docker-compose logs -f masa-node
-```
+Find the public key of your node in the logs. 
+
 Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
 
 When the transactions have settled, you can stake
