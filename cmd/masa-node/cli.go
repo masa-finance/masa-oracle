@@ -29,6 +29,7 @@ var (
 	data          string
 	stakeAmount   string
 	debug         bool
+	env           string
 )
 
 func init() {
@@ -43,6 +44,7 @@ func init() {
 	flag.StringVar(&data, "data", "", "The data to verify the signature against")
 	flag.StringVar(&stakeAmount, "stake", "", "Amount of tokens to stake")
 	flag.BoolVar(&debug, "debug", false, "Override some protections for debugging (temporary)")
+	flag.StringVar(&stakeAmount, "env", "", "Environment to connect to")
 	flag.Parse()
 
 	if start {
@@ -67,8 +69,11 @@ func init() {
 			}
 			bootnodes = strings.Join(config.Bootnodes, ",")
 		}
-
-		err := os.Setenv(masa.Peers, bootnodes)
+		err := os.Setenv(masa.Environment, env)
+		if err != nil {
+			logrus.Error(err)
+		}
+		err = os.Setenv(masa.Peers, bootnodes)
 		if err != nil {
 			logrus.Error(err)
 		}

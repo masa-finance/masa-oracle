@@ -11,7 +11,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/opentracing/opentracing-go/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
@@ -65,7 +64,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			nodeData.Joined()
 			err := net.AddOrUpdateNodeData(nodeData, true)
 			if err != nil {
-				log.Error(err)
+				logrus.Error(err)
 				return
 			}
 		}
