@@ -29,8 +29,10 @@ Example `.env` file content:
 
 ```env
 BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
-RPC_URL=https://ethereum-sepolia.publicnode.com	
+RPC_URL=https://ethereum-sepolia.publicnode.com
+ENV=test
 ```
+* be sure to use ENV=test to join the masa oracle testnet
 
 ### 3. Building the Docker Image
 
