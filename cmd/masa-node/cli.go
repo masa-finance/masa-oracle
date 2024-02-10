@@ -44,7 +44,7 @@ func init() {
 	flag.StringVar(&data, "data", "", "The data to verify the signature against")
 	flag.StringVar(&stakeAmount, "stake", "", "Amount of tokens to stake")
 	flag.BoolVar(&debug, "debug", false, "Override some protections for debugging (temporary)")
-	flag.StringVar(&stakeAmount, "env", "", "Environment to connect to")
+	flag.StringVar(&env, "env", "", "Environment to connect to")
 	flag.Parse()
 
 	if start {
