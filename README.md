@@ -1,6 +1,6 @@
 # Masa Oracle: Decentralized Data Protocol 🌐
 
-The Masa Oracle governs the access, sharing, and rewarding of private behavioral and identity data in a decentralized and private manner. . The Masa Oracle Network ensures transparency and security of data sharing, while  enabling equitable compensation for nodes that participate in the Masa zk-Data Network & Marketplace.
+The Masa Oracle governs the access, sharing, and rewarding of private behavioral and identity data in a decentralized and private manner. The Masa Oracle Network ensures transparency and security of data sharing, while  enabling equitable compensation for nodes that participate in the Masa zk-Data Network and Marketplace.
 
 ## Contents
 - [Getting Started](#getting-started)
@@ -51,12 +51,9 @@ RPC_URL=https://ethereum-sepolia.publicnode.com masa-node masa-node --start
 
 ## Funding the Node (in order to Stake)
 
-Find the public key of your node in the logs:
-the logs:
 
-```bash
-docker-compose logs -f masa-node
-```
+Find the public key of your node in the logs. 
+
 Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
 
 When the transactions have settled, you can stake
