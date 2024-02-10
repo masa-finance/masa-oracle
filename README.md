@@ -73,7 +73,7 @@ When the transactions have settled, you can stake
 
 - **Local Setup**: Connect your node to the Masa network:
   ```bash
-  ./masa-node --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa --port=4001 --udp=true --tcp=false --start=true
+  ./masa-node --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa --port=4001 --udp=true --tcp=false --start=true --env=test
   ```
 - **Docker Setup**: Your node will start automatically with `docker-compose up -d`. Verify it's running correctly:
   ```bash
