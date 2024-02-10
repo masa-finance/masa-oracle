@@ -2,6 +2,7 @@ package masa
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/libp2p/go-libp2p/core/protocol"
 )
@@ -21,14 +22,30 @@ const (
 	PageSize             = 25
 	NodeBackupFileName   = "nodeBackup.json"
 	NodeBackupPath       = "nodeBackupPath"
-	Version              = "v0.0.4-alpha"
+	Version              = "v0.0.5-alpha"
 	DefaultRPCURL        = "https://ethereum-sepolia.publicnode.com"
+	Environment          = "ENV"
 )
 
+var env string
+
 func ProtocolWithVersion(protocolName string) protocol.ID {
-	return protocol.ID(fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version))
+	if getEnv() == "" {
+		return protocol.ID(fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version))
+	}
+	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, Version, getEnv()))
 }
 
 func TopicWithVersion(protocolName string) string {
-	return fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version)
+	if getEnv() == "" {
+		return fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version)
+	}
+	return fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, Version, getEnv())
+}
+
+func getEnv() string {
+	if env == "" {
+		env = os.Getenv(Environment)
+	}
+	return env
 }
