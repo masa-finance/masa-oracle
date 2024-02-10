@@ -44,10 +44,20 @@ cd contracts/
 npm install
 cd ../
 ```
-4. Start up masa-node. Later you'll want to set masa-node up as a service and export the RPC_URL and BOOTNODES you want to use in the environment your service runs in, but for now, you can set them in the command line to start the service up:
 
-RPC_URL=https://ethereum-sepolia.publicnode.com masa-node masa-node --start
-   ```
+4. Set env vars
+Ensure your environment has the required env var, ENV, exported. It should be set to test to join the testnet.
+Optionally, you can set RPC_URL to change it from the default (https://ethereum-sepolia.publicnode.com)
+```
+export ENV=test
+export RPC_URL=https://1rpc.io/sepolia	# This is optional and will be set to the default https://ethereum-sepolia.publicnode.com without it.
+```
+
+5. Start up masa-node. Be sure to include your bootnodes list with the --bootnodes flag.
+
+```
+masa-node masa-node --start --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
+```
 
 ## Funding the Node (in order to Stake)
 
