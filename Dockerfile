@@ -45,4 +45,4 @@ EXPOSE 4001
 EXPOSE 8080
 
 # Set default command to start the Go application
-CMD /usr/bin/masa-node --port=4001 --udp=true --tcp=false --start --bootnodes="$BOOTNODES"
+CMD /usr/bin/masa-node --port=4001 --udp=true --tcp=false --start --bootnodes="$BOOTNODES" --env="$ENV"
