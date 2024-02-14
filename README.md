@@ -53,6 +53,13 @@ export RPC_URL=https://1rpc.io/sepolia	# This is optional and will be set to the
 ```
 
 5. Start up masa-node. Be sure to include your bootnodes list with the --bootnodes flag.
+```
+/ip4/34.116.150.247/udp/4001/quic-v1/p2p/16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq
+/ip4/34.118.84.78/udp/4001/quic-v1/p2p/16Uiu2HAm7HAXW7HS1YA4mua8oyo8Se9cTk8MSXXRUmsJqN7NxhB1
+/ip4/34.118.116.5/udp/4001/quic-v1/p2p/16Uiu2HAm5zfUVMQrBMDfLaA5xwPXhpwAYzTyrkTsHoqPzmj8PVLz
+/ip4/34.116.165.47/udp/4001/quic-v1/p2p/16Uiu2HAmBazcN1AaF2KcvfurwAJdvCJiD8BW6itRRqBsdqvXByb9
+/ip4/34.72.224.59/udp/4001/quic-v1/p2p/16Uiu2HAm17obtAHet7YkoPH1vcsteBYFVmNJq62gGEJ5xxSu5BAk
+```
 
 ```
 masa-node masa-node --start --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
