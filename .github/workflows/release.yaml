@@ -63,7 +63,7 @@ jobs:
       run: |
         ENVIRONMENT="${{ github.ref_name }}"
         echo "Looking for instances with env metadata: $ENVIRONMENT"
-        INSTANCES=$(gcloud compute instances list --filter="metadata.items.env=$ENVIRONMENT" --format="get(name)")
+        INSTANCES=$(gcloud compute instances list --filter="metadata.items.ENV=$ENVIRONMENT" --format="get(name)")
 
         echo "Found instances: $INSTANCES"
 
