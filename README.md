@@ -44,7 +44,6 @@ cd contracts/
 npm install
 cd ../
 ```
-
 4. Set env vars
 Ensure your environment has the required env var, ENV, exported. It should be set to test to join the testnet.
 Optionally, you can set RPC_URL to change it from the default (https://ethereum-sepolia.publicnode.com)
