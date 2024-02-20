@@ -12,12 +12,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
-	"github.com/masa-finance/masa-oracle/pkg/cicd_helpers"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/routes"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
@@ -26,25 +24,24 @@ import (
 
 func init() {
 
-	// Initialize Viper
-	viper.AutomaticEnv() // Read from environment variables
-	viper.SetConfigType("yaml")
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".") // Optionally: add other paths, e.g., home directory or etc
-
 	// Set default values
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("LOG_FILEPATH", "masa_oracle_node.log")
 	viper.SetDefault("RPC_URL", "https://ethereum-sepolia.publicnode.com")
-	viper.SetDefault("MASA_KEY_FILE_KEY", "private.key")
+	viper.SetDefault("MASA_KEY_FILE_KEY", "masa_oracle_node.key")
 	viper.SetDefault("MASA_DIR", ".masa")
 	viper.SetDefault("STAKE_AMOUNT", "1000")
 	viper.SetDefault("BOOTNODES", "")
 	viper.SetDefault("PORT_NBR", 4001)
 	viper.SetDefault("UDP", true)
 	viper.SetDefault("TCP", true)
-
 	// Add other default values as needed
+
+	// Check for env vars, config files, in order to override above defaults
+	viper.AutomaticEnv() // Read from environment variables
+	viper.SetConfigType("yaml")
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".") // Optionally: add other paths, e.g., home directory or etc
 
 	// Attempt to read the config file
 	if err := viper.ReadInConfig(); err != nil {
@@ -53,11 +50,23 @@ func init() {
 		}
 	}
 
-	// Attempt to read in environment variables
-	err := godotenv.Load()
+	// Set up masa file path based on current user and config settings
+	usr, err := user.Current()
 	if err != nil {
-		logrus.Error("Error loading .env file")
+		log.Fatal("could not find user.home directory")
 	}
+
+	masaFilePath := filepath.Join(usr.HomeDir, viper.GetString("MASA_DIR"))
+	viper.Set("MASA_FILES_PATH", masaFilePath)
+
+	err = os.MkdirAll(filepath.Dir(masaFilePath), 0755)
+	if err != nil {
+		logrus.Error("could not create directory:")
+	}
+
+	// Set up node data backup file
+	backupFileName := fmt.Sprintf("%s_%s", masa.Version, masa.NodeBackupFileName)
+	viper.Set("NODE_DATA_BACKUP_PATH", filepath.Join(masaFilePath, backupFileName))
 
 	// Open output file for logging
 	f, err := os.OpenFile(viper.GetString("LOG_FILEPATH"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
@@ -73,21 +82,6 @@ func init() {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal("could not find user.home directory")
-	}
-	keyFilePath := filepath.Join(usr.HomeDir, viper.GetString("MASA_DIR"), viper.GetString("MASA_KEY_FILE_KEY"))
-	err = setUpFiles(keyFilePath)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	backupFileName := fmt.Sprintf("%s_%s", masa.Version, masa.NodeBackupFileName)
-	err = os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, viper.GetString("MASA_DIR"), backupFileName))
-	if err != nil {
-		logrus.Error(err)
-	}
 }
 
 func main() {
@@ -102,7 +96,8 @@ func main() {
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(viper.GetString("MASA_KEY_FILE_KEY"))
+	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString("MASA_FILES_PATH"), viper.GetString("MASA_KEY_FILE_KEY")))
+
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -143,9 +138,6 @@ func main() {
 	// Display the welcome message with the multiaddress and IP address
 	welcome.DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex, isStaked)
 
-	// Set env variables for CI/CD pipelines
-	cicd_helpers.SetEnvVariablesForPipeline(multiAddr)
-
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -172,19 +164,6 @@ func main() {
 	}()
 
 	<-ctx.Done()
-}
-
-func setUpFiles(keyFilePath string) error {
-	// Create the directories if they don't already exist
-	if _, err := os.Stat(filepath.Dir(viper.GetString("MASA_KEY_FILE_PATH"))); os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(viper.GetString("MASA_KEY_FILE_PATH")), 0755)
-		if err != nil {
-			logrus.Error("could not create directory:")
-			return err
-		}
-	}
-
-	return nil
 }
 
 // Add node type for startup notification of what kind of node you are running and what that means

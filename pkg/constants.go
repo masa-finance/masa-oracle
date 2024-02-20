@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	KeyFileKey           = "private.key"
 	CertPem              = "cert.pem"
 	Cert                 = "cert"
 	Peers                = "peerList"
