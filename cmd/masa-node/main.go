@@ -37,8 +37,7 @@ func init() {
 	viper.SetDefault("LOG_FILEPATH", "masa_oracle_node.log")
 	viper.SetDefault("RPC_URL", "https://ethereum-sepolia.publicnode.com")
 	viper.SetDefault("MASA_KEY_FILE_KEY", "private.key")
-	viper.SetDefault("MASA_KEY_FILE_PATH", "")
-	viper.SetDefault("MASA_ENV_FILE_PATH", "")
+	viper.SetDefault("MASA_DIR", ".masa")
 	viper.SetDefault("STAKE_AMOUNT", "1000")
 	viper.SetDefault("BOOTNODES", "")
 	viper.SetDefault("PORT_NBR", 4001)
@@ -60,18 +59,15 @@ func init() {
 		logrus.Error("Error loading .env file")
 	}
 
-	logLevel := viper.GetString("LOG_LEVEL")
-	logFilePath := viper.GetString("LOG_FILEPATH")
-
 	// Open output file for logging
-	f, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
+	f, err := os.OpenFile(viper.GetString("LOG_FILEPATH"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
 		log.Fatal(err)
 	}
 	mw := io.MultiWriter(os.Stdout, f)
 	logrus.SetOutput(mw)
 
-	if logLevel == "debug" {
+	if viper.GetString("LOG_LEVEL") == "debug" {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
