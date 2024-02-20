@@ -9,13 +9,15 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/spf13/viper"
 )
 
 func VerifyStakingEvent(userAddress string) (bool, error) {
-	rpcURL, err := GetRPCURL()
-	if err != nil {
-		return false, err
+	rpcURL := viper.GetString("RPC_URL")
+	if rpcURL == "" {
+		return false, errors.New("RPC_URL is not set")
 	}
+
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return false, fmt.Errorf("failed to connect to the Ethereum client: %v", err)

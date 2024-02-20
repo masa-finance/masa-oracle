@@ -14,6 +14,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/cicd_helpers"
@@ -24,13 +25,44 @@ import (
 )
 
 func init() {
-	f, err := os.OpenFile("masa_oracle_node.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
+
+	// Initialize Viper
+	viper.AutomaticEnv() // Read from environment variables
+	viper.SetConfigType("yaml")
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".") // Optionally: add other paths, e.g., home directory or etc
+
+	// Set default values
+	viper.SetDefault("LOG_LEVEL", "info")
+	viper.SetDefault("LOG_FILEPATH", "masa_oracle_node.log")
+	viper.SetDefault("RPC_URL", "https://ethereum-sepolia.publicnode.com")
+	// Add other default values as needed
+
+	// Attempt to read the config file
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Printf("Error reading config file: %s", err)
+		}
+	}
+
+	// Attempt to read in environment variables
+	err := godotenv.Load()
+	if err != nil {
+		logrus.Error("Error loading .env file")
+	}
+
+	logLevel := viper.GetString("LOG_LEVEL")
+	logFilePath := viper.GetString("LOG_FILEPATH")
+
+	// Open output file for logging
+	f, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
 		log.Fatal(err)
 	}
 	mw := io.MultiWriter(os.Stdout, f)
 	logrus.SetOutput(mw)
-	if os.Getenv("debug") == "true" {
+
+	if logLevel == "debug" {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
@@ -46,10 +78,7 @@ func init() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = godotenv.Load(envFilePath)
-	if err != nil {
-		logrus.Error("Error loading .env file")
-	}
+
 	backupFileName := fmt.Sprintf("%s_%s", masa.Version, masa.NodeBackupFileName)
 	err = os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, ".masa", backupFileName))
 	if err != nil {
@@ -58,6 +87,7 @@ func init() {
 }
 
 func main() {
+
 	// log the flags
 	bootnodesList := strings.Split(bootnodes, ",")
 	logrus.Infof("Bootnodes: %v", bootnodesList)
