@@ -36,6 +36,15 @@ func init() {
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("LOG_FILEPATH", "masa_oracle_node.log")
 	viper.SetDefault("RPC_URL", "https://ethereum-sepolia.publicnode.com")
+	viper.SetDefault("MASA_KEY_FILE_KEY", "private.key")
+	viper.SetDefault("MASA_KEY_FILE_PATH", "")
+	viper.SetDefault("MASA_ENV_FILE_PATH", "")
+	viper.SetDefault("STAKE_AMOUNT", "1000")
+	viper.SetDefault("BOOTNODES", "")
+	viper.SetDefault("PORT_NBR", 4001)
+	viper.SetDefault("UDP", true)
+	viper.SetDefault("TCP", true)
+
 	// Add other default values as needed
 
 	// Attempt to read the config file
@@ -72,15 +81,14 @@ func init() {
 	if err != nil {
 		log.Fatal("could not find user.home directory")
 	}
-	envFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_node.env")
-	keyFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_key")
-	err = setUpFiles(envFilePath, keyFilePath)
+	keyFilePath := filepath.Join(usr.HomeDir, viper.GetString("MASA_DIR"), viper.GetString("MASA_KEY_FILE_KEY"))
+	err = setUpFiles(keyFilePath)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	backupFileName := fmt.Sprintf("%s_%s", masa.Version, masa.NodeBackupFileName)
-	err = os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, ".masa", backupFileName))
+	err = os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, viper.GetString("MASA_DIR"), backupFileName))
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -98,7 +106,7 @@ func main() {
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(viper.GetString("MASA_KEY_FILE_KEY"))
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -170,27 +178,16 @@ func main() {
 	<-ctx.Done()
 }
 
-func setUpFiles(envFilePath, keyFilePath string) error {
+func setUpFiles(keyFilePath string) error {
 	// Create the directories if they don't already exist
-	if _, err := os.Stat(filepath.Dir(envFilePath)); os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(envFilePath), 0755)
+	if _, err := os.Stat(filepath.Dir(viper.GetString("MASA_KEY_FILE_PATH"))); os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(viper.GetString("MASA_KEY_FILE_PATH")), 0755)
 		if err != nil {
 			logrus.Error("could not create directory:")
 			return err
 		}
 	}
-	// Check if the .env file exists
-	if _, err := os.Stat(envFilePath); os.IsNotExist(err) {
-		// If not, create it with default values
-		builder := strings.Builder{}
-		builder.WriteString(fmt.Sprintf("%s=%s\n", masa.KeyFileKey, keyFilePath))
-		builder.WriteString(fmt.Sprintf("RPC_URL=%s\n", masa.DefaultRPCURL))
-		err = os.WriteFile(envFilePath, []byte(builder.String()), 0644)
-		if err != nil {
-			logrus.Error("could not write to .env file:")
-			return err
-		}
-	}
+
 	return nil
 }
 
