@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	configFile  string
 	portNbr     int
 	udp         bool
 	tcp         bool

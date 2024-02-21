@@ -34,7 +34,7 @@ func init() {
 	viper.SetDefault("BOOTNODES", "")
 	viper.SetDefault("PORT_NBR", 4001)
 	viper.SetDefault("UDP", true)
-	viper.SetDefault("TCP", true)
+	viper.SetDefault("TCP", false)
 	// Add other default values as needed
 
 	// Check for env vars, config files, in order to override above defaults
@@ -87,11 +87,11 @@ func init() {
 func main() {
 
 	// log the flags
-	bootnodesList := strings.Split(bootnodes, ",")
+	bootnodesList := strings.Split(viper.GetString("BOOTNODES"), ",")
 	logrus.Infof("Bootnodes: %v", bootnodesList)
-	logrus.Infof("Port number: %d", portNbr)
-	logrus.Infof("UDP: %v", udp)
-	logrus.Infof("TCP: %v", tcp)
+	logrus.Infof("Port number: %d", viper.GetInt("PORT_NBR"))
+	logrus.Infof("UDP: %v", viper.GetBool("UDP"))
+	logrus.Infof("TCP: %v", viper.GetBool("TCP"))
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
