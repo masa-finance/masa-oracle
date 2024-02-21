@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	CertPem              = "cert.pem"
 	Cert                 = "cert"
 	Peers                = "peerList"
 	masaPrefix           = "/masa"
@@ -23,6 +22,8 @@ const (
 	Version              = "v0.0.6-alpha"
 	Environment          = "ENV"
 )
+
+CertPem = viper.getString("CERT_PEM")
 
 func ProtocolWithVersion(protocolName string) protocol.ID {
 	if viper.GetString("ENV") == "" {
