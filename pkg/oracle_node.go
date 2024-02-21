@@ -111,7 +111,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(Version),
+		NodeTracker:   pubsub2.NewNodeEventTracker(Version, getEnv()),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
 	}, nil
@@ -127,7 +127,7 @@ func (node *OracleNode) Start() (err error) {
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(ProtocolWithVersion(NodeDataSyncProtocol), node.ReceiveNodeData)
-	//if node.IsStaked then allow them to be added to the NodeData -- move to node tracker
+	// if node.IsStaked then allow them to be added to the NodeData -- move to node tracker
 	if node.IsStaked {
 		node.Host.SetStreamHandler(ProtocolWithVersion(NodeGossipTopic), node.GossipNodeData)
 	}
@@ -180,7 +180,7 @@ func (node *OracleNode) handleDiscoveredPeers() {
 			if peer.Action == myNetwork.PeerAdded {
 				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
 					logrus.Errorf("Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)
-					//close the connection
+					// close the connection
 					err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
 					if err != nil {
 						logrus.Error(err)
@@ -198,7 +198,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	remotePeer, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "un-staked") {
-			//just ignore the error
+			// just ignore the error
 			return
 		}
 		logrus.Errorf("Failed to read stream: %v", err)
