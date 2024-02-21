@@ -5,10 +5,12 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+
+	"github.com/spf13/viper"
 )
 
 func GetRPCURL() (string, error) {
-	url := os.Getenv("RPC_URL")
+	url := viper.GetString("RPC_URL")
 	if url == "" {
 		return "", errors.New("RPC_URL environment variable is not set")
 	}

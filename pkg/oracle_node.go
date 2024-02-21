@@ -22,6 +22,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
@@ -111,7 +112,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(Version, getEnv()),
+		NodeTracker:   pubsub2.NewNodeEventTracker(Version, viper.GetString("ENV")),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
 	}, nil
