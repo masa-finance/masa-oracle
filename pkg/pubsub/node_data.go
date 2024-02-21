@@ -77,14 +77,14 @@ func (n *NodeData) Address() string {
 }
 
 func (n *NodeData) Joined() {
-	if n.Activity == ActivityJoined && n.IsActive {
-		if n.IsStaked {
-			logrus.Warnf("Node %s is already marked as joined", n.Address())
-		} else {
-			logrus.Debugf("Node %s is already marked as joined", n.Address())
-		}
-		return
-	}
+	// if n.Activity == ActivityJoined && n.IsActive {
+	// 	if n.IsStaked {
+	// 		logrus.Warnf("Node %s is already marked as joined", n.Address())
+	// 	} else {
+	// 		logrus.Debugf("Node %s is already marked as joined", n.Address())
+	// 	}
+	// 	return
+	// }
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
