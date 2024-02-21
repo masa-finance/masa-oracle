@@ -2,110 +2,48 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
-type Config struct {
-	Bootnodes []string `json:"bootnodes"`
-}
-
 var (
-	configFile    string
-	start         bool
-	portNbr       int
-	udp           bool
-	tcp           bool
-	signature     string
-	bootnodes     string
-	flagBootnodes string
-	data          string
-	stakeAmount   string
-	debug         bool
-	env           string
+	configFile  string
+	portNbr     int
+	udp         bool
+	tcp         bool
+	signature   string
+	bootnodes   string
+	data        string
+	stakeAmount string
+	debug       bool
+	env         string
 )
 
 func init() {
 	// Define flags
-	flag.StringVar(&configFile, "config", "config.json", "Path to the config file")
-	flag.BoolVar(&start, "start", false, "Start flag")
-	flag.IntVar(&portNbr, "port", getPort("portNbr"), "The port number")
-	flag.BoolVar(&udp, "udp", false, "UDP flag") // Default value set to false
-	flag.BoolVar(&tcp, "tcp", false, "TCP flag") // Default value set to false
+	flag.IntVar(&portNbr, "port", viper.GetInt("PORT_NBR"), "The port number")
+	flag.BoolVar(&udp, "udp", viper.GetBool("UDP"), "UDP flag") // Default value set to false
+	flag.BoolVar(&tcp, "tcp", viper.GetBool("TCP"), "TCP flag") // Default value set to false
 	flag.StringVar(&signature, "signature", "", "The signature from the staking contract")
-	flag.StringVar(&flagBootnodes, "bootnodes", "", "Comma-separated list of bootnodes")
+	flag.StringVar(&bootnodes, "bootnodes", viper.GetString("BOOTNODES"), "Comma-separated list of bootnodes")
 	flag.StringVar(&data, "data", "", "The data to verify the signature against")
-	flag.StringVar(&stakeAmount, "stake", "", "Amount of tokens to stake")
-	flag.BoolVar(&debug, "debug", false, "Override some protections for debugging (temporary)")
-	flag.StringVar(&env, "env", "", "Environment to connect to")
+	flag.StringVar(&stakeAmount, "stake", viper.GetString("STAKE_AMOUNT"), "Amount of tokens to stake")
+	flag.BoolVar(&debug, "debug", viper.GetBool("LOG_LEVEL"), "Override some protections for debugging (temporary)")
+	flag.StringVar(&env, "env", viper.GetString("ENV"), "Environment to connect to")
 	flag.Parse()
 
-	if start {
-		// Set the UDP and TCP flags based on environment variables if not already set
-		if !udp {
-			udp = getEnvAsBool("UDP", false)
-		}
-		if !tcp {
-			tcp = getEnvAsBool("TCP", false)
-		}
-		// if neither UDP nor TCP are set, default to UDP
-		if !udp && !tcp {
-			udp = true
-			tcp = false
-		}
-		if flagBootnodes != "" {
-			bootnodes = flagBootnodes
-		} else {
-			config, err := loadConfig(configFile)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-			bootnodes = strings.Join(config.Bootnodes, ",")
-		}
-		err := os.Setenv(masa.Environment, env)
-		if err != nil {
-			logrus.Error(err)
-		}
-		err = os.Setenv(masa.Peers, bootnodes)
-		if err != nil {
-			logrus.Error(err)
-		}
-	}
-}
-
-func loadConfig(file string) (*Config, error) {
-	var config Config
-	configFile, err := os.ReadFile(file)
+	err := os.Setenv(masa.Environment, env)
 	if err != nil {
-		return nil, err
+		logrus.Error(err)
 	}
-	err = json.Unmarshal(configFile, &config)
+	err = os.Setenv(masa.Peers, bootnodes)
 	if err != nil {
-		return nil, err
+		logrus.Error(err)
 	}
-	return &config, nil
-}
 
-func getPort(name string) int {
-	valueStr := os.Getenv(name)
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
-	}
-	return 0
-}
-
-// getEnvAsBool will return the environment variable as a boolean or the default value
-func getEnvAsBool(name string, defaultVal bool) bool {
-	valueStr := os.Getenv(name)
-	if value, err := strconv.ParseBool(valueStr); err == nil {
-		return value
-	}
-	return defaultVal
 }
