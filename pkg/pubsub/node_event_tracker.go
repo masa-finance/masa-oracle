@@ -17,21 +17,29 @@ import (
 )
 
 type NodeEventTracker struct {
-	NodeDataChan chan *NodeData
-	nodeData     *SafeMap
-	version      string
+	NodeDataChan  chan *NodeData
+	nodeData      *SafeMap
+	nodeDataFile  string
+	ConnectBuffer map[string]ConnectBufferEntry
 }
 
-func NewNodeEventTracker(version string) *NodeEventTracker {
+type ConnectBufferEntry struct {
+	NodeData    *NodeData
+	ConnectTime time.Time
+}
+
+func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 	net := &NodeEventTracker{
-		nodeData:     NewSafeMap(),
-		NodeDataChan: make(chan *NodeData),
-		version:      version,
+		nodeData:      NewSafeMap(),
+		NodeDataChan:  make(chan *NodeData),
+		nodeDataFile:  fmt.Sprintf("%s_%s_node_data.json", version, environment),
+		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
 	err := net.LoadNodeData()
 	if err != nil {
 		logrus.Error("Error loading node data", err)
 	}
+	go net.ClearExpiredBufferEntries()
 	return net
 }
 
@@ -61,11 +69,16 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		return
 	} else {
 		if nodeData.IsStaked {
-			nodeData.Joined()
-			err := net.AddOrUpdateNodeData(nodeData, true)
-			if err != nil {
-				logrus.Error(err)
-				return
+			if nodeData.IsActive {
+				// Node appears already connected, buffer this connect event
+				net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
+			} else {
+				nodeData.Joined()
+				err := net.AddOrUpdateNodeData(nodeData, true)
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
 			}
 		}
 	}
@@ -89,13 +102,22 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	} else if !nodeData.IsStaked {
 		return
 	}
+	buffered := net.ConnectBuffer[peerID]
+	if buffered.NodeData != nil {
+		buffered.NodeData.Left()
+		delete(net.ConnectBuffer, peerID)
+		// Now process the buffered connect
+		buffered.NodeData.Joined()
+		net.NodeDataChan <- buffered.NodeData
+	} else {
+		nodeData.Left()
+		net.NodeDataChan <- nodeData
+	}
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
 	}).Info("Disconnected")
-	nodeData.Left()
-	net.NodeDataChan <- nodeData
 }
 
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
@@ -134,7 +156,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 			logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
 			return
 		} else {
-			//this is the boot node and local data is incorrect, take the value from the boot node
+			// this is the boot node and local data is incorrect, take the value from the boot node
 			net.nodeData.Set(data.PeerId.String(), &data)
 			return
 		}
@@ -204,7 +226,7 @@ func (net *NodeEventTracker) DumpNodeData() {
 	// Write the JSON data to a file
 	filePath := os.Getenv("nodeBackupPath")
 	if filePath == "" {
-		filePath = fmt.Sprintf("%s_node_data.json", net.version)
+		filePath = net.nodeDataFile
 	}
 	logrus.Infof("writing node data to file: %s", filePath)
 	err := net.nodeData.DumpNodeData(filePath)
@@ -217,7 +239,7 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	// Read the JSON data from a file
 	filePath := os.Getenv("nodeBackupPath")
 	if filePath == "" {
-		filePath = fmt.Sprintf("%s_node_data.json", net.version)
+		filePath = net.nodeDataFile
 	}
 	// Check if the file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -304,4 +326,19 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		}
 	}
 	return nil
+}
+
+func (net *NodeEventTracker) ClearExpiredBufferEntries() {
+	for {
+		time.Sleep(30 * time.Second) // E.g., every 5 seconds
+		now := time.Now()
+		for peerID, entry := range net.ConnectBuffer {
+			if now.Sub(entry.ConnectTime) > time.Minute*1 {
+				// Buffer period expired without a disconnect, process connect
+				entry.NodeData.Joined()
+				net.NodeDataChan <- entry.NodeData
+				delete(net.ConnectBuffer, peerID)
+			}
+		}
+	}
 }
