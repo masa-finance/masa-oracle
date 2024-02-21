@@ -9,6 +9,7 @@ import (
 
 const (
 	Cert                 = "cert"
+	CertPem              = "cert.pem"
 	Peers                = "peerList"
 	masaPrefix           = "/masa"
 	oracleProtocol       = "oracle_protocol"
@@ -23,8 +24,6 @@ const (
 	DefaultRPCURL        = "https://ethereum-sepolia.publicnode.com"
 	Environment          = "ENV"
 )
-
-CertPem = viper.getString("CERT_PEM")
 
 func ProtocolWithVersion(protocolName string) protocol.ID {
 	if viper.GetString("ENV") == "" {
