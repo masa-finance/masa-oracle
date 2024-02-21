@@ -19,7 +19,8 @@ const (
 	PageSize             = 25
 	NodeBackupFileName   = "nodeBackup.json"
 	NodeBackupPath       = "nodeBackupPath"
-	Version              = "v0.0.6-alpha"
+	Version              = "v0.0.7-alpha"
+	DefaultRPCURL        = "https://ethereum-sepolia.publicnode.com"
 	Environment          = "ENV"
 )
 
