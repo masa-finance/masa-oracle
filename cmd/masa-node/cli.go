@@ -4,7 +4,10 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -69,11 +72,23 @@ func init() {
 			}
 			bootnodes = strings.Join(config.Bootnodes, ",")
 		}
-		err := os.Setenv(masa.Environment, env)
-		if err != nil {
-			logrus.Error(err)
+		if env != "" {
+			err := os.Setenv(masa.Environment, env)
+			if err != nil {
+				logrus.Error(err)
+			}
+			usr, err := user.Current()
+			if err != nil {
+				logrus.Error("could not find user.home directory")
+			}
+			backupFileName := fmt.Sprintf("%s_%s_%s", masa.Version, env, masa.NodeBackupFileName)
+			err = os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, ".masa", backupFileName))
+			if err != nil {
+				logrus.Error(err)
+			}
+
 		}
-		err = os.Setenv(masa.Peers, bootnodes)
+		err := os.Setenv(masa.Peers, bootnodes)
 		if err != nil {
 			logrus.Error(err)
 		}
