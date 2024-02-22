@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -41,7 +41,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 				// the node start time is greater than 5 minutes ago,
 				// call SendNodeData in a separate goroutine
 				if nodeData.Activity == pubsub2.ActivityJoined &&
-					(os.Getenv(Peers) == "" || time.Now().Sub(node.StartTime) > 5*time.Minute) {
+					(viper.GetString(BootNodes) == "" || time.Now().Sub(node.StartTime) > 5*time.Minute) {
 					go node.SendNodeData(nodeData.PeerId)
 				}
 			}

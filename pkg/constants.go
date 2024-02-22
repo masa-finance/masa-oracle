@@ -8,9 +8,13 @@ import (
 )
 
 const (
-	Cert                 = "cert"
-	CertPem              = "cert.pem"
-	Peers                = "peerList"
+	PrivKeyFile = "MASA_PRIV_KEY_FILE"
+	BootNodes   = "BOOTNODES"
+	MasaDir     = "MASA_DIR"
+	RpcUrl      = "RPC_URL"
+	Environment = "ENV"
+	Version     = "v0.0.8-alpha"
+
 	masaPrefix           = "/masa"
 	oracleProtocol       = "oracle_protocol"
 	NodeDataSyncProtocol = "nodeDataSync"
@@ -18,23 +22,18 @@ const (
 	AdTopic              = "ad"
 	rendezvous           = "masa-mdns"
 	PageSize             = 25
-	NodeBackupFileName   = "nodeBackup.json"
-	NodeBackupPath       = "nodeBackupPath"
-	Version              = "v0.0.8-alpha"
-	DefaultRPCURL        = "https://ethereum-sepolia.publicnode.com"
-	Environment          = "ENV"
 )
 
 func ProtocolWithVersion(protocolName string) protocol.ID {
-	if viper.GetString("ENV") == "" {
+	if viper.GetString(Environment) == "" {
 		return protocol.ID(fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version))
 	}
-	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, Version, viper.GetString("ENV")))
+	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, Version, viper.GetString(Environment)))
 }
 
 func TopicWithVersion(protocolName string) string {
-	if viper.GetString("ENV") == "" {
+	if viper.GetString(Environment) == "" {
 		return fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, Version)
 	}
-	return fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, Version, viper.GetString("ENV"))
+	return fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, Version, viper.GetString(Environment))
 }

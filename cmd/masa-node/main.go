@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -24,17 +23,22 @@ import (
 
 func init() {
 
-	// Set default values
+	// Set up masa file path based on current user and config settings
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal("could not find user.home directory")
+	}
+	// Set default values and use constants for values used elsewhere in the application
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("LOG_FILEPATH", "masa_oracle_node.log")
-	viper.SetDefault("RPC_URL", "https://ethereum-sepolia.publicnode.com")
-	viper.SetDefault("MASA_KEY_FILE_KEY", "masa_oracle_node.key")
-	viper.SetDefault("MASA_DIR", ".masa")
-	viper.SetDefault("STAKE_AMOUNT", "1000")
-	viper.SetDefault("BOOTNODES", "")
+	viper.SetDefault(masa.PrivKeyFile, "masa_oracle_key")
+	viper.SetDefault(masa.MasaDir, filepath.Join(usr.HomeDir, ".masa"))
+	viper.SetDefault(masa.RpcUrl, "https://ethereum-sepolia.publicnode.com")
+	viper.SetDefault(masa.BootNodes, "")
 	viper.SetDefault("PORT_NBR", 4001)
 	viper.SetDefault("UDP", true)
 	viper.SetDefault("TCP", false)
+	viper.SetDefault("STAKE_AMOUNT", "1000")
 	// Add other default values as needed
 
 	// Check for env vars, config files, in order to override above defaults
@@ -50,23 +54,12 @@ func init() {
 		}
 	}
 
-	// Set up masa file path based on current user and config settings
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal("could not find user.home directory")
+	if _, err := os.Stat(filepath.Dir(viper.GetString(masa.MasaDir))); os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(viper.GetString(masa.MasaDir)), 0755)
+		if err != nil {
+			logrus.Error("could not create directory:")
+		}
 	}
-
-	masaFilePath := filepath.Join(usr.HomeDir, viper.GetString("MASA_DIR"))
-	viper.Set("MASA_FILES_PATH", masaFilePath)
-
-	err = os.MkdirAll(filepath.Dir(masaFilePath), 0755)
-	if err != nil {
-		logrus.Error("could not create directory:")
-	}
-
-	// Set up node data backup file
-	backupFileName := fmt.Sprintf("%s_%s", masa.Version, masa.NodeBackupFileName)
-	viper.Set("NODE_DATA_BACKUP_PATH", filepath.Join(masaFilePath, backupFileName))
 
 	// Open output file for logging
 	f, err := os.OpenFile(viper.GetString("LOG_FILEPATH"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
@@ -87,7 +80,7 @@ func init() {
 func main() {
 
 	// log the flags
-	bootnodesList := strings.Split(viper.GetString("BOOTNODES"), ",")
+	bootnodesList := strings.Split(viper.GetString(masa.BootNodes), ",")
 	logrus.Infof("Bootnodes: %v", bootnodesList)
 	logrus.Infof("Port number: %d", viper.GetInt("PORT_NBR"))
 	logrus.Infof("UDP: %v", viper.GetBool("UDP"))
@@ -96,7 +89,7 @@ func main() {
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString("MASA_FILES_PATH"), viper.GetString("MASA_KEY_FILE_KEY")))
+	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString(masa.MasaDir), viper.GetString(masa.PrivKeyFile)))
 
 	if err != nil {
 		logrus.Fatal(err)
@@ -119,7 +112,6 @@ func main() {
 	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
-
 	// Pass the isStaked flag to the NewOracleNode function
 	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, isStaked)
 	if err != nil {
