@@ -13,6 +13,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func getPrivateKeyFromEnv(envKey string) (privKey crypto.PrivKey, err error) {
+	rawKey, err := hex.DecodeString(envKey)
+	if err != nil {
+		return nil, logAndReturnError("error decoding private key: %s", err)
+	}
+	privKey, err = crypto.UnmarshalPrivateKey(rawKey)
+	if err != nil {
+		return nil, logAndReturnError("error unmarshalling private key: %s", err)
+	}
+	logrus.Infof("Loaded private key from environment")
+	return privKey, nil
+}
+
 func getPrivateKeyFromFile(keyFile string) (crypto.PrivKey, error) {
 	// Check if the private key file exists
 	data, err := os.ReadFile(keyFile)
@@ -58,11 +71,20 @@ func generateNewPrivateKey(keyFile string) (crypto.PrivKey, error) {
 func GetOrCreatePrivateKey(keyFile string) (crypto.PrivKey, *ecdsa.PrivateKey, string, error) {
 	var privKey crypto.PrivKey
 	var err error
-	privKey, err = getPrivateKeyFromFile(keyFile)
-	if err != nil {
-		privKey, err = generateNewPrivateKey(keyFile)
+	envKey := os.Getenv("PRIVATE_KEY")
+	if envKey != "" {
+		privKey, err = getPrivateKeyFromEnv(envKey)
 		if err != nil {
 			return nil, nil, "", err
+		}
+	} else {
+		// Check if the private key file exists
+		privKey, err = getPrivateKeyFromFile(keyFile)
+		if err != nil {
+			privKey, err = generateNewPrivateKey(keyFile)
+			if err != nil {
+				return nil, nil, "", err
+			}
 		}
 	}
 
