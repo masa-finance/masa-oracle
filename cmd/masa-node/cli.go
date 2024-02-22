@@ -33,6 +33,7 @@ func init() {
 	pflag.Parse()
 	err := viper.BindPFlags(pflag.CommandLine)
 	if err != nil {
+		logrus.Error(err)
 		return
 	}
 	if debug {
