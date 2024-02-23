@@ -35,7 +35,7 @@ func init() {
 	viper.SetDefault(masa.MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 	viper.SetDefault(masa.RpcUrl, "https://ethereum-sepolia.publicnode.com")
 	viper.SetDefault(masa.BootNodes, "")
-	viper.SetDefault("PORT_NBR", 4001)
+	viper.SetDefault("PORT_NBR", "4001")
 	viper.SetDefault("UDP", true)
 	viper.SetDefault("TCP", false)
 	viper.SetDefault("STAKE_AMOUNT", "1000")
