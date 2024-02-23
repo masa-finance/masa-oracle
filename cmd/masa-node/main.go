@@ -40,7 +40,12 @@ func init() {
 	viper.SetDefault("TCP", false)
 	viper.SetDefault("STAKE_AMOUNT", "1000")
 	// Add other default values as needed
-
+	// log the flags
+	bootnodesList := strings.Split(viper.GetString(masa.BootNodes), ",")
+	logrus.Infof("1 Bootnodes: %v", bootnodesList)
+	logrus.Infof("1 Port number: %d", viper.GetInt("PORT_NBR"))
+	logrus.Infof("1 UDP: %v", viper.GetBool("UDP"))
+	logrus.Infof("1 TCP: %v", viper.GetBool("TCP"))
 	// Check for env vars, config files, in order to override above defaults
 	viper.AutomaticEnv() // Read from environment variables
 	viper.SetConfigType("yaml")
@@ -75,6 +80,10 @@ func init() {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
 
+	logrus.Infof("2 Bootnodes: %v", bootnodesList)
+	logrus.Infof("2 Port number: %d", viper.GetInt("PORT_NBR"))
+	logrus.Infof("2 UDP: %v", viper.GetBool("UDP"))
+	logrus.Infof("2 TCP: %v", viper.GetBool("TCP"))
 }
 
 func main() {
