@@ -11,6 +11,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
@@ -38,7 +39,7 @@ func init() {
 }
 
 func TestAddUser(t *testing.T) {
-	_, ecdsaPrivKey, _, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	_, ecdsaPrivKey, _, err := crypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString(masa.MasaDir), viper.GetString(masa.PrivKeyFile)))
 	if err != nil {
 		logrus.Fatal(err)
 	}

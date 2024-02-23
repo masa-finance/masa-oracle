@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
@@ -111,7 +111,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(Version, getEnv()),
+		NodeTracker:   pubsub2.NewNodeEventTracker(Version, viper.GetString(Environment)),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
 	}, nil
@@ -120,7 +120,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(os.Getenv(Peers))
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(viper.GetString(BootNodes))
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (node *OracleNode) Start() (err error) {
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
 	// if this is the original boot node then add it to the node tracker
-	if os.Getenv(Peers) == "" {
+	if viper.GetString(BootNodes) == "" {
 		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nodeData == nil {
 			publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
