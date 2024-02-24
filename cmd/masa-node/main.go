@@ -104,6 +104,8 @@ func main() {
 		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 			if err := os.MkdirAll(dbPath, 0755); err != nil {
 				logrus.Fatalf("Failed to create database directory: %v", err)
+			} else {
+				logrus.Infof("Database directory created at: %v", dbPath)
 			}
 		}
 	}
