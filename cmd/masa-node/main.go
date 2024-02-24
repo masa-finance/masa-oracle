@@ -95,6 +95,24 @@ func main() {
 	logrus.Infof("UDP: %v", viper.GetBool("UDP"))
 	logrus.Infof("TCP: %v", viper.GetBool("TCP"))
 
+	//@dev added initialization for badgerdb, we need to add the DB_PATH to the viper configs
+	// Initialize the database
+	dbPath := viper.GetString("DB_PATH") // Make sure you have this configured
+	if dbPath == "" {
+		dbPath = filepath.Join(viper.GetString(masa.MasaDir), "masa-node-db") // Default path if not configured saves to /home/username/.masa/masa-node-db
+		// Check if the directory exists, create it if not
+		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+			if err := os.MkdirAll(dbPath, 0755); err != nil {
+				logrus.Fatalf("Failed to create database directory: %v", err)
+			}
+		}
+	}
+	db, err := InitializeDB(dbPath)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer db.Close() // This ensures the database is properly closed on application exit
+
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
