@@ -18,17 +18,25 @@ func (sm *Manager) PublishPublicKey(publicKey string) error {
 	msg := PublicKeyMessage{PublicKey: publicKey}
 	msgBytes, err := json.Marshal(msg)
 	if err != nil {
+		logrus.Errorf("Failed to marshal public key message: %v", err)
 		return err
 	}
-	return sm.gossipSub.Publish(PublicKeyTopic, msgBytes)
+	if err := sm.gossipSub.Publish(PublicKeyTopic, msgBytes); err != nil {
+		logrus.Errorf("Failed to publish public key to topic %s: %v", PublicKeyTopic, err)
+		return err
+	}
+	logrus.Infof("Successfully published public key to topic %s", PublicKeyTopic)
+	return nil
 }
 
 // SubscribeToPublicKeyTopic subscribes to the public key topic to receive updates.
 func (sm *Manager) SubscribeToPublicKeyTopic() error {
 	sub, err := sm.gossipSub.Subscribe(PublicKeyTopic)
 	if err != nil {
+		logrus.Errorf("Failed to subscribe to public key topic %s: %v", PublicKeyTopic, err)
 		return err
 	}
+	logrus.Infof("Successfully subscribed to public key topic %s", PublicKeyTopic)
 	go func() {
 		for {
 			msg, err := sub.Next(sm.ctx)
@@ -41,6 +49,7 @@ func (sm *Manager) SubscribeToPublicKeyTopic() error {
 				logrus.Errorf("Error unmarshalling public key message: %v", err)
 				continue
 			}
+			logrus.Infof("Successfully received and unmarshalled public key message from topic %s", PublicKeyTopic)
 			// Process the received public key, e.g., verify and update local copy
 		}
 	}()
