@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 )
 
