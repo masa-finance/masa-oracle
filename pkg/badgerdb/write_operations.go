@@ -10,8 +10,12 @@ import (
 
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
-func WriteData(db *badger.DB, key, value []byte, h host.Host) error {
-	if !CanWrite(h) {
+// It now requires the data (key + value) and signature for verification.
+func WriteData(db *badger.DB, key, value, signature []byte, h host.Host) error {
+	// Combine key and value as the data to be verified
+	data := append(key, value...)
+
+	if !CanWrite(h, data, signature) {
 		logrus.WithFields(logrus.Fields{
 			"nodeID": h.ID().String(),
 		}).Error("Node is not authorized to write to the database")
