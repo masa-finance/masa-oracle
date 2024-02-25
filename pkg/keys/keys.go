@@ -17,6 +17,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+// KeyManager implements the KeyLoader interface used in the interfaces package to load keys from file path.
+type KeyManager struct{}
+
+func (km *KeyManager) LoadPrivKey() (crypto.PrivKey, error) {
+	return LoadPrivKeyFromFilePath()
+}
+
+func (km *KeyManager) LoadPubKey() (crypto.PubKey, error) {
+	return LoadPubKeyFromFilePath()
+}
+
 // GetPrivKeyFilePath constructs the file path for the private key using the directory and file name from Viper configuration.
 func GetPrivKeyFilePath() string {
 	masaDir := viper.GetString(masa.MasaDir)
