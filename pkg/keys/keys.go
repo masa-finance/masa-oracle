@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -20,8 +21,13 @@ import (
 func GetPrivKeyFilePath() string {
 	masaDir := viper.GetString(masa.MasaDir)
 	privKeyFile := viper.GetString(masa.PrivKeyFile)
-
-	return filepath.Join(masaDir, privKeyFile)
+	filePath := filepath.Join(masaDir, privKeyFile)
+	logrus.WithFields(logrus.Fields{
+		"masaDir":     masaDir,
+		"privKeyFile": privKeyFile,
+		"filePath":    filePath,
+	}).Info("Constructed private key file path")
+	return filePath
 }
 
 // This section of the code is dedicated to handling the loading of private keys from different sources.
@@ -35,17 +41,21 @@ func LoadPrivKeyFromFilePath() (crypto.PrivKey, error) {
 
 	hexPrivKeyBytes, err := os.ReadFile(filePath)
 	if err != nil {
+		logrus.WithError(err).WithField("filePath", filePath).Error("Failed to read private key from file")
 		return nil, fmt.Errorf("failed to read private key from file: %s", err)
 	}
 	privKeyBytes, err := hex.DecodeString(string(hexPrivKeyBytes))
 	if err != nil {
+		logrus.WithError(err).Error("Failed to decode private key from hex")
 		return nil, fmt.Errorf("failed to decode private key from hex: %s", err)
 	}
 	privKey, err := crypto.UnmarshalPrivateKey(privKeyBytes)
 	if err != nil {
+		logrus.WithError(err).Error("Failed to unmarshal private key")
 		return nil, fmt.Errorf("failed to unmarshal private key: %s", err)
 	}
 
+	logrus.Info("Successfully loaded private key from file path")
 	return privKey, nil
 }
 
@@ -53,17 +63,21 @@ func LoadPrivKeyFromFilePath() (crypto.PrivKey, error) {
 func LoadPrivKeyFromEnv(envVarName string) (crypto.PrivKey, error) {
 	privKeyHex := viper.GetString(envVarName)
 	if privKeyHex == "" {
+		logrus.WithField("envVarName", envVarName).Error("Environment variable not set or has no value")
 		return nil, fmt.Errorf("environment variable %s not set or has no value", envVarName)
 	}
 	privKeyBytes, err := hex.DecodeString(privKeyHex)
 	if err != nil {
+		logrus.WithError(err).WithField("envVarName", envVarName).Error("Failed to decode private key from hex")
 		return nil, fmt.Errorf("failed to decode private key from hex: %s", err)
 	}
 	privKey, err := crypto.UnmarshalPrivateKey(privKeyBytes)
 	if err != nil {
+		logrus.WithError(err).WithField("envVarName", envVarName).Error("Failed to unmarshal private key")
 		return nil, fmt.Errorf("failed to unmarshal private key: %s", err)
 	}
 
+	logrus.WithField("envVarName", envVarName).Info("Successfully loaded private key from environment variable")
 	return privKey, nil
 }
 
@@ -78,6 +92,7 @@ func LoadPubKeyFromFilePath() (crypto.PubKey, error) {
 		return nil, err
 	}
 
+	logrus.Info("Successfully derived public key from private key loaded from file path")
 	return privKey.GetPublic(), nil
 }
 
@@ -88,6 +103,7 @@ func LoadPubKeyFromEnv(envVarName string) (crypto.PubKey, error) {
 		return nil, err
 	}
 
+	logrus.WithField("envVarName", envVarName).Info("Successfully derived public key from private key loaded from environment variable")
 	return privKey.GetPublic(), nil
 }
 
@@ -106,9 +122,11 @@ func GetPeerIDFromPrivKeyFilePath() (string, error) {
 	pubKey := privKey.GetPublic()
 	peerID, err := peer.IDFromPublicKey(pubKey)
 	if err != nil {
+		logrus.WithError(err).Error("Failed to derive peer ID from public key")
 		return "", err
 	}
 
+	logrus.Info("Successfully derived peer ID from private key loaded from file path")
 	return peerID.String(), nil
 }
 
@@ -122,8 +140,10 @@ func GetPeerIDFromPrivKeyEnv(envVarName string) (string, error) {
 	pubKey := privKey.GetPublic()
 	peerID, err := peer.IDFromPublicKey(pubKey)
 	if err != nil {
+		logrus.WithError(err).WithField("envVarName", envVarName).Error("Failed to derive peer ID from public key")
 		return "", err
 	}
 
+	logrus.WithField("envVarName", envVarName).Info("Successfully derived peer ID from private key loaded from environment variable")
 	return peerID.String(), nil
 }
