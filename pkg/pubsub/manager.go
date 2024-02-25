@@ -41,8 +41,6 @@ func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) {
 	// Subscribe to the public key topic as part of manager initialization to ensure that the node starts listening for public key updates right away.
 	if err := manager.SubscribeToPublicKeyTopic(); err != nil {
 		return nil, fmt.Errorf("failed to subscribe to public key topic: %w", err)
-	} else {
-		logrus.Infof("Successfully subscribed to the public key topic as part of manager initialization")
 	}
 
 	return manager, nil
