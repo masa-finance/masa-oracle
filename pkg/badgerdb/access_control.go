@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	libp2pCrypto "github.com/libp2p/go-libp2p-core/crypto"
+	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/sirupsen/logrus"

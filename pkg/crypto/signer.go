@@ -3,7 +3,7 @@ package crypto
 import (
 	"fmt"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 )
 
 // SignData signs the data using the private key directly obtained from keys.go.

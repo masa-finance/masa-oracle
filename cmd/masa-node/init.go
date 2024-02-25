@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/peer"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/sirupsen/logrus"
@@ -35,6 +35,7 @@ func init() {
 	viper.SetDefault("UDP", true)
 	viper.SetDefault("TCP", false)
 	viper.SetDefault("STAKE_AMOUNT", "1000")
+	viper.SetDefault("allowedPeer", false)
 
 	// Load or generate the private key
 	privKey, _, _, err := masaCrypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString(masa.MasaDir), viper.GetString(masa.PrivKeyFile)))
@@ -59,8 +60,13 @@ func init() {
 		log.Fatalf("Failed to convert public key to peer ID: %v", err)
 	}
 
-	viper.Set("ALLOWED_PEER_ID", peerID.Pretty())
-	viper.Set("ALLOWED_PEER_PUBKEY", allowedPeerPubKeyHex)
+	if viper.GetBool("allowedPeer") {
+		viper.Set("ALLOWED_PEER_ID", peerID.String())
+		viper.Set("ALLOWED_PEER_PUBKEY", allowedPeerPubKeyHex)
+		logrus.Infof("This node is set as the allowed peer with ID: %s and PubKey: %s", peerID.String(), allowedPeerPubKeyHex)
+	} else {
+		logrus.Info("This node is not set as the allowed peer. Skipping setting ALLOWED_PEER_ID and ALLOWED_PEER_PUBKEY.")
+	}
 
 	// Log the flags
 	bootnodesList := strings.Split(viper.GetString(masa.BootNodes), ",")
