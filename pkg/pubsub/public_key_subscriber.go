@@ -8,14 +8,20 @@ import (
 
 const PublicKeyTopic = "public-key-topic"
 
-// SubscribeToPublicKeyTopic subscribes to the public key topic to receive updates.
 func (sm *Manager) SubscribeToPublicKeyTopic() error {
-	sub, err := sm.gossipSub.Subscribe(PublicKeyTopic)
+	topic, err := sm.gossipSub.Join(PublicKeyTopic)
+	if err != nil {
+		logrus.Errorf("Failed to join public key topic %s: %v", PublicKeyTopic, err)
+		return err
+	}
+	sub, err := topic.Subscribe()
 	if err != nil {
 		logrus.Errorf("Failed to subscribe to public key topic %s: %v", PublicKeyTopic, err)
 		return err
 	}
+
 	logrus.Infof("Successfully subscribed to public key topic %s", PublicKeyTopic)
+
 	go func() {
 		for {
 			msg, err := sub.Next(sm.ctx)
@@ -29,7 +35,6 @@ func (sm *Manager) SubscribeToPublicKeyTopic() error {
 				continue
 			}
 			logrus.Infof("Successfully received and unmarshalled public key message from topic %s", PublicKeyTopic)
-			// Process the received public key, e.g., verify and update local copy
 		}
 	}()
 	return nil
