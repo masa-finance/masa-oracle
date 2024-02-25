@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
-	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
+	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -100,7 +100,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	ecdsaPrivKey, err := crypto2.Libp2pPrivateKeyToEcdsa(privKey)
+	ecdsaPrivKey, err := masaCrypto.Libp2pPrivateKeyToEcdsa(privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (node *OracleNode) Start() (err error) {
 	if viper.GetString(BootNodes) == "" {
 		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nodeData == nil {
-			publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
+			publicKeyHex, _ := masaCrypto.GetPublicKeyForHost(node.Host)
 			nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 			nodeData.IsStaked = node.IsStaked
 			nodeData.SelfIdentified = true
@@ -167,6 +167,27 @@ func (node *OracleNode) Start() (err error) {
 	if err != nil {
 		return err
 	}
+
+	// Step 1: Generate or Retrieve the Public Key and Data to Sign
+	publicKeyBytes, err := node.PrivKey.GetPublic().Bytes()
+	if err != nil {
+		return err
+	}
+	publicKeyString := string(publicKeyBytes)
+	dataToSign := []byte("Some data representing the node") // This should be replaced with actual data you want to sign
+
+	// Step 2: Sign the Data
+	signature, err := masaCrypto.SignData(node.PrivKey, dataToSign)
+	if err != nil {
+		return err
+	}
+
+	// Step 3: Call PublishNodePublicKey
+	err = node.PubSubManager.PublishNodePublicKey(publicKeyString, dataToSign, signature)
+	if err != nil {
+		return err
+	}
+
 	node.StartTime = time.Now()
 	return nil
 }
