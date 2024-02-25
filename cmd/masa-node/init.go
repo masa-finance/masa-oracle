@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"io"
 	"log"
 	"os"
@@ -9,10 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/libp2p/go-libp2p/core/peer"
 	masa "github.com/masa-finance/masa-oracle/pkg"
-	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
+	util "github.com/masa-finance/masa-oracle/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -37,33 +34,28 @@ func init() {
 	viper.SetDefault("STAKE_AMOUNT", "1000")
 	viper.SetDefault("allowedPeer", false)
 
-	// Load or generate the private key
-	privKey, _, _, err := masaCrypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString(masa.MasaDir), viper.GetString(masa.PrivKeyFile)))
+	// Load or generate the private key using utility function
+	privKey, err := util.LoadPrivateKey()
 	if err != nil {
 		log.Fatalf("Failed to load or create private key: %v", err)
 	}
 
-	// Correctly handle the public key
-	pubKey := privKey.GetPublic()
-
-	// Assuming you implement or correct the implementation of MarshalPublicKey
-	pubKeyBytes, err := crypto.MarshalPublicKey(pubKey)
+	// Derive the hex-encoded public key using utility function
+	allowedPeerPubKeyHex, err := util.GetHexEncodedPublicKey(privKey)
 	if err != nil {
-		log.Fatalf("Failed to marshal public key: %v", err)
+		log.Fatalf("Failed to get hex-encoded public key: %v", err)
 	}
 
-	allowedPeerPubKeyHex := hex.EncodeToString(pubKeyBytes)
-
-	// Assuming you implement or correct the implementation of Libp2pPubKeyToPeerID
-	peerID, err := peer.IDFromPublicKey(pubKey)
+	// Get the PeerID using utility function
+	peerIDString, err := util.GetPeerIDFromPubKey(privKey.GetPublic())
 	if err != nil {
 		log.Fatalf("Failed to convert public key to peer ID: %v", err)
 	}
 
 	if viper.GetBool("allowedPeer") {
-		viper.Set("ALLOWED_PEER_ID", peerID.String())
+		viper.Set("ALLOWED_PEER_ID", peerIDString)
 		viper.Set("ALLOWED_PEER_PUBKEY", allowedPeerPubKeyHex)
-		logrus.Infof("This node is set as the allowed peer with ID: %s and PubKey: %s", peerID.String(), allowedPeerPubKeyHex)
+		logrus.Infof("This node is set as the allowed peer with ID: %s and PubKey: %s", peerIDString, allowedPeerPubKeyHex)
 	} else {
 		logrus.Info("This node is not set as the allowed peer. Skipping setting ALLOWED_PEER_ID and ALLOWED_PEER_PUBKEY.")
 	}
