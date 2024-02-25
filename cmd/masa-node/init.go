@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"io"
 	"log"
 	"os"
@@ -8,19 +9,21 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/peer"
+	masa "github.com/masa-finance/masa-oracle/pkg"
+	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-
-	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
 func init() {
-
 	// Set up masa file path based on current user and config settings
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("could not find user.home directory")
 	}
+
 	// Set default values and use constants for values used elsewhere in the application
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("LOG_FILEPATH", "masa_oracle_node.log")
@@ -32,13 +35,40 @@ func init() {
 	viper.SetDefault("UDP", true)
 	viper.SetDefault("TCP", false)
 	viper.SetDefault("STAKE_AMOUNT", "1000")
-	// Add other default values as needed
-	// log the flags
+
+	// Load or generate the private key
+	privKey, _, _, err := masaCrypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString(masa.MasaDir), viper.GetString(masa.PrivKeyFile)))
+	if err != nil {
+		log.Fatalf("Failed to load or create private key: %v", err)
+	}
+
+	// Correctly handle the public key
+	pubKey := privKey.GetPublic()
+
+	// Assuming you implement or correct the implementation of MarshalPublicKey
+	pubKeyBytes, err := crypto.MarshalPublicKey(pubKey)
+	if err != nil {
+		log.Fatalf("Failed to marshal public key: %v", err)
+	}
+
+	allowedPeerPubKeyHex := hex.EncodeToString(pubKeyBytes)
+
+	// Assuming you implement or correct the implementation of Libp2pPubKeyToPeerID
+	peerID, err := peer.IDFromPublicKey(pubKey)
+	if err != nil {
+		log.Fatalf("Failed to convert public key to peer ID: %v", err)
+	}
+
+	viper.Set("ALLOWED_PEER_ID", peerID.Pretty())
+	viper.Set("ALLOWED_PEER_PUBKEY", allowedPeerPubKeyHex)
+
+	// Log the flags
 	bootnodesList := strings.Split(viper.GetString(masa.BootNodes), ",")
-	logrus.Infof("1 Bootnodes: %v", bootnodesList)
-	logrus.Infof("1 Port number: %d", viper.GetInt("PORT_NBR"))
-	logrus.Infof("1 UDP: %v", viper.GetBool("UDP"))
-	logrus.Infof("1 TCP: %v", viper.GetBool("TCP"))
+	logrus.Infof("Bootnodes: %v", bootnodesList)
+	logrus.Infof("Port number: %d", viper.GetInt("PORT_NBR"))
+	logrus.Infof("UDP: %v", viper.GetBool("UDP"))
+	logrus.Infof("TCP: %v", viper.GetBool("TCP"))
+
 	// Check for env vars, config files, in order to override above defaults
 	viper.AutomaticEnv() // Read from environment variables
 	viper.SetConfigType("yaml")
@@ -55,7 +85,7 @@ func init() {
 	if _, err := os.Stat(filepath.Dir(viper.GetString(masa.MasaDir))); os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(viper.GetString(masa.MasaDir)), 0755)
 		if err != nil {
-			logrus.Error("could not create directory:")
+			logrus.Error("could not create directory:", err)
 		}
 	}
 
