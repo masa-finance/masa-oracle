@@ -107,7 +107,7 @@ func LoadPubKeyFromEnv(envVarName string) (crypto.PubKey, error) {
 	return privKey.GetPublic(), nil
 }
 
-// Developer Notes:
+// This section can be used to get the peerID from the private key
 // 1. GetPeerIDFromPrivKeyFilePath: Retrieves and converts the private key from a file path to a peer ID.
 // 2. GetPeerIDFromPrivKeyEnv: Does the same but sources the private key from an environment variable.
 // Both functions load the private key, derive the public key, and generate a peer ID from it, returning the ID as a string.
