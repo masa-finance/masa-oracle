@@ -20,6 +20,7 @@ import (
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/masa-finance/masa-oracle/pkg/ad"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
@@ -218,10 +219,16 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())
 }
 
-// PublishNodePublicKey publishes the node's public key to the designated topic.
+// PublishNodePublicKey publishes the node's public key and signed data to the designated topic.
 func (node *OracleNode) PublishPublicKey() error {
-	// Load the public key directly using the KeyManager from keys package
+	// Load the private key directly using the KeyManager from keys package
 	keyManager := KeyManager{}
+	privKey, err := keyManager.LoadPrivKey() // Assuming you have this method
+	if err != nil {
+		return err
+	}
+
+	// Load the public key directly using the KeyManager from keys package
 	pubKey, err := keyManager.LoadPubKey()
 	if err != nil {
 		return err
@@ -233,15 +240,20 @@ func (node *OracleNode) PublishPublicKey() error {
 		return err
 	}
 
+	// Using the node's Peer ID
+	data := []byte(node.Host.ID().String())
+
+	// Sign the data using the private key
+	signature, err := consensus.SignData(privKey, data)
+	if err != nil {
+		return err
+	}
+
 	// Create a new PublicKeyPublisher instance
 	// Use the public key string as the identifier
 	publisher := pubsub2.NewPublicKeyPublisher(node.PubSubManager, pubKeyString, pubKey)
 
-	// Prepare the data and signature
-	data := []byte("data_to_publish") // The data you want to publish
-	signature := []byte("signature")  // The signature of the data
-
-	// Publish the public key using its string representation, data, and signature
+	// Publish the public key using its string representation, signed data, and signature
 	return publisher.PublishNodePublicKey(pubKeyString, data, signature)
 }
 

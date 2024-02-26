@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"os"
 
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 )
@@ -19,7 +18,6 @@ type PublicKeyMessage struct {
 // PublicKeyPublisher uses the existing Manager to publish public keys.
 type PublicKeyPublisher struct {
 	pubSubManager *Manager
-	privKeyPath   string
 	pubKey        libp2pCrypto.PubKey
 }
 
@@ -30,36 +28,13 @@ var topicPublicKeyMap = make(map[string]string)
 func NewPublicKeyPublisher(manager *Manager, privKeyPath string, pubKey libp2pCrypto.PubKey) *PublicKeyPublisher {
 	return &PublicKeyPublisher{
 		pubSubManager: manager,
-		privKeyPath:   privKeyPath,
 		pubKey:        pubKey,
 	}
 }
 
-// loadPrivateKey loads the private key from the file path.
-func (p *PublicKeyPublisher) loadPrivateKey() (libp2pCrypto.PrivKey, error) {
-	hexPrivKeyBytes, err := os.ReadFile(p.privKeyPath)
-	if err != nil {
-		return nil, err
-	}
-	privKeyBytes, err := hex.DecodeString(string(hexPrivKeyBytes))
-	if err != nil {
-		return nil, err
-	}
-	return libp2pCrypto.UnmarshalPrivateKey(privKeyBytes)
-}
-
-// verifySignature verifies the signature of the data using the public key.
-func (p *PublicKeyPublisher) verifySignature(data, signature []byte) (bool, error) {
-	isValid, err := p.pubKey.Verify(data, signature)
-	if err != nil {
-		return false, err
-	}
-	return isValid, nil
-}
-
 // PublishNodePublicKey publishes the node's public key to the designated topic.
 func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signature []byte) error {
-	topic := "bootNodePublicKey" // The topic to which the public key is published
+	topic := "bootNodePublicKey"
 
 	// Check if a public key has already been published to the topic
 	existingPubKey, exists := topicPublicKeyMap[topic]
