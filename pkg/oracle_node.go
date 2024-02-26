@@ -167,7 +167,17 @@ func (node *OracleNode) Start() (err error) {
 	if err != nil {
 		return err
 	}
+
+	if err := node.PubSubManager.AddSubscription(TopicWithVersion(PublicKeyTopic), &consensus.PublicKeySubscriptionHandler{}); err != nil {
+		return err
+	}
 	node.StartTime = time.Now()
+
+	// call PublishPublicKey to publish the node's public key.
+	if err := node.PublishPublicKey(); err != nil {
+		logrus.Errorf("Failed to publish public key: %v", err)
+		return err
+	}
 	return nil
 }
 
@@ -264,4 +274,13 @@ func (node *OracleNode) IsPublisher() bool {
 
 func (node *OracleNode) Version() string {
 	return Version
+}
+
+func (node *OracleNode) LogActiveTopics() {
+	topicNames := node.PubSubManager.GetTopicNames()
+	if len(topicNames) > 0 {
+		logrus.Infof("Active topics: %v", topicNames)
+	} else {
+		logrus.Info("No active topics.")
+	}
 }

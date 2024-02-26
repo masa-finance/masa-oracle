@@ -5,9 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
+
+// PublicKeySubscriptionHandler handles incoming messages on public key topics.
+type PublicKeySubscriptionHandler struct {
+	// Future fields for state or configuration can be added here
+}
 
 // PublicKeyMessage represents the structure of the public key messages.
 type PublicKeyMessage struct {
@@ -36,35 +42,42 @@ func NewPublicKeyPublisher(manager *Manager, privKeyPath string, pubKey libp2pCr
 
 // PublishNodePublicKey publishes the node's public key to the designated topic.
 func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signature []byte) error {
-	topic := "bootNodePublicKey"
-	logrus.Infof("Publishing public key to topic: %s", topic)
+	topicName := "bootNodePublicKey"
+	logrus.Infof("[PublicKeyPublisher] Publishing node's public key to topic: %s", topicName)
+
+	// Ensure the topic exists or create it
+	_, err := p.ensureTopic(topicName)
+	if err != nil {
+		logrus.WithError(err).Errorf("[PublicKeyPublisher] Failed to ensure topic '%s' exists", topicName)
+		return err
+	}
 
 	// Check if a public key has already been published to the topic
-	existingPubKey, exists := topicPublicKeyMap[topic]
+	existingPubKey, exists := topicPublicKeyMap[topicName]
 
 	if exists {
-		logrus.Infof("Public key already exists for topic: %s. Verifying signature.", topic)
+		logrus.Infof("[PublicKeyPublisher] Public key already published for topic: %s. Verifying signature.", topicName)
 		// If a public key exists, verify the signature against the existing public key
 		pubKeyBytes, err := hex.DecodeString(existingPubKey)
 		if err != nil {
-			logrus.WithError(err).Error("Failed to decode existing public key")
+			logrus.WithError(err).Error("[PublicKeyPublisher] Failed to decode existing public key for verification")
 			return err
 		}
 		pubKey, err := libp2pCrypto.UnmarshalPublicKey(pubKeyBytes)
 		if err != nil {
-			logrus.WithError(err).Error("Failed to unmarshal existing public key")
+			logrus.WithError(err).Error("[PublicKeyPublisher] Failed to unmarshal existing public key for verification")
 			return err
 		}
 		isValid, err := pubKey.Verify(data, signature)
 		if err != nil || !isValid {
-			logrus.WithError(err).Error("Unauthorized: Signature verification failed or signature is invalid")
+			logrus.WithError(err).Error("[PublicKeyPublisher] Unauthorized: Failed signature verification or signature is invalid")
 			return errors.New("unauthorized: only the owner of the public key can publish changes")
 		}
-		logrus.Info("Signature verified successfully")
+		logrus.Info("[PublicKeyPublisher] Signature verified successfully for topic: ", topicName)
 	} else {
-		logrus.Infof("No existing public key for topic: %s. This is the initial publication.", topic)
+		logrus.Infof("[PublicKeyPublisher] No existing public key for topic: %s. Proceeding with initial publication.", topicName)
 		// If no public key is associated with the topic, this is the initial publication
-		topicPublicKeyMap[topic] = publicKey
+		topicPublicKeyMap[topicName] = publicKey
 	}
 
 	// Serialize the public key message
@@ -75,11 +88,53 @@ func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signat
 	}
 	msgBytes, err := json.Marshal(msg)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to marshal public key message")
+		logrus.WithError(err).Error("[PublicKeyPublisher] Failed to marshal public key message")
 		return errors.New("failed to marshal message")
 	}
 
 	// Use the existing Manager to publish the message
-	logrus.Info("Publishing message to pubSubManager")
-	return p.pubSubManager.Publish(topic, msgBytes)
+	logrus.Infof("[PublicKeyPublisher] Publishing serialized message to topic: %s", topicName)
+	if err := p.pubSubManager.Publish(topicName, msgBytes); err != nil {
+		return err
+	}
+
+	// Print the published data in the console
+	logrus.Infof("[PublicKeyPublisher] Published data: PublicKey: %s, Signature: %s, Data: %s", msg.PublicKey, msg.Signature, msg.Data)
+	return nil
+}
+
+// ensureTopic checks if a topic exists and creates it if not.
+func (p *PublicKeyPublisher) ensureTopic(topicName string) (*pubsub.Topic, error) {
+	// Check if the topic already exists
+	if topic, exists := p.pubSubManager.topics[topicName]; exists {
+		// If the topic exists, return it without error
+		return topic, nil
+	}
+
+	// If the topic does not exist, attempt to create it
+	topic, err := p.pubSubManager.createTopic(topicName)
+	if err != nil {
+		// If there is an error creating the topic, return the error
+		return nil, err
+	}
+
+	// Return the newly created topic
+	return topic, nil
+}
+
+// HandleMessage processes messages received on the public key topic.
+// Adjusted to match the SubscriptionHandler interface.
+func (h *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) error {
+	var message PublicKeyMessage
+	if err := json.Unmarshal(m.Data, &message); err != nil {
+		logrus.WithError(err).Error("Failed to unmarshal public key message")
+		return errors.New("failed to unmarshal message")
+	}
+
+	// Log the received public key for now
+	logrus.Infof("Received public key: %s", message.PublicKey)
+
+	// Future implementation will include verification and other logic
+
+	return nil
 }

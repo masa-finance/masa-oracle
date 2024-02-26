@@ -38,11 +38,6 @@ func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) {
 		host:          host,
 	}
 
-	// Subscribe to the public key topic as part of manager initialization to ensure that the node starts listening for public key updates right away.
-	if err := manager.SubscribeToPublicKeyTopic(); err != nil {
-		return nil, fmt.Errorf("failed to subscribe to public key topic: %w", err)
-	}
-
 	return manager, nil
 }
 
@@ -142,4 +137,13 @@ func StreamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 			logrus.Errorf("### Publish error: %s", err)
 		}
 	}
+}
+
+// GetTopicNames returns a slice of the names of all topics currently managed.
+func (sm *Manager) GetTopicNames() []string {
+	var topicNames []string
+	for name := range sm.topics {
+		topicNames = append(topicNames, name)
+	}
+	return topicNames
 }
