@@ -6,7 +6,7 @@ import (
 
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
-	masaCrypto "github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -55,7 +55,7 @@ func CanWrite(h host.Host, data []byte, signature []byte) bool {
 	}
 
 	// Verify the signature
-	isValid, err := masaCrypto.VerifySignature(allowedPeerPubKey, data, signature)
+	isValid, err := consensus.VerifySignature(allowedPeerPubKey, data, signature)
 	if err != nil || !isValid {
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),

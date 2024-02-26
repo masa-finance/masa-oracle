@@ -11,7 +11,7 @@ import (
 )
 
 // PublicKeyTopic is the name of the topic used for public key distribution.
-const PublicKeyTopic = "public-key-topic"
+const PublicKeyTopic = "bootNodePublicKey"
 
 // SubscribeToPublicKeyTopic subscribes the node to the public key topic on the gossip network.
 // This function is crucial for the node to receive updates about new public keys from other nodes.

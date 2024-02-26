@@ -2,7 +2,7 @@
 // It includes utilities for loading private and public keys from files or environment variables,
 // constructing file paths for keys based on configuration, and deriving peer IDs from private keys.
 
-package keys
+package masa
 
 import (
 	"encoding/hex"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
-	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -30,8 +29,8 @@ func (km *KeyManager) LoadPubKey() (crypto.PubKey, error) {
 
 // GetPrivKeyFilePath constructs the file path for the private key using the directory and file name from Viper configuration.
 func GetPrivKeyFilePath() string {
-	masaDir := viper.GetString(masa.MasaDir)
-	privKeyFile := viper.GetString(masa.PrivKeyFile)
+	masaDir := viper.GetString(MasaDir)
+	privKeyFile := viper.GetString(PrivKeyFile)
 	filePath := filepath.Join(masaDir, privKeyFile)
 	logrus.WithFields(logrus.Fields{
 		"masaDir":     masaDir,
@@ -157,4 +156,14 @@ func GetPeerIDFromPrivKeyEnv(envVarName string) (string, error) {
 
 	logrus.WithField("envVarName", envVarName).Info("Successfully derived peer ID from private key loaded from environment variable")
 	return peerID.String(), nil
+}
+
+// PubKeyToString converts a crypto.PubKey to its string representation.
+func PubKeyToString(pubKey crypto.PubKey) (string, error) {
+	pubKeyBytes, err := crypto.MarshalPublicKey(pubKey)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to marshal public key")
+		return "", fmt.Errorf("failed to marshal public key: %s", err)
+	}
+	return hex.EncodeToString(pubKeyBytes), nil
 }

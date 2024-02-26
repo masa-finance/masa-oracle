@@ -19,14 +19,13 @@ import (
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type OracleNode struct {
@@ -217,6 +216,36 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		return
 	}
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())
+}
+
+// PublishNodePublicKey publishes the node's public key to the designated topic.
+func (node *OracleNode) PublishPublicKey() error {
+	// Load the private key using the KeyManager from keys package
+	keyManager := KeyManager{}
+	privKey, err := keyManager.LoadPrivKey()
+	if err != nil {
+		return err
+	}
+
+	// Derive the public key from the loaded private key
+	pubKey := privKey.GetPublic()
+
+	// Convert the public key to a string representation using the newly added function
+	pubKeyString, err := PubKeyToString(pubKey)
+	if err != nil {
+		return err
+	}
+
+	// Create a new PublicKeyPublisher instance
+	// Use the public key string as the identifier
+	publisher := pubsub2.NewPublicKeyPublisher(node.PubSubManager, pubKeyString, pubKey)
+
+	// Prepare the data and signature
+	data := []byte("data_to_publish") // The data you want to publish
+	signature := []byte("signature")  // The signature of the data
+
+	// Publish the public key using its string representation, data, and signature
+	return publisher.PublishNodePublicKey(pubKeyString, data, signature)
 }
 
 func (node *OracleNode) IsPublisher() bool {

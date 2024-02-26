@@ -19,14 +19,19 @@ type PublicKeyMessage struct {
 // PublicKeyPublisher uses the existing Manager to publish public keys.
 type PublicKeyPublisher struct {
 	pubSubManager *Manager
-	privKeyPath   string // Assuming the private key path is provided during initialization
+	privKeyPath   string
+	pubKey        libp2pCrypto.PubKey
 }
 
+// topicPublicKeyMap maps topics to their associated public keys.
+var topicPublicKeyMap = make(map[string]string)
+
 // NewPublicKeyPublisher creates a new instance of PublicKeyPublisher.
-func NewPublicKeyPublisher(manager *Manager, privKeyPath string) *PublicKeyPublisher {
+func NewPublicKeyPublisher(manager *Manager, privKeyPath string, pubKey libp2pCrypto.PubKey) *PublicKeyPublisher {
 	return &PublicKeyPublisher{
 		pubSubManager: manager,
 		privKeyPath:   privKeyPath,
+		pubKey:        pubKey,
 	}
 }
 
@@ -44,34 +49,40 @@ func (p *PublicKeyPublisher) loadPrivateKey() (libp2pCrypto.PrivKey, error) {
 }
 
 // verifySignature verifies the signature of the data using the public key.
-func (p *PublicKeyPublisher) verifySignature(publicKeyStr string, data, signature []byte) (bool, error) {
-	pubKeyBytes, err := hex.DecodeString(publicKeyStr)
+func (p *PublicKeyPublisher) verifySignature(data, signature []byte) (bool, error) {
+	isValid, err := p.pubKey.Verify(data, signature)
 	if err != nil {
 		return false, err
 	}
-
-	pubKey, err := libp2pCrypto.UnmarshalPublicKey(pubKeyBytes)
-	if err != nil {
-		return false, err
-	}
-
-	isValid, err := pubKey.Verify(data, signature)
-	if err != nil {
-		return false, err
-	}
-
 	return isValid, nil
 }
 
 // PublishNodePublicKey publishes the node's public key to the designated topic.
 func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signature []byte) error {
-	// Verify the signature
-	isValid, err := p.verifySignature(publicKey, data, signature)
-	if err != nil || !isValid {
-		return errors.New("unauthorized: signature verification failed")
+	topic := "bootNodePublicKey" // The topic to which the public key is published
+
+	// Check if a public key has already been published to the topic
+	existingPubKey, exists := topicPublicKeyMap[topic]
+
+	if exists {
+		// If a public key exists, verify the signature against the existing public key
+		pubKeyBytes, err := hex.DecodeString(existingPubKey)
+		if err != nil {
+			return err
+		}
+		pubKey, err := libp2pCrypto.UnmarshalPublicKey(pubKeyBytes)
+		if err != nil {
+			return err
+		}
+		isValid, err := pubKey.Verify(data, signature)
+		if err != nil || !isValid {
+			return errors.New("unauthorized: only the owner of the public key can publish changes")
+		}
+	} else {
+		// If no public key is associated with the topic, this is the initial publication
+		topicPublicKeyMap[topic] = publicKey
 	}
 
-	// Additional checks and message publishing logic remains the same
 	// Serialize the public key message
 	msg := PublicKeyMessage{
 		PublicKey: publicKey,
@@ -84,5 +95,5 @@ func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signat
 	}
 
 	// Use the existing Manager to publish the message
-	return p.pubSubManager.Publish("nodePublicKey", msgBytes)
+	return p.pubSubManager.Publish(topic, msgBytes)
 }
