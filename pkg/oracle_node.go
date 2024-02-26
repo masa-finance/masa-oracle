@@ -220,15 +220,12 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 // PublishNodePublicKey publishes the node's public key to the designated topic.
 func (node *OracleNode) PublishPublicKey() error {
-	// Load the private key using the KeyManager from keys package
+	// Load the public key directly using the KeyManager from keys package
 	keyManager := KeyManager{}
-	privKey, err := keyManager.LoadPrivKey()
+	pubKey, err := keyManager.LoadPubKey()
 	if err != nil {
 		return err
 	}
-
-	// Derive the public key from the loaded private key
-	pubKey := privKey.GetPublic()
 
 	// Convert the public key to a string representation using the newly added function
 	pubKeyString, err := PubKeyToString(pubKey)
