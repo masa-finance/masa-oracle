@@ -27,14 +27,14 @@ func init() {
 	viper.SetDefault(masa.PrivKeyFile, "masa_oracle_key")
 	viper.SetDefault(masa.MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 	viper.SetDefault(masa.RpcUrl, "https://ethereum-sepolia.publicnode.com")
-	viper.SetDefault(masa.BootNodes, "")
+	viper.SetDefault("BOOTNODES", "")
 	viper.SetDefault("PORT_NBR", "4001")
 	viper.SetDefault("UDP", true)
 	viper.SetDefault("TCP", false)
 	viper.SetDefault("STAKE_AMOUNT", "1000")
 	// Add other default values as needed
 	// log the flags
-	bootnodesList := strings.Split(viper.GetString(masa.BootNodes), ",")
+	bootnodesList := strings.Split(viper.GetString("BOOTNODES"), ",")
 	logrus.Infof("1 Bootnodes: %v", bootnodesList)
 	logrus.Infof("1 Port number: %d", viper.GetInt("PORT_NBR"))
 	logrus.Infof("1 UDP: %v", viper.GetBool("UDP"))
