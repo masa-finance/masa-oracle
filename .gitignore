@@ -34,7 +34,6 @@ tools/tools
 tools/*.json
 tools/*.bin
 bin/masa-node
-masa-node
 
 # smart contracts
 node_modules
