@@ -233,7 +233,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 func (node *OracleNode) PublishPublicKey() error {
 	// Load the private key directly using the KeyManager from keys package
 	keyManager := KeyManager{}
-	privKey, err := keyManager.LoadPrivKey() // Assuming you have this method
+	privKey, err := keyManager.LoadPrivKey()
 	if err != nil {
 		return err
 	}
@@ -244,13 +244,13 @@ func (node *OracleNode) PublishPublicKey() error {
 		return err
 	}
 
-	// Convert the public key to a string representation using the newly added function
+	// Convert the public key to a string representation
 	pubKeyString, err := PubKeyToString(pubKey)
 	if err != nil {
 		return err
 	}
 
-	// Using the node's Peer ID
+	// Set the data to be signed as the signers Peer ID
 	data := []byte(node.Host.ID().String())
 
 	// Sign the data using the private key
@@ -263,7 +263,7 @@ func (node *OracleNode) PublishPublicKey() error {
 	// Use the public key string as the identifier
 	publisher := pubsub2.NewPublicKeyPublisher(node.PubSubManager, pubKeyString, pubKey)
 
-	// Publish the public key using its string representation, signed data, and signature
+	// Publish the public key using its string representation, data, and signature
 	return publisher.PublishNodePublicKey(pubKeyString, data, signature)
 }
 

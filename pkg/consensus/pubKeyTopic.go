@@ -16,7 +16,6 @@ type PublicKeyMessage struct {
 
 // PublicKeySubscriptionHandler handles incoming messages on public key topics.
 type PublicKeySubscriptionHandler struct {
-	// Future fields for state or configuration can be added here
 }
 
 // HandleMessage processes messages received on the public key topic.
@@ -24,11 +23,8 @@ func (h *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
 	var message PublicKeyMessage
 	if err := json.Unmarshal(m.Data, &message); err != nil {
 		logrus.WithError(err).Error("Failed to unmarshal public key message")
-		// Removed return statement that attempted to return an error
-		return // Just return without any value
+		return
 	}
-
-	// Log the received public key for now
 	logrus.Infof("Received public key: %s", message.PublicKey)
 
 	// Future implementation will include verification and other logic
