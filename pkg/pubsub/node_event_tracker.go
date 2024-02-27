@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
@@ -224,9 +226,12 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 
 func (net *NodeEventTracker) DumpNodeData() {
 	// Write the JSON data to a file
-	filePath := os.Getenv("nodeBackupPath")
-	if filePath == "" {
+	var filePath string
+	dataDir := viper.GetString("MASA_DIR")
+	if dataDir == "" {
 		filePath = net.nodeDataFile
+	} else {
+		filePath = filepath.Join(dataDir, net.nodeDataFile)
 	}
 	logrus.Infof("writing node data to file: %s", filePath)
 	err := net.nodeData.DumpNodeData(filePath)
@@ -237,9 +242,12 @@ func (net *NodeEventTracker) DumpNodeData() {
 
 func (net *NodeEventTracker) LoadNodeData() error {
 	// Read the JSON data from a file
-	filePath := os.Getenv("nodeBackupPath")
-	if filePath == "" {
+	var filePath string
+	dataDir := viper.GetString("MASA_DIR")
+	if dataDir == "" {
 		filePath = net.nodeDataFile
+	} else {
+		filePath = filepath.Join(dataDir, net.nodeDataFile)
 	}
 	// Check if the file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {

@@ -2,15 +2,17 @@ package staking
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/spf13/viper"
 )
 
 func GetRPCURL() (string, error) {
-	url := os.Getenv("RPC_URL")
+	url := viper.GetString("RPC_URL")
 	if url == "" {
-		return "", errors.New("RPC_URL environment variable is not set")
+		return "", fmt.Errorf("%s environment variable is not set", "RPC_URL")
 	}
 	return url, nil
 }
