@@ -1,3 +1,10 @@
+// This package uses the libp2p pubsub system to enable secure and efficient message dissemination across nodes.
+// This file focuses on the publication and subscription of public key messages, facilitating
+// a decentralized mechanism for nodes to share and verify a public key from a bootnode. This is crucial for establishing
+// trust and enabling encrypted communications within the network. The PublicKeyPublisher component
+// allows nodes to publish their public keys along with signatures to prove ownership, while the
+// PublicKeySubscriptionHandler component processes incoming public key messages, verifying their authenticity.
+
 package pubsub
 
 import (

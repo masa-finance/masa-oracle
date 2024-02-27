@@ -7,15 +7,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// PublicKeySubscriptionHandler handles incoming messages on public key topics.
+type PublicKeySubscriptionHandler struct {
+}
+
 // PublicKeyMessage represents the structure of the public key messages.
 type PublicKeyMessage struct {
 	PublicKey string `json:"publicKey"`
 	Signature string `json:"signature"`
 	Data      string `json:"data"`
-}
-
-// PublicKeySubscriptionHandler handles incoming messages on public key topics.
-type PublicKeySubscriptionHandler struct {
 }
 
 // HandleMessage processes messages received on the public key topic.

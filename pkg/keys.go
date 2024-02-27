@@ -1,4 +1,4 @@
-// Package keys provides functionality for managing cryptographic keys used within the Masa Oracle.
+// This package provides functionality for managing cryptographic keys used within the Masa Oracle.
 // It includes utilities for loading private and public keys from files or environment variables,
 // constructing file paths for keys based on configuration, and deriving peer IDs from private keys.
 
@@ -17,6 +17,8 @@ import (
 )
 
 // KeyManager implements the KeyLoader interface used in the interfaces package to load keys from file path.
+
+// @bob - can you help add in a case where it load from the ENV fist if the filepath isn't availble if you think this is necessarey?
 type KeyManager struct{}
 
 func (km *KeyManager) LoadPrivKey() (crypto.PrivKey, error) {

@@ -1,3 +1,9 @@
+// Developer Note: This code is part of an ongoing development effort. It is crucial for managing access control within a BadgerDB database environment.
+// Specifically, it involves verifying if a peer, identified through its host ID, has the authorization to write data to the database. This process is
+// accomplished by retrieving an allowed peer ID and its corresponding public key from the application's configuration settings. Subsequently, a signature
+// provided by the peer is verified to ensure it matches the allowed credentials. This mechanism is vital for maintaining the database's security by
+// ensuring that only authorized peers can perform write operations.
+
 package badgerdb
 
 import (

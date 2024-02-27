@@ -1,6 +1,5 @@
 package consensus
 
-// Developer Notes:
 // This package provides cryptographic functionalities for signing and verifying data within the consensus mechanism of the system.
 // It leverages the go-libp2p core crypto library to handle cryptographic operations, ensuring secure data handling.
 // - SignData: Signs arbitrary data using a private key, ensuring the data integrity and source authenticity.
