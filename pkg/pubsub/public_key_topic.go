@@ -19,17 +19,17 @@ type PublicKeySubscriptionHandler struct {
 	PubKeyTopic *pubsub.Topic
 }
 
+type PublicKeyPublisher struct {
+	pubSubManager     *Manager
+	pubKey            libp2pCrypto.PubKey
+	publishedMessages []PublicKeyMessage
+}
+
 // PublicKeyMessage represents the structure of the public key messages.
 type PublicKeyMessage struct {
 	PublicKey string `json:"publicKey"`
 	Signature string `json:"signature"`
 	Data      string `json:"data"`
-}
-
-// PublicKeyPublisher uses the existing Manager to publish public keys.
-type PublicKeyPublisher struct {
-	pubSubManager *Manager
-	pubKey        libp2pCrypto.PubKey
 }
 
 // NewPublicKeyPublisher creates a new instance of PublicKeyPublisher.
@@ -98,6 +98,9 @@ func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signat
 	if err := p.pubSubManager.Publish(topicName, msgBytes); err != nil {
 		return err
 	}
+	// Store the published message in the slice
+	p.publishedMessages = append(p.publishedMessages, msg)
+	logrus.Infof("[PublicKeyPublisher] Stored published message for topic: %s", topicName)
 
 	// Print the published data in the console
 	logrus.Infof("[PublicKeyPublisher] Published data: PublicKey: %s, Signature: %s, Data: %s", msg.PublicKey, msg.Signature, msg.Data)
@@ -122,15 +125,29 @@ func (p *PublicKeyPublisher) ensureTopic(topicName string) (*pubsub.Topic, error
 
 // HandleMessage handles incoming public key messages, with verification and update logic.
 func (handler *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
+	logrus.Info("Handling incoming public key message")
 	var incomingMsg PublicKeyMessage
 	if err := json.Unmarshal(m.Data, &incomingMsg); err != nil {
 		logrus.WithError(err).Error("Failed to unmarshal public key message")
 		return
 	}
 
-	// Attempt to find an existing message with the same public key
+	logrus.Infof("Received public key message: %s", incomingMsg.PublicKey)
+
+	// Check if the slice already contains a public key
+	if len(handler.PublicKeys) > 0 {
+		// Slice already contains a public key, check if the incoming message matches the stored public key
+		existingMsg := handler.PublicKeys[0]
+		if existingMsg.PublicKey != incomingMsg.PublicKey {
+			logrus.Error("Unauthorized: Only updates from the original public key are allowed")
+			return // Reject the message as it's from a different public key
+		}
+	}
+
+	// Proceed with verification and update logic as before
 	for i, existingMsg := range handler.PublicKeys {
 		if existingMsg.PublicKey == incomingMsg.PublicKey {
+			logrus.Infof("Verifying signature for public key: %s", incomingMsg.PublicKey)
 			// Found an existing message, verify the signature
 			pubKeyBytes, err := hex.DecodeString(existingMsg.PublicKey)
 			if err != nil {
@@ -153,11 +170,26 @@ func (handler *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
 			// Signature is valid, update the existing message's data
 			handler.PublicKeys[i].Data = incomingMsg.Data
 			logrus.Infof("Updated public key message: %s", incomingMsg.PublicKey)
+			logrus.Info("Data stored in the slice successfully.")
 			return
 		}
 	}
 
-	// No existing message with the same public key, add the new message
-	handler.PublicKeys = append(handler.PublicKeys, incomingMsg)
-	logrus.Infof("Added new public key message: %s", incomingMsg.PublicKey)
+	// If no public key is stored yet, add the new message
+	if len(handler.PublicKeys) == 0 {
+		handler.PublicKeys = append(handler.PublicKeys, incomingMsg)
+		logrus.Infof("Added new public key message: %s", incomingMsg.PublicKey)
+		logrus.Info("Data stored in the slice successfully.")
+	}
+}
+
+// GetPublicKeys returns the list of PublicKeyMessages.
+func (handler *PublicKeySubscriptionHandler) GetPublicKeys() []PublicKeyMessage {
+	logrus.Info("Retrieving stored public keys")
+	return handler.PublicKeys
+}
+
+// Optionally, add a method to retrieve the stored messages
+func (p *PublicKeyPublisher) GetPublishedMessages() []PublicKeyMessage {
+	return p.publishedMessages
 }

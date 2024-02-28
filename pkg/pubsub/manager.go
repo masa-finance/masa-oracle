@@ -7,6 +7,7 @@ import (
 	"os"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 )
@@ -16,27 +17,31 @@ type SubscriptionHandler interface {
 }
 
 type Manager struct {
-	ctx           context.Context
-	topics        map[string]*pubsub.Topic
-	subscriptions map[string]*pubsub.Subscription
-	handlers      map[string]SubscriptionHandler
-	gossipSub     *pubsub.PubSub
-	host          host.Host
+	ctx                context.Context
+	topics             map[string]*pubsub.Topic
+	subscriptions      map[string]*pubsub.Subscription
+	handlers           map[string]SubscriptionHandler
+	gossipSub          *pubsub.PubSub
+	host               host.Host
+	PublicKeyPublisher *PublicKeyPublisher // Add this line
 }
 
-func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) {
+func NewPubSubManager(ctx context.Context, host host.Host, pubKey libp2pCrypto.PubKey) (*Manager, error) { // Modify this line to accept pubKey
 	gossipSub, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		return nil, err
 	}
 	manager := &Manager{
-		ctx:           ctx,
-		subscriptions: make(map[string]*pubsub.Subscription),
-		topics:        make(map[string]*pubsub.Topic),
-		handlers:      make(map[string]SubscriptionHandler),
-		gossipSub:     gossipSub,
-		host:          host,
+		ctx:                ctx,
+		subscriptions:      make(map[string]*pubsub.Subscription),
+		topics:             make(map[string]*pubsub.Topic),
+		handlers:           make(map[string]SubscriptionHandler),
+		gossipSub:          gossipSub,
+		host:               host,
+		PublicKeyPublisher: NewPublicKeyPublisher(nil, pubKey), // Initialize PublicKeyPublisher here
 	}
+
+	manager.PublicKeyPublisher.pubSubManager = manager // Ensure the publisher has a reference back to the manager
 
 	return manager, nil
 }

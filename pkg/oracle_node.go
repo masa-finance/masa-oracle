@@ -94,7 +94,14 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst)
+	// Extract the public key from the private key
+	pubKey := privKey.GetPublic()
+	if err != nil {
+		return nil, err
+	}
+
+	// Pass the public key as the third argument to NewPubSubManager
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst, pubKey)
 	if err != nil {
 		return nil, err
 	}
