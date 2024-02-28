@@ -120,17 +120,44 @@ func (p *PublicKeyPublisher) ensureTopic(topicName string) (*pubsub.Topic, error
 	return topic, nil
 }
 
-// HandleMessage handles incoming public key messages, similar to how ads are handled.
+// HandleMessage handles incoming public key messages, with verification and update logic.
 func (handler *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
-	var message PublicKeyMessage
-	if err := json.Unmarshal(m.Data, &message); err != nil {
+	var incomingMsg PublicKeyMessage
+	if err := json.Unmarshal(m.Data, &incomingMsg); err != nil {
 		logrus.WithError(err).Error("Failed to unmarshal public key message")
 		return
 	}
 
-	// Add the public key message to the list
-	handler.PublicKeys = append(handler.PublicKeys, message)
+	// Attempt to find an existing message with the same public key
+	for i, existingMsg := range handler.PublicKeys {
+		if existingMsg.PublicKey == incomingMsg.PublicKey {
+			// Found an existing message, verify the signature
+			pubKeyBytes, err := hex.DecodeString(existingMsg.PublicKey)
+			if err != nil {
+				logrus.WithError(err).Error("Failed to decode public key for verification")
+				return
+			}
 
-	// Here you can add additional logic, such as verifying the public key or signature
-	logrus.Infof("Received public key: %s", message.PublicKey)
+			pubKey, err := libp2pCrypto.UnmarshalPublicKey(pubKeyBytes)
+			if err != nil {
+				logrus.WithError(err).Error("Failed to unmarshal public key for verification")
+				return
+			}
+
+			isValid, err := pubKey.Verify([]byte(incomingMsg.Data), []byte(incomingMsg.Signature))
+			if err != nil || !isValid {
+				logrus.WithError(err).Error("Failed signature verification or signature is invalid")
+				return // Do not update or add if the signature is invalid
+			}
+
+			// Signature is valid, update the existing message's data
+			handler.PublicKeys[i].Data = incomingMsg.Data
+			logrus.Infof("Updated public key message: %s", incomingMsg.PublicKey)
+			return
+		}
+	}
+
+	// No existing message with the same public key, add the new message
+	handler.PublicKeys = append(handler.PublicKeys, incomingMsg)
+	logrus.Infof("Added new public key message: %s", incomingMsg.PublicKey)
 }
