@@ -15,6 +15,8 @@ var topicPublicKeyMap = make(map[string]string)
 
 // PublicKeySubscriptionHandler handles incoming messages on public key topics.
 type PublicKeySubscriptionHandler struct {
+	PublicKeys  []PublicKeyMessage
+	PubKeyTopic *pubsub.Topic
 }
 
 // PublicKeyMessage represents the structure of the public key messages.
@@ -118,13 +120,17 @@ func (p *PublicKeyPublisher) ensureTopic(topicName string) (*pubsub.Topic, error
 	return topic, nil
 }
 
-func (h *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
+// HandleMessage handles incoming public key messages, similar to how ads are handled.
+func (handler *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
 	var message PublicKeyMessage
 	if err := json.Unmarshal(m.Data, &message); err != nil {
-		// Log the error and return immediately, do not attempt to return an error value
 		logrus.WithError(err).Error("Failed to unmarshal public key message")
 		return
 	}
+
+	// Add the public key message to the list
+	handler.PublicKeys = append(handler.PublicKeys, message)
+
+	// Here you can add additional logic, such as verifying the public key or signature
 	logrus.Infof("Received public key: %s", message.PublicKey)
-	// Future implementation will include verification and other logic
 }
