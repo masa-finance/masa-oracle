@@ -2,29 +2,27 @@ package masa
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 func NewBridge() error {
 
-	logrus.Info("starting server")
-	router := gin.Default()
-	//router.Use(cors.Default())
-	// router.SetTrustedProxies([]string{add values here})
-
-	// Use the auth middleware for the /webhook route
-	router.POST("/webhook", authMiddleware(), webhookHandler)
-
-	// Paths to the certificate and key files
-	certFile := os.Getenv(Cert)
-	keyFile := os.Getenv(CertPem)
-
-	if err := router.RunTLS(":8080", certFile, keyFile); err != nil {
-		return err
-	}
+	//logrus.Info("starting server")
+	//router := gin.Default()
+	////router.Use(cors.Default())
+	//// router.SetTrustedProxies([]string{add values here})
+	//
+	//// Use the auth middleware for the /webhook route
+	//router.POST("/webhook", authMiddleware(), webhookHandler)
+	//
+	//// Paths to the certificate and key files
+	//certFile := os.Getenv(Cert)
+	//keyFile := os.Getenv(CertPem)
+	//
+	//if err := router.RunTLS(":8080", certFile, keyFile); err != nil {
+	//	return err
+	//}
 	return nil
 }
 

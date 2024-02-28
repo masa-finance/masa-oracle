@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
 func init() {
@@ -30,8 +28,8 @@ func init() {
 		log.Fatal("could not find user.home directory")
 	}
 	envFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_bridge.env")
-	certFilePath := filepath.Join(usr.HomeDir, ".masa", "webhook-selfsigned-cert.pem")
-	certKeyFilePath := filepath.Join(usr.HomeDir, ".masa", "webhook - selfsigned - key.pem")
+	//certFilePath := filepath.Join(usr.HomeDir, ".masa", "webhook-selfsigned-cert.pem")
+	//certKeyFilePath := filepath.Join(usr.HomeDir, ".masa", "webhook - selfsigned - key.pem")
 
 	// Create the directories if they don't already exist
 	if _, err := os.Stat(filepath.Dir(envFilePath)); os.IsNotExist(err) {
@@ -44,8 +42,8 @@ func init() {
 	if _, err := os.Stat(envFilePath); os.IsNotExist(err) {
 		// If not, create it with default values
 		builder := strings.Builder{}
-		builder.WriteString(fmt.Sprintf("%s=%s\n", masa.Cert, certFilePath))
-		builder.WriteString(fmt.Sprintf("%s=%s\n", masa.CertPem, certKeyFilePath))
+		//builder.WriteString(fmt.Sprintf("%s=%s\n", masa.Cert, certFilePath))
+		//builder.WriteString(fmt.Sprintf("%s=%s\n", masa.CertPem, certKeyFilePath))
 		err = os.WriteFile(envFilePath, []byte(builder.String()), 0644)
 		if err != nil {
 			logrus.Fatal("could not write to .env file:", err)
@@ -58,18 +56,18 @@ func init() {
 }
 
 func main() {
-	certFile := os.Getenv(masa.Cert)
-	keyFile := os.Getenv(masa.CertPem)
+	//certFile := os.Getenv(masa.Cert)
+	//keyFile := os.Getenv(masa.CertPem)
 
 	// Check if the certificate and key files already exist
-	if _, err := os.Stat(certFile); os.IsNotExist(err) {
-		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
-			// If not, generate them
-			if err := crypto.GenerateSelfSignedCert(certFile, keyFile); err != nil {
-				logrus.Fatal("Failed to generate self-signed certificate:", err)
-			}
-		}
-	}
+	//if _, err := os.Stat(certFile); os.IsNotExist(err) {
+	//	if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+	//		// If not, generate them
+	//		if err := crypto.GenerateSelfSignedCert(certFile, keyFile); err != nil {
+	//			logrus.Fatal("Failed to generate self-signed certificate:", err)
+	//		}
+	//	}
+	//}
 
 	err := masa.NewBridge()
 	if err != nil {

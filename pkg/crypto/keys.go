@@ -87,6 +87,7 @@ func GetOrCreatePrivateKey(keyFile string) (crypto.PrivKey, *ecdsa.PrivateKey, s
 			}
 		}
 	}
+
 	// After obtaining the libp2p privKey, convert it to an ECDSA private key
 	ecdsaPrivKey, err := Libp2pPrivateKeyToEcdsa(privKey)
 	if err != nil {

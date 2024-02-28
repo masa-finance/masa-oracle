@@ -2,73 +2,45 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"log"
 	"os"
 	"os/signal"
-	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
 
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
-	"github.com/masa-finance/masa-oracle/pkg/cicd_helpers"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/routes"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/masa-finance/masa-oracle/pkg/welcome"
 )
 
-func init() {
-	f, err := os.OpenFile("masa_oracle_node.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
-	if err != nil {
-		log.Fatal(err)
-	}
-	mw := io.MultiWriter(os.Stdout, f)
-	logrus.SetOutput(mw)
-	if os.Getenv("debug") == "true" {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
-	}
-
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal("could not find user.home directory")
-	}
-	envFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_node.env")
-	keyFilePath := filepath.Join(usr.HomeDir, ".masa", "masa_oracle_key")
-	err = setUpFiles(envFilePath, keyFilePath)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	err = godotenv.Load(envFilePath)
-	if err != nil {
-		logrus.Error("Error loading .env file")
-	}
-	backupFileName := fmt.Sprintf("%s_%s", masa.Version, masa.NodeBackupFileName)
-	err = os.Setenv(masa.NodeBackupPath, filepath.Join(usr.HomeDir, ".masa", backupFileName))
-	if err != nil {
-		logrus.Error(err)
-	}
-}
-
 func main() {
+
 	// log the flags
-	bootnodesList := strings.Split(bootnodes, ",")
+	bootnodesList := strings.Split(viper.GetString(masa.BootNodes), ",")
 	logrus.Infof("Bootnodes: %v", bootnodesList)
-	logrus.Infof("Port number: %d", portNbr)
-	logrus.Infof("UDP: %v", udp)
-	logrus.Infof("TCP: %v", tcp)
+	logrus.Infof("Port number: %d", viper.GetInt("PORT_NBR"))
+	logrus.Infof("UDP: %v", viper.GetBool("UDP"))
+	logrus.Infof("TCP: %v", viper.GetBool("TCP"))
+
+	//@dBP added initialization for badgerdb, we need to add the DB_PATH to the viper configs in /cmd/masa-node/db.go
+	// Initialize the database
+	dbPath := SetupDatabasePath()
+	db, err := InitializeDB(dbPath)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer db.Close() // This ensures the database is properly closed on application exit
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(os.Getenv(masa.KeyFileKey))
+	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString(masa.MasaDir), viper.GetString(masa.PrivKeyFile)))
+
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -90,7 +62,6 @@ func main() {
 	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
-
 	// Pass the isStaked flag to the NewOracleNode function
 	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, isStaked)
 	if err != nil {
@@ -100,17 +71,6 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-
-	// Get the multiaddress and IP address of the node
-	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
-	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
-	publicKeyHex, _ := crypto.GetPublicKeyForHost(node.Host)
-
-	// Display the welcome message with the multiaddress and IP address
-	welcome.DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex, isStaked)
-
-	// Set env variables for CI/CD pipelines
-	cicd_helpers.SetEnvVariablesForPipeline(multiAddr)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
@@ -137,31 +97,16 @@ func main() {
 		}
 	}()
 
-	<-ctx.Done()
-}
+	// Get the multiaddress and IP address of the node
+	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
+	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
+	publicKeyHex, _ := crypto.GetPublicKeyForHost(node.Host)
 
-func setUpFiles(envFilePath, keyFilePath string) error {
-	// Create the directories if they don't already exist
-	if _, err := os.Stat(filepath.Dir(envFilePath)); os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(envFilePath), 0755)
-		if err != nil {
-			logrus.Error("could not create directory:")
-			return err
-		}
-	}
-	// Check if the .env file exists
-	if _, err := os.Stat(envFilePath); os.IsNotExist(err) {
-		// If not, create it with default values
-		builder := strings.Builder{}
-		builder.WriteString(fmt.Sprintf("%s=%s\n", masa.KeyFileKey, keyFilePath))
-		builder.WriteString(fmt.Sprintf("RPC_URL=%s\n", masa.DefaultRPCURL))
-		err = os.WriteFile(envFilePath, []byte(builder.String()), 0644)
-		if err != nil {
-			logrus.Error("could not write to .env file:")
-			return err
-		}
-	}
-	return nil
+	// Display the welcome message with the multiaddress and IP address
+	welcome.DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex, isStaked)
+
+	<-ctx.Done()
+
 }
 
 // Add node type for startup notification of what kind of node you are running and what that means
