@@ -190,23 +190,13 @@ func (api *API) PostAd() gin.HandlerFunc {
 
 func (api *API) GetAds() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		handler, err := api.Node.PubSubManager.GetHandler(string(masa.ProtocolWithVersion(masa.AdTopic)))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		adHandler, ok := handler.(*ad.SubscriptionHandler)
-		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "handler is not of type ad.SubscriptionHandler"})
-			return
-		}
-
-		if len(adHandler.Ads) == 0 {
+		// Directly access the AdSubscriptionHandler from the OracleNode
+		if api.Node.AdSubscriptionHandler == nil || len(api.Node.AdSubscriptionHandler.Ads) == 0 {
 			c.JSON(http.StatusOK, gin.H{"message": "No ads"})
-		} else {
-			c.JSON(http.StatusOK, adHandler.Ads)
+			return
 		}
+		// Respond with the ads collected by the AdSubscriptionHandler
+		c.JSON(http.StatusOK, api.Node.AdSubscriptionHandler.Ads)
 	}
 }
 

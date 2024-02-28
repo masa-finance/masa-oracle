@@ -29,19 +29,20 @@ import (
 )
 
 type OracleNode struct {
-	Host          host.Host
-	PrivKey       *ecdsa.PrivateKey
-	Protocol      protocol.ID
-	priorityAddrs multiaddr.Multiaddr
-	multiAddrs    []multiaddr.Multiaddr
-	DHT           *dht.IpfsDHT
-	Context       context.Context
-	PeerChan      chan myNetwork.PeerEvent
-	NodeTracker   *pubsub2.NodeEventTracker
-	PubSubManager *pubsub2.Manager
-	Signature     string
-	IsStaked      bool
-	StartTime     time.Time
+	Host                  host.Host
+	PrivKey               *ecdsa.PrivateKey
+	Protocol              protocol.ID
+	priorityAddrs         multiaddr.Multiaddr
+	multiAddrs            []multiaddr.Multiaddr
+	DHT                   *dht.IpfsDHT
+	Context               context.Context
+	PeerChan              chan myNetwork.PeerEvent
+	NodeTracker           *pubsub2.NodeEventTracker
+	PubSubManager         *pubsub2.Manager
+	Signature             string
+	IsStaked              bool
+	StartTime             time.Time
+	AdSubscriptionHandler *ad.SubscriptionHandler
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -169,8 +170,12 @@ func (node *OracleNode) Start() (err error) {
 	if err != nil {
 		return err
 	}
-	err = node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), &ad.SubscriptionHandler{})
+	// Set up the ad subscription handler and subscribe to the ad topic
+	node.AdSubscriptionHandler = &ad.SubscriptionHandler{}
+	err = node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), node.AdSubscriptionHandler)
 	if err != nil {
+		// Log the error or handle it as needed
+		logrus.Errorf("Failed to subscribe to ad topic: %v", err)
 		return err
 	}
 
