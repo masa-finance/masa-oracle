@@ -165,21 +165,8 @@ func (node *OracleNode) Start() (err error) {
 		nodeData.Joined()
 		node.NodeTracker.HandleNodeData(*nodeData)
 	}
-	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(TopicWithVersion(NodeGossipTopic), node.NodeTracker)
-	if err != nil {
-		return err
-	}
-	// Set up the ad subscription handler and subscribe to the ad topic
-	node.AdSubscriptionHandler = &ad.SubscriptionHandler{}
-	err = node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), node.AdSubscriptionHandler)
-	if err != nil {
-		// Log the error or handle it as needed
-		logrus.Errorf("Failed to subscribe to ad topic: %v", err)
-		return err
-	}
-
-	if err := node.PubSubManager.AddSubscription(TopicWithVersion(PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}); err != nil {
+	// call SubscribeToTopics on startup
+	if err := SubscribeToTopics(node); err != nil {
 		return err
 	}
 	node.StartTime = time.Now()
