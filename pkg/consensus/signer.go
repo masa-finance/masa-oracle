@@ -6,6 +6,7 @@ package consensus
 // - VerifySignature: Validates the signature of the data against a public key, confirming the data's integrity and origin.
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -32,15 +33,22 @@ func SignData(privKey crypto.PrivKey, data []byte) ([]byte, error) {
 }
 
 // VerifySignature verifies the signature of the data using the signers public key, the data that was signed, and the signature.
-func VerifySignature(pubKey crypto.PubKey, data []byte, signature []byte) (bool, error) {
+func VerifySignature(pubKey crypto.PubKey, data []byte, signatureHex string) (bool, error) {
 	if pubKey == nil {
 		logrus.Error("Public key is nil")
 		return false, fmt.Errorf("public key is nil")
 	}
 
+	// Decode the hexadecimal-encoded signature back to its original byte format
+	signatureBytes, err := hex.DecodeString(signatureHex)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to decode signature from hexadecimal")
+		return false, err
+	}
+
 	logrus.Info("Verifying signature")
 
-	verified, err := pubKey.Verify(data, signature)
+	verified, err := pubKey.Verify(data, signatureBytes)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to verify signature")
 		return false, err

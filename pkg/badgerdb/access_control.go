@@ -60,8 +60,11 @@ func CanWrite(h host.Host, data []byte, signature []byte) bool {
 		return false
 	}
 
-	// Verify the signature
-	isValid, err := consensus.VerifySignature(allowedPeerPubKey, data, signature)
+	// Convert the signature byte slice into a hexadecimal string
+	signatureHex := hex.EncodeToString(signature)
+
+	// Verify the signature using the hexadecimal string
+	isValid, err := consensus.VerifySignature(allowedPeerPubKey, data, signatureHex)
 	if err != nil || !isValid {
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),
