@@ -7,6 +7,7 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -134,34 +135,26 @@ func (handler *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
 
 	logrus.Infof("Received public key message: %s", incomingMsg.PublicKey)
 
-	// Check if the slice already contains a public key
-	if len(handler.PublicKeys) > 0 {
-		// Slice already contains a public key, check if the incoming message matches the stored public key
-		existingMsg := handler.PublicKeys[0]
-		if existingMsg.PublicKey != incomingMsg.PublicKey {
-			logrus.Error("Unauthorized: Only updates from the original public key are allowed")
-			return // Reject the message as it's from a different public key
-		}
-	}
-
 	// Proceed with verification and update logic as before
 	for i, existingMsg := range handler.PublicKeys {
 		if existingMsg.PublicKey == incomingMsg.PublicKey {
 			logrus.Infof("Verifying signature for public key: %s", incomingMsg.PublicKey)
-			// Found an existing message, verify the signature
+			// Decode the public key from hexadecimal to bytes
 			pubKeyBytes, err := hex.DecodeString(existingMsg.PublicKey)
 			if err != nil {
 				logrus.WithError(err).Error("Failed to decode public key for verification")
 				return
 			}
 
+			// Unmarshal the public key bytes into a libp2pCrypto.PubKey
 			pubKey, err := libp2pCrypto.UnmarshalPublicKey(pubKeyBytes)
 			if err != nil {
 				logrus.WithError(err).Error("Failed to unmarshal public key for verification")
 				return
 			}
 
-			isValid, err := pubKey.Verify([]byte(incomingMsg.Data), []byte(incomingMsg.Signature))
+			// Use the VerifySignature function from the consensus package
+			isValid, err := consensus.VerifySignature(pubKey, []byte(incomingMsg.Data), incomingMsg.Signature)
 			if err != nil || !isValid {
 				logrus.WithError(err).Error("Failed signature verification or signature is invalid")
 				return // Do not update or add if the signature is invalid
