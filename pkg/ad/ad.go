@@ -21,10 +21,11 @@ type SubscriptionHandler struct {
 
 // HandleMessage implement subscription handler here
 func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
+	logrus.Info("Received a message")
 	var ad Ad
 	err := json.Unmarshal(message.Data, &ad)
 	if err != nil {
-		logrus.Errorf("failed to unmarshal message: %v", err)
+		logrus.Errorf("Failed to unmarshal message: %v", err)
 		return
 	}
 
@@ -32,6 +33,5 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	handler.Ads = append(handler.Ads, ad)
 	handler.mu.Unlock()
 
-	// Handle the ad here
-	logrus.Infof("received ad: %v", ad)
+	logrus.Infof("Ad added: %+v", ad)
 }
