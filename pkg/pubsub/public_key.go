@@ -1,10 +1,3 @@
-// This package uses the libp2p pubsub system to enable secure and efficient message dissemination across nodes.
-// This file focuses on the publication and subscription of public key messages, facilitating
-// a decentralized mechanism for nodes to share and verify a public key from a bootnode. This is crucial for establishing
-// trust and enabling encrypted communications within the network. The PublicKeyPublisher component
-// allows nodes to publish their public keys along with signatures to prove ownership, while the
-// PublicKeySubscriptionHandler component processes incoming public key messages, verifying their authenticity.
-
 package pubsub
 
 import (
@@ -17,9 +10,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// topicPublicKeyMap maps topics to their associated public keys.
+var topicPublicKeyMap = make(map[string]string)
+
 // PublicKeySubscriptionHandler handles incoming messages on public key topics.
 type PublicKeySubscriptionHandler struct {
-	// Future fields for state or configuration can be added here
 }
 
 // PublicKeyMessage represents the structure of the public key messages.
@@ -35,11 +30,8 @@ type PublicKeyPublisher struct {
 	pubKey        libp2pCrypto.PubKey
 }
 
-// topicPublicKeyMap maps topics to their associated public keys.
-var topicPublicKeyMap = make(map[string]string)
-
 // NewPublicKeyPublisher creates a new instance of PublicKeyPublisher.
-func NewPublicKeyPublisher(manager *Manager, privKeyPath string, pubKey libp2pCrypto.PubKey) *PublicKeyPublisher {
+func NewPublicKeyPublisher(manager *Manager, pubKey libp2pCrypto.PubKey) *PublicKeyPublisher {
 	logrus.Info("Creating new PublicKeyPublisher")
 	return &PublicKeyPublisher{
 		pubSubManager: manager,
@@ -114,34 +106,25 @@ func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signat
 func (p *PublicKeyPublisher) ensureTopic(topicName string) (*pubsub.Topic, error) {
 	// Check if the topic already exists
 	if topic, exists := p.pubSubManager.topics[topicName]; exists {
-		// If the topic exists, return it without error
 		return topic, nil
 	}
 
 	// If the topic does not exist, attempt to create it
 	topic, err := p.pubSubManager.createTopic(topicName)
 	if err != nil {
-		// If there is an error creating the topic, return the error
 		return nil, err
 	}
 
-	// Return the newly created topic
 	return topic, nil
 }
 
-// HandleMessage processes messages received on the public key topic.
-// Adjusted to match the SubscriptionHandler interface.
-func (h *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) error {
+func (h *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
 	var message PublicKeyMessage
 	if err := json.Unmarshal(m.Data, &message); err != nil {
+		// Log the error and return immediately, do not attempt to return an error value
 		logrus.WithError(err).Error("Failed to unmarshal public key message")
-		return errors.New("failed to unmarshal message")
+		return
 	}
-
-	// Log the received public key for now
 	logrus.Infof("Received public key: %s", message.PublicKey)
-
 	// Future implementation will include verification and other logic
-
-	return nil
 }

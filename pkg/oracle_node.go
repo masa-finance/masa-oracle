@@ -20,7 +20,6 @@ import (
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/masa-finance/masa-oracle/pkg/ad"
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
@@ -168,7 +167,7 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
-	if err := node.PubSubManager.AddSubscription(TopicWithVersion(PublicKeyTopic), &consensus.PublicKeySubscriptionHandler{}); err != nil {
+	if err := node.PubSubManager.AddSubscription(TopicWithVersion(PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}); err != nil {
 		return err
 	}
 	node.StartTime = time.Now()
@@ -227,44 +226,6 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		return
 	}
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())
-}
-
-// PublishNodePublicKey publishes the node's public key and signed data to the designated topic.
-func (node *OracleNode) PublishPublicKey() error {
-	// Load the private key directly using the KeyManager from keys package
-	keyManager := KeyManager{}
-	privKey, err := keyManager.LoadPrivKey()
-	if err != nil {
-		return err
-	}
-
-	// Load the public key directly using the KeyManager from keys package
-	pubKey, err := keyManager.LoadPubKey()
-	if err != nil {
-		return err
-	}
-
-	// Convert the public key to a string representation
-	pubKeyString, err := PubKeyToString(pubKey)
-	if err != nil {
-		return err
-	}
-
-	// Set the data to be signed as the signers Peer ID
-	data := []byte(node.Host.ID().String())
-
-	// Sign the data using the private key
-	signature, err := consensus.SignData(privKey, data)
-	if err != nil {
-		return err
-	}
-
-	// Create a new PublicKeyPublisher instance
-	// Use the public key string as the identifier
-	publisher := pubsub2.NewPublicKeyPublisher(node.PubSubManager, pubKeyString, pubKey)
-
-	// Publish the public key using its string representation, data, and signature
-	return publisher.PublishNodePublicKey(pubKeyString, data, signature)
 }
 
 func (node *OracleNode) IsPublisher() bool {
