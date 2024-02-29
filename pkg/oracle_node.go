@@ -171,11 +171,6 @@ func (node *OracleNode) Start() (err error) {
 	}
 	node.StartTime = time.Now()
 
-	// call PublishPublicKey to publish the node's public key.
-	if err := node.PublishPublicKey(); err != nil {
-		logrus.Errorf("Failed to publish public key: %v", err)
-		return err
-	}
 	return nil
 }
 

@@ -152,3 +152,22 @@ func (sm *Manager) GetTopicNames() []string {
 	}
 	return topicNames
 }
+
+func (sm *Manager) PublishMessage(topicName, message string) error {
+	// Convert the message string to a byte slice
+	data := []byte(message)
+
+	// Check if the topic exists
+	t, ok := sm.topics[topicName]
+	if !ok {
+		// Optionally, create the topic if it doesn't exist
+		var err error
+		t, err = sm.createTopic(topicName)
+		if err != nil {
+			return fmt.Errorf("failed to create topic %s: %w", topicName, err)
+		}
+	}
+
+	// Use the existing Publish method to publish the message
+	return t.Publish(sm.ctx, data)
+}

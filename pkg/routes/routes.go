@@ -24,7 +24,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.GET("/publicKeys", api.GetPublicKeysHandler())
 	router.POST("/publishPublicKey", api.PublishPublicKeyHandler())
-	router.GET("/publicKeys/published", api.GetPublishedPublicKeysHandler()) // New route
+
+	router.POST("/createTopic", api.CreateNewTopicHandler())
+	router.POST("/postToTopic", api.PostToTopicHandler())
 
 	return router
 }
