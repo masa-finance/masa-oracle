@@ -149,9 +149,7 @@ func replaceIPComponent(maddr multiaddr.Multiaddr, newIP string) (multiaddr.Mult
 //	return false
 //}
 
-func GetBootNodesMultiAddress(input string) ([]multiaddr.Multiaddr, error) {
-	logrus.Infof("Getting bootnodes from %s", input)
-	bootstrapPeers := strings.Split(input, ",")
+func GetBootNodesMultiAddress(bootstrapPeers []string) ([]multiaddr.Multiaddr, error) {
 	addrs := make([]multiaddr.Multiaddr, 0)
 	for _, peerAddr := range bootstrapPeers {
 		if peerAddr == "" {

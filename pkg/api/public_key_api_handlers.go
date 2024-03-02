@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -66,7 +67,7 @@ func (api *API) PublishPublicKeyHandler() gin.HandlerFunc {
 		}
 
 		// Publish the public key using its string representation, data, and signature
-		publicKeyTopic := masa.TopicWithVersion(masa.PublicKeyTopic)
+		publicKeyTopic := config.TopicWithVersion(config.PublicKeyTopic)
 		if err := api.Node.PubSubManager.Publish(publicKeyTopic, msgBytes); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -87,7 +88,7 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 		}
 
 		// Use the PublicKeyTopic constant from the masa package
-		handler, err := api.Node.PubSubManager.GetHandler(string(masa.ProtocolWithVersion(masa.PublicKeyTopic)))
+		handler, err := api.Node.PubSubManager.GetHandler(string(config.ProtocolWithVersion(config.PublicKeyTopic)))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

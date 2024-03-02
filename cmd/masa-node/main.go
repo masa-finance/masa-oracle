@@ -4,47 +4,45 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"syscall"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/badgerdb"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 	"github.com/masa-finance/masa-oracle/pkg/routes"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
-	"github.com/masa-finance/masa-oracle/pkg/welcome"
 )
 
 func main() {
-
-	// log the flags
-	bootnodesList := strings.Split(viper.GetString(masa.BootNodes), ",")
-	logrus.Infof("Bootnodes: %v", bootnodesList)
-	logrus.Infof("Port number: %d", viper.GetInt("PORT_NBR"))
-	logrus.Infof("UDP: %v", viper.GetBool("UDP"))
-	logrus.Infof("TCP: %v", viper.GetBool("TCP"))
+	cfg := config.GetInstance()
+	cfg.LogConfig()
 
 	//@dBP added initialization for badgerdb, we need to add the DB_PATH to the viper configs in /cmd/masa-node/db.go
 	// Initialize the database
-	dbPath := SetupDatabasePath()
-	db, err := InitializeDB(dbPath)
+	db, err := badgerdb.InitializeDB()
 	if err != nil {
 		logrus.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer db.Close() // This ensures the database is properly closed on application exit
+	defer func(db *badger.DB) {
+		err := db.Close()
+		if err != nil {
+			logrus.Errorf("Failed to close the database: %v", err)
+		}
+	}(db) // This ensures the database is properly closed on application exit
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(filepath.Join(viper.GetString(masa.MasaDir), viper.GetString(masa.PrivKeyFile)))
+	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(cfg.PrivateKeyFile)
 
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	if stakeAmount != "" {
+	if cfg.StakeAmount != "" {
 		// Exit after staking, do not proceed to start the node
 		err = handleStaking(ecdsaPrivKey)
 		if err != nil {
@@ -63,7 +61,7 @@ func main() {
 		logrus.Warn("No staking event found for this address")
 	}
 	// Pass the isStaked flag to the NewOracleNode function
-	node, err := masa.NewOracleNode(ctx, privKey, portNbr, udp, tcp, isStaked)
+	node, err := masa.NewOracleNode(ctx, privKey, isStaked)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -103,7 +101,7 @@ func main() {
 	publicKeyHex, _ := crypto.GetPublicKeyForHost(node.Host)
 
 	// Display the welcome message with the multiaddress and IP address
-	welcome.DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex, isStaked)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex, isStaked)
 
 	<-ctx.Done()
 

@@ -6,6 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 var MasaTokenAddress common.Address
@@ -25,11 +27,7 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
 	OracleNodeStakingContractAddress = common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
 
-	rpcURL, err := GetRPCURL()
-	if err != nil {
-		return nil, err
-	}
-	client, err := ethclient.Dial(rpcURL)
+	client, err := ethclient.Dial(config.GetInstance().RpcUrl)
 	if err != nil {
 		return nil, err
 	}

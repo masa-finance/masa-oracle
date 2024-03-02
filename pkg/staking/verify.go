@@ -9,15 +9,14 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/spf13/viper"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 func VerifyStakingEvent(userAddress string) (bool, error) {
-	rpcURL := viper.GetString(masa.RpcUrl)
+	rpcURL := config.GetInstance().RpcUrl
 	if rpcURL == "" {
-		return false, errors.New(fmt.Sprintf("%s is not set", masa.RpcUrl))
+		return false, errors.New(fmt.Sprintf("%s is not set", config.RpcUrl))
 	}
 
 	client, err := ethclient.Dial(rpcURL)
