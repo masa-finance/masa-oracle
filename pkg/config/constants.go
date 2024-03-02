@@ -15,6 +15,7 @@ const (
 	PortNbr     = "PORT_NBR"
 	UDP         = "UDP"
 	TCP         = "TCP"
+	PrivateKey  = "PRIVATE_KEY"
 	StakeAmount = "STAKE_AMOUNT"
 	LogLevel    = "LOG_LEVEL"
 	LogFilePath = "LOG_FILEPATH"
@@ -22,7 +23,7 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.8-alpha"
+	Version     = "v0.0.9-alpha"
 	DbPath      = "DB_PATH"
 
 	MasaPrefix           = "/masa"

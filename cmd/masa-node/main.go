@@ -20,8 +20,9 @@ import (
 func main() {
 	cfg := config.GetInstance()
 	cfg.LogConfig()
+	cfg.SetupLogging()
+	keyManager := crypto.KeyManagerInstance()
 
-	//@dBP added initialization for badgerdb, we need to add the DB_PATH to the viper configs in /cmd/masa-node/db.go
 	// Initialize the database
 	db, err := badgerdb.InitializeDB()
 	if err != nil {
@@ -37,14 +38,12 @@ func main() {
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	privKey, ecdsaPrivKey, ethAddress, err := crypto.GetOrCreatePrivateKey(cfg.PrivateKeyFile)
-
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	if cfg.StakeAmount != "" {
 		// Exit after staking, do not proceed to start the node
-		err = handleStaking(ecdsaPrivKey)
+		err = handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -53,21 +52,30 @@ func main() {
 
 	var isStaked bool
 	// Verify the staking event
-	isStaked, err = staking.VerifyStakingEvent(ethAddress)
+	isStaked, err = staking.VerifyStakingEvent(keyManager.EthAddress)
 	if err != nil {
 		logrus.Error(err)
 	}
 	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
-	// Pass the isStaked flag to the NewOracleNode function
-	node, err := masa.NewOracleNode(ctx, privKey, isStaked)
+
+	// Create a new OracleNode
+	node, err := masa.NewOracleNode(ctx, isStaked)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	err = node.Start()
 	if err != nil {
 		logrus.Fatal(err)
+	}
+
+	if cfg.AllowedPeer {
+		cfg.AllowedPeerId = node.Host.ID().String()
+		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
+		logrus.Infof("This node is set as the allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
+	} else {
+		logrus.Info("This node is not set as the allowed peer")
 	}
 
 	// Listen for SIGINT (CTRL+C)
@@ -85,8 +93,6 @@ func main() {
 		cancel()
 	}()
 
-	// BP: Add gin router to get peers (multiaddress) and get peer addresses
-	// @Bob - I am not sure if this is the right place for this to live if we end up building out more endpoints
 	router := routes.SetupRoutes(node)
 	go func() {
 		err := router.Run()
@@ -98,13 +104,8 @@ func main() {
 	// Get the multiaddress and IP address of the node
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
-	publicKeyHex, _ := crypto.GetPublicKeyForHost(node.Host)
-
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex, isStaked)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked)
 
 	<-ctx.Done()
-
 }
-
-// Add node type for startup notification of what kind of node you are running and what that means

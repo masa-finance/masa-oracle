@@ -9,7 +9,6 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -54,7 +53,7 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.priorityAddrs
 }
 
-func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, isStaked bool) (*OracleNode, error) {
+func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	cfg := config.GetInstance()
 	scalingLimits := rcmgr.DefaultLimits
@@ -68,7 +67,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, isStaked bool) (
 
 	var addrStr []string
 	libp2pOptions := []libp2p.Option{
-		libp2p.Identity(privKey),
+		libp2p.Identity(crypto2.KeyManagerInstance().Libp2pPrivKey),
 		libp2p.ResourceManager(resourceManager),
 		libp2p.Ping(false), // disable built-in ping
 		libp2p.EnableNATService(),
@@ -97,25 +96,14 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, isStaked bool) (
 		return nil, err
 	}
 
-	// Extract the public key from the private key
-	pubKey := privKey.GetPublic()
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst)
 	if err != nil {
 		return nil, err
 	}
 
-	// Pass the public key as the third argument to NewPubSubManager
-	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst, pubKey)
-	if err != nil {
-		return nil, err
-	}
-
-	ecdsaPrivKey, err := crypto2.Libp2pPrivateKeyToEcdsa(privKey)
-	if err != nil {
-		return nil, err
-	}
 	return &OracleNode{
 		Host:          hst,
-		PrivKey:       ecdsaPrivKey,
+		PrivKey:       crypto2.KeyManagerInstance().EcdsaPrivKey,
 		Protocol:      config.ProtocolWithVersion(config.OracleProtocol),
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
@@ -159,7 +147,7 @@ func (node *OracleNode) Start() (err error) {
 	if config.GetInstance().HasBootnodes() {
 		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nodeData == nil {
-			publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
+			publicKeyHex := crypto2.KeyManagerInstance().EthAddress
 			nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 			nodeData.IsStaked = node.IsStaked
 			nodeData.SelfIdentified = true

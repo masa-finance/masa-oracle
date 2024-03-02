@@ -10,7 +10,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
+	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
 const (
@@ -146,13 +146,11 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 }
 
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
-	publicKeyHex, _ := crypto.GetPublicKeyForHost(host)
-
 	// Create and populate NodeData
 	nodeData := NodeData{
 		PeerId:     host.ID(),
 		IsStaked:   isStaked,
-		EthAddress: publicKeyHex,
+		EthAddress: crypto2.KeyManagerInstance().EthAddress,
 	}
 
 	// Convert NodeData to JSON

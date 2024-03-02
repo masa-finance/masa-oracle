@@ -8,11 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (c *AppConfig) SetupLogging() error {
+func (c *AppConfig) SetupLogging() {
 	if _, err := os.Stat(c.MasaDir); os.IsNotExist(err) {
 		err = os.MkdirAll(c.MasaDir, 0755)
 		if err != nil {
-			logrus.Error("could not create directory:", err)
+			logrus.Fatal("could not create directory:", err)
 		}
 	}
 
@@ -29,5 +29,4 @@ func (c *AppConfig) SetupLogging() error {
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
-	return nil
 }

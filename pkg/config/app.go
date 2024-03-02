@@ -47,6 +47,7 @@ type AppConfig struct {
 	PortNbr              int      `mapstructure:"portNbr"`
 	UDP                  bool     `mapstructure:"udp"`
 	TCP                  bool     `mapstructure:"tcp"`
+	PrivateKey           string   `mapstructure:"privateKey"`
 	Signature            string   `mapstructure:"signature"`
 	Bootnodes            []string `mapstructure:"bootnodes"`
 	Data                 string   `mapstructure:"data"`
@@ -104,6 +105,7 @@ func (c *AppConfig) setDefaultConfig() {
 
 }
 
+// TODO: add a variable to allow for the config file location to be set
 func (c *AppConfig) setFileConfig() {
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
@@ -129,7 +131,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.Debug, "debug", viper.GetBool(Debug), "Override some protections for debugging (temporary)")
 	pflag.StringVar(&c.Environment, "env", viper.GetString(Environment), "Environment to connect to")
 	pflag.BoolVar(&c.AllowedPeer, "allowedPeer", viper.GetBool(AllowedPeer), "Set to true to allow setting this node as the allowed peer")
-
+	pflag.StringVar(&c.PrivateKey, "privateKey", viper.GetString(PrivateKey), "The private key")
 	pflag.StringVar(&c.PrivateKeyFile, PrivKeyFile, viper.GetString(PrivKeyFile), "The private key file")
 	pflag.StringVar(&c.MasaDir, MasaDir, viper.GetString(MasaDir), "The masa directory")
 	pflag.StringVar(&c.RpcUrl, RpcUrl, viper.GetString(RpcUrl), "The RPC URL")
