@@ -19,30 +19,30 @@ import (
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type OracleNode struct {
-	Host          host.Host
-	PrivKey       *ecdsa.PrivateKey
-	Protocol      protocol.ID
-	priorityAddrs multiaddr.Multiaddr
-	multiAddrs    []multiaddr.Multiaddr
-	DHT           *dht.IpfsDHT
-	Context       context.Context
-	PeerChan      chan myNetwork.PeerEvent
-	NodeTracker   *pubsub2.NodeEventTracker
-	PubSubManager *pubsub2.Manager
-	Signature     string
-	IsStaked      bool
-	StartTime     time.Time
+	Host                  host.Host
+	PrivKey               *ecdsa.PrivateKey
+	Protocol              protocol.ID
+	priorityAddrs         multiaddr.Multiaddr
+	multiAddrs            []multiaddr.Multiaddr
+	DHT                   *dht.IpfsDHT
+	Context               context.Context
+	PeerChan              chan myNetwork.PeerEvent
+	NodeTracker           *pubsub2.NodeEventTracker
+	PubSubManager         *pubsub2.Manager
+	Signature             string
+	IsStaked              bool
+	StartTime             time.Time
+	AdSubscriptionHandler *ad.SubscriptionHandler
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -95,7 +95,14 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst)
+	// Extract the public key from the private key
+	pubKey := privKey.GetPublic()
+	if err != nil {
+		return nil, err
+	}
+
+	// Pass the public key as the third argument to NewPubSubManager
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst, pubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -158,16 +165,12 @@ func (node *OracleNode) Start() (err error) {
 		nodeData.Joined()
 		node.NodeTracker.HandleNodeData(*nodeData)
 	}
-	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(TopicWithVersion(NodeGossipTopic), node.NodeTracker)
-	if err != nil {
-		return err
-	}
-	err = node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), &ad.SubscriptionHandler{})
-	if err != nil {
+	// call SubscribeToTopics on startup
+	if err := SubscribeToTopics(node); err != nil {
 		return err
 	}
 	node.StartTime = time.Now()
+
 	return nil
 }
 
@@ -226,4 +229,13 @@ func (node *OracleNode) IsPublisher() bool {
 
 func (node *OracleNode) Version() string {
 	return Version
+}
+
+func (node *OracleNode) LogActiveTopics() {
+	topicNames := node.PubSubManager.GetTopicNames()
+	if len(topicNames) > 0 {
+		logrus.Infof("Active topics: %v", topicNames)
+	} else {
+		logrus.Info("No active topics.")
+	}
 }

@@ -22,5 +22,11 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.GET("/nodeData", api.GetNodeDataHandler())
 	router.GET("/nodeData/:peerID", api.GetNodeHandler())
 
+	router.GET("/publicKeys", api.GetPublicKeysHandler())
+	router.POST("/publishPublicKey", api.PublishPublicKeyHandler())
+
+	router.POST("/createTopic", api.CreateNewTopicHandler())
+	router.POST("/postToTopic", api.PostToTopicHandler())
+
 	return router
 }

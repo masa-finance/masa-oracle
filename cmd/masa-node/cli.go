@@ -17,6 +17,7 @@ var (
 	stakeAmount string
 	debug       bool
 	env         string
+	allowedPeer bool
 )
 
 func init() {
@@ -30,6 +31,7 @@ func init() {
 	pflag.StringVar(&stakeAmount, "stake", viper.GetString("STAKE_AMOUNT"), "Amount of tokens to stake")
 	pflag.BoolVar(&debug, "debug", viper.GetBool("LOG_LEVEL"), "Override some protections for debugging (temporary)")
 	pflag.StringVar(&env, "env", viper.GetString("ENV"), "Environment to connect to")
+	pflag.BoolVar(&allowedPeer, "allowedPeer", viper.GetBool("allowedPeer"), "Set to true to allow setting this node as the allowed peer")
 	pflag.Parse()
 	err := viper.BindPFlags(pflag.CommandLine)
 	if err != nil {
