@@ -12,16 +12,17 @@ import (
 
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 )
 
 // Load the allowedPeerID and its public key from Viper configuration
 func getAllowedPeerIDAndKey() (string, libp2pCrypto.PubKey, error) {
-	allowedPeerID := viper.GetString("ALLOWED_PEER_ID")
+	allowedPeerID := config.GetInstance().AllowedPeerId
 	// Assuming the public key is stored in a configuration key "ALLOWED_PEER_PUBKEY"
-	allowedPeerPubKeyString := viper.GetString("ALLOWED_PEER_PUBKEY")
+	allowedPeerPubKeyString := config.GetInstance().AllowedPeerPublicKey
 
 	if allowedPeerID == "" || allowedPeerPubKeyString == "" {
 		logrus.Warn("Allowed peer ID or public key not found in configuration")

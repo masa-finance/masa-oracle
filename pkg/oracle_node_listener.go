@@ -14,8 +14,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -32,7 +32,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 					continue
 				}
 				// Publish the JSON data on the node.topic
-				err = node.PubSubManager.Publish(TopicWithVersion(NodeGossipTopic), jsonData)
+				err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
 				if err != nil {
 					logrus.Errorf("Error publishing node data: %v", err)
 				}
@@ -41,7 +41,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 				// the node start time is greater than 5 minutes ago,
 				// call SendNodeData in a separate goroutine
 				if nodeData.Activity == pubsub2.ActivityJoined &&
-					(viper.GetString(BootNodes) == "" || time.Now().Sub(node.StartTime) > 5*time.Minute) {
+					(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > 5*time.Minute) {
 					go node.SendNodeData(nodeData.PeerId)
 				}
 			}
@@ -71,10 +71,10 @@ type NodeDataPage struct {
 func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream network.Stream, pageNumber int) {
 	logrus.Debugf("SendNodeDataPage --> %s: Page: %d", stream.Conn().RemotePeer(), pageNumber)
 	totalRecords := len(allNodeData)
-	totalPages := int(math.Ceil(float64(totalRecords) / PageSize))
+	totalPages := int(math.Ceil(float64(totalRecords) / config.PageSize))
 
-	startIndex := pageNumber * PageSize
-	endIndex := startIndex + PageSize
+	startIndex := pageNumber * config.PageSize
+	endIndex := startIndex + config.PageSize
 	if endIndex > totalRecords {
 		endIndex = totalRecords
 	}
@@ -117,9 +117,9 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		nodeData = node.NodeTracker.GetUpdatedNodes(sinceTime)
 	}
 	totalRecords := len(nodeData)
-	totalPages := int(math.Ceil(float64(totalRecords) / float64(PageSize)))
+	totalPages := int(math.Ceil(float64(totalRecords) / float64(config.PageSize)))
 
-	stream, err := node.Host.NewStream(node.Context, peerID, ProtocolWithVersion(NodeDataSyncProtocol))
+	stream, err := node.Host.NewStream(node.Context, peerID, config.ProtocolWithVersion(config.NodeDataSyncProtocol))
 	if err != nil {
 		logrus.Errorf("Failed to open stream to %s: %v", peerID, err)
 		return

@@ -7,9 +7,10 @@ import (
 	"os"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
+
+	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
 type SubscriptionHandler interface {
@@ -26,7 +27,7 @@ type Manager struct {
 	PublicKeyPublisher *PublicKeyPublisher // Add this line
 }
 
-func NewPubSubManager(ctx context.Context, host host.Host, pubKey libp2pCrypto.PubKey) (*Manager, error) { // Modify this line to accept pubKey
+func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) { // Modify this line to accept pubKey
 	gossipSub, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		return nil, err
@@ -38,7 +39,7 @@ func NewPubSubManager(ctx context.Context, host host.Host, pubKey libp2pCrypto.P
 		handlers:           make(map[string]SubscriptionHandler),
 		gossipSub:          gossipSub,
 		host:               host,
-		PublicKeyPublisher: NewPublicKeyPublisher(nil, pubKey), // Initialize PublicKeyPublisher here
+		PublicKeyPublisher: NewPublicKeyPublisher(nil, crypto2.KeyManagerInstance().Libp2pPubKey), // Initialize PublicKeyPublisher here
 	}
 
 	manager.PublicKeyPublisher.pubSubManager = manager // Ensure the publisher has a reference back to the manager

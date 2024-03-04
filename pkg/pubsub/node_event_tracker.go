@@ -13,8 +13,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/crypto"
 )
 
@@ -227,7 +227,7 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 func (net *NodeEventTracker) DumpNodeData() {
 	// Write the JSON data to a file
 	var filePath string
-	dataDir := viper.GetString("MASA_DIR")
+	dataDir := config.GetInstance().MasaDir
 	if dataDir == "" {
 		filePath = net.nodeDataFile
 	} else {
@@ -243,7 +243,7 @@ func (net *NodeEventTracker) DumpNodeData() {
 func (net *NodeEventTracker) LoadNodeData() error {
 	// Read the JSON data from a file
 	var filePath string
-	dataDir := viper.GetString("MASA_DIR")
+	dataDir := config.GetInstance().MasaDir
 	if dataDir == "" {
 		filePath = net.nodeDataFile
 	} else {

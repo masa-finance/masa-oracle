@@ -9,9 +9,25 @@ import (
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 )
+
+// Package crypto provides cryptographic utilities used by the KeyManager.
+// This file, keys.go, contains a set of private helper functions that are essential
+// for managing cryptographic operations related to keys. These functions include
+// generating new private keys, loading private keys from environment variables or files,
+// marshalling and unmarshalling private keys, and converting keys between different formats.
+//
+// The functions defined in this file are designed to be private to the package and are
+// primarily intended to support the operations of the KeyManager, defined in key_manager.go.
+// The KeyManager acts as a centralized entity for managing cryptographic keys within the application,
+// ensuring secure and consistent access to these keys across different components.
+//
+// The emphasis on keeping these functions private is to encapsulate the cryptographic operations
+// within the package, allowing for a controlled interface exposed by the KeyManager. This approach
+// helps in maintaining the integrity and security of key management processes, by restricting direct
+// access to the underlying cryptographic operations and promoting the use of the KeyManager as the
+// primary interface for key-related activities.
 
 func getPrivateKeyFromEnv(envKey string) (privKey crypto.PrivKey, err error) {
 	rawKey, err := hex.DecodeString(envKey)
@@ -54,12 +70,11 @@ func generateNewPrivateKey(keyFile string) (crypto.PrivKey, error) {
 	if err != nil {
 		return nil, logAndReturnError("Error generating new private key: %s", err)
 	}
-	data, err := crypto.MarshalPrivateKey(privKey)
-	if err != nil {
-		return nil, logAndReturnError("Error marshalling private key: %s", err)
-	}
-	encodedKey := hex.EncodeToString(data)
 
+	encodedKey, err := getHexEncodedPrivateKey(privKey)
+	if err != nil {
+		return nil, err
+	}
 	// Save the private key to the file
 	if err := os.WriteFile(keyFile, []byte(encodedKey), 0600); err != nil {
 		return nil, logAndReturnError("Error saving private key to file: %s", err)
@@ -68,45 +83,25 @@ func generateNewPrivateKey(keyFile string) (crypto.PrivKey, error) {
 	return privKey, nil
 }
 
-func GetOrCreatePrivateKey(keyFile string) (crypto.PrivKey, *ecdsa.PrivateKey, string, error) {
-	var privKey crypto.PrivKey
-	var err error
-	envKey := os.Getenv("PRIVATE_KEY")
-	if envKey != "" {
-		privKey, err = getPrivateKeyFromEnv(envKey)
-		if err != nil {
-			return nil, nil, "", err
-		}
-	} else {
-		// Check if the private key file exists
-		privKey, err = getPrivateKeyFromFile(keyFile)
-		if err != nil {
-			privKey, err = generateNewPrivateKey(keyFile)
-			if err != nil {
-				return nil, nil, "", err
-			}
-		}
-	}
-
-	// After obtaining the libp2p privKey, convert it to an ECDSA private key
-	ecdsaPrivKey, err := Libp2pPrivateKeyToEcdsa(privKey)
+func getHexEncodedPrivateKey(privKey crypto.PrivKey) (string, error) {
+	data, err := crypto.MarshalPrivateKey(privKey)
 	if err != nil {
-		return nil, nil, "", err
+		return "", logAndReturnError("Error marshalling private key: %s", err)
 	}
-	// Save the ECDSA private key in the same directory as the libp2p key
-	ecdsaKeyFilePath := keyFile + ".ecdsa"
-	ecdsaKeyBytes := ethCrypto.FromECDSA(ecdsaPrivKey)
-	ecdsaKeyHex := hex.EncodeToString(ecdsaKeyBytes)
-	if err := os.WriteFile(ecdsaKeyFilePath, []byte(ecdsaKeyHex), 0600); err != nil {
-		logrus.Errorf("Error saving ECDSA private key to file: %s\n", err)
-		return privKey, ecdsaPrivKey, "", err
-	}
-	logrus.Infof("Saved ECDSA private key to %s", ecdsaKeyFilePath)
-	ethAddress := ethCrypto.PubkeyToAddress(ecdsaPrivKey.PublicKey).Hex()
-	return privKey, ecdsaPrivKey, ethAddress, nil
+	encodedKey := hex.EncodeToString(data)
+	return encodedKey, nil
 }
 
-func Libp2pPrivateKeyToEcdsa(privKey crypto.PrivKey) (*ecdsa.PrivateKey, error) {
+func getHexEncodedPublicKey(publicKey crypto.PubKey) (string, error) {
+	pubKeyBytes, err := crypto.MarshalPublicKey(publicKey)
+	if err != nil {
+		return "", logAndReturnError("Error marshalling public key: %s", err)
+	}
+	encodedKey := hex.EncodeToString(pubKeyBytes)
+	return encodedKey, nil
+}
+
+func libp2pPrivateKeyToEcdsa(privKey crypto.PrivKey) (*ecdsa.PrivateKey, error) {
 	// After obtaining the libp2p privKey, convert it to an ECDSA private key
 	raw, err := privKey.Raw()
 	if err != nil {
@@ -123,7 +118,7 @@ func Libp2pPrivateKeyToEcdsa(privKey crypto.PrivKey) (*ecdsa.PrivateKey, error) 
 	return ecdsaPrivKey, nil
 }
 
-func Libp2pPubKeyToEcdsa(pubKey crypto.PubKey) (*ecdsa.PublicKey, error) {
+func libp2pPubKeyToEcdsa(pubKey crypto.PubKey) (*ecdsa.PublicKey, error) {
 	raw, err := pubKey.Raw()
 	if err != nil {
 		return nil, err
@@ -138,33 +133,11 @@ func Libp2pPubKeyToEcdsa(pubKey crypto.PubKey) (*ecdsa.PublicKey, error) {
 }
 
 func Libp2pPubKeyToEthAddress(pubKey crypto.PubKey) (string, error) {
-	ecdsaPublic, err := Libp2pPubKeyToEcdsa(pubKey)
+	ecdsaPublic, err := libp2pPubKeyToEcdsa(pubKey)
 	if err != nil {
 		return "", err
 	}
 	ethAddress := ethCrypto.PubkeyToAddress(*ecdsaPublic).Hex()
-
-	return ethAddress, nil
-}
-
-// VerifyEthereumCompatibility Really only useful for printing key values, I think this could be removed.
-func VerifyEthereumCompatibility(privKey crypto.PrivKey) (string, error) {
-	ecdsaPrivKey, err := Libp2pPrivateKeyToEcdsa(privKey)
-	if err != nil {
-		return "", err
-	}
-	ethAddress := ethCrypto.PubkeyToAddress(ecdsaPrivKey.PublicKey).Hex()
-
-	// Print the private key in hexadecimal format
-	data, err := crypto.MarshalPrivateKey(privKey)
-	if err != nil {
-		return "", err
-	}
-	fmt.Printf("Private key: \n%s\n", hex.EncodeToString(data))
-	// Print the public key and address
-	fmt.Println("Ethereum public key:", ecdsaPrivKey.PublicKey)
-	// Derive the Ethereum address from the private key
-	fmt.Println("Ethereum address:", ethCrypto.PubkeyToAddress(ecdsaPrivKey.PublicKey).Hex())
 
 	return ethAddress, nil
 }
@@ -175,19 +148,13 @@ func logAndReturnError(format string, args ...interface{}) error {
 	return err
 }
 
-func GetPublicKeyForHost(host host.Host) (publicKeyHex string, err error) {
-	pubKey := host.Peerstore().PubKey(host.ID())
-	if pubKey == nil {
-		logrus.WithFields(logrus.Fields{
-			"Peer": host.ID().String(),
-		}).Warn("No public key found for peer")
-	} else {
-		publicKeyHex, err = Libp2pPubKeyToEthAddress(pubKey)
-		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"Peer": host.ID().String(),
-			}).Warnf("Error getting public key %v", err)
-		}
+func saveEcdesaPrivateKeyToFile(ecdsaPrivKey *ecdsa.PrivateKey, keyFile string) error {
+	ecdsaKeyBytes := ethCrypto.FromECDSA(ecdsaPrivKey)
+	ecdsaKeyHex := hex.EncodeToString(ecdsaKeyBytes)
+	if err := os.WriteFile(keyFile, []byte(ecdsaKeyHex), 0600); err != nil {
+		logrus.Errorf("Error saving ECDSA private key to file: %s", err)
+		return err
 	}
-	return
+	logrus.Infof("Saved ECDSA private key to %s", keyFile)
+	return nil
 }
