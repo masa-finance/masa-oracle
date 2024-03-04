@@ -9,7 +9,6 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -19,13 +18,14 @@ import (
 	libp2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
+
 	"github.com/masa-finance/masa-oracle/pkg/ad"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type OracleNode struct {
@@ -53,8 +53,9 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.priorityAddrs
 }
 
-func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, isStaked bool) (*OracleNode, error) {
+func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
+	cfg := config.GetInstance()
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
@@ -66,7 +67,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 
 	var addrStr []string
 	libp2pOptions := []libp2p.Option{
-		libp2p.Identity(privKey),
+		libp2p.Identity(crypto2.KeyManagerInstance().Libp2pPrivKey),
 		libp2p.ResourceManager(resourceManager),
 		libp2p.Ping(false), // disable built-in ping
 		libp2p.EnableNATService(),
@@ -77,13 +78,13 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	securityOptions := []libp2p.Option{
 		libp2p.Security(noise.ID, noise.New),
 	}
-	if useUdp {
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", portNbr))
+	if cfg.UDP {
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))
 	}
-	if useTcp {
+	if cfg.TCP {
 		securityOptions = append(securityOptions, libp2p.Security(libp2ptls.ID, libp2ptls.New))
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", portNbr))
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", cfg.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(tcp.NewTCPTransport))
 		libp2pOptions = append(libp2pOptions, libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport))
 	}
@@ -95,30 +96,19 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	// Extract the public key from the private key
-	pubKey := privKey.GetPublic()
+	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst)
 	if err != nil {
 		return nil, err
 	}
 
-	// Pass the public key as the third argument to NewPubSubManager
-	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst, pubKey)
-	if err != nil {
-		return nil, err
-	}
-
-	ecdsaPrivKey, err := crypto2.Libp2pPrivateKeyToEcdsa(privKey)
-	if err != nil {
-		return nil, err
-	}
 	return &OracleNode{
 		Host:          hst,
-		PrivKey:       ecdsaPrivKey,
-		Protocol:      ProtocolWithVersion(oracleProtocol),
+		PrivKey:       crypto2.KeyManagerInstance().EcdsaPrivKey,
+		Protocol:      config.ProtocolWithVersion(config.OracleProtocol),
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(Version, viper.GetString(Environment)),
+		NodeTracker:   pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
 	}, nil
@@ -127,37 +117,37 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(viper.GetString(BootNodes))
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
 	if err != nil {
 		return err
 	}
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(ProtocolWithVersion(NodeDataSyncProtocol), node.ReceiveNodeData)
+	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
 	// if node.IsStaked then allow them to be added to the NodeData -- move to node tracker
 	if node.IsStaked {
-		node.Host.SetStreamHandler(ProtocolWithVersion(NodeGossipTopic), node.GossipNodeData)
+		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
 	}
 	node.Host.Network().Notify(node.NodeTracker)
 
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, masaPrefix, node.PeerChan, node.IsStaked)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked)
 	if err != nil {
 		return err
 	}
-	err = myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
+	err = myNetwork.WithMDNS(node.Host, config.Rendezvous, node.PeerChan)
 	if err != nil {
 		return err
 	}
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
 	// if this is the original boot node then add it to the node tracker
-	if viper.GetString(BootNodes) == "" {
+	if config.GetInstance().HasBootnodes() {
 		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nodeData == nil {
-			publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
+			publicKeyHex := crypto2.KeyManagerInstance().EthAddress
 			nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 			nodeData.IsStaked = node.IsStaked
 			nodeData.SelfIdentified = true
@@ -228,7 +218,7 @@ func (node *OracleNode) IsPublisher() bool {
 }
 
 func (node *OracleNode) Version() string {
-	return Version
+	return config.Version
 }
 
 func (node *OracleNode) LogActiveTopics() {

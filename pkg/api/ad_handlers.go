@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/ad"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 func (api *API) PostAd() gin.HandlerFunc {
@@ -22,7 +22,7 @@ func (api *API) PostAd() gin.HandlerFunc {
 			return
 		}
 
-		if err := api.Node.PubSubManager.Publish(masa.TopicWithVersion(masa.AdTopic), bodyBytes); err != nil {
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.AdTopic), bodyBytes); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -33,7 +33,7 @@ func (api *API) PostAd() gin.HandlerFunc {
 func (api *API) SubscribeToAds() gin.HandlerFunc {
 	handler := &ad.SubscriptionHandler{}
 	return func(c *gin.Context) {
-		err := api.Node.PubSubManager.AddSubscription(masa.TopicWithVersion(masa.AdTopic), handler)
+		err := api.Node.PubSubManager.AddSubscription(config.TopicWithVersion(config.AdTopic), handler)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

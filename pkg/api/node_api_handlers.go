@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -18,7 +19,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 		}
 		pageSize, err := GetPathInt(c, "pageSize")
 		if err != nil {
-			pageSize = masa.PageSize
+			pageSize = config.PageSize
 		}
 
 		if api.Node == nil || api.Node.DHT == nil {
@@ -30,7 +31,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 		}
 		allNodeData := api.Node.NodeTracker.GetAllNodeData()
 		totalRecords := len(allNodeData)
-		totalPages := int(math.Ceil(float64(totalRecords) / masa.PageSize))
+		totalPages := int(math.Ceil(float64(totalRecords) / config.PageSize))
 
 		startIndex := pageNbr * pageSize
 		endIndex := startIndex + pageSize

@@ -9,12 +9,14 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 func VerifyStakingEvent(userAddress string) (bool, error) {
-	rpcURL, err := GetRPCURL()
-	if err != nil {
-		return false, err
+	rpcURL := config.GetInstance().RpcUrl
+	if rpcURL == "" {
+		return false, errors.New(fmt.Sprintf("%s is not set", config.RpcUrl))
 	}
 
 	client, err := ethclient.Dial(rpcURL)

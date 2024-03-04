@@ -4,9 +4,11 @@ Package for Oracle Node Subscription Management in the Masa Oracle system. It en
 package masa
 
 import (
-	"github.com/masa-finance/masa-oracle/pkg/ad"
-	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/ad"
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 // SubscribeToTopics handles the subscription to various topics for an OracleNode.
@@ -15,19 +17,19 @@ import (
 // Errors during subscription are logged and returned, halting the process to ensure the node's correct setup before operation.
 func SubscribeToTopics(node *OracleNode) error {
 	// Subscribe to NodeGossipTopic to participate in the network's gossip protocol.
-	if err := node.PubSubManager.AddSubscription(TopicWithVersion(NodeGossipTopic), node.NodeTracker); err != nil {
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker); err != nil {
 		return err
 	}
 
 	// Initialize and subscribe to AdTopic for receiving advertisement-related messages.
 	node.AdSubscriptionHandler = &ad.SubscriptionHandler{}
-	if err := node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), node.AdSubscriptionHandler); err != nil {
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.AdTopic), node.AdSubscriptionHandler); err != nil {
 		logrus.Errorf("Failed to subscribe to ad topic: %v", err)
 		return err
 	}
 
 	// Subscribe to PublicKeyTopic to manage and verify public keys within the network.
-	if err := node.PubSubManager.AddSubscription(TopicWithVersion(PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}); err != nil {
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}); err != nil {
 		return err
 	}
 

@@ -1,5 +1,4 @@
-// welcome/welcome.go
-package welcome
+package config
 
 import (
 	"fmt"

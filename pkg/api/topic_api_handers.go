@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	masa "github.com/masa-finance/masa-oracle/pkg"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -29,7 +30,7 @@ func (api *API) CreateNewTopicHandler() gin.HandlerFunc {
 		topicHandler := pubsub.NewTopicHandler()
 
 		// Use the AddSubscription method to create the new topic and subscribe the TopicHandler to it.
-		if err := api.Node.PubSubManager.AddSubscription(masa.TopicWithVersion(request.TopicName), topicHandler); err != nil {
+		if err := api.Node.PubSubManager.AddSubscription(config.TopicWithVersion(request.TopicName), topicHandler); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -57,7 +58,7 @@ func (api *API) PostToTopicHandler() gin.HandlerFunc {
 		}
 
 		// Publish the message to the specified topic.
-		if err := api.Node.PubSubManager.PublishMessage(masa.TopicWithVersion(request.TopicName), request.Message); err != nil {
+		if err := api.Node.PubSubManager.PublishMessage(config.TopicWithVersion(request.TopicName), request.Message); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
