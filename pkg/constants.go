@@ -20,6 +20,7 @@ const (
 	NodeDataSyncProtocol = "nodeDataSync"
 	NodeGossipTopic      = "gossip"
 	AdTopic              = "ad"
+	PublicKeyTopic       = "bootNodePublicKey"
 	rendezvous           = "masa-mdns"
 	PageSize             = 25
 )
