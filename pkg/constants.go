@@ -13,7 +13,7 @@ const (
 	MasaDir     = "MASA_DIR"
 	RpcUrl      = "RPC_URL"
 	Environment = "ENV"
-	Version     = "v0.0.8-alpha"
+	Version     = "v0.0.9-alpha"
 
 	masaPrefix           = "/masa"
 	oracleProtocol       = "oracle_protocol"
