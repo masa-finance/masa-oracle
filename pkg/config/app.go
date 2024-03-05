@@ -2,12 +2,14 @@ package config
 
 import (
 	"log"
+	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
 
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -63,6 +65,7 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	DbPath               string   `mapstructure:"dbPath"`
+	FilePath             string   `mapstructure:"FilePath"`
 }
 
 func GetInstance() *AppConfig {
@@ -71,7 +74,7 @@ func GetInstance() *AppConfig {
 
 		instance.setDefaultConfig()
 		instance.setEnvVariableConfig()
-		instance.setFileConfig()
+		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
 		if err != nil {
 			logrus.Fatal(err)
@@ -87,29 +90,41 @@ func GetInstance() *AppConfig {
 }
 
 func (c *AppConfig) setDefaultConfig() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("could not find user.home directory")
 	}
+
+	// Set values from .env
+	viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
+	viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
+	viper.SetDefault(Environment, os.Getenv("ENV"))
+	viper.SetDefault(FilePath, os.Getenv("FILEPATH"))
+
+	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 	viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
-	viper.SetDefault(AllowedPeer, false)
+	viper.SetDefault(AllowedPeer, true) // TESTING TRUE FOR Issue-148 default => false
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 	viper.SetDefault(DbPath, filepath.Join(viper.GetString(MasaDir), "masa-node-db"))
-
 }
 
-// TODO: add a variable to allow for the config file location to be set
-func (c *AppConfig) setFileConfig() {
+func (c *AppConfig) setFileConfig(path string) {
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".") // Optionally: add other paths, e.g., home directory or etc
+	viper.AddConfigPath(path) // Optionally: add other paths, e.g., home directory or etc
 
 	// Attempt to read the config file
 	if err := viper.ReadInConfig(); err != nil {

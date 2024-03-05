@@ -10,7 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 
-	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
 type SubscriptionHandler interface {
@@ -39,7 +39,7 @@ func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) { /
 		handlers:           make(map[string]SubscriptionHandler),
 		gossipSub:          gossipSub,
 		host:               host,
-		PublicKeyPublisher: NewPublicKeyPublisher(nil, crypto2.KeyManagerInstance().Libp2pPubKey), // Initialize PublicKeyPublisher here
+		PublicKeyPublisher: NewPublicKeyPublisher(nil, masacrypto.KeyManagerInstance().Libp2pPubKey), // Initialize PublicKeyPublisher here
 	}
 
 	manager.PublicKeyPublisher.pubSubManager = manager // Ensure the publisher has a reference back to the manager

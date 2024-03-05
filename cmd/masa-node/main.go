@@ -10,10 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/badgerdb"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
-	"github.com/masa-finance/masa-oracle/pkg/routes"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
@@ -21,7 +21,7 @@ func main() {
 	cfg := config.GetInstance()
 	cfg.LogConfig()
 	cfg.SetupLogging()
-	keyManager := crypto.KeyManagerInstance()
+	keyManager := masacrypto.KeyManagerInstance()
 
 	// Initialize the database
 	db, err := badgerdb.InitializeDB()
@@ -93,7 +93,7 @@ func main() {
 		cancel()
 	}()
 
-	router := routes.SetupRoutes(node)
+	router := api.SetupRoutes(node)
 	go func() {
 		err := router.Run()
 		if err != nil {

@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
 type NodeEventTracker struct {
@@ -273,7 +273,7 @@ func getEthAddress(remotePeer peer.ID, n network.Network) string {
 			"Peer": remotePeer.String(),
 		}).Warn("No public key found for peer")
 	} else {
-		publicKeyHex, err = crypto.Libp2pPubKeyToEthAddress(pubKey)
+		publicKeyHex, err = masacrypto.Libp2pPubKeyToEthAddress(pubKey)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Peer": remotePeer.String(),
