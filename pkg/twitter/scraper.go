@@ -9,15 +9,11 @@ import (
 )
 
 // ScrapeTweetsByQuery searches tweets based on a query, with options for filtering and search mode.
-// It now accepts variadic `credentials` to support different login methods.
-func ScrapeTweetsByQuery(query string, count int, searchMode twitterscraper.SearchMode, credentials ...string) {
-	scraper := twitterscraper.New()
-
-	// Login using the modular Login function from auth.go
-	// Pass the variadic `credentials` directly to the Login function.
-	err := Login(scraper, credentials...)
-	if err != nil {
-		log.Fatalf("Error logging in: %v", err)
+// This function assumes that the caller has already logged in and will manage logout separately.
+func ScrapeTweetsByQuery(scraper *twitterscraper.Scraper, query string, count int, searchMode twitterscraper.SearchMode) {
+	if scraper == nil {
+		log.Fatal("Scraper instance is nil. Please initialize and log in before calling ScrapeTweetsByQuery.")
+		return
 	}
 
 	// Set search mode
@@ -30,11 +26,5 @@ func ScrapeTweetsByQuery(query string, count int, searchMode twitterscraper.Sear
 			continue
 		}
 		fmt.Println(tweet.Tweet.Text)
-	}
-
-	// Optionally, log out after the operation is complete
-	err = Logout(scraper) // Use the modular Logout function from auth.go
-	if err != nil {
-		log.Printf("Error logging out: %v", err)
 	}
 }
