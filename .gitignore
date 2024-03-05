@@ -52,3 +52,4 @@ node_modules
 
 # masa-keys generated and used with Docker
 .masa-keys
+yarn.lock
