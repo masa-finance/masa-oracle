@@ -53,3 +53,8 @@ node_modules
 # masa-keys generated and used with Docker
 .masa-keys
 yarn.lock
+/pkg/masacrypto/cert.pem
+/pkg/masacrypto/key.pem
+/pkg/masacrypto/testCert.pem
+/pkg/masacrypto/testKey.pem
+/pkg/badgerdb/tmp.db

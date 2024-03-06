@@ -8,11 +8,9 @@ package badgerdb
 
 import (
 	"encoding/hex"
-	"fmt"
 
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -20,17 +18,13 @@ import (
 )
 
 // AuthorizedNodes Set of authorized nodes that can write to the database
-type AuthorizedNodes map[peer.ID]bool
+type AuthorizedNodes map[string]bool
 
-// Tmp
-var authorizedNodes = AuthorizedNodes{
-	"node1": true,
-	"node2": true,
-}
+// authorizedNodes Interface
+var authorizedNodes = AuthorizedNodes{}
 
-// checks if a node is authorized to write to the database
-func isAuthorized(nodeID peer.ID) bool {
-	// authorizedNodes := viper.GetStringMapStringSlice("ALLOWED_PEER_IDS")
+// Modifier idiomatic check if a node is authorized to write to the database
+func isAuthorized(nodeID string) bool {
 	// Check if the node is in the list of authorized nodes
 	for id := range authorizedNodes {
 		if id == nodeID {
@@ -40,41 +34,35 @@ func isAuthorized(nodeID peer.ID) bool {
 	return false
 }
 
-// Load the allowedPeerID and its public key from Viper configuration
-func getAllowedPeerIDAndKey() (string, libp2pCrypto.PubKey, error) {
-	allowedPeerID := config.GetInstance().AllowedPeerId
-	// Assuming the public key is stored in a configuration key "ALLOWED_PEER_PUBKEY"
-	allowedPeerPubKeyString := config.GetInstance().AllowedPeerPublicKey
+// Verifier checks if the given host is allowed to write to the database and verifies the signature
+func Verifier(h host.Host, data []byte, signature []byte) bool {
+	// Load configuration instance
+	cfg := config.GetInstance()
+
+	// Get allowed peer ID and public key from the configuration
+	allowedPeerID := cfg.AllowedPeerId
+	allowedPeerPubKeyString := cfg.AllowedPeerPublicKey
 
 	if allowedPeerID == "" || allowedPeerPubKeyString == "" {
 		logrus.Warn("Allowed peer ID or public key not found in configuration")
-		return "", nil, fmt.Errorf("allowed peer ID or public key not configured")
-	}
-
-	allowedPeerPubKeyBytes, err := hex.DecodeString(allowedPeerPubKeyString)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to decode allowed peer public key")
-		return "", nil, err
-	}
-
-	allowedPeerPubKey, err := libp2pCrypto.UnmarshalPublicKey(allowedPeerPubKeyBytes)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to unmarshal allowed peer public key")
-		return "", nil, err
-	}
-
-	return allowedPeerID, allowedPeerPubKey, nil
-}
-
-// CanWrite checks if the given host is allowed to write to the database
-// Now also requires data and signature for verification
-func CanWrite(h host.Host, data []byte, signature []byte) bool {
-	allowedPeerID, allowedPeerPubKey, err := getAllowedPeerIDAndKey()
-	if err != nil {
-		logrus.WithError(err).Error("Failed to load allowed peer ID and public key")
 		return false
 	}
 
+	// Decode the public key
+	allowedPeerPubKeyBytes, err := hex.DecodeString(allowedPeerPubKeyString)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to decode allowed peer public key")
+		return false
+	}
+
+	// Unmarshal the public key
+	allowedPeerPubKey, err := libp2pCrypto.UnmarshalPublicKey(allowedPeerPubKeyBytes)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to unmarshal allowed peer public key")
+		return false
+	}
+
+	// Check if the host ID matches the allowed peer ID
 	if h.ID().String() != allowedPeerID {
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),
@@ -83,11 +71,8 @@ func CanWrite(h host.Host, data []byte, signature []byte) bool {
 		return false
 	}
 
-	// Convert the signature byte slice into a hexadecimal string
-	signatureHex := hex.EncodeToString(signature)
-
-	// Verify the signature using the hexadecimal string
-	isValid, err := consensus.VerifySignature(allowedPeerPubKey, data, signatureHex)
+	// Verify the signature
+	isValid, err := consensus.VerifySignature(allowedPeerPubKey, data, hex.EncodeToString(signature))
 	if err != nil || !isValid {
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),
@@ -101,5 +86,10 @@ func CanWrite(h host.Host, data []byte, signature []byte) bool {
 		"hostID":        h.ID().String(),
 		"allowedPeerID": allowedPeerID,
 	}).Info("Host is allowed to write to the database")
+
+	authorizedNodes = map[string]bool{
+		allowedPeerID: true,
+	}
+
 	return true
 }

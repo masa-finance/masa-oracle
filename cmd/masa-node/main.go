@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
+
 	"github.com/dgraph-io/badger/v4"
 	"github.com/sirupsen/logrus"
 
@@ -23,28 +25,12 @@ func main() {
 	cfg.SetupLogging()
 	keyManager := masacrypto.KeyManagerInstance()
 
-	logrus.Info("allowedPeerID", cfg.AllowedPeerId)
-	// Initialize the database
-	db, err := badgerdb.InitializeDB()
-	if err != nil {
-		logrus.Fatalf("Failed to initialize database: %v", err)
-	}
-	defer func(db *badger.DB) {
-		err := db.Close()
-		if err != nil {
-			logrus.Errorf("Failed to close the database: %v", err)
-		}
-	}(db) // This ensures the database is properly closed on application exit
-
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if err != nil {
-		logrus.Fatal(err)
-	}
 	if cfg.StakeAmount != "" {
 		// Exit after staking, do not proceed to start the node
-		err = handleStaking(keyManager.EcdsaPrivKey)
+		err := handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -53,7 +39,7 @@ func main() {
 
 	var isStaked bool
 	// Verify the staking event
-	isStaked, err = staking.VerifyStakingEvent(keyManager.EthAddress)
+	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -78,6 +64,36 @@ func main() {
 	} else {
 		logrus.Info("This node is not set as the allowed peer")
 	}
+
+	// WIP Testing using the current node as the approved peer
+	data := []byte(node.Host.ID().String())
+	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+	if err != nil {
+		logrus.Errorf("%v", err)
+	}
+
+	// Initialize the database
+	db, err := badgerdb.InitializeDB(node.Host, data, signature)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer func(db *badger.DB) {
+		err := db.Close()
+		if err != nil {
+			logrus.Errorf("Failed to close the database: %v", err)
+		}
+	}(db) // This ensures the database is properly closed on application exit
+
+	/// WIP db tests - will be removed
+
+	writeResults := badgerdb.WriteData(db, []byte("hello"), []byte("world"), node.Host)
+	logrus.Printf("The writeResults: %s\n", writeResults)
+
+	// testing unauthorized
+	result := badgerdb.ReadData(db, "hello", node.Host)
+	logrus.Printf("data ===>: %s\n", result)
+
+	/// db tests - will be removed
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

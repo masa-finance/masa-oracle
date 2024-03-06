@@ -1,6 +1,7 @@
 package badgerdb
 
 import (
+	"github.com/libp2p/go-libp2p/core/host"
 	"os"
 
 	"github.com/dgraph-io/badger/v4"
@@ -10,7 +11,7 @@ import (
 )
 
 // InitializeDB initializes and returns a BadgerDB instance
-func InitializeDB() (*badger.DB, error) {
+func InitializeDB(h host.Host, data []byte, signature []byte) (*badger.DB, error) {
 	setupDatabasePath()
 	db, err := InitializeStorage(config.GetInstance().DbPath)
 	if err != nil {
@@ -18,6 +19,9 @@ func InitializeDB() (*badger.DB, error) {
 		return nil, err
 	}
 	logrus.Info("BadgerDB initialized successfully in masa-node")
+
+	_ = Verifier(h, data, signature)
+
 	return db, nil
 }
 

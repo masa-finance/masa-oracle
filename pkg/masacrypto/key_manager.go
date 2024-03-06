@@ -93,7 +93,7 @@ func (km *KeyManager) loadPrivateKey() (err error) {
 	if err != nil {
 		return err
 	}
-	// TODO: do we still need the ecdsa version saved to a file?
+
 	err = saveEcdesaPrivateKeyToFile(km.EcdsaPrivKey, fmt.Sprintf("%s.ecdsa", keyFile))
 	if err != nil {
 		return err
