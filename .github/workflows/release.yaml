@@ -59,10 +59,11 @@ jobs:
     environment:
       name: ${{ needs.build-and-release.outputs.environment }}
     steps:
-    - name: Authenticate to Google Cloud
+    - id: auth
       uses: google-github-actions/auth@v2
       with:
-        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+        workload_identity_provider: projects/784882329213/locations/global/workloadIdentityPools/github-oidc-pool/providers/github-oidc-provider
+        service_account: gh-masa-oracle-${{ github.ref_name }}@masa-chain.iam.gserviceaccount.com
 
     - name: Update Instance Metadata
       run: |
