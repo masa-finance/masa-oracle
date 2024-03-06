@@ -34,7 +34,7 @@ func isAuthorized(nodeID string) bool {
 	return false
 }
 
-// Verifier checks if the given host is allowed to write to the database and verifies the signature
+// Verifier checks if the given host is allowed to access to the database and verifies the signature
 func Verifier(h host.Host, data []byte, signature []byte) bool {
 	// Load configuration instance
 	cfg := config.GetInstance()
