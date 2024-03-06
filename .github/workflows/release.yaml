@@ -7,6 +7,10 @@ on:
       - test
       - dev
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
