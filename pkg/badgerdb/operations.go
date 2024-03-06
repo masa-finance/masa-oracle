@@ -10,7 +10,6 @@ import (
 
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
-// It now requires the data (key + value) and signature for verification.
 func WriteData(db *badger.DB, key []byte, value []byte, h host.Host) error {
 
 	if !isAuthorized(h.ID().String()) {
