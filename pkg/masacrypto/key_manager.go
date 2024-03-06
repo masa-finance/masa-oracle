@@ -71,8 +71,11 @@ func KeyManagerInstance() *KeyManager {
 func (km *KeyManager) loadPrivateKey() (err error) {
 	var keyFile string
 	cfg := config.GetInstance()
-	if cfg.PrivateKey != "" {
+	if len(cfg.PrivateKey) > 0 {
 		km.Libp2pPrivKey, err = getPrivateKeyFromEnv(cfg.PrivateKey)
+		if err != nil {
+			return err
+		}
 	} else {
 		keyFile = config.GetInstance().PrivateKeyFile
 		// Check if the private key file exists

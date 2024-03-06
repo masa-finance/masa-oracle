@@ -105,7 +105,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
 	viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 	viper.SetDefault(Environment, os.Getenv("ENV"))
-	viper.SetDefault(FilePath, os.Getenv("FILEPATH"))
+	viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
 
 	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
@@ -155,6 +155,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, LogLevel, viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.DbPath, DbPath, viper.GetString(DbPath), "The badger database path")
+	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

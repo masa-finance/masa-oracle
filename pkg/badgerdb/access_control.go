@@ -12,11 +12,33 @@ import (
 
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 )
+
+// AuthorizedNodes Set of authorized nodes that can write to the database
+type AuthorizedNodes map[peer.ID]bool
+
+// Tmp
+var authorizedNodes = AuthorizedNodes{
+	"node1": true,
+	"node2": true,
+}
+
+// checks if a node is authorized to write to the database
+func isAuthorized(nodeID peer.ID) bool {
+	// authorizedNodes := viper.GetStringMapStringSlice("ALLOWED_PEER_IDS")
+	// Check if the node is in the list of authorized nodes
+	for id := range authorizedNodes {
+		if id == nodeID {
+			return true
+		}
+	}
+	return false
+}
 
 // Load the allowedPeerID and its public key from Viper configuration
 func getAllowedPeerIDAndKey() (string, libp2pCrypto.PubKey, error) {

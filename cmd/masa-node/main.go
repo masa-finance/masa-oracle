@@ -23,6 +23,7 @@ func main() {
 	cfg.SetupLogging()
 	keyManager := masacrypto.KeyManagerInstance()
 
+	logrus.Info("allowedPeerID", cfg.AllowedPeerId)
 	// Initialize the database
 	db, err := badgerdb.InitializeDB()
 	if err != nil {
