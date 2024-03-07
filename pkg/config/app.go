@@ -66,6 +66,7 @@ type AppConfig struct {
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	DbPath               string   `mapstructure:"dbPath"`
 	FilePath             string   `mapstructure:"FilePath"`
+	WriterNode           string   `mapstructure:"writerNode"`
 }
 
 func GetInstance() *AppConfig {
@@ -106,6 +107,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 	viper.SetDefault(Environment, os.Getenv("ENV"))
 	viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
+	viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
 
 	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
@@ -156,6 +158,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.DbPath, DbPath, viper.GetString(DbPath), "The badger database path")
 	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
+	pflag.StringVar(&c.WriterNode, WriterNode, viper.GetString(WriterNode), "The approved writer node addr")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

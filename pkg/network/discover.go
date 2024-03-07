@@ -26,7 +26,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 		logrus.Infof("Successfully advertised protocol")
 	}
 
-	ticker := time.NewTicker(time.Second * 120)
+	ticker := time.NewTicker(time.Second * 5) // 120
 	defer ticker.Stop()
 
 	for {

@@ -84,16 +84,14 @@ func main() {
 		}
 	}(db) // This ensures the database is properly closed on application exit
 
-	/// WIP db tests - will be removed
-
 	writeResults := badgerdb.WriteData(db, []byte("hello"), []byte("world"), node.Host)
 	logrus.Printf("The writeResults: %s\n", writeResults)
 
 	// testing unauthorized
-	result := badgerdb.ReadData(db, "hello", node.Host)
-	logrus.Printf("data ===>: %s\n", result)
+	readResults := badgerdb.ReadData(db, "hello", node.Host)
+	logrus.Printf("data ===>: %s\n", readResults)
 
-	/// db tests - will be removed
+	/// WIP db tests - will be removed
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

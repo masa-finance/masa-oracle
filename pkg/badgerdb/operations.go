@@ -16,7 +16,7 @@ func WriteData(db *badger.DB, key []byte, value []byte, h host.Host) error {
 		logrus.WithFields(logrus.Fields{
 			"nodeID": h.ID().String(),
 		}).Error("node is not authorized to write to the datastore")
-		return fmt.Errorf("unauthorized node is not authorized to access the datastore")
+		return fmt.Errorf("401, node is not authorized to write to the datastore")
 	}
 
 	err := db.Update(func(txn *badger.Txn) error {
@@ -37,13 +37,13 @@ func WriteData(db *badger.DB, key []byte, value []byte, h host.Host) error {
 // It requires the host for access control verification before reading.
 func ReadData(db *badger.DB, key string, h host.Host) []byte {
 
-	// @TODO CAN ANY NODE READ?
-	if isAuthorized(h.ID().String()) {
-		logrus.WithFields(logrus.Fields{
-			"nodeID": h.ID().String(),
-		}).Error("authorized node is not authorized to read the datastore")
-		return []byte("unauthorized node is not authorized to access the datastore")
-	}
+	// @TODO verify we want any node to read if not we can implement here
+	//if isAuthorized(h.ID().String()) {
+	//	logrus.WithFields(logrus.Fields{
+	//		"nodeID": h.ID().String(),
+	//	}).Error("node is not authorized to read the datastore")
+	//	return []byte("401, node is not authorized to read from the datastore")
+	//}
 
 	var result []byte
 	_ = db.View(func(txn *badger.Txn) error {
