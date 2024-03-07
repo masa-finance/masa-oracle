@@ -5,14 +5,14 @@ package tests
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
-	"path/filepath"
+	twitterscraper "github.com/n0madic/twitter-scraper"
+	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
-	twitterscraper "github.com/n0madic/twitter-scraper"
-	"github.com/sirupsen/logrus"
 )
 
 // Global scraper instance
@@ -44,7 +44,7 @@ func setup() {
 	password := appConfig.TwitterPassword
 	logrus.WithFields(logrus.Fields{"username": username}).Debug("Attempting to login")
 
-	twoFACode := appConfig.Twitter2FACode
+	twoFACode := appConfig.Twitter2FaCode
 	var err error
 	if twoFACode != "" {
 		logrus.WithField("2FA", "provided").Debug("2FA code is provided, attempting login with 2FA")

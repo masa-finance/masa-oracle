@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -63,7 +64,11 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	DbPath               string   `mapstructure:"dbPath"`
-	TwitterCookiesPath   string   `mapstructure:"TwitterCookiesPath"`
+	// These may be moved to a separate struct
+	TwitterCookiesPath string `mapstructure:"TwitterCookiesPath"`
+	TwitterUsername    string `mapstructure:"TwitterUsername"`
+	TwitterPassword    string `mapstructure:"TwitterPassword"`
+	Twitter2FaCode     string `mapstructure:"Twitter2FACode"`
 }
 
 func GetInstance() *AppConfig {
@@ -118,6 +123,10 @@ func (c *AppConfig) setFileConfig() {
 }
 
 func (c *AppConfig) setEnvVariableConfig() {
+	err := godotenv.Load()
+	if err != nil {
+		logrus.Error("Error loading .env file")
+	}
 	viper.AutomaticEnv()
 }
 
@@ -140,6 +149,11 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, LogLevel, viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.DbPath, DbPath, viper.GetString(DbPath), "The badger database path")
+
+	pflag.StringVar(&c.TwitterUsername, TwitterUserName, viper.GetString(TwitterUserName), "Twitter UserName")
+	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
+	pflag.StringVar(&c.Twitter2FaCode, Twitter2FACode, viper.GetString(Twitter2FACode), "Twitter 2FA Code")
+
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)
