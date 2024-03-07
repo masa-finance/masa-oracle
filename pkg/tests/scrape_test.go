@@ -44,7 +44,7 @@ func setup() {
 	password := appConfig.TwitterPassword
 	logrus.WithFields(logrus.Fields{"username": username}).Debug("Attempting to login")
 
-	twoFACode := os.Getenv("TWITTER_2FA_CODE")
+	twoFACode := appConfig.Twitter2FACode
 	var err error
 	if twoFACode != "" {
 		logrus.WithField("2FA", "provided").Debug("2FA code is provided, attempting login with 2FA")
