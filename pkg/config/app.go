@@ -63,6 +63,7 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	DbPath               string   `mapstructure:"dbPath"`
+	TwitterCookiesPath   string   `mapstructure:"TwitterCookiesPath"`
 }
 
 func GetInstance() *AppConfig {
@@ -102,7 +103,6 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 	viper.SetDefault(DbPath, filepath.Join(viper.GetString(MasaDir), "masa-node-db"))
-
 }
 
 // TODO: add a variable to allow for the config file location to be set

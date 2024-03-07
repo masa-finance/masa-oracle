@@ -1,63 +1,99 @@
+// go test -v ./pkg/tests -run TestScrapeTweetsByQuery
+// export TWITTER_2FA_CODE="873855"
 package tests
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
+	"path/filepath"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
 
-func TestScrapeTweetsByQuery(t *testing.T) {
-	logrus.SetLevel(logrus.DebugLevel)
-	scraper := twitterscraper.New()
-	username := ""
-	password := ""
-	logrus.WithFields(logrus.Fields{"username": username}).Debug("Attempting to login")
+// Global scraper instance
+var scraper *twitterscraper.Scraper
 
-	// Attempt to retrieve a 2FA code from environment variables
-	twoFACode := os.Getenv("TWITTER_2FA_CODE")
-	if twoFACode != "" {
-		logrus.WithField("2FA", "provided").Debug("2FA code is provided, attempting login with 2FA")
-	} else {
-		logrus.Debug("No 2FA code provided, attempting basic login")
+func setup() {
+	logrus.SetLevel(logrus.DebugLevel)
+	if scraper == nil {
+		scraper = twitterscraper.New()
 	}
 
+	// Use GetInstance from config to access MasaDir
+	appConfig := config.GetInstance()
+
+	// Construct the cookie file path using MasaDir from AppConfig
+	cookieFilePath := filepath.Join(appConfig.MasaDir, "twitter_cookies.json")
+
+	// Attempt to load cookies
+	if err := twitter.LoadCookies(scraper, cookieFilePath); err == nil {
+		logrus.Debug("Cookies loaded successfully.")
+		if twitter.IsLoggedIn(scraper) {
+			logrus.Debug("Already logged in via cookies.")
+			return
+		}
+	}
+
+	// If cookies are not valid or do not exist, proceed with login
+	username := appConfig.TwitterUsername
+	password := appConfig.TwitterPassword
+	logrus.WithFields(logrus.Fields{"username": username}).Debug("Attempting to login")
+
+	twoFACode := os.Getenv("TWITTER_2FA_CODE")
 	var err error
 	if twoFACode != "" {
-		// If a 2FA code is provided, use it for login
+		logrus.WithField("2FA", "provided").Debug("2FA code is provided, attempting login with 2FA")
 		err = twitter.Login(scraper, username, password, twoFACode)
 	} else {
-		// Otherwise, proceed with basic login
+		logrus.Debug("No 2FA code provided, attempting basic login")
 		err = twitter.Login(scraper, username, password)
 	}
 
 	if err != nil {
 		logrus.WithError(err).Fatal("Login failed")
-		return // Ensure the function exits on login failure
+		return
 	}
+
+	// Save cookies after successful login
+	if err := twitter.SaveCookies(scraper, cookieFilePath); err != nil {
+		logrus.WithError(err).Error("Failed to save cookies")
+		return
+	}
+
 	logrus.Debug("Login successful")
+}
 
-	// Optionally, check if logged in
-	if twitter.IsLoggedIn(scraper) {
-		logrus.Debug("Confirmed logged in.")
-	} else {
-		logrus.Debug("Not logged in.")
-		return // Ensure the function exits if not logged in
-	}
+func TestScrapeTweetsByQuery(t *testing.T) {
+	// Ensure setup is done before running the test
+	setup()
 
-	// Example of using ScrapeTweetsByQuery after successful login
-	query := "$WIF"                           // Example query
-	count := 500                              // Number of tweets to fetch
-	searchMode := twitterscraper.SearchLatest // Search mode
-	twitter.ScrapeTweetsByQuery(scraper, query, count, searchMode)
-
-	// Don't forget to logout after testing
-	err = twitter.Logout(scraper)
+	query := "TRUMP"
+	count := 200
+	searchMode := twitterscraper.SearchLatest
+	tweets, err := twitter.ScrapeTweetsByQuery(scraper, query, count, searchMode)
 	if err != nil {
-		logrus.WithError(err).Warn("Logout failed")
-	} else {
-		logrus.Debug("Logged out successfully.")
+		logrus.WithError(err).Error("Failed to scrape tweets")
+		return
 	}
+
+	// Serialize the tweets data to JSON
+	tweetsData, err := json.Marshal(tweets)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to serialize tweets data")
+		return
+	}
+
+	// Write the serialized data to a file
+	filePath := "scraped_tweets.json"
+	err = os.WriteFile(filePath, tweetsData, 0644)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to write tweets data to file")
+		return
+	}
+	logrus.WithField("file", filePath).Debug("Tweets data written to file successfully.")
 }
