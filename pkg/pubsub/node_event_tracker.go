@@ -167,7 +167,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	existingData.LastUpdated = data.LastUpdated
 
 	// maxDifference := time.Minute * 5
-	maxDifference := time.Millisecond * 5
+	maxDifference := time.Millisecond * 15
 
 	// Handle discrepancies for existing nodes
 	if !data.LastJoined.IsZero() &&

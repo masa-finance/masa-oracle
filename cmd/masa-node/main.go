@@ -2,22 +2,31 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
-
-	"github.com/dgraph-io/badger/v4"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
-	"github.com/masa-finance/masa-oracle/pkg/badgerdb"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
+
+type NodeStatus struct {
+	PeerID        string        `json:"peerId"`
+	IsStaked      bool          `json:"isStaked"`
+	TotalUpTime   time.Duration `json:"totalUpTime"`
+	FirstLaunched time.Time     `json:"firstLaunched"`
+	LastLaunched  time.Time     `json:"lastLaunched"`
+}
 
 func main() {
 	cfg := config.GetInstance()
@@ -65,33 +74,53 @@ func main() {
 		logrus.Info("This node is not set as the allowed peer")
 	}
 
-	// WIP Testing using the current node as the approved peer
+	// WIP
+	//data := []byte(node.Host.ID().String())
+	//signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+	//if err != nil {
+	//	logrus.Errorf("%v", err)
+	//}
+
+	// Initialize the database
+	//db, err := badgerdb.InitializeDB(node.Host, data, signature)
+	//if err != nil {
+	//	logrus.Fatalf("Failed to initialize database: %v", err)
+	//}
+	//defer func(db *badger.DB) {
+	//	err := db.Close()
+	//	if err != nil {
+	//		logrus.Errorf("Failed to close the database: %v", err)
+	//	}
+	//}(db) // This ensures the database is properly closed on application exit
+	// WIP
+
+	// Initialize dht db storing
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
 	if err != nil {
 		logrus.Errorf("%v", err)
 	}
 
-	// Initialize the database
-	db, err := badgerdb.InitializeDB(node.Host, data, signature)
-	if err != nil {
-		logrus.Fatalf("Failed to initialize database: %v", err)
+	db.Verifier(node.Host, data, signature)
+
+	up := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	totalUpTime := up.GetAccumulatedUptime()
+	status := NodeStatus{
+		PeerID:        node.Host.ID().String(),
+		IsStaked:      isStaked,
+		TotalUpTime:   totalUpTime,
+		FirstLaunched: time.Now().Add(-totalUpTime),
+		LastLaunched:  time.Now(),
 	}
-	defer func(db *badger.DB) {
-		err := db.Close()
-		if err != nil {
-			logrus.Errorf("Failed to close the database: %v", err)
-		}
-	}(db) // This ensures the database is properly closed on application exit
+	jsonData, _ := json.Marshal(status)
+	fmt.Println(string(jsonData))
 
-	writeResults := badgerdb.WriteData(db, []byte("hello"), []byte("world"), node.Host)
-	logrus.Printf("The writeResults: %s\n", writeResults)
+	success, _ := db.WriteData(node, "/db/"+node.Host.ID().String(), jsonData, node.Host)
+	logrus.Printf("writeResult %+v", success)
 
-	// testing unauthorized
-	readResults := badgerdb.ReadData(db, "hello", node.Host)
-	logrus.Printf("data ===>: %s\n", readResults)
-
-	/// WIP db tests - will be removed
+	nodeVal := db.ReadData(node, "/db/"+node.Host.ID().String(), node.Host)
+	logrus.Printf("readResult: %+v\n", nodeVal)
+	// Initialize dht db storing
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

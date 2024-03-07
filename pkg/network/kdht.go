@@ -24,11 +24,17 @@ const (
 	PeerRemoved = "PeerRemoved"
 )
 
+type dbValidator struct{}
+
+func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
+func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
+
 func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Multiaddr,
 	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
+	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
 
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {

@@ -4,7 +4,7 @@
 // provided by the peer is verified to ensure it matches the allowed credentials. This mechanism is vital for maintaining the database's security by
 // ensuring that only authorized peers can perform write operations.
 
-package badgerdb
+package db
 
 import (
 	"encoding/hex"

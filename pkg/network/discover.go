@@ -26,7 +26,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 		logrus.Infof("Successfully advertised protocol")
 	}
 
-	ticker := time.NewTicker(time.Second * 5) // 120
+	ticker := time.NewTicker(time.Second * 10) // 120
 	defer ticker.Stop()
 
 	for {
@@ -64,6 +64,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					logrus.Info("Peer channel closed, restarting discovery")
 					break
 				}
+				// @TODO bugfix not working -- these are 2 different types
 				if availPeer.ID == host.ID() {
 					logrus.Debugf("Skipping connect to self: %s", availPeer.String())
 					continue
