@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/sirupsen/logrus"
@@ -78,22 +78,14 @@ func main() {
 
 	// WIP
 
-	//peers, _ := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
-	//for _, b := range peers {
-	//	peerInfo, _ := peer.AddrInfoFromP2pAddr(b)
-	//	logrus.Println(peerInfo)
-	//	_ = node.Host.Connect(ctx, *peerInfo)
-	//}
-
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
 	if err != nil {
 		logrus.Errorf("%v", err)
 	}
+	_ = db.Verifier(node.Host, data, signature)
 
 	// *** initialize dht database example for review ***
-
-	_ = db.Verifier(node.Host, data, signature)
 
 	//up := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	//totalUpTime := up.GetAccumulatedUptime()
@@ -120,16 +112,16 @@ func main() {
 	// or an empty SharedData struct for any data
 
 	sharedData := SharedData{}
-	sharedData["name"] = "John Doe"
-	sharedData["age"] = 30
-	sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
+	//sharedData["name"] = "John Doe"
+	//sharedData["age"] = 30
+	//sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
 
-	jsonData, _ := json.Marshal(sharedData)
+	// jsonData, _ := json.Marshal(sharedData)
 
 	keyStr := "twitter_data"
 
-	success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
-	logrus.Printf("writeResult %+v", success)
+	//success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
+	//logrus.Printf("writeResult %+v", success)
 
 	nodeVal := db.ReadData(node, "/db/"+keyStr, node.Host)
 	_ = json.Unmarshal(nodeVal, &sharedData)
