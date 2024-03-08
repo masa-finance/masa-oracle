@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -63,6 +64,12 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	DbPath               string   `mapstructure:"dbPath"`
+	// These may be moved to a separate struct
+	TwitterCookiesPath string `mapstructure:"TwitterCookiesPath"`
+	TwitterUsername    string `mapstructure:"TwitterUsername"`
+	TwitterPassword    string `mapstructure:"TwitterPassword"`
+	Twitter2FaCode     string `mapstructure:"Twitter2FaCode"`
+	ClaudeApiKey       string `mapstructure:"ClaudeApiKey"`
 }
 
 func GetInstance() *AppConfig {
@@ -102,7 +109,6 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 	viper.SetDefault(DbPath, filepath.Join(viper.GetString(MasaDir), "masa-node-db"))
-
 }
 
 // TODO: add a variable to allow for the config file location to be set
@@ -118,6 +124,10 @@ func (c *AppConfig) setFileConfig() {
 }
 
 func (c *AppConfig) setEnvVariableConfig() {
+	err := godotenv.Load()
+	if err != nil {
+		logrus.Error("Error loading .env file")
+	}
 	viper.AutomaticEnv()
 }
 
@@ -140,6 +150,11 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, LogLevel, viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.DbPath, DbPath, viper.GetString(DbPath), "The badger database path")
+
+	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
+	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
+	pflag.StringVar(&c.Twitter2FaCode, Twitter2FaCode, viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
+	pflag.StringVar(&c.ClaudeApiKey, ClaudeApiKey, viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)
