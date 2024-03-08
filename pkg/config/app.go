@@ -66,6 +66,7 @@ type AppConfig struct {
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	FilePath             string   `mapstructure:"FilePath"`
 	WriterNode           string   `mapstructure:"writerNode"`
+	CachePath            string   `mapstructure:"cachePath"`
 }
 
 func GetInstance() *AppConfig {
@@ -119,6 +120,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
+	viper.SetDefault(CachePath, filepath.Join(viper.GetString(MasaDir), "./CACHE"))
 }
 
 func (c *AppConfig) setFileConfig(path string) {
@@ -156,6 +158,8 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
 	pflag.StringVar(&c.WriterNode, WriterNode, viper.GetString(WriterNode), "The approved writer node addr")
+	pflag.StringVar(&c.CachePath, CachePath, viper.GetString(CachePath), "The resolver cache path")
+
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

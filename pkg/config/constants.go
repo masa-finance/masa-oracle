@@ -26,6 +26,7 @@ const (
 	Version     = "v0.0.9-alpha"
 	FilePath    = "FILE_PATH"
 	WriterNode  = "WRITER_NODE"
+	CachePath   = "CACHE_PATH"
 
 	MasaPrefix           = "/masa"
 	OracleProtocol       = "oracle_protocol"
