@@ -78,7 +78,7 @@ func main() {
 	}
 
 	// WIP
-	db.InitResolverCache()
+	go db.InitResolverCache()
 
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
@@ -114,16 +114,16 @@ func main() {
 	// or an empty SharedData struct for any data
 
 	sharedData := SharedData{}
-	// sharedData["name"] = "John Doe"
-	// sharedData["age"] = 30
-	// sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
+	sharedData["name"] = "John Doe"
+	sharedData["age"] = 30
+	sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
 
-	// jsonData, _ := json.Marshal(sharedData)
+	jsonData, _ := json.Marshal(sharedData)
 
 	keyStr := "twitter_data"
 
-	// success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
-	// logrus.Printf("writeResult %+v", success)
+	success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
+	logrus.Printf("writeResult %+v", success)
 
 	nodeVal := db.ReadData(node, "/db/"+keyStr, node.Host)
 	_ = json.Unmarshal(nodeVal, &sharedData)

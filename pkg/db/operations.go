@@ -27,10 +27,18 @@ func WriteData(node *masa.OracleNode, key string, value []byte, h host.Host) (bo
 	var err error
 	if key != node.Host.ID().String() {
 		err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
-		_, _ = PutCache(ctx, key, value)
+		res, er := PutCache(ctx, key, value)
+		if er != nil {
+			logrus.Errorf("%v", er)
+		}
+		logrus.Println("res", res)
 	} else {
 		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
-		_, _ = PutCache(ctx, node.Host.ID().String(), value)
+		res, er := PutCache(ctx, node.Host.ID().String(), value)
+		if er != nil {
+			logrus.Errorf("%v", er)
+		}
+		logrus.Println("res", res)
 	}
 
 	if err != nil {
@@ -63,12 +71,18 @@ func ReadData(node *masa.OracleNode, key string, h host.Host) []byte {
 
 	if key != node.Host.ID().String() {
 		val, err = node.DHT.GetValue(ctx, "/db/"+key)
-		cached := GetCache(ctx, key)
-		logrus.Info("cached", cached)
+		cached, er := GetCache(ctx, key)
+		if er != nil {
+			logrus.Errorf("%v", er)
+		}
+		logrus.Info("cached", string(cached))
 	} else {
 		val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
-		cached := GetCache(ctx, node.Host.ID().String())
-		logrus.Info("cached", cached)
+		cached, er := GetCache(ctx, node.Host.ID().String())
+		if er != nil {
+			logrus.Errorf("%v", er)
+		}
+		logrus.Info("cached", string(cached))
 	}
 
 	if err != nil {

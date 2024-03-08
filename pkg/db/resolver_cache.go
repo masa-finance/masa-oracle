@@ -32,20 +32,20 @@ func InitResolverCache() {
 }
 
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
-	key, _ := stringToCid(keyStr)
-	err := cache.Put(ctx, ds.NewKey("cache/"+key), value)
+	// key, _ := stringToCid(keyStr)
+	err := cache.Put(ctx, ds.NewKey("cache/"+keyStr), value)
 	if err != nil {
 		return nil, err
 	}
-	return key, nil
+	return keyStr, nil
 }
 
-func GetCache(ctx context.Context, key string) []byte {
-	value, err := cache.Get(ctx, ds.NewKey("cache/"+key))
+func GetCache(ctx context.Context, keyStr string) ([]byte, error) {
+	value, err := cache.Get(ctx, ds.NewKey("cache/"+keyStr))
 	if err != nil {
-		log.Fatalf("Failed to get data: %v", err)
+		return nil, err
 	}
-	return value
+	return value, nil
 }
 
 func DelCache(ctx context.Context, keyStr string) bool {
