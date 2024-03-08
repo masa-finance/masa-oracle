@@ -116,7 +116,7 @@ func main() {
 	//sharedData["age"] = 30
 	//sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
 
-	// jsonData, _ := json.Marshal(sharedData)
+	//jsonData, _ := json.Marshal(sharedData)
 
 	keyStr := "twitter_data"
 

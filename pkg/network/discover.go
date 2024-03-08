@@ -2,6 +2,8 @@ package network
 
 import (
 	"context"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
 	"time"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -64,8 +66,15 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					logrus.Info("Peer channel closed, restarting discovery")
 					break
 				}
-				// @TODO bugfix not working -- these are 2 different types
-				if availPeer.ID == host.ID() {
+				availPeerAddrInfo := peer.AddrInfo{
+					ID:    availPeer.ID,
+					Addrs: []multiaddr.Multiaddr{},
+				}
+				hostAddrInfo := peer.AddrInfo{
+					ID:    host.ID(),
+					Addrs: []multiaddr.Multiaddr{},
+				}
+				if availPeerAddrInfo.ID == hostAddrInfo.ID {
 					logrus.Debugf("Skipping connect to self: %s", availPeer.String())
 					continue
 				}
