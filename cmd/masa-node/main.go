@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
@@ -30,9 +28,7 @@ type NodeStatus struct {
 	LastLaunched  time.Time     `json:"lastLaunched"`
 }
 
-type SharedData struct {
-	Data string `json:"data"`
-}
+type SharedData map[string]interface{}
 
 func main() {
 	cfg := config.GetInstance()
@@ -82,12 +78,12 @@ func main() {
 
 	// WIP
 
-	peers, _ := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
-	for _, b := range peers {
-		peerInfo, _ := peer.AddrInfoFromP2pAddr(b)
-		logrus.Println(peerInfo)
-		_ = node.Host.Connect(ctx, *peerInfo)
-	}
+	//peers, _ := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
+	//for _, b := range peers {
+	//	peerInfo, _ := peer.AddrInfoFromP2pAddr(b)
+	//	logrus.Println(peerInfo)
+	//	_ = node.Host.Connect(ctx, *peerInfo)
+	//}
 
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
@@ -123,9 +119,11 @@ func main() {
 	// requires its own struct if data is specific
 	// or an empty SharedData struct for any data
 
-	sharedData := SharedData{
-		Data: "some twitter data",
-	}
+	sharedData := SharedData{}
+	sharedData["name"] = "John Doe"
+	sharedData["age"] = 30
+	sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
+
 	jsonData, _ := json.Marshal(sharedData)
 
 	keyStr := "twitter_data"
