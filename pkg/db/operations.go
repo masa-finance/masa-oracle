@@ -26,9 +26,11 @@ func WriteData(node *masa.OracleNode, key string, value []byte, h host.Host) (bo
 
 	var err error
 	if key != node.Host.ID().String() {
-		err = node.DHT.PutValue(ctx, "/db/"+string(key), value) // any key value so the data is public
+		err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
+		_, _ = PutCache(ctx, key, value)
 	} else {
 		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
+		_, _ = PutCache(ctx, node.Host.ID().String(), value)
 	}
 
 	if err != nil {
@@ -61,8 +63,12 @@ func ReadData(node *masa.OracleNode, key string, h host.Host) []byte {
 
 	if key != node.Host.ID().String() {
 		val, err = node.DHT.GetValue(ctx, "/db/"+key)
+		cached := GetCache(ctx, key)
+		logrus.Info("cached", cached)
 	} else {
 		val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
+		cached := GetCache(ctx, node.Host.ID().String())
+		logrus.Info("cached", cached)
 	}
 
 	if err != nil {

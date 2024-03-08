@@ -9,6 +9,7 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
 	leveldb "github.com/ipfs/go-ds-leveldb"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
@@ -20,17 +21,17 @@ type Record struct {
 	Value []byte
 }
 
-func InitCacheStore() {
+func InitResolverCache() {
 	var err error
-	cachePath := "./CACHE"
+	cachePath := config.GetInstance().CachePath
 	cache, err = leveldb.NewDatastore(cachePath, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Cache initialized")
+	fmt.Println("ResolverCache initialized")
 }
 
-func putData(ctx context.Context, keyStr string, value []byte) (any, error) {
+func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
 	key, _ := stringToCid(keyStr)
 	err := cache.Put(ctx, ds.NewKey("cache/"+key), value)
 	if err != nil {
@@ -39,7 +40,7 @@ func putData(ctx context.Context, keyStr string, value []byte) (any, error) {
 	return key, nil
 }
 
-func getData(ctx context.Context, key string) []byte {
+func GetCache(ctx context.Context, key string) []byte {
 	value, err := cache.Get(ctx, ds.NewKey("cache/"+key))
 	if err != nil {
 		log.Fatalf("Failed to get data: %v", err)
@@ -47,7 +48,7 @@ func getData(ctx context.Context, key string) []byte {
 	return value
 }
 
-func delData(ctx context.Context, keyStr string) bool {
+func DelCache(ctx context.Context, keyStr string) bool {
 	var err error
 	key := ds.NewKey("cache/" + keyStr)
 	err = cache.Delete(ctx, key)
@@ -57,7 +58,7 @@ func delData(ctx context.Context, keyStr string) bool {
 	return true
 }
 
-func updateData(ctx context.Context, keyStr string, newValue []byte) (bool, error) {
+func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, error) {
 	// Check if the key exists
 	key := ds.NewKey("cache/" + keyStr)
 	res, err := cache.Has(ctx, key)
@@ -77,10 +78,10 @@ func updateData(ctx context.Context, keyStr string, newValue []byte) (bool, erro
 	return true, nil
 }
 
-func queryAllData(ctx context.Context) ([]Record, error) {
+func QueryAll(ctx context.Context) ([]Record, error) {
 	results, err := cache.Query(ctx, query.Query{})
 	if err != nil {
-		logrus.Errorf("Failed to query the datastore: %v", err)
+		logrus.Errorf("Failed to query the resolver cache: %v", err)
 		return nil, err
 	}
 	defer results.Close()

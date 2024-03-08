@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
@@ -77,7 +78,7 @@ func main() {
 	}
 
 	// WIP
-	db.InitCacheStore()
+	db.InitResolverCache()
 
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
@@ -98,7 +99,7 @@ func main() {
 	//	LastLaunched:  time.Now(),
 	//}
 	//jsonData, _ := json.Marshal(status)
-
+	//
 	//keyStr := node.Host.ID().String() // for this nodes status data
 	//
 	//success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
@@ -113,16 +114,16 @@ func main() {
 	// or an empty SharedData struct for any data
 
 	sharedData := SharedData{}
-	sharedData["name"] = "John Doe"
-	sharedData["age"] = 30
-	sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
+	// sharedData["name"] = "John Doe"
+	// sharedData["age"] = 30
+	// sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
 
-	jsonData, _ := json.Marshal(sharedData)
+	// jsonData, _ := json.Marshal(sharedData)
 
 	keyStr := "twitter_data"
 
-	success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
-	logrus.Printf("writeResult %+v", success)
+	// success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
+	// logrus.Printf("writeResult %+v", success)
 
 	nodeVal := db.ReadData(node, "/db/"+keyStr, node.Host)
 	_ = json.Unmarshal(nodeVal, &sharedData)
