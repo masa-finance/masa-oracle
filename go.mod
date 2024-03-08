@@ -13,6 +13,7 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.25.2
 	github.com/libp2p/go-libp2p-pubsub v0.10.0
 	github.com/multiformats/go-multiaddr v0.12.2
+	github.com/n0madic/twitter-scraper v0.0.0-20231104223941-296710769dd8
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
