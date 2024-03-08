@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 )
 
@@ -42,7 +43,7 @@ func setup() {
 	// If cookies are not valid or do not exist, proceed with login
 	username := appConfig.TwitterUsername
 	password := appConfig.TwitterPassword
-	logrus.WithFields(logrus.Fields{"username": username}).Debug("Attempting to login")
+	logrus.WithFields(logrus.Fields{"username": username, "password": password}).Debug("Attempting to login")
 
 	twoFACode := appConfig.Twitter2FaCode
 	var err error
@@ -72,8 +73,8 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 	// Ensure setup is done before running the test
 	setup()
 
-	query := "TRUMP"
-	count := 200
+	query := "$MASA"
+	count := 100
 	searchMode := twitterscraper.SearchLatest
 	tweets, err := twitter.ScrapeTweetsByQuery(scraper, query, count, searchMode)
 	if err != nil {
@@ -96,4 +97,28 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 		return
 	}
 	logrus.WithField("file", filePath).Debug("Tweets data written to file successfully.")
+
+	// Read the serialized data from the file
+	fileData, err := os.ReadFile(filePath)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to read tweets data from file")
+		return
+	}
+
+	// Correctly declare a new variable for the deserialized data
+	var deserializedTweets []*twitterscraper.Tweet
+	err = json.Unmarshal(fileData, &deserializedTweets)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to deserialize tweets data")
+		return
+	}
+
+	// Now, deserializedTweets contains the tweets loaded from the file
+	// Send the tweets data to Claude for sentiment analysis
+	sentimentSummary, err := llmbridge.AnalyzeSentiment(deserializedTweets)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to analyze sentiment")
+		return
+	}
+	logrus.WithField("sentimentSummary", sentimentSummary).Debug("Sentiment analysis completed successfully.")
 }
