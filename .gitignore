@@ -57,4 +57,3 @@ yarn.lock
 /pkg/masacrypto/key.pem
 /pkg/masacrypto/testCert.pem
 /pkg/masacrypto/testKey.pem
-/pkg/badgerdb/tmp.db

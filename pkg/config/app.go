@@ -64,7 +64,6 @@ type AppConfig struct {
 	AllowedPeerPublicKey string   `mapstructure:"allowedPeerPublicKey"`
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
-	DbPath               string   `mapstructure:"dbPath"`
 	FilePath             string   `mapstructure:"FilePath"`
 	WriterNode           string   `mapstructure:"writerNode"`
 }
@@ -120,7 +119,6 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
-	viper.SetDefault(DbPath, filepath.Join(viper.GetString(MasaDir), "masa-node-db"))
 }
 
 func (c *AppConfig) setFileConfig(path string) {
@@ -156,7 +154,6 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.Data, "data", viper.GetString("data"), "The data to verify the signature against")
 	pflag.StringVar(&c.LogLevel, LogLevel, viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
-	pflag.StringVar(&c.DbPath, DbPath, viper.GetString(DbPath), "The badger database path")
 	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
 	pflag.StringVar(&c.WriterNode, WriterNode, viper.GetString(WriterNode), "The approved writer node addr")
 	pflag.Parse()

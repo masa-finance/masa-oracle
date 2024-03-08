@@ -3,8 +3,9 @@ package db
 import (
 	"context"
 	"fmt"
-	masa "github.com/masa-finance/masa-oracle/pkg"
 	"time"
+
+	masa "github.com/masa-finance/masa-oracle/pkg"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
