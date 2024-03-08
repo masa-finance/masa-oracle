@@ -68,7 +68,8 @@ type AppConfig struct {
 	TwitterCookiesPath string `mapstructure:"TwitterCookiesPath"`
 	TwitterUsername    string `mapstructure:"TwitterUsername"`
 	TwitterPassword    string `mapstructure:"TwitterPassword"`
-	Twitter2FaCode     string `mapstructure:"Twitter2FACode"`
+	Twitter2FaCode     string `mapstructure:"Twitter2FaCode"`
+	ClaudeApiKey       string `mapstructure:"ClaudeApiKey"`
 }
 
 func GetInstance() *AppConfig {
@@ -150,10 +151,10 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.DbPath, DbPath, viper.GetString(DbPath), "The badger database path")
 
-	pflag.StringVar(&c.TwitterUsername, TwitterUserName, viper.GetString(TwitterUserName), "Twitter UserName")
+	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
-	pflag.StringVar(&c.Twitter2FaCode, Twitter2FACode, viper.GetString(Twitter2FACode), "Twitter 2FA Code")
-
+	pflag.StringVar(&c.Twitter2FaCode, Twitter2FaCode, viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
+	pflag.StringVar(&c.ClaudeApiKey, ClaudeApiKey, viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

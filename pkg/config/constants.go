@@ -35,9 +35,10 @@ const (
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
 
-	TwitterUserName = "TWITTER_USERNAME"
+	TwitterUsername = "TWITTER_USERNAME"
 	TwitterPassword = "TWITTER_PASSWORD"
-	Twitter2FACode  = "TWITTER_2FA_CODE"
+	Twitter2FaCode  = "TWITTER_2FA_CODE"
+	ClaudeApiKey    = "CLAUDE_API_KEY"
 )
 
 func ProtocolWithVersion(protocolName string) protocol.ID {
