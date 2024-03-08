@@ -26,9 +26,9 @@ func WriteData(node *masa.OracleNode, key string, value []byte, h host.Host) (bo
 
 	var err error
 	if key != node.Host.ID().String() {
-		err = node.DHT.PutValue(ctx, "/db/"+string(key), value)
+		err = node.DHT.PutValue(ctx, "/db/"+string(key), value) // any key value so the data is public
 	} else {
-		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value)
+		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
 	}
 
 	if err != nil {

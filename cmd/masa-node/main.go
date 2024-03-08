@@ -30,6 +30,10 @@ type NodeStatus struct {
 	LastLaunched  time.Time     `json:"lastLaunched"`
 }
 
+type SharedData struct {
+	Data string `json:"data"`
+}
+
 func main() {
 	cfg := config.GetInstance()
 	cfg.LogConfig()
@@ -95,23 +99,43 @@ func main() {
 
 	_ = db.Verifier(node.Host, data, signature)
 
-	up := node.NodeTracker.GetNodeData(node.Host.ID().String())
-	totalUpTime := up.GetAccumulatedUptime()
-	status := NodeStatus{
-		PeerID:        node.Host.ID().String(),
-		IsStaked:      isStaked,
-		TotalUpTime:   totalUpTime,
-		FirstLaunched: time.Now().Add(-totalUpTime),
-		LastLaunched:  time.Now(),
-	}
-	jsonData, _ := json.Marshal(status)
+	//up := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	//totalUpTime := up.GetAccumulatedUptime()
+	//status := NodeStatus{
+	//	PeerID:        node.Host.ID().String(),
+	//	IsStaked:      isStaked,
+	//	TotalUpTime:   totalUpTime,
+	//	FirstLaunched: time.Now().Add(-totalUpTime),
+	//	LastLaunched:  time.Now(),
+	//}
+	//jsonData, _ := json.Marshal(status)
 
-	success, _ := db.WriteData(node, "/db/"+node.Host.ID().String(), jsonData, node.Host)
+	//keyStr := node.Host.ID().String() // for this nodes status data
+	//
+	//success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
+	//logrus.Printf("writeResult %+v", success)
+	//
+	//nodeVal := db.ReadData(node, "/db/"+keyStr, node.Host)
+	//_ = json.Unmarshal(nodeVal, &status)
+	//logrus.Printf("readResult: %+v\n", status)
+
+	// example key for public shared data
+	// requires its own struct if data is specific
+	// or an empty SharedData struct for any data
+
+	sharedData := SharedData{
+		Data: "some twitter data",
+	}
+	jsonData, _ := json.Marshal(sharedData)
+
+	keyStr := "twitter_data"
+
+	success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
 	logrus.Printf("writeResult %+v", success)
 
-	nodeVal := db.ReadData(node, "/db/"+node.Host.ID().String(), node.Host)
-	_ = json.Unmarshal(nodeVal, &status)
-	logrus.Printf("readResult: %+v\n", status)
+	nodeVal := db.ReadData(node, "/db/"+keyStr, node.Host)
+	_ = json.Unmarshal(nodeVal, &sharedData)
+	logrus.Printf("readResult: %+v\n", sharedData)
 
 	// *** initialize dht database example for review ***
 
