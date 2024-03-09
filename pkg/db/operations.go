@@ -16,8 +16,10 @@ import (
 func WriteData(node *masa.OracleNode, key string, value []byte, h host.Host) (bool, error) {
 	if !isAuthorized(h.ID().String()) {
 		logrus.WithFields(logrus.Fields{
-			"nodeID": h.ID().String(),
-		}).Error("node is not authorized to write to the datastore")
+			"nodeID":       h.ID().String(),
+			"isAuthorized": false,
+			"WriteData":    true,
+		}).Error("DHT write authorization failed")
 		return false, fmt.Errorf("401, node is not authorized to write to the datastore")
 	}
 
@@ -55,13 +57,11 @@ func WriteData(node *masa.OracleNode, key string, value []byte, h host.Host) (bo
 // It requires the host for access control verification before reading.
 func ReadData(node *masa.OracleNode, key string, h host.Host) []byte {
 
-	// @TODO verify we want any node to read if not we can implement here
-	//if isAuthorized(h.ID().String()) {
-	//	logrus.WithFields(logrus.Fields{
-	//		"nodeID": h.ID().String(),
-	//	}).Error("node is not authorized to read the datastore")
-	//	return []byte("401, node is not authorized to read from the datastore")
-	//}
+	logrus.WithFields(logrus.Fields{
+		"nodeID":       h.ID().String(),
+		"isAuthorized": true,
+		"ReadData":     true,
+	}).Error("DHT write authorization failed")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()

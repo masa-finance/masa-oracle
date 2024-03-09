@@ -29,8 +29,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.POST("/createTopic", API.CreateNewTopicHandler())
 	router.POST("/postToTopic", API.PostToTopicHandler())
 
-	router.GET("/dht/get", API.GetFromDHT())
-	router.POST("/dht/post", API.PostToDHT())
+	router.GET("/dht", API.GetFromDHT())
+	router.POST("/dht", API.PostToDHT())
 
 	return router
 }
