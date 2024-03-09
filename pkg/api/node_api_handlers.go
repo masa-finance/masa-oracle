@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"math"
 	"net/http"
 
@@ -150,5 +152,42 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 			"data":       data,
 			"totalCount": len(peers),
 		})
+	}
+}
+
+func (api *API) PostToDHT() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		sharedData := db.SharedData{}
+		if err := c.BindJSON(&sharedData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "invalid request",
+			})
+			return
+		}
+
+		var keyStr = sharedData["key"].(string)
+		jsonData, err := json.Marshal(sharedData)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "invalid json",
+			})
+		}
+		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData, api.Node.Host)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": success,
+				"message": keyStr,
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": success,
+			"message": keyStr,
+		})
+
+		// c.IndentedJSON(http.StatusCreated, sharedData)
+
 	}
 }

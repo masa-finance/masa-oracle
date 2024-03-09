@@ -39,7 +39,7 @@ func (api *API) CreateNewTopicHandler() gin.HandlerFunc {
 	}
 }
 
-// PostMessageToTopicHandler allows posting a message to a specified topic.
+// PostToTopicHandler allows posting a message to a specified topic.
 func (api *API) PostToTopicHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request struct {

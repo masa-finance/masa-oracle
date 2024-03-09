@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
 
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
@@ -20,16 +19,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
-
-type NodeStatus struct {
-	PeerID        string        `json:"peerId"`
-	IsStaked      bool          `json:"isStaked"`
-	TotalUpTime   time.Duration `json:"totalUpTime"`
-	FirstLaunched time.Time     `json:"firstLaunched"`
-	LastLaunched  time.Time     `json:"lastLaunched"`
-}
-
-type SharedData map[string]interface{}
 
 func main() {
 	cfg := config.GetInstance()
@@ -77,9 +66,9 @@ func main() {
 		logrus.Info("This node is not set as the allowed peer")
 	}
 
-	// WIP
 	go db.InitResolverCache()
 
+	// *** Store NodeStatus ***
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
 	if err != nil {
@@ -87,49 +76,21 @@ func main() {
 	}
 	_ = db.Verifier(node.Host, data, signature)
 
-	// *** initialize dht database example for review ***
+	up := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	totalUpTime := up.GetAccumulatedUptime()
+	status := db.NodeStatus{
+		PeerID:        node.Host.ID().String(),
+		IsStaked:      isStaked,
+		TotalUpTime:   totalUpTime,
+		FirstLaunched: time.Now().Add(-totalUpTime),
+		LastLaunched:  time.Now(),
+	}
+	jsonData, _ := json.Marshal(status)
 
-	//up := node.NodeTracker.GetNodeData(node.Host.ID().String())
-	//totalUpTime := up.GetAccumulatedUptime()
-	//status := NodeStatus{
-	//	PeerID:        node.Host.ID().String(),
-	//	IsStaked:      isStaked,
-	//	TotalUpTime:   totalUpTime,
-	//	FirstLaunched: time.Now().Add(-totalUpTime),
-	//	LastLaunched:  time.Now(),
-	//}
-	//jsonData, _ := json.Marshal(status)
-	//
-	//keyStr := node.Host.ID().String() // for this nodes status data
-	//
-	//success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
-	//logrus.Printf("writeResult %+v", success)
-	//
-	//nodeVal := db.ReadData(node, "/db/"+keyStr, node.Host)
-	//_ = json.Unmarshal(nodeVal, &status)
-	//logrus.Printf("readResult: %+v\n", status)
-
-	// example key for public shared data
-	// requires its own struct if data is specific
-	// or an empty SharedData struct for any data
-
-	sharedData := SharedData{}
-	sharedData["name"] = "John Doe"
-	sharedData["age"] = 30
-	sharedData["metadata"] = map[string]string{"twitter_handle": "@john"}
-
-	jsonData, _ := json.Marshal(sharedData)
-
-	keyStr := "twitter_data"
-
+	keyStr := node.Host.ID().String() // user ID for this nodes status key
 	success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
-	logrus.Printf("writeResult %+v", success)
-
-	nodeVal := db.ReadData(node, "/db/"+keyStr, node.Host)
-	_ = json.Unmarshal(nodeVal, &sharedData)
-	logrus.Printf("readResult: %+v\n", sharedData)
-
-	// *** initialize dht database example for review ***
+	logrus.Infof("Store NodeStatus %+v", success)
+	// *** Store NodeStatus ***
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
