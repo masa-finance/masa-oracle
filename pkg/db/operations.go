@@ -94,3 +94,7 @@ func ReadData(node *masa.OracleNode, key string, h host.Host) []byte {
 
 	return val
 }
+
+// @TODO offline and long term pinning
+// Cache Syncing
+func cacheSyncing() {}
