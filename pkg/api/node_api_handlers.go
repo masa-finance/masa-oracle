@@ -155,6 +155,28 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 	}
 }
 
+func (api *API) GetFromDHT() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		keyStr := c.Query("key")
+		if len(keyStr) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "missing key param",
+			})
+			return
+		}
+		sharedData := db.SharedData{}
+		nodeVal := db.ReadData(api.Node, "/db/"+keyStr, api.Node.Host)
+		_ = json.Unmarshal(nodeVal, &sharedData)
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": sharedData,
+		})
+	}
+}
+
 func (api *API) PostToDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -174,6 +196,7 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 				"success": false,
 				"message": "invalid json",
 			})
+			return
 		}
 		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData, api.Node.Host)
 		if err != nil {
@@ -181,6 +204,7 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 				"success": success,
 				"message": keyStr,
 			})
+			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": success,

@@ -8,6 +8,8 @@ import (
 
 func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router := gin.Default()
+	// @TODO need to add a Authorization Bearer methodology for api security
+	// add cors middleware
 
 	API := NewAPI(node)
 
@@ -27,7 +29,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.POST("/createTopic", API.CreateNewTopicHandler())
 	router.POST("/postToTopic", API.PostToTopicHandler())
 
-	router.POST("/postToDHT", API.PostToDHT())
+	router.GET("/dht/get", API.GetFromDHT())
+	router.POST("/dht/post", API.PostToDHT())
 
 	return router
 }

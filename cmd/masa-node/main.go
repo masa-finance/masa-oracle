@@ -77,19 +77,21 @@ func main() {
 	_ = db.Verifier(node.Host, data, signature)
 
 	up := node.NodeTracker.GetNodeData(node.Host.ID().String())
-	totalUpTime := up.GetAccumulatedUptime()
-	status := db.NodeStatus{
-		PeerID:        node.Host.ID().String(),
-		IsStaked:      isStaked,
-		TotalUpTime:   totalUpTime,
-		FirstLaunched: time.Now().Add(-totalUpTime),
-		LastLaunched:  time.Now(),
-	}
-	jsonData, _ := json.Marshal(status)
+	if up != nil {
+		totalUpTime := up.GetAccumulatedUptime()
+		status := db.NodeStatus{
+			PeerID:        node.Host.ID().String(),
+			IsStaked:      isStaked,
+			TotalUpTime:   totalUpTime,
+			FirstLaunched: time.Now().Add(-totalUpTime),
+			LastLaunched:  time.Now(),
+		}
+		jsonData, _ := json.Marshal(status)
 
-	keyStr := node.Host.ID().String() // user ID for this nodes status key
-	success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
-	logrus.Infof("Store NodeStatus %+v", success)
+		keyStr := node.Host.ID().String() // user ID for this nodes status key
+		success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
+		logrus.Infof("Store NodeStatus %+v", success)
+	}
 	// *** Store NodeStatus ***
 
 	// Listen for SIGINT (CTRL+C)
