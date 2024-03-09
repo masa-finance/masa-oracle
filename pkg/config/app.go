@@ -67,6 +67,13 @@ type AppConfig struct {
 	FilePath             string   `mapstructure:"FilePath"`
 	WriterNode           string   `mapstructure:"writerNode"`
 	CachePath            string   `mapstructure:"cachePath"`
+
+	// These may be moved to a separate struct
+	TwitterCookiesPath string `mapstructure:"TwitterCookiesPath"`
+	TwitterUsername    string `mapstructure:"TwitterUsername"`
+	TwitterPassword    string `mapstructure:"TwitterPassword"`
+	Twitter2FaCode     string `mapstructure:"Twitter2FaCode"`
+	ClaudeApiKey       string `mapstructure:"ClaudeApiKey"`
 }
 
 func GetInstance() *AppConfig {
@@ -135,6 +142,10 @@ func (c *AppConfig) setFileConfig(path string) {
 }
 
 func (c *AppConfig) setEnvVariableConfig() {
+	err := godotenv.Load()
+	if err != nil {
+		logrus.Error("Error loading .env file")
+	}
 	viper.AutomaticEnv()
 }
 
@@ -159,7 +170,10 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
 	pflag.StringVar(&c.WriterNode, WriterNode, viper.GetString(WriterNode), "The approved writer node addr")
 	pflag.StringVar(&c.CachePath, CachePath, viper.GetString(CachePath), "The resolver cache path")
-
+	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
+	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
+	pflag.StringVar(&c.Twitter2FaCode, Twitter2FaCode, viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
+	pflag.StringVar(&c.ClaudeApiKey, ClaudeApiKey, viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

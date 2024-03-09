@@ -36,6 +36,11 @@ const (
 	PublicKeyTopic       = "bootNodePublicKey"
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
+
+	TwitterUsername = "TWITTER_USERNAME"
+	TwitterPassword = "TWITTER_PASSWORD"
+	Twitter2FaCode  = "TWITTER_2FA_CODE"
+	ClaudeApiKey    = "CLAUDE_API_KEY"
 )
 
 func ProtocolWithVersion(protocolName string) protocol.ID {
