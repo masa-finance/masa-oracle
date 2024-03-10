@@ -128,8 +128,9 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	}
 	wg.Wait()
 	if len(bootstrapNodes) > 0 && peerConnectionCount == 0 {
-		log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
-		// log.Println("Unable to connect to a boot node at this time. Please try again later.")
+		// @TODO do we want to exit if there are no peers or run and wait?
+		// log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
+		log.Println("Unable to connect to a boot node at this time. Please try again later.")
 	}
 	return kademliaDHT, nil
 }

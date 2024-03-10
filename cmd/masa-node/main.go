@@ -66,8 +66,8 @@ func main() {
 		logrus.Info("This node is not set as the allowed peer")
 	}
 
-	go db.InitResolverCache()
-
+	go db.InitResolverCache(node)
+	logrus.Println(node.Host.ID().String())
 	// *** Store NodeStatus ***
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
@@ -89,7 +89,7 @@ func main() {
 		jsonData, _ := json.Marshal(status)
 
 		keyStr := node.Host.ID().String() // user ID for this nodes status key
-		success, _ := db.WriteData(node, "/db/"+keyStr, jsonData, node.Host)
+		success, _ := db.WriteData(node, "/db/"+keyStr, jsonData)
 		logrus.Infof("Store NodeStatus %+v", success)
 	}
 	// *** Store NodeStatus ***
