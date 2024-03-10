@@ -67,7 +67,7 @@ func main() {
 	}
 
 	go db.InitResolverCache(node)
-	logrus.Println(node.Host.ID().String())
+
 	// *** Store NodeStatus ***
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)

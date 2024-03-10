@@ -102,8 +102,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	if err != nil {
 		logrus.Errorf("%+v", err)
 	}
-	for i, record := range records {
-		logrus.Printf("%d, %s %s ", i, record.Key, record.Value)
+	for _, record := range records {
 		_, _ = WriteData(node, record.Key, record.Value)
 	}
 }

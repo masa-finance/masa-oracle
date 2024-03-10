@@ -67,18 +67,18 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 
 	if key != node.Host.ID().String() {
 		val, err = node.DHT.GetValue(ctx, "/db/"+key)
-		cached, er := GetCache(ctx, key)
+		_, er := GetCache(ctx, key)
 		if er != nil {
 			logrus.Errorf("%v", er)
 		}
-		logrus.Info("cached", string(cached))
+		logrus.Info("cached ", key)
 	} else {
 		val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
-		cached, er := GetCache(ctx, node.Host.ID().String())
+		_, er := GetCache(ctx, node.Host.ID().String())
 		if er != nil {
 			logrus.Errorf("%v", er)
 		}
-		logrus.Info("cached", string(cached))
+		logrus.Info("cached ", key)
 	}
 
 	if err != nil {
