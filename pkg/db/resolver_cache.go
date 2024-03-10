@@ -3,9 +3,10 @@ package db
 import (
 	"context"
 	"fmt"
-	masa "github.com/masa-finance/masa-oracle/pkg"
 	"log"
 	"time"
+
+	masa "github.com/masa-finance/masa-oracle/pkg"
 
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -32,8 +33,17 @@ func InitResolverCache(node *masa.OracleNode) {
 	}
 	fmt.Println("ResolverCache initialized")
 
-	syncInterval := 10 * time.Second // Change as needed
-	sync(context.Background(), node, syncInterval)
+	if !isAuthorized(node.Host.ID().String()) {
+		logrus.WithFields(logrus.Fields{
+			"nodeID":       node.Host.ID().String(),
+			"isAuthorized": false,
+			"Sync":         true,
+		})
+		return
+	} else {
+		syncInterval := 10 * time.Second // Change as needed
+		sync(context.Background(), node, syncInterval)
+	}
 }
 
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
