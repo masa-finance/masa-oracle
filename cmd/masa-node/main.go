@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -69,12 +68,12 @@ func main() {
 	go db.InitResolverCache(node)
 
 	// *** Store NodeStatus ***
-	data := []byte(node.Host.ID().String())
-	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
-	if err != nil {
-		logrus.Errorf("%v", err)
-	}
-	_ = db.Verifier(node.Host, data, signature)
+	//data := []byte(node.Host.ID().String())
+	//signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+	//if err != nil {
+	//	logrus.Errorf("%v", err)
+	//}
+	//_ = db.Verifier(node.Host, data, signature)
 
 	up := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if up != nil {
@@ -86,15 +85,20 @@ func main() {
 			FirstLaunched: time.Now().Add(-totalUpTime),
 			LastLaunched:  time.Now(),
 		}
-		jsonData, _ := json.Marshal(status)
-
-		keyStr := node.Host.ID().String() // user ID for this nodes status key
-		time.Sleep(time.Second * 1)       // delay needed to wait for node to finish starting
-		success, er := db.WriteData(node, "/db/"+keyStr, jsonData)
-		if er != nil {
-			logrus.Errorf("Store NodeStatus err %+v", er)
+		//jsonData, _ := json.Marshal(status)
+		//logrus.Printf("jsonData %v", jsonData)
+		// keyStr := node.Host.ID().String() // user ID for this nodes status key
+		str := fmt.Sprintf("%v", status)
+		if err := node.PubSubManager.PublishMessage(config.TopicWithVersion("nodeStatus"), str); err != nil {
+			logrus.Errorf("PublishMessage %+v", err)
 		}
-		logrus.Infof("Store NodeStatus %+v", success)
+
+		// time.Sleep(time.Second * 1)       // delay needed to wait for node to finish starting
+		//success, er := db.WriteData(node, "/db/"+keyStr, jsonData)
+		//if er != nil {
+		//	logrus.Errorf("Store NodeStatus err %+v", er)
+		//}
+		//logrus.Infof("Store NodeStatus %+v", success)
 	}
 	// *** Store NodeStatus ***
 

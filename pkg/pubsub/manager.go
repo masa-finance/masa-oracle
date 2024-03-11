@@ -13,6 +13,8 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
+// SubscriptionHandler defines the interface for handling pubsub messages.
+// Implementations should subscribe to topics and handle incoming messages.
 type SubscriptionHandler interface {
 	HandleMessage(msg *pubsub.Message)
 }
@@ -104,6 +106,7 @@ func (sm *Manager) RemoveSubscription(topic string) error {
 	delete(sm.handlers, topic)
 	return nil
 }
+
 func (sm *Manager) GetSubscription(topic string) (*pubsub.Subscription, error) {
 	sub, ok := sm.subscriptions[topic]
 	if !ok {

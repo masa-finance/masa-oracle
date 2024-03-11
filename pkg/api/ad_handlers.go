@@ -10,6 +10,9 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
+// PostAd handles posting a new ad. It requires the node to be staked,
+// publishes the ad to the ad topic, and returns a success response.
+
 func (api *API) PostAd() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		bodyBytes, err := io.ReadAll(c.Request.Body)
@@ -30,6 +33,9 @@ func (api *API) PostAd() gin.HandlerFunc {
 	}
 }
 
+// SubscribeToAds handles subscribing to the ad topic. It adds a subscription
+// using the AdSubscriptionHandler and returns a success response.
+
 func (api *API) SubscribeToAds() gin.HandlerFunc {
 	handler := &ad.SubscriptionHandler{}
 	return func(c *gin.Context) {
@@ -41,6 +47,10 @@ func (api *API) SubscribeToAds() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"status": "Subscribed to get ads"})
 	}
 }
+
+// GetAds handles getting the collected ads. It responds with the ads collected
+// by the AdSubscriptionHandler if any, otherwise responds with a message that
+// there are no ads.
 
 func (api *API) GetAds() gin.HandlerFunc {
 	return func(c *gin.Context) {

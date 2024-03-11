@@ -8,6 +8,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -25,6 +26,13 @@ func SubscribeToTopics(node *OracleNode) error {
 	node.AdSubscriptionHandler = &ad.SubscriptionHandler{}
 	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.AdTopic), node.AdSubscriptionHandler); err != nil {
 		logrus.Errorf("Failed to subscribe to ad topic: %v", err)
+		return err
+	}
+
+	// Initialize and subscribe to NodeStatusTopic for receiving advertisement-related messages.
+	node.NodeStatusSubscriptionsHandler = &nodestatus.SubscriptionHandler{}
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.NodeStatusTopic), node.NodeStatusSubscriptionsHandler); err != nil {
+		logrus.Errorf("Failed to subscribe to nodeStatus topic: %v", err)
 		return err
 	}
 
