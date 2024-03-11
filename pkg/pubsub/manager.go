@@ -10,9 +10,11 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 
-	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
+// SubscriptionHandler defines the interface for handling pubsub messages.
+// Implementations should subscribe to topics and handle incoming messages.
 type SubscriptionHandler interface {
 	HandleMessage(msg *pubsub.Message)
 }
@@ -39,7 +41,7 @@ func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) { /
 		handlers:           make(map[string]SubscriptionHandler),
 		gossipSub:          gossipSub,
 		host:               host,
-		PublicKeyPublisher: NewPublicKeyPublisher(nil, crypto2.KeyManagerInstance().Libp2pPubKey), // Initialize PublicKeyPublisher here
+		PublicKeyPublisher: NewPublicKeyPublisher(nil, masacrypto.KeyManagerInstance().Libp2pPubKey), // Initialize PublicKeyPublisher here
 	}
 
 	manager.PublicKeyPublisher.pubSubManager = manager // Ensure the publisher has a reference back to the manager
@@ -104,6 +106,7 @@ func (sm *Manager) RemoveSubscription(topic string) error {
 	delete(sm.handlers, topic)
 	return nil
 }
+
 func (sm *Manager) GetSubscription(topic string) (*pubsub.Subscription, error) {
 	sub, ok := sm.subscriptions[topic]
 	if !ok {

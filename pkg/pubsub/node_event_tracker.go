@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
 type NodeEventTracker struct {
@@ -108,6 +108,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	if buffered.NodeData != nil {
 		buffered.NodeData.Left()
 		delete(net.ConnectBuffer, peerID)
+		// net.nodeData.Delete(peerID)
 		// Now process the buffered connect
 		buffered.NodeData.Joined()
 		net.NodeDataChan <- buffered.NodeData
@@ -152,7 +153,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		net.nodeData.Set(data.PeerId.String(), &data)
 		return
 	}
-	// Check for replay attacks using LastUpdated
+	// Check for replay attacks using LastUpdated -- @TODO check why is this considered a replay?
 	if !data.LastUpdated.After(existingData.LastUpdated) {
 		if existingData.IsStaked {
 			logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
@@ -165,7 +166,8 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	}
 	existingData.LastUpdated = data.LastUpdated
 
-	maxDifference := time.Minute * 5
+	// maxDifference := time.Minute * 5
+	maxDifference := time.Millisecond * 15
 
 	// Handle discrepancies for existing nodes
 	if !data.LastJoined.IsZero() &&
@@ -273,7 +275,7 @@ func getEthAddress(remotePeer peer.ID, n network.Network) string {
 			"Peer": remotePeer.String(),
 		}).Warn("No public key found for peer")
 	} else {
-		publicKeyHex, err = crypto.Libp2pPubKeyToEthAddress(pubKey)
+		publicKeyHex, err = masacrypto.Libp2pPubKeyToEthAddress(pubKey)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Peer": remotePeer.String(),
@@ -346,6 +348,7 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 				entry.NodeData.Joined()
 				net.NodeDataChan <- entry.NodeData
 				delete(net.ConnectBuffer, peerID)
+				// net.nodeData.Delete(peerID)
 			}
 		}
 	}

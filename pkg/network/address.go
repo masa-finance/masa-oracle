@@ -149,9 +149,9 @@ func replaceIPComponent(maddr multiaddr.Multiaddr, newIP string) (multiaddr.Mult
 //	return false
 //}
 
-func GetBootNodesMultiAddress(bootstrapPeers []string) ([]multiaddr.Multiaddr, error) {
+func GetBootNodesMultiAddress(bootstrapNodes []string) ([]multiaddr.Multiaddr, error) {
 	addrs := make([]multiaddr.Multiaddr, 0)
-	for _, peerAddr := range bootstrapPeers {
+	for _, peerAddr := range bootstrapNodes {
 		if peerAddr == "" {
 			continue
 		}

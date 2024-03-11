@@ -100,20 +100,19 @@ Manage data propagation to other nodes.
 
 ---
 
-### Issue #7: **Implement Data Persistence with BadgerDB**
+### Issue #7: **Implement Data Persistence with DHT Database**
 
 **Description**:
 Store webhook data persistently.
 
 **Tasks**:
-1. Install and configure `badgerdb`.
+1. Install and configure `DHT Database`.
 2. Define a data structure/schema with indexes for efficient querying.
 3. Implement batch writes for improved performance.
-4. Set up periodic backups using `badgerbackup`.
 
 **Technical Considerations**:
 - Monitor disk I/O to ensure optimal performance.
-- Encrypt sensitive data before storing in BadgerDB.
+- Encrypt sensitive data before storing.
 
 ---
 

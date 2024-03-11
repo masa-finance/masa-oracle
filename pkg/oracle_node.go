@@ -23,26 +23,28 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
-	Host                  host.Host
-	PrivKey               *ecdsa.PrivateKey
-	Protocol              protocol.ID
-	priorityAddrs         multiaddr.Multiaddr
-	multiAddrs            []multiaddr.Multiaddr
-	DHT                   *dht.IpfsDHT
-	Context               context.Context
-	PeerChan              chan myNetwork.PeerEvent
-	NodeTracker           *pubsub2.NodeEventTracker
-	PubSubManager         *pubsub2.Manager
-	Signature             string
-	IsStaked              bool
-	StartTime             time.Time
-	AdSubscriptionHandler *ad.SubscriptionHandler
+	Host                           host.Host
+	PrivKey                        *ecdsa.PrivateKey
+	Protocol                       protocol.ID
+	priorityAddrs                  multiaddr.Multiaddr
+	multiAddrs                     []multiaddr.Multiaddr
+	DHT                            *dht.IpfsDHT
+	Context                        context.Context
+	PeerChan                       chan myNetwork.PeerEvent
+	NodeTracker                    *pubsub2.NodeEventTracker
+	PubSubManager                  *pubsub2.Manager
+	Signature                      string
+	IsStaked                       bool
+	StartTime                      time.Time
+	AdSubscriptionHandler          *ad.SubscriptionHandler
+	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
@@ -67,7 +69,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 
 	var addrStr []string
 	libp2pOptions := []libp2p.Option{
-		libp2p.Identity(crypto2.KeyManagerInstance().Libp2pPrivKey),
+		libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey),
 		libp2p.ResourceManager(resourceManager),
 		libp2p.Ping(false), // disable built-in ping
 		libp2p.EnableNATService(),
@@ -103,7 +105,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 
 	return &OracleNode{
 		Host:          hst,
-		PrivKey:       crypto2.KeyManagerInstance().EcdsaPrivKey,
+		PrivKey:       masacrypto.KeyManagerInstance().EcdsaPrivKey,
 		Protocol:      config.ProtocolWithVersion(config.OracleProtocol),
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
@@ -147,7 +149,7 @@ func (node *OracleNode) Start() (err error) {
 	if config.GetInstance().HasBootnodes() {
 		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nodeData == nil {
-			publicKeyHex := crypto2.KeyManagerInstance().EthAddress
+			publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
 			nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 			nodeData.IsStaked = node.IsStaked
 			nodeData.SelfIdentified = true
