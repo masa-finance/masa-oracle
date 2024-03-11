@@ -1,55 +1,53 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
-
 	twitterscraper "github.com/n0madic/twitter-scraper"
 )
 
+// SearchTweetsRequest remains unchanged
 type SearchTweetsRequest struct {
 	Query string `json:"query"`
 	Count int    `json:"count"`
 }
 
-// SearchTweetsAndAnalyzeSentiment handles searching tweets and analyzing their sentiment
-func SearchTweetsAndAnalyzeSentiment(w http.ResponseWriter, r *http.Request) {
-	var reqBody SearchTweetsRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+// SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
+func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Query string `json:"query"`
+			Count int    `json:"count"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
 
-	// Validate the request body
-	if reqBody.Query == "" {
-		http.Error(w, "Query parameter is missing", http.StatusBadRequest)
-		return
-	}
-	if reqBody.Count <= 0 {
-		reqBody.Count = 50
-	}
+		if reqBody.Query == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter is missing"})
+			return
+		}
+		if reqBody.Count <= 0 {
+			reqBody.Count = 50 // Default count
+		}
 
-	// Initialize a new Twitter scraper
-	scraper := twitterscraper.New()
+		scraper := twitterscraper.New()
+		tweets, err := twitter.ScrapeTweetsByQuery(scraper, reqBody.Query, reqBody.Count, twitterscraper.SearchLatest)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets"})
+			return
+		}
 
-	// Fetch tweets using the Twitter API
-	tweets, err := twitter.ScrapeTweetsByQuery(scraper, reqBody.Query, reqBody.Count, twitterscraper.SearchLatest)
-	if err != nil {
-		http.Error(w, "Failed to fetch tweets: "+err.Error(), http.StatusInternalServerError)
-		return
+		sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to analyze tweets"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"sentiment": sentimentSummary})
 	}
-
-	// Analyze sentiment of tweets
-	sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets)
-	if err != nil {
-		http.Error(w, "Failed to analyze tweets: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with analysis results
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"sentiment": sentimentSummary})
 }
