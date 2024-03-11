@@ -73,8 +73,8 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 	// Ensure setup is done before running the test
 	setup()
 
-	query := "$MASA"
-	count := 100
+	query := "$MASA Token Masa"
+	count := 400
 	searchMode := twitterscraper.SearchLatest
 	tweets, err := twitter.ScrapeTweetsByQuery(scraper, query, count, searchMode)
 	if err != nil {
