@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"os"
 	"os/signal"
@@ -66,12 +67,13 @@ func main() {
 
 	// WIP
 	// *** Store NodeStatus ***
-	//data := []byte(node.Host.ID().String())
-	//signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
-	//if err != nil {
-	//	logrus.Errorf("%v", err)
-	//}
-	//_ = db.Verifier(node.Host, data, signature)
+	data := []byte(node.Host.ID().String())
+	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+	if err != nil {
+		logrus.Errorf("%v", err)
+	}
+	_ = db.Verifier(node.Host, data, signature)
+
 	//logrus.Println(node.Host.ID().String())
 	//up := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	//if up != nil {

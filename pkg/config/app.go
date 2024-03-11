@@ -115,8 +115,11 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(Environment, os.Getenv("ENV"))
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
 		viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
 	} else {
+		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
+		viper.SetDefault(CachePath, filepath.Join(viper.GetString(MasaDir), "./CACHE"))
 	}
 
 	// Set defaults
@@ -129,7 +132,6 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
-	viper.SetDefault(CachePath, filepath.Join(viper.GetString(MasaDir), "./CACHE"))
 }
 
 func (c *AppConfig) setFileConfig(path string) {
