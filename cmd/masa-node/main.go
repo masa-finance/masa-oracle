@@ -2,13 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
-
-	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/sirupsen/logrus"
 
@@ -67,6 +64,7 @@ func main() {
 
 	go db.InitResolverCache(node)
 
+	// WIP
 	// *** Store NodeStatus ***
 	//data := []byte(node.Host.ID().String())
 	//signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
@@ -74,32 +72,32 @@ func main() {
 	//	logrus.Errorf("%v", err)
 	//}
 	//_ = db.Verifier(node.Host, data, signature)
-
-	up := node.NodeTracker.GetNodeData(node.Host.ID().String())
-	if up != nil {
-		totalUpTime := up.GetAccumulatedUptime()
-		status := db.NodeStatus{
-			PeerID:        node.Host.ID().String(),
-			IsStaked:      isStaked,
-			TotalUpTime:   totalUpTime,
-			FirstLaunched: time.Now().Add(-totalUpTime),
-			LastLaunched:  time.Now(),
-		}
-		//jsonData, _ := json.Marshal(status)
-		//logrus.Printf("jsonData %v", jsonData)
-		// keyStr := node.Host.ID().String() // user ID for this nodes status key
-		str := fmt.Sprintf("%v", status)
-		if err := node.PubSubManager.PublishMessage(config.TopicWithVersion("nodeStatus"), str); err != nil {
-			logrus.Errorf("PublishMessage %+v", err)
-		}
-
-		// time.Sleep(time.Second * 1)       // delay needed to wait for node to finish starting
-		//success, er := db.WriteData(node, "/db/"+keyStr, jsonData)
-		//if er != nil {
-		//	logrus.Errorf("Store NodeStatus err %+v", er)
-		//}
-		//logrus.Infof("Store NodeStatus %+v", success)
-	}
+	//logrus.Println(node.Host.ID().String())
+	//up := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	//if up != nil {
+	//	totalUpTime := up.GetAccumulatedUptime()
+	//	status := db.NodeStatus{
+	//		PeerID:        node.Host.ID().String(),
+	//		IsStaked:      isStaked,
+	//		TotalUpTime:   totalUpTime,
+	//		FirstLaunched: time.Now().Add(-totalUpTime),
+	//		LastLaunched:  time.Now(),
+	//	}
+	//	jsonData, _ := json.Marshal(status)
+	//	logrus.Printf("jsonData %s", jsonData)
+	//	// str := fmt.Sprintf("%s", jsonData)
+	//	if err := node.PubSubManager.Publish(config.TopicWithVersion("nodeStatus"), jsonData); err != nil {
+	//		logrus.Errorf("PublishMessage %+v", err)
+	//	}
+	//
+	//	keyStr := node.Host.ID().String() // user ID for this nodes status key
+	//	time.Sleep(time.Second * 1)       // delay needed to wait for node to finish starting
+	//	success, er := db.WriteData(node, "/db/"+keyStr, jsonData)
+	//	if er != nil {
+	//		logrus.Errorf("Store NodeStatus err %+v", er)
+	//	}
+	//	logrus.Infof("Store NodeStatus %+v", success)
+	//}
 	// *** Store NodeStatus ***
 
 	// Listen for SIGINT (CTRL+C)

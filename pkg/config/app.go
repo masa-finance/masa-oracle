@@ -6,6 +6,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -99,26 +100,27 @@ func GetInstance() *AppConfig {
 
 func (c *AppConfig) setDefaultConfig() {
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("could not find user.home directory")
 	}
 
 	// Set values from .env
-	viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
-	viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
-	viper.SetDefault(Environment, os.Getenv("ENV"))
-	viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
-	viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+	_, b, _, _ := runtime.Caller(0)
+	rootDir := filepath.Join(filepath.Dir(b), "../..")
+	if _, err := os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
+		_ = godotenv.Load()
+		viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
+		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
+		viper.SetDefault(Environment, os.Getenv("ENV"))
+		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
+		viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+	} else {
+		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
+	}
 
 	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
-	viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
