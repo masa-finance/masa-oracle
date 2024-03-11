@@ -22,7 +22,7 @@ func WriteData(node *masa.OracleNode, key string, value []byte) (bool, error) {
 		return false, fmt.Errorf("401, node is not authorized to write to the datastore")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
 	defer cancel()
 
 	var err error
@@ -59,7 +59,7 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 		"ReadData":     true,
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
 	defer cancel()
 
 	var err error
@@ -67,18 +67,8 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 
 	if key != node.Host.ID().String() {
 		val, err = node.DHT.GetValue(ctx, "/db/"+key)
-		_, er := GetCache(ctx, key)
-		if er != nil {
-			logrus.Errorf("%v", er)
-		}
-		logrus.Info("cached ", key)
 	} else {
 		val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
-		_, er := GetCache(ctx, node.Host.ID().String())
-		if er != nil {
-			logrus.Errorf("%v", er)
-		}
-		logrus.Info("cached ", key)
 	}
 
 	if err != nil {

@@ -41,7 +41,7 @@ func InitResolverCache(node *masa.OracleNode) {
 		})
 		return
 	} else {
-		syncInterval := 10 * time.Second // Change as needed
+		syncInterval := time.Second * 60 // Change as needed
 		sync(context.Background(), node, syncInterval)
 	}
 }
@@ -113,6 +113,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		logrus.Errorf("%+v", err)
 	}
 	for _, record := range records {
+		logrus.Printf("temp monitoring sync record ==> %s %s", record.Key, record.Value)
 		_, _ = WriteData(node, record.Key, record.Value)
 	}
 }
