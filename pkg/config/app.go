@@ -170,7 +170,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, LogLevel, viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
-	pflag.StringVar(&c.WriterNode, WriterNode, viper.GetString(WriterNode), "The approved writer node addr")
+	pflag.StringVar(&c.WriterNode, "writerNode", viper.GetString(WriterNode), "Approved writer node boolean")
 	pflag.StringVar(&c.CachePath, CachePath, viper.GetString(CachePath), "The resolver cache path")
 	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
