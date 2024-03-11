@@ -10,7 +10,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
 const (
@@ -150,7 +150,7 @@ func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	nodeData := NodeData{
 		PeerId:     host.ID(),
 		IsStaked:   isStaked,
-		EthAddress: crypto2.KeyManagerInstance().EthAddress,
+		EthAddress: masacrypto.KeyManagerInstance().EthAddress,
 	}
 
 	// Convert NodeData to JSON

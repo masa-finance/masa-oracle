@@ -126,7 +126,7 @@ Masa's Oracle ensures a robust decentralized system, with nodes processing and w
 - **Libp2p**: Sets up decentralized node communication.
 - **DHT**: Manages decentralized node registration and discovery.
 - **Ethereum**: Handles interactions with Ethereum smart contracts.
-- **DB**: Manages data persistence using BadgerDB.
+- **DB**: Manages data persistence using the DHT.
 - **Webhook**: Accepts and processes incoming webhook data.
 - **Security**: Ensures secure communication and data handling.
 
@@ -171,9 +171,8 @@ Utility functions and common helpers are available for general operations, inclu
 │   │   ├── rewards.go
 │   │   └── truffle_config.go
 │   ├── /db
-│   │   ├── badger_config.go
-│   │   ├── data_schema.go
-│   │   └── crud_operations.go
+│   │   ├── access_control.go
+│   │   └── operations.go
 │   ├── /webhook
 │   │   ├── api_server.go
 │   │   └── data_propagation.go

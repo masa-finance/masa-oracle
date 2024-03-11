@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"math"
 	"net/http"
 
@@ -149,6 +151,64 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 			"success":    true,
 			"data":       data,
 			"totalCount": len(peers),
+		})
+	}
+}
+
+func (api *API) GetFromDHT() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		keyStr := c.Query("key")
+		if len(keyStr) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "missing key param",
+			})
+			return
+		}
+		sharedData := db.SharedData{}
+		nodeVal := db.ReadData(api.Node, "/db/"+keyStr)
+		_ = json.Unmarshal(nodeVal, &sharedData)
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": sharedData,
+		})
+	}
+}
+
+func (api *API) PostToDHT() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		sharedData := db.SharedData{}
+		if err := c.BindJSON(&sharedData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "invalid request",
+			})
+			return
+		}
+
+		var keyStr = sharedData["key"].(string)
+		jsonData, err := json.Marshal(sharedData)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "invalid json",
+			})
+			return
+		}
+		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": success,
+				"message": keyStr,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": success,
+			"message": keyStr,
 		})
 	}
 }

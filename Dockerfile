@@ -40,6 +40,9 @@ RUN chmod +x /usr/bin/masa-node
 USER masa
 WORKDIR /home/masa
 
+# Copy the .env file into the container
+COPY --chown=masa:masa .env .
+
 # Expose necessary ports
 EXPOSE 4001
 EXPOSE 8080

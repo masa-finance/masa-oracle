@@ -2,9 +2,11 @@ package config
 
 import (
 	"log"
+	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -63,7 +65,10 @@ type AppConfig struct {
 	AllowedPeerPublicKey string   `mapstructure:"allowedPeerPublicKey"`
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
-	DbPath               string   `mapstructure:"dbPath"`
+	FilePath             string   `mapstructure:"FilePath"`
+	WriterNode           string   `mapstructure:"writerNode"`
+	CachePath            string   `mapstructure:"cachePath"`
+
 	// These may be moved to a separate struct
 	TwitterCookiesPath string `mapstructure:"TwitterCookiesPath"`
 	TwitterUsername    string `mapstructure:"TwitterUsername"`
@@ -78,7 +83,7 @@ func GetInstance() *AppConfig {
 
 		instance.setDefaultConfig()
 		instance.setEnvVariableConfig()
-		instance.setFileConfig()
+		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
 		if err != nil {
 			logrus.Fatal(err)
@@ -94,28 +99,43 @@ func GetInstance() *AppConfig {
 }
 
 func (c *AppConfig) setDefaultConfig() {
+
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("could not find user.home directory")
 	}
+
+	// Set values from .env
+	_, b, _, _ := runtime.Caller(0)
+	rootDir := filepath.Join(filepath.Dir(b), "../..")
+	if _, err := os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
+		_ = godotenv.Load()
+		viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
+		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
+		viper.SetDefault(Environment, os.Getenv("ENV"))
+		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
+		viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+	} else {
+		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
+	}
+
+	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
-	viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
-	viper.SetDefault(AllowedPeer, false)
+	viper.SetDefault(AllowedPeer, true) // TESTING TRUE FOR Issue-148 default => false
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
-	viper.SetDefault(DbPath, filepath.Join(viper.GetString(MasaDir), "masa-node-db"))
+	viper.SetDefault(CachePath, filepath.Join(viper.GetString(MasaDir), "./CACHE"))
 }
 
-// TODO: add a variable to allow for the config file location to be set
-func (c *AppConfig) setFileConfig() {
+func (c *AppConfig) setFileConfig(path string) {
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".") // Optionally: add other paths, e.g., home directory or etc
+	viper.AddConfigPath(path) // Optionally: add other paths, e.g., home directory or etc
 
 	// Attempt to read the config file
 	if err := viper.ReadInConfig(); err != nil {
@@ -149,8 +169,9 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.Data, "data", viper.GetString("data"), "The data to verify the signature against")
 	pflag.StringVar(&c.LogLevel, LogLevel, viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
-	pflag.StringVar(&c.DbPath, DbPath, viper.GetString(DbPath), "The badger database path")
-
+	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
+	pflag.StringVar(&c.WriterNode, WriterNode, viper.GetString(WriterNode), "The approved writer node addr")
+	pflag.StringVar(&c.CachePath, CachePath, viper.GetString(CachePath), "The resolver cache path")
 	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
 	pflag.StringVar(&c.Twitter2FaCode, Twitter2FaCode, viper.GetString(Twitter2FaCode), "Twitter 2FA Code")

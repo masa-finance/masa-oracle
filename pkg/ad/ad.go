@@ -8,11 +8,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Ad represents an advertisement with content and metadata.
 type Ad struct {
 	Content  string
 	Metadata map[string]string
 }
 
+// SubscriptionHandler handles storing advertisements and publishing
+// them to the advertisement topic.
 type SubscriptionHandler struct {
 	Ads     []Ad
 	AdTopic *pubsub.Topic

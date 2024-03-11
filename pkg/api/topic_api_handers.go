@@ -1,9 +1,11 @@
 package api
 
 import (
-	"net/http"
-
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
+	"github.com/sirupsen/logrus"
+	"net/http"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
@@ -39,7 +41,7 @@ func (api *API) CreateNewTopicHandler() gin.HandlerFunc {
 	}
 }
 
-// PostMessageToTopicHandler allows posting a message to a specified topic.
+// PostToTopicHandler allows posting a message to a specified topic.
 func (api *API) PostToTopicHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request struct {
@@ -59,6 +61,35 @@ func (api *API) PostToTopicHandler() gin.HandlerFunc {
 
 		// Publish the message to the specified topic.
 		if err := api.Node.PubSubManager.PublishMessage(config.TopicWithVersion(request.TopicName), request.Message); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "Message posted to topic successfully"})
+	}
+}
+
+// PostNodeStatusHandler allows posting a message to the NodeStatus Topic
+func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// WIP
+		var nodeStatus nodestatus.NodeStatus
+
+		if err := c.BindJSON(&nodeStatus); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if api.Node == nil || api.Node.PubSubManager == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Node or PubSubManager is not initialized"})
+			return
+		}
+
+		jsonData, _ := json.Marshal(nodeStatus)
+		logrus.Printf("jsonData %s", jsonData)
+
+		// Publish the message to the specified topic.
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion("nodeStatus"), jsonData); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

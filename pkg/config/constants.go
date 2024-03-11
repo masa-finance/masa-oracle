@@ -24,13 +24,16 @@ const (
 	Signature   = "signature"
 	Debug       = "debug"
 	Version     = "v0.0.9-alpha"
-	DbPath      = "DB_PATH"
+	FilePath    = "FILE_PATH"
+	WriterNode  = "WRITER_NODE"
+	CachePath   = "CACHE_PATH"
 
 	MasaPrefix           = "/masa"
 	OracleProtocol       = "oracle_protocol"
 	NodeDataSyncProtocol = "nodeDataSync"
 	NodeGossipTopic      = "gossip"
 	AdTopic              = "ad"
+	NodeStatusTopic      = "nodeStatus"
 	PublicKeyTopic       = "bootNodePublicKey"
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25

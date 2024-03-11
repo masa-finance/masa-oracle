@@ -2,18 +2,17 @@ package main
 
 import (
 	"context"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
-	"github.com/masa-finance/masa-oracle/pkg/badgerdb"
+	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
-	"github.com/masa-finance/masa-oracle/pkg/routes"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
@@ -21,29 +20,14 @@ func main() {
 	cfg := config.GetInstance()
 	cfg.LogConfig()
 	cfg.SetupLogging()
-	keyManager := crypto.KeyManagerInstance()
-
-	// Initialize the database
-	db, err := badgerdb.InitializeDB()
-	if err != nil {
-		logrus.Fatalf("Failed to initialize database: %v", err)
-	}
-	defer func(db *badger.DB) {
-		err := db.Close()
-		if err != nil {
-			logrus.Errorf("Failed to close the database: %v", err)
-		}
-	}(db) // This ensures the database is properly closed on application exit
+	keyManager := masacrypto.KeyManagerInstance()
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if err != nil {
-		logrus.Fatal(err)
-	}
 	if cfg.StakeAmount != "" {
 		// Exit after staking, do not proceed to start the node
-		err = handleStaking(keyManager.EcdsaPrivKey)
+		err := handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -52,7 +36,7 @@ func main() {
 
 	var isStaked bool
 	// Verify the staking event
-	isStaked, err = staking.VerifyStakingEvent(keyManager.EthAddress)
+	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -78,6 +62,44 @@ func main() {
 		logrus.Info("This node is not set as the allowed peer")
 	}
 
+	go db.InitResolverCache(node)
+
+	// WIP
+	// *** Store NodeStatus ***
+	//data := []byte(node.Host.ID().String())
+	//signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+	//if err != nil {
+	//	logrus.Errorf("%v", err)
+	//}
+	//_ = db.Verifier(node.Host, data, signature)
+	//logrus.Println(node.Host.ID().String())
+	//up := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	//if up != nil {
+	//	totalUpTime := up.GetAccumulatedUptime()
+	//	status := db.NodeStatus{
+	//		PeerID:        node.Host.ID().String(),
+	//		IsStaked:      isStaked,
+	//		TotalUpTime:   totalUpTime,
+	//		FirstLaunched: time.Now().Add(-totalUpTime),
+	//		LastLaunched:  time.Now(),
+	//	}
+	//	jsonData, _ := json.Marshal(status)
+	//	logrus.Printf("jsonData %s", jsonData)
+	//	// str := fmt.Sprintf("%s", jsonData)
+	//	if err := node.PubSubManager.Publish(config.TopicWithVersion("nodeStatus"), jsonData); err != nil {
+	//		logrus.Errorf("PublishMessage %+v", err)
+	//	}
+	//
+	//	keyStr := node.Host.ID().String() // user ID for this nodes status key
+	//	time.Sleep(time.Second * 1)       // delay needed to wait for node to finish starting
+	//	success, er := db.WriteData(node, "/db/"+keyStr, jsonData)
+	//	if er != nil {
+	//		logrus.Errorf("Store NodeStatus err %+v", er)
+	//	}
+	//	logrus.Infof("Store NodeStatus %+v", success)
+	//}
+	// *** Store NodeStatus ***
+
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -93,7 +115,7 @@ func main() {
 		cancel()
 	}()
 
-	router := routes.SetupRoutes(node)
+	router := api.SetupRoutes(node)
 	go func() {
 		err := router.Run()
 		if err != nil {
