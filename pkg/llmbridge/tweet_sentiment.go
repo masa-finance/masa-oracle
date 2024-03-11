@@ -8,8 +8,7 @@ import (
 )
 
 func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, error) {
-	config := NewClaudeAPIConfig()
-	client := NewClaudeClient(config)
+	client := NewClaudeClient() // Adjusted to call without arguments
 
 	tweetsContent := ConcatenateTweets(tweets)
 	payloadBytes, err := CreatePayload(tweetsContent)

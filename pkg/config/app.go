@@ -74,6 +74,8 @@ type AppConfig struct {
 	TwitterPassword    string `mapstructure:"TwitterPassword"`
 	Twitter2FaCode     string `mapstructure:"Twitter2FaCode"`
 	ClaudeApiKey       string `mapstructure:"ClaudeApiKey"`
+	ClaudeApiURL       string `mapstructure:"ClaudeApiURL"`
+	ClaudeApiVersion   string `mapstructure:"ClaudeApiVersion"`
 }
 
 func GetInstance() *AppConfig {
@@ -115,6 +117,8 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(Environment, os.Getenv("ENV"))
 	viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
 	viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+	viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
+	viper.SetDefault(ClaudeApiVersion, "2023-06-01")
 
 	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))

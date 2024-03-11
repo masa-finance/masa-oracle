@@ -11,7 +11,8 @@ type ClaudeClient struct {
 	config *ClaudeAPIConfig
 }
 
-func NewClaudeClient(config *ClaudeAPIConfig) *ClaudeClient {
+func NewClaudeClient() *ClaudeClient {
+	config := NewClaudeAPIConfig()
 	return &ClaudeClient{config: config}
 }
 

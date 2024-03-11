@@ -1,6 +1,6 @@
 package llmbridge
 
-import "os"
+import "github.com/masa-finance/masa-oracle/pkg/config"
 
 type ClaudeAPIConfig struct {
 	URL     string
@@ -9,9 +9,12 @@ type ClaudeAPIConfig struct {
 }
 
 func NewClaudeAPIConfig() *ClaudeAPIConfig {
+	appConfig := config.GetInstance()
+
+	// need to add these to the config package
 	return &ClaudeAPIConfig{
-		URL:     "https://api.anthropic.com/v1/messages",
-		APIKey:  os.Getenv("CLAUDE_API_KEY"),
-		Version: "2023-06-01",
+		URL:     appConfig.ClaudeApiURL,
+		APIKey:  appConfig.ClaudeApiKey,
+		Version: appConfig.ClaudeApiVersion,
 	}
 }
