@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"log"
 	"time"
 
@@ -24,7 +26,7 @@ type Record struct {
 	Value []byte
 }
 
-func InitResolverCache(node *masa.OracleNode) {
+func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager) {
 	var err error
 	cachePath := config.GetInstance().CachePath
 	cache, err = leveldb.NewDatastore(cachePath, nil)
@@ -32,6 +34,13 @@ func InitResolverCache(node *masa.OracleNode) {
 		log.Fatal(err)
 	}
 	fmt.Println("ResolverCache initialized")
+
+	data := []byte(node.Host.ID().String())
+	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+	if err != nil {
+		logrus.Errorf("%v", err)
+	}
+	_ = Verifier(node.Host, data, signature)
 
 	if !isAuthorized(node.Host.ID().String()) {
 		logrus.WithFields(logrus.Fields{
