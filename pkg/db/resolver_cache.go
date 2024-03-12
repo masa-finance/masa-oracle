@@ -149,7 +149,6 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 	return records, nil
 }
 
-// stringToCid option to use
 func stringToCid(str string) (string, error) {
 	// Create a multihash from the string
 	mhHash, err := mh.Sum([]byte(str), mh.SHA2_256, -1)

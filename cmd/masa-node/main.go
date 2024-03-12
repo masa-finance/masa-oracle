@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"os"
 	"os/signal"
@@ -63,6 +64,10 @@ func main() {
 	}
 
 	go db.InitResolverCache(node, keyManager)
+
+	nd := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	jsonData, _ := json.Marshal(nd)
+	logrus.Printf("jsonData %s", jsonData)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

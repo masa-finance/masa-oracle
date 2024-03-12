@@ -10,14 +10,15 @@ import (
 )
 
 type NodeStatus struct {
-	PeerID        string        `json:"peerId"`
-	IsStaked      bool          `json:"isStaked"`
-	TotalUpTime   time.Duration `json:"totalUpTime"`
-	FirstLaunched time.Time     `json:"firstLaunched"`
-	LastLaunched  time.Time     `json:"lastLaunched"`
+	PeerID       string        `json:"peerId"`
+	IsStaked     bool          `json:"isStaked"`
+	IsWriterNode bool          `json:"isWriterNode"`
+	TotalUpTime  time.Duration `json:"totalUpTime"`
+	FirstJoined  time.Time     `json:"firstJoined"`
+	LastJoined   time.Time     `json:"lastJoined"`
 }
 
-// SubscriptionHandler handles storing advertisements and publishing
+// SubscriptionHandler handles storing node status updates and publishing
 // them to the node status topic.
 type SubscriptionHandler struct {
 	NodeStatus      []NodeStatus
