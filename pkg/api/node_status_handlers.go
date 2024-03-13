@@ -7,6 +7,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"time"
 )
 
 // PostNodeStatusHandler allows posting a message to the NodeStatus Topic
@@ -35,5 +36,29 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"status": "Message posted to topic successfully"})
+	}
+}
+
+func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())
+		if nodeData == nil {
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"Name":        "Masa Status Page",
+				"PeerID":      api.Node.Host.ID().String(),
+				"IsStaked":    false,
+				"FirstJoined": time.Now().Format("2006-01-02 15:04:05"),
+				"LastJoined":  time.Now().Format("2006-01-02 15:04:05"),
+			})
+			return
+		}
+		totalUpTimeInNs := nodeData.GetAccumulatedUptime()
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"Name":        "Masa Status Page",
+			"PeerID":      nodeData.PeerId.String(),
+			"IsStaked":    nodeData.IsStaked,
+			"FirstJoined": time.Now().Add(-totalUpTimeInNs).Format("2006-01-02 15:04:05"),
+			"LastJoined":  nodeData.LastJoined.Format("2006-01-02 15:04:05"),
+		})
 	}
 }

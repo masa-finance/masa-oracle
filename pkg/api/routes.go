@@ -2,9 +2,6 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"time"
-
 	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
@@ -36,29 +33,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.POST("/nodestatus", API.PostNodeStatusHandler())
 
+	// Serving node status html
 	router.LoadHTMLGlob("pkg/api/templates/*.html")
-
-	router.GET("/status", func(c *gin.Context) {
-		nodeData := API.Node.NodeTracker.GetNodeData(node.Host.ID().String())
-		if nodeData == nil {
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"Name":        "Masa Status Page",
-				"PeerID":      node.Host.ID().String(),
-				"IsStaked":    false,
-				"FirstJoined": time.Now().Format("2006-01-02 15:04:05"),
-				"LastJoined":  time.Now().Format("2006-01-02 15:04:05"),
-			})
-			return
-		}
-		totalUpTimeInNs := nodeData.GetAccumulatedUptime()
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"Name":        "Masa Status Page",
-			"PeerID":      nodeData.PeerId.String(),
-			"IsStaked":    nodeData.IsStaked,
-			"FirstJoined": time.Now().Add(-totalUpTimeInNs).Format("2006-01-02 15:04:05"),
-			"LastJoined":  nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-		})
-	})
+	router.GET("/status", API.NodeStatusPageHandler())
 
 	return router
 }
