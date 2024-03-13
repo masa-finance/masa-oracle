@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masa Node Status</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">Masa Oracle Node Status</h1>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Node Information</h5>
+                    <p class="card-text"><strong>Node ID:</strong> <span id="nodeId">{{.PeerID}}</span></p>
+                    <p class="card-text"><strong>Status:</strong> <span class="badge badge-success">Online</span></p>
+                    <p class="card-text"><strong>Peers Connected:</strong> <span id="peersConnected">5</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3>Data Transfer Metrics</h3>
+            <table class="table">
+                <thead class="thead-light">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Peer ID</th>
+                    <th scope="col" class="text-center">Staked</th>
+                    <th scope="col" class="text-center">First Joined</th>
+                    <th scope="col" class="text-center">Last Joined</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th scope="row">1</th>
+                    <td>{{.PeerID}}</td>
+                    {{if .IsStaked}}
+                        <td class="text-center"><span class="badge badge-success">{{.IsStaked}}</span></td>
+                    {{else}}
+                        <td class="text-center"><span class="badge badge-danger">{{.IsStaked}}</span></td>
+                    {{end}}
+                    <td class="text-center">{{.FirstJoined}}</td>
+                    <td class="text-center">{{.LastJoined}}</td>
+                </tr>
+                <!-- Add more rows here based on your data -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
