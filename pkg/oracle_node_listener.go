@@ -102,10 +102,10 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		return
 	}
 	// Check if the node is staked before proceeding
-	if !node.NodeTracker.IsStaked(peerID.String()) {
-		logrus.Debugf("Node %s is not staked. Aborting SendNodeData.", peerID)
-		return
-	}
+	//if !node.NodeTracker.IsStaked(peerID.String()) {
+	//	logrus.Debugf("Node %s is not staked. Aborting SendNodeData.", peerID)
+	//	return
+	//}
 
 	recipientNodeData := node.NodeTracker.GetNodeData(peerID.String())
 	var nodeData []pubsub2.NodeData

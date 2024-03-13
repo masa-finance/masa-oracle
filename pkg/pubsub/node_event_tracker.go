@@ -70,19 +70,19 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	if !exists {
 		return
 	} else {
-		if nodeData.IsStaked {
-			if nodeData.IsActive {
-				// Node appears already connected, buffer this connect event
-				net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
-			} else {
-				nodeData.Joined()
-				err := net.AddOrUpdateNodeData(nodeData, true)
-				if err != nil {
-					logrus.Error(err)
-					return
-				}
+		// if nodeData.IsStaked {
+		if nodeData.IsActive {
+			// Node appears already connected, buffer this connect event
+			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
+		} else {
+			nodeData.Joined()
+			err := net.AddOrUpdateNodeData(nodeData, true)
+			if err != nil {
+				logrus.Error(err)
+				return
 			}
 		}
+		// }
 	}
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
@@ -139,9 +139,10 @@ func (net *NodeEventTracker) RefreshFromBoot(data NodeData) {
 
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
-	if !data.IsStaked {
-		return
-	}
+	// we want some nodedata for status even if staked is false
+	//if !data.IsStaked {
+	//	return
+	//}
 	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {
 		// If the node data does not exist in the cache and the node has left, ignore it
