@@ -40,6 +40,16 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.GET("/status", func(c *gin.Context) {
 		nodeData := API.Node.NodeTracker.GetNodeData(node.Host.ID().String())
+		if nodeData == nil {
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"Name":        "Masa Status Page",
+				"PeerID":      node.Host.ID().String(),
+				"IsStaked":    false,
+				"FirstJoined": time.Now().Format("2006-01-02 15:04:05"),
+				"LastJoined":  time.Now().Format("2006-01-02 15:04:05"),
+			})
+			return
+		}
 		totalUpTimeInNs := nodeData.GetAccumulatedUptime()
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"Name":        "Masa Status Page",
