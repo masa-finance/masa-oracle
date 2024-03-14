@@ -105,10 +105,13 @@ func (c *AppConfig) setDefaultConfig() {
 		log.Fatal("could not find user.home directory")
 	}
 
+	// Set defaults
+	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
+
 	// Set values from .env
 	_, b, _, _ := runtime.Caller(0)
 	rootDir := filepath.Join(filepath.Dir(b), "../..")
-	if _, err := os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
+	if _, _ = os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
 		_ = godotenv.Load()
 		viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
 		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
@@ -119,11 +122,9 @@ func (c *AppConfig) setDefaultConfig() {
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
-		viper.SetDefault(CachePath, filepath.Join(viper.GetString(MasaDir), "./CACHE"))
+		viper.SetDefault(CachePath, filepath.Join(usr.HomeDir, ".masa", "CACHE"))
 	}
 
-	// Set defaults
-	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -139,10 +140,8 @@ func (c *AppConfig) setFileConfig(path string) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(path) // Optionally: add other paths, e.g., home directory or etc
 
-	// Attempt to read the config file
-	if err := viper.ReadInConfig(); err != nil {
-		logrus.Warnf("Error reading config file: %s", err)
-	}
+	// Attempt to read the config file if exists
+	_ = viper.ReadInConfig()
 }
 
 func (c *AppConfig) setEnvVariableConfig() {
