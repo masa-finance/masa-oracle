@@ -70,6 +70,13 @@ Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
 
 When the transactions have settled, you can stake
 
+To assign a node as the writer node for the network DHT
+
+### Writer Node
+  ```bash
+  ./masa-node --writerNode true
+  ```
+
 ### Staking Tokens
 
 - For local setup, stake tokens with:
