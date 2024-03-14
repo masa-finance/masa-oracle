@@ -1,10 +1,18 @@
 package api
 
 import (
+	"embed"
 	"github.com/gin-gonic/gin"
-
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"html/template"
 )
+
+// Before:
+// //go:embed pkg/api/templates/*.html
+// After, assuming the Go file is directly inside pkg/api:
+//
+//go:embed templates/*.html
+var htmlTemplates embed.FS
 
 func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router := gin.Default()
@@ -35,6 +43,12 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.POST("/analyzeSentiment", API.SearchTweetsAndAnalyzeSentiment())
 
 	router.POST("/nodestatus", API.PostNodeStatusHandler())
+
+	// Serving node status html
+	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
+	router.SetHTMLTemplate(templ)
+
+	router.GET("/status", API.NodeStatusPageHandler())
 
 	return router
 }

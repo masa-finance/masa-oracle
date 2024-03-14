@@ -5,6 +5,12 @@ services:
     ports:
       - "4001:4001"
       - "8080:8080"
+    environment:
+      BOOTNODES: "${BOOTNODES}"
+      RPC_URL: "${RPC_URL}"
+      FILE_PATH: "${FILE_PATH}"
+      WRITER_NODE: "${WRITER_NODE}"
+      CACHE_PATH: "${CACHE_PATH}"
     volumes:
       - .:/app
       - .masa-keys:/home/masa/.masa

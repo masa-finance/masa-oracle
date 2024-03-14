@@ -42,7 +42,8 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("Peer added to DHT: %s", p)
+		logrus.Infof("Peer added to DHT: %s", p.String())
+
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerAdded,
@@ -115,12 +116,10 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 						logrus.Error("Error closing stream:", err)
 					}
 				}(stream) // Close the stream when done
-				if isStaked {
-					_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
-					if err != nil {
-						logrus.Error("Error writing to stream:", err)
-						return
-					}
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+				if err != nil {
+					logrus.Error("Error writing to stream:", err)
+					return
 				}
 			}
 		}()

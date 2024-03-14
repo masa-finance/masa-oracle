@@ -175,3 +175,31 @@ func (sm *Manager) PublishMessage(topicName, message string) error {
 	// Use the existing Publish method to publish the message
 	return t.Publish(sm.ctx, data)
 }
+
+func (sm *Manager) Subscribe(topicName string, handler SubscriptionHandler) error {
+	sub, err := sm.GetSubscription(topicName)
+	if err != nil {
+		return err
+	}
+	sm.subscriptions[topicName] = sub
+	sm.handlers[topicName] = handler
+
+	go func() {
+		for {
+			msg, err := sub.Next(sm.ctx)
+			if err != nil {
+				logrus.Errorf("Error reading from topic: %v", err)
+				continue
+			}
+			// Skip messages from the same node
+			//if msg.ReceivedFrom == sm.host.ID() {
+			//	continue
+			//}
+			// Use the handler to process the message
+			handler.HandleMessage(msg)
+		}
+	}()
+
+	return nil
+
+}

@@ -4,11 +4,12 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
-	"github.com/masa-finance/masa-oracle/pkg/db"
-
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
@@ -44,6 +45,9 @@ func main() {
 	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
+
+	var isWriterNode bool
+	isWriterNode, _ = strconv.ParseBool(cfg.WriterNode)
 
 	// Create a new OracleNode
 	node, err := masa.NewOracleNode(ctx, isStaked)
@@ -92,7 +96,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode)
 
 	<-ctx.Done()
 }

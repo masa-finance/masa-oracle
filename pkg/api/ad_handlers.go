@@ -20,6 +20,7 @@ func (api *API) PostAd() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
+		// Must be staked to publish to ad topic
 		if !api.Node.IsStaked {
 			c.JSON(http.StatusPreconditionRequired, gin.H{"error": "node must be staked to be an ad publisher"})
 			return
