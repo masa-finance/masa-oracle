@@ -4,6 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
+
+	masa "github.com/masa-finance/masa-oracle/pkg"
 
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -21,7 +27,7 @@ type Record struct {
 	Value []byte
 }
 
-func InitResolverCache() {
+func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager) {
 	var err error
 	cachePath := config.GetInstance().CachePath
 	cache, err = leveldb.NewDatastore(cachePath, nil)
@@ -29,11 +35,30 @@ func InitResolverCache() {
 		log.Fatal(err)
 	}
 	fmt.Println("ResolverCache initialized")
+
+	data := []byte(node.Host.ID().String())
+	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+	if err != nil {
+		logrus.Errorf("%v", err)
+	}
+	_ = Verifier(node.Host, data, signature)
+
+	if !isAuthorized(node.Host.ID().String()) {
+		logrus.WithFields(logrus.Fields{
+			"nodeID":       node.Host.ID().String(),
+			"isAuthorized": false,
+			"Sync":         true,
+		})
+		return
+	} else {
+		syncInterval := time.Second * 60 // Change as needed
+		sync(context.Background(), node, syncInterval)
+	}
 }
 
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
 	// key, _ := stringToCid(keyStr)
-	err := cache.Put(ctx, ds.NewKey("cache/"+keyStr), value)
+	err := cache.Put(ctx, ds.NewKey(keyStr), value)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +66,7 @@ func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
 }
 
 func GetCache(ctx context.Context, keyStr string) ([]byte, error) {
-	value, err := cache.Get(ctx, ds.NewKey("cache/"+keyStr))
+	value, err := cache.Get(ctx, ds.NewKey(keyStr))
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +75,7 @@ func GetCache(ctx context.Context, keyStr string) ([]byte, error) {
 
 func DelCache(ctx context.Context, keyStr string) bool {
 	var err error
-	key := ds.NewKey("cache/" + keyStr)
+	key := ds.NewKey(keyStr)
 	err = cache.Delete(ctx, key)
 	if err != nil {
 		return false
@@ -60,7 +85,7 @@ func DelCache(ctx context.Context, keyStr string) bool {
 
 func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, error) {
 	// Check if the key exists
-	key := ds.NewKey("cache/" + keyStr)
+	key := ds.NewKey(keyStr)
 	res, err := cache.Has(ctx, key)
 	if err != nil {
 		return false, fmt.Errorf("error checking key existence: %w", err)
@@ -76,6 +101,31 @@ func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, err
 	}
 
 	return true, nil
+}
+
+func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			iterateAndPublish(ctx, node)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
+	records, err := QueryAll(ctx)
+	if err != nil {
+		logrus.Errorf("%+v", err)
+	}
+	for _, record := range records {
+		logrus.Printf("temp monitoring sync record ==> %s %s", record.Key, record.Value)
+		_, _ = WriteData(node, record.Key, record.Value)
+	}
 }
 
 func QueryAll(ctx context.Context) ([]Record, error) {
@@ -100,6 +150,7 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 	return records, nil
 }
 
+// stringToCid option to use
 func stringToCid(str string) (string, error) {
 	// Create a multihash from the string
 	mhHash, err := mh.Sum([]byte(str), mh.SHA2_256, -1)

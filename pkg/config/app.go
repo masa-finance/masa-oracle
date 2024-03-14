@@ -6,6 +6,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -101,28 +102,33 @@ func GetInstance() *AppConfig {
 
 func (c *AppConfig) setDefaultConfig() {
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("could not find user.home directory")
 	}
 
 	// Set values from .env
-	viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
-	viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
-	viper.SetDefault(Environment, os.Getenv("ENV"))
-	viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
-	viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+	_, b, _, _ := runtime.Caller(0)
+	rootDir := filepath.Join(filepath.Dir(b), "../..")
+	if _, err := os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
+		_ = godotenv.Load()
+		viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
+		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
+		viper.SetDefault(Environment, os.Getenv("ENV"))
+		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
+		viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
+	} else {
+		viper.SetDefault(FilePath, ".")
+		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
+		viper.SetDefault(CachePath, filepath.Join(viper.GetString(MasaDir), "./CACHE"))
+	}
+
 	viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
 	viper.SetDefault(ClaudeApiVersion, "2023-06-01")
 
 	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
-	viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -131,7 +137,6 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
-	viper.SetDefault(CachePath, filepath.Join(viper.GetString(MasaDir), "./CACHE"))
 }
 
 func (c *AppConfig) setFileConfig(path string) {
@@ -172,7 +177,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, LogLevel, viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
-	pflag.StringVar(&c.WriterNode, WriterNode, viper.GetString(WriterNode), "The approved writer node addr")
+	pflag.StringVar(&c.WriterNode, "writerNode", viper.GetString(WriterNode), "Approved writer node boolean")
 	pflag.StringVar(&c.CachePath, CachePath, viper.GetString(CachePath), "The resolver cache path")
 	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")

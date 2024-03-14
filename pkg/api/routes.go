@@ -34,5 +34,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.POST("/analyzeSentiment", API.SearchTweetsAndAnalyzeSentiment())
 
+	router.POST("/nodestatus", API.PostNodeStatusHandler())
+
 	return router
 }

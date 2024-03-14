@@ -25,24 +25,26 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
-	Host                  host.Host
-	PrivKey               *ecdsa.PrivateKey
-	Protocol              protocol.ID
-	priorityAddrs         multiaddr.Multiaddr
-	multiAddrs            []multiaddr.Multiaddr
-	DHT                   *dht.IpfsDHT
-	Context               context.Context
-	PeerChan              chan myNetwork.PeerEvent
-	NodeTracker           *pubsub2.NodeEventTracker
-	PubSubManager         *pubsub2.Manager
-	Signature             string
-	IsStaked              bool
-	StartTime             time.Time
-	AdSubscriptionHandler *ad.SubscriptionHandler
+	Host                           host.Host
+	PrivKey                        *ecdsa.PrivateKey
+	Protocol                       protocol.ID
+	priorityAddrs                  multiaddr.Multiaddr
+	multiAddrs                     []multiaddr.Multiaddr
+	DHT                            *dht.IpfsDHT
+	Context                        context.Context
+	PeerChan                       chan myNetwork.PeerEvent
+	NodeTracker                    *pubsub2.NodeEventTracker
+	PubSubManager                  *pubsub2.Manager
+	Signature                      string
+	IsStaked                       bool
+	StartTime                      time.Time
+	AdSubscriptionHandler          *ad.SubscriptionHandler
+	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
 }
 
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {

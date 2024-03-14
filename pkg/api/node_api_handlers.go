@@ -2,9 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/db"
 	"math"
 	"net/http"
+
+	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/gin-gonic/gin"
 
@@ -167,7 +168,7 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			return
 		}
 		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, "/db/"+keyStr, api.Node.Host)
+		nodeVal := db.ReadData(api.Node, "/db/"+keyStr)
 		_ = json.Unmarshal(nodeVal, &sharedData)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -198,7 +199,7 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			})
 			return
 		}
-		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData, api.Node.Host)
+		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": success,
@@ -210,8 +211,5 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			"success": success,
 			"message": keyStr,
 		})
-
-		// c.IndentedJSON(http.StatusCreated, sharedData)
-
 	}
 }
