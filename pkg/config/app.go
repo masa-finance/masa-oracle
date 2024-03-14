@@ -122,7 +122,7 @@ func (c *AppConfig) setDefaultConfig() {
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
-		viper.SetDefault(CachePath, filepath.Join(usr.HomeDir, ".masa", "CACHE"))
+		viper.SetDefault(CachePath, "CACHE")
 	}
 
 	viper.SetDefault(PortNbr, "4001")
