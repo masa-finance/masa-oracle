@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"math"
 	"time"
@@ -24,7 +22,6 @@ func (node *OracleNode) ListenToNodeTracker() {
 		select {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
 			time.Sleep(1 * time.Second)
-			// if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) {
 			// Marshal the nodeData into JSON
 			jsonData, err := json.Marshal(nodeData)
 			if err != nil {
@@ -44,7 +41,6 @@ func (node *OracleNode) ListenToNodeTracker() {
 				(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > 5*time.Minute) {
 				go node.SendNodeData(nodeData.PeerId)
 			}
-			// }
 		case <-node.Context.Done():
 			return
 		}
@@ -137,10 +133,8 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 }
 
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
-	logrus.Info("ReceiveNodeData")
-
+	logrus.Debug("ReceiveNodeData")
 	scanner := bufio.NewScanner(stream)
-	//scanner.Scan() stops when it hits a new line
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var page NodeDataPage
@@ -209,9 +203,6 @@ func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub
 		logrus.Errorf("Failed to unmarshal NodeData: %v", err)
 		logrus.Errorf("%s", buffer.String())
 		return "", pubsub2.NodeData{}, err
-	}
-	if !nodeData.IsStaked {
-		return "", pubsub2.NodeData{}, errors.New(fmt.Sprintf("un-staked node is ignored: %s", nodeData.PeerId))
 	}
 	return remotePeerID, nodeData, nil
 }

@@ -24,11 +24,11 @@ type SubscriptionHandler struct {
 	NodeStatus      []NodeStatus
 	NodeStatusTopic *pubsub.Topic
 	mu              sync.Mutex
+	NodeStatusCh    chan []byte
 }
 
 // HandleMessage implement subscription handler here
 func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
-	logrus.Infof("Received a message %s", message.Data)
 	var nodeStatus NodeStatus
 	err := json.Unmarshal(message.Data, &nodeStatus)
 	if err != nil {
@@ -40,5 +40,6 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	handler.NodeStatus = append(handler.NodeStatus, nodeStatus)
 	handler.mu.Unlock()
 
-	logrus.Infof("NodeStatus received: %+v", nodeStatus)
+	jsonData, _ := json.Marshal(nodeStatus)
+	handler.NodeStatusCh <- jsonData
 }

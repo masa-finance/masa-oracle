@@ -70,7 +70,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	if !exists {
 		return
 	} else {
-		// if nodeData.IsStaked {
 		if nodeData.IsActive {
 			// Node appears already connected, buffer this connect event
 			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
@@ -82,7 +81,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 				return
 			}
 		}
-		// }
 	}
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
@@ -139,10 +137,7 @@ func (net *NodeEventTracker) RefreshFromBoot(data NodeData) {
 
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
-	// we want some nodedata for status even if staked is false
-	//if !data.IsStaked {
-	//	return
-	//}
+	// we want nodeData for status even if staked is false
 	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {
 		// If the node data does not exist in the cache and the node has left, ignore it
@@ -154,10 +149,10 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		net.nodeData.Set(data.PeerId.String(), &data)
 		return
 	}
-	// Check for replay attacks using LastUpdated -- @TODO check why is this considered a replay?
+	// Check for replay attacks using LastUpdated
 	if !data.LastUpdated.After(existingData.LastUpdated) {
 		if existingData.IsStaked {
-			logrus.Warnf("Stale or replayed node data received for node: %s", data.PeerId)
+			logrus.Debugf("Stale or replayed node data received for node: %s", data.PeerId)
 			return
 		} else {
 			// this is the boot node and local data is incorrect, take the value from the boot node
@@ -167,7 +162,6 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	}
 	existingData.LastUpdated = data.LastUpdated
 
-	// maxDifference := time.Minute * 5
 	maxDifference := time.Millisecond * 15
 
 	// Handle discrepancies for existing nodes
@@ -309,13 +303,11 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.SelfIdentified = true
 		}
-		if !nd.IsStaked && nodeData.IsStaked {
-			dataChanged = true
-			nd.IsStaked = nodeData.IsStaked
-			logrus.WithFields(logrus.Fields{
-				"Peer": nd.PeerId.String(),
-			}).Info("Connected")
-		}
+		dataChanged = true
+		nd.IsStaked = nodeData.IsStaked
+		logrus.WithFields(logrus.Fields{
+			"Peer": nd.PeerId.String(),
+		}).Info("Connected")
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress

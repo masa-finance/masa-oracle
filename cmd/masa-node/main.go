@@ -2,15 +2,11 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
+	"github.com/masa-finance/masa-oracle/pkg/db"
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
-
-	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
@@ -66,35 +62,6 @@ func main() {
 	}
 
 	go db.InitResolverCache(node, keyManager)
-
-	/// WIP testing Subscribing to NodeStatusTopic gossip - will remove
-	syncInterval := time.Second * 60
-	go func() {
-		e := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeStatusTopic), &nodestatus.SubscriptionHandler{})
-		if e != nil {
-			logrus.Println(e)
-		}
-
-		ticker := time.NewTicker(syncInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				nd := node.NodeTracker.GetNodeData(node.Host.ID().String())
-				jsonData, _ := json.Marshal(nd)
-				logrus.Printf("jsonData %s", jsonData)
-
-				e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData)
-				if e != nil {
-					logrus.Printf("%v", e)
-				}
-
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	/// WIP testing NodeStatusTopic gossip - will remove
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

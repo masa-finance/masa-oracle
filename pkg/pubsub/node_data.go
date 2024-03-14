@@ -3,9 +3,10 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/viper"
 	"strconv"
 	"time"
+
+	"github.com/spf13/viper"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -88,9 +89,9 @@ func (n *NodeData) Joined() {
 	n.Activity = ActivityJoined
 	n.IsActive = true
 	if n.IsStaked {
-		logrus.Info("Node joined: ", n.Address())
+		logrus.Info("Staked node joined: ", n.Address())
 	} else {
-		logrus.Debug("Node joined: ", n.Address())
+		logrus.Debug("Unstaked node joined: ", n.Address())
 	}
 }
 

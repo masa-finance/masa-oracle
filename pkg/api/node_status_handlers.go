@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
@@ -49,16 +50,23 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"IsStaked":    false,
 				"FirstJoined": time.Now().Format("2006-01-02 15:04:05"),
 				"LastJoined":  time.Now().Format("2006-01-02 15:04:05"),
+				"TotalUpTime": "0",
+				"Rewards":     "Coming Soon!",
 			})
 			return
 		}
-		totalUpTimeInNs := nodeData.GetAccumulatedUptime()
+		nodeData.CurrentUptime = nodeData.GetCurrentUptime()
+		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"Name":        "Masa Status Page",
 			"PeerID":      nodeData.PeerId.String(),
 			"IsStaked":    nodeData.IsStaked,
-			"FirstJoined": nodeData.LastJoined.Add(-totalUpTimeInNs).Format("2006-01-02 15:04:05"),
+			"FirstJoined": nodeData.LastJoined.Add(-nodeData.CurrentUptime).Format("2006-01-02 15:04:05"),
 			"LastJoined":  nodeData.LastJoined.Format("2006-01-02 15:04:05"),
+			"TotalUpTime": nodeData.AccumulatedUptimeStr,
+			"Rewards":     "Coming Soon!",
 		})
+		return
 	}
 }

@@ -2,24 +2,25 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"log"
 	"time"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
-	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
 	leveldb "github.com/ipfs/go-ds-leveldb"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
 
 var cache ds.Datastore
+var nodeStatusCh = make(chan []byte)
 
 type Record struct {
 	Key   string
@@ -42,6 +43,8 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	}
 	_ = Verifier(node.Host, data, signature)
 
+	go monitorNodeData(context.Background(), node)
+
 	if !isAuthorized(node.Host.ID().String()) {
 		logrus.WithFields(logrus.Fields{
 			"nodeID":       node.Host.ID().String(),
@@ -53,6 +56,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 		syncInterval := time.Second * 60 // Change as needed
 		sync(context.Background(), node, syncInterval)
 	}
+
 }
 
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
@@ -122,7 +126,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		logrus.Errorf("%+v", err)
 	}
 	for _, record := range records {
-		logrus.Printf("temp monitoring sync record ==> %s %s", record.Key, record.Value)
+		logrus.Debugf("syncing record %s", record.Key)
 		_, _ = WriteData(node, record.Key, record.Value)
 	}
 }
@@ -149,15 +153,36 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 	return records, nil
 }
 
-func stringToCid(str string) (string, error) {
-	// Create a multihash from the string
-	mhHash, err := mh.Sum([]byte(str), mh.SHA2_256, -1)
+func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
+	syncInterval := time.Second * 60
+	nodeStatusHandler := &nodestatus.SubscriptionHandler{NodeStatusCh: nodeStatusCh}
+	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeStatusTopic), nodeStatusHandler)
 	if err != nil {
-		return "", err
+		logrus.Println(err)
 	}
 
-	// Create a CID from the multihash
-	cidKey := cid.NewCidV1(cid.Raw, mhHash).String()
+	ticker := time.NewTicker(syncInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
 
-	return cidKey, nil
+			nd := node.NodeTracker.GetNodeData(node.Host.ID().String())
+			jsonData, _ := json.Marshal(nd)
+			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData)
+			if e != nil {
+				logrus.Printf("%v", e)
+			}
+
+		case <-nodeStatusCh:
+			nodes := nodeStatusHandler.NodeStatus
+			for _, n := range nodes {
+				jsonData, _ := json.Marshal(n)
+				// logrus.Printf("%s %s", n.PeerID, jsonData)
+				_, _ = WriteData(node, "/db/"+n.PeerID, jsonData)
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }

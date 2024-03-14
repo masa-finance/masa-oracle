@@ -17,6 +17,7 @@
                     <h5 class="card-title">Node Information</h5>
                     <p class="card-text"><strong>Node ID:</strong> <span id="nodeId">{{.PeerID}}</span></p>
                     <p class="card-text"><strong>Status:</strong> <span class="badge badge-success">Online</span></p>
+                    <p class="card-text"><strong>Total Peers:</strong> <span id="totalPeers">40,000</span></p>
                     <p class="card-text"><strong>Peers Connected:</strong> <span id="peersConnected">5</span></p>
                 </div>
             </div>
@@ -34,6 +35,8 @@
                     <th scope="col" class="text-center">Staked</th>
                     <th scope="col" class="text-center">First Joined</th>
                     <th scope="col" class="text-center">Last Joined</th>
+                    <th scope="col" class="text-center">UpTime</th>
+                    <th scope="col" class="text-center">Rewards</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -47,6 +50,8 @@
                     {{end}}
                     <td class="text-center">{{.FirstJoined}}</td>
                     <td class="text-center">{{.LastJoined}}</td>
+                    <td class="text-center">{{.TotalUpTime}}</td>
+                    <td class="text-center">{{.Rewards}}</td>
                 </tr>
                 <!-- Add more rows here based on your data -->
                 </tbody>
