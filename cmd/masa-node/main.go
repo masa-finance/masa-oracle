@@ -3,11 +3,10 @@ package main
 import (
 	"context"
 	"github.com/masa-finance/masa-oracle/pkg/db"
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"

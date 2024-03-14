@@ -10,24 +10,28 @@ import (
 )
 
 type NodeStatus struct {
-	PeerID        string        `json:"peerId"`
-	IsStaked      bool          `json:"isStaked"`
-	TotalUpTime   time.Duration `json:"totalUpTime"`
-	FirstLaunched time.Time     `json:"firstLaunched"`
-	LastLaunched  time.Time     `json:"lastLaunched"`
+	PeerID                    string        `json:"peerId"`
+	IsActive                  bool          `json:"isActive"`
+	IsStaked                  bool          `json:"isStaked"`
+	IsWriterNode              bool          `json:"isWriterNode"`
+	AccumulatedUptime         time.Duration `json:"accumulatedUptime"`
+	CurrentUptime             time.Duration `json:"currentUptime"`
+	ReadableAccumulatedUptime string        `json:"readableAccumulatedUptime"`
+	FirstJoined               time.Time     `json:"firstJoined"`
+	LastJoined                time.Time     `json:"lastJoined"`
 }
 
-// SubscriptionHandler handles storing advertisements and publishing
+// SubscriptionHandler handles storing node status updates and publishing
 // them to the node status topic.
 type SubscriptionHandler struct {
 	NodeStatus      []NodeStatus
 	NodeStatusTopic *pubsub.Topic
 	mu              sync.Mutex
+	NodeStatusCh    chan []byte
 }
 
 // HandleMessage implement subscription handler here
 func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
-	logrus.Infof("Received a message %s", message.Data)
 	var nodeStatus NodeStatus
 	err := json.Unmarshal(message.Data, &nodeStatus)
 	if err != nil {
@@ -39,5 +43,6 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	handler.NodeStatus = append(handler.NodeStatus, nodeStatus)
 	handler.mu.Unlock()
 
-	logrus.Infof("NodeStatus received: %+v", nodeStatus)
+	jsonData, _ := json.Marshal(nodeStatus)
+	handler.NodeStatusCh <- jsonData
 }

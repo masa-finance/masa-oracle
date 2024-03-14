@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-
 	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
@@ -33,6 +32,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.POST("/dht", API.PostToDHT())
 
 	router.POST("/nodestatus", API.PostNodeStatusHandler())
+
+	// Serving node status html
+	router.LoadHTMLGlob("pkg/api/templates/*.html")
+	router.GET("/status", API.NodeStatusPageHandler())
 
 	return router
 }

@@ -43,7 +43,8 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("Peer added to DHT: %s", p)
+		logrus.Infof("Peer added to DHT: %s", p.String())
+
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerAdded,
@@ -116,21 +117,17 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 						logrus.Error("Error closing stream:", err)
 					}
 				}(stream) // Close the stream when done
-				if isStaked {
-					_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
-					if err != nil {
-						logrus.Error("Error writing to stream:", err)
-						return
-					}
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+				if err != nil {
+					logrus.Error("Error writing to stream:", err)
+					return
 				}
 			}
 		}()
 	}
 	wg.Wait()
 	if len(bootstrapNodes) > 0 && peerConnectionCount == 0 {
-		// @TODO do we want to exit if there are no peers or run and wait?
-		// log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
-		log.Println("Unable to connect to a boot node at this time. Please try again later.")
+		log.Println("Unable to connect to a boot node at this time. Waiting...")
 	}
 	return kademliaDHT, nil
 }

@@ -3,7 +3,10 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
+
+	"github.com/spf13/viper"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -54,11 +57,13 @@ type NodeData struct {
 	IsActive             bool            `json:"isActive"`
 	IsStaked             bool            `json:"isStaked"`
 	SelfIdentified       bool            `json:"-"`
+	IsWriterNode         bool            `json:"isWriterNode"`
 }
 
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
+	wn, _ := strconv.ParseBool(viper.GetString("WRITER_NODE"))
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -69,6 +74,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
+		IsWriterNode:      wn,
 	}
 }
 
@@ -77,23 +83,15 @@ func (n *NodeData) Address() string {
 }
 
 func (n *NodeData) Joined() {
-	// if n.Activity == ActivityJoined && n.IsActive {
-	// 	if n.IsStaked {
-	// 		logrus.Warnf("Node %s is already marked as joined", n.Address())
-	// 	} else {
-	// 		logrus.Debugf("Node %s is already marked as joined", n.Address())
-	// 	}
-	// 	return
-	// }
 	now := time.Now()
 	n.LastJoined = now
 	n.LastUpdated = now
 	n.Activity = ActivityJoined
 	n.IsActive = true
 	if n.IsStaked {
-		logrus.Info("Node joined: ", n.Address())
+		logrus.Info("Staked node joined: ", n.Address())
 	} else {
-		logrus.Debug("Node joined: ", n.Address())
+		logrus.Debug("Unstaked node joined: ", n.Address())
 	}
 }
 
