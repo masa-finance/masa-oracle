@@ -122,7 +122,7 @@ func (c *AppConfig) setDefaultConfig() {
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
-		viper.SetDefault(CachePath, filepath.Join(usr.HomeDir, ".masa", "CACHE"))
+		viper.SetDefault(CachePath, "CACHE")
 	}
 
 	viper.SetDefault(PortNbr, "4001")
@@ -172,7 +172,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogFilePath, LogFilePath, viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, FilePath, viper.GetString(FilePath), "The node file path")
 	pflag.StringVar(&c.WriterNode, "writerNode", viper.GetString(WriterNode), "Approved writer node boolean")
-	pflag.StringVar(&c.CachePath, CachePath, viper.GetString(CachePath), "The resolver cache path")
+	pflag.StringVar(&c.CachePath, "cachePath", viper.GetString(CachePath), "The cache path")
 	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
 	pflag.StringVar(&c.Twitter2FaCode, Twitter2FaCode, viper.GetString(Twitter2FaCode), "Twitter 2FA Code")

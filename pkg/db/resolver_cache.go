@@ -44,7 +44,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	}
 	_ = Verifier(node.Host, data, signature)
 
-	go monitorNodeData(context.Background(), node)
+	// go monitorNodeData(context.Background(), node)
 
 	if !isAuthorized(node.Host.ID().String()) {
 		logrus.WithFields(logrus.Fields{
