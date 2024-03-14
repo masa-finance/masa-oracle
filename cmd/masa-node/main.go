@@ -8,8 +8,6 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
-	"github.com/masa-finance/masa-oracle/pkg/db"
-
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
