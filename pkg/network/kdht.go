@@ -45,10 +45,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
 		logrus.Infof("Peer added to DHT: %s", p.String())
 
-		//nodeData := pubsub.NodeEventTracker.GetNodeData(*pubsub, p)
-		//jsonData, _ := json.Marshal(nodeData)
-		//logrus.Printf("jsonData %s", jsonData)
-
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerAdded,

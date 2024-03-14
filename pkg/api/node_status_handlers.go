@@ -45,13 +45,13 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())
 		if nodeData == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
-				"Name":        "Masa Status Page",
-				"PeerID":      api.Node.Host.ID().String(),
-				"IsStaked":    false,
-				"FirstJoined": time.Now().Format("2006-01-02 15:04:05"),
-				"LastJoined":  time.Now().Format("2006-01-02 15:04:05"),
-				"TotalUpTime": "0",
-				"Rewards":     "Coming Soon!",
+				"Name":          "Masa Status Page",
+				"PeerID":        api.Node.Host.ID().String(),
+				"IsStaked":      false,
+				"FirstJoined":   time.Now().Format("2006-01-02 15:04:05"),
+				"LastJoined":    time.Now().Format("2006-01-02 15:04:05"),
+				"CurrentUptime": "0",
+				"Rewards":       "Coming Soon!",
 			})
 			return
 		}
@@ -59,13 +59,13 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
 		c.HTML(http.StatusOK, "index.html", gin.H{
-			"Name":        "Masa Status Page",
-			"PeerID":      nodeData.PeerId.String(),
-			"IsStaked":    nodeData.IsStaked,
-			"FirstJoined": nodeData.LastJoined.Add(-nodeData.CurrentUptime).Format("2006-01-02 15:04:05"),
-			"LastJoined":  nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-			"TotalUpTime": nodeData.AccumulatedUptimeStr,
-			"Rewards":     "Coming Soon!",
+			"Name":          "Masa Status Page",
+			"PeerID":        nodeData.PeerId.String(),
+			"IsStaked":      nodeData.IsStaked,
+			"FirstJoined":   time.Now().Add(-nodeData.AccumulatedUptime).Format("2006-01-02 15:04:05"),
+			"LastJoined":    nodeData.LastJoined.Format("2006-01-02 15:04:05"),
+			"CurrentUptime": nodeData.AccumulatedUptimeStr,
+			"Rewards":       "Coming Soon!",
 		})
 		return
 	}
