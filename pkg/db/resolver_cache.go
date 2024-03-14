@@ -185,7 +185,6 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			for _, n := range nodes {
 				n.FirstJoined = time.Now().Add(-n.AccumulatedUptime)
 				jsonData, _ := json.Marshal(n)
-				logrus.Printf("%s %s", n.PeerID, jsonData)
 				_, _ = WriteData(node, "/db/"+n.PeerID, jsonData)
 			}
 		case <-ctx.Done():
