@@ -26,6 +26,7 @@ func WriteData(node *masa.OracleNode, key string, value []byte) (bool, error) {
 	defer cancel()
 
 	var err error
+	node.DHT.ForceRefresh()
 	if key != node.Host.ID().String() {
 		err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
 		_, er := PutCache(ctx, key, value)
