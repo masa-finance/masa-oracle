@@ -32,7 +32,7 @@ type SubscriptionHandler struct {
 
 // HandleMessage implement subscription handler here
 func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
-	var nodeStatus NodeStatus
+	nodeStatus := NodeStatus{}
 	err := json.Unmarshal(message.Data, &nodeStatus)
 	if err != nil {
 		logrus.Errorf("Failed to unmarshal message: %v", err)

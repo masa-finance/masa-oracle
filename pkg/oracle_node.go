@@ -126,9 +126,10 @@ func (node *OracleNode) Start() (err error) {
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
-	// if node.IsStaked {
-	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
-	// }
+	// node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeStatusTopic), node.ReceiveNodeData)
+	if node.IsStaked {
+		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+	}
 	node.Host.Network().Notify(node.NodeTracker)
 
 	go node.ListenToNodeTracker()

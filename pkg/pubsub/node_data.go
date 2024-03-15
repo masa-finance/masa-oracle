@@ -45,6 +45,7 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 type NodeData struct {
 	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
 	PeerId               peer.ID         `json:"peerId"`
+	FirstJoined          time.Time       `json:"firstJoined,omitempty"`
 	LastJoined           time.Time       `json:"lastJoined,omitempty"`
 	LastLeft             time.Time       `json:"lastLeft,omitempty"`
 	LastUpdated          time.Time       `json:"lastUpdated,omitempty"`
@@ -84,6 +85,7 @@ func (n *NodeData) Address() string {
 
 func (n *NodeData) Joined() {
 	now := time.Now()
+	n.FirstJoined = now.Add(-n.AccumulatedUptime)
 	n.LastJoined = now
 	n.LastUpdated = now
 	n.Activity = ActivityJoined
