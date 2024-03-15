@@ -10,6 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// GenerateEthKey generates a new Ethereum private key, prints the private key,
+// writes the private key to a file, prints the public key, calculates the
+// address from the public key, and prints the address.
 func GenerateEthKey() {
 	privateKey, err := crypto.GenerateKey()
 	if err != nil {

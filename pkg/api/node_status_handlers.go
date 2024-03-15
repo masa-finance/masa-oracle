@@ -2,13 +2,14 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"time"
 )
 
 // PostNodeStatusHandler allows posting a message to the NodeStatus Topic
@@ -40,6 +41,9 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 	}
 }
 
+// NodeStatusPageHandler handles HTTP requests to show the node status page.
+// It retrieves the node data from the node tracker, formats it, and renders
+// an HTML page displaying the node's status and uptime info.
 func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())

@@ -2,9 +2,10 @@ package api
 
 import (
 	"embed"
+	"html/template"
+
 	"github.com/gin-gonic/gin"
 	masa "github.com/masa-finance/masa-oracle/pkg"
-	"html/template"
 )
 
 // Before:
@@ -14,6 +15,11 @@ import (
 //go:embed templates/*.html
 var htmlTemplates embed.FS
 
+// SetupRoutes configures the router with all API routes.
+// It takes an OracleNode instance and returns a configured gin.Engine.
+// Routes are added for peers, ads, subscriptions, node data, public keys,
+// topics, the DHT, node status, and serving HTML pages. Middleware is added
+// for CORS and templates.
 func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router := gin.Default()
 	// @TODO need to add a Authorization Bearer methodology for api security
@@ -42,7 +48,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.POST("/nodestatus", API.PostNodeStatusHandler())
 
-	// Serving node status html
+	// Serving html
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
 	router.SetHTMLTemplate(templ)
 

@@ -2,9 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/db"
 	"math"
 	"net/http"
+
+	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,6 +14,10 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
+// GetNodeDataHandler handles GET requests to retrieve paginated node data from the node tracker.
+// It parses the page number and page size from the request path, retrieves all node data from the
+// node tracker, calculates pagination details like total pages based on page size, and returns a
+// page of node data in the response.
 func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		pageNbr, err := GetPathInt(c, "pageNbr")
@@ -56,6 +61,10 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 	}
 }
 
+// GetNodeHandler handles GET requests to retrieve node data for a specific peer ID.
+// It extracts the peer ID from the request URL parameters, retrieves the node data
+// from the node tracker, calculates additional uptime info, and returns the node
+// data in the response.
 func (api *API) GetNodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		peerID := c.Param("peerID") // Get the peer ID from the URL parameters
@@ -87,6 +96,10 @@ func (api *API) GetNodeHandler() gin.HandlerFunc {
 	}
 }
 
+// GetPeersHandler handles GET requests to retrieve the list of peer IDs
+// from the DHT routing table. It retrieves the routing table from the
+// node's DHT instance, extracts the peer IDs, and returns them in the
+// response.
 func (api *API) GetPeersHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if api.Node == nil || api.Node.DHT == nil {
@@ -118,6 +131,10 @@ func (api *API) GetPeersHandler() gin.HandlerFunc {
 	}
 }
 
+// GetPeerAddressesHandler handles GET requests to retrieve the list of peer
+// addresses from the node's libp2p host network. It gets the list of connected
+// peers, finds the multiaddrs for connections to each peer, and returns the
+// peer IDs mapped to their addresses.
 func (api *API) GetPeerAddresses() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if api.Node == nil || api.Node.Host == nil {
@@ -155,6 +172,9 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 	}
 }
 
+// GetFromDHT handles GET requests to retrieve data from the DHT
+// given a key. It looks up the key in the DHT, unmarshals the
+// value into a SharedData struct, and returns the data in the response.
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -177,6 +197,12 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 	}
 }
 
+// PostToDHT handles POST requests to write data to the DHT.
+// It expects a JSON body with "key" and "value" fields.
+// The "key" is used to store the data in the DHT under /db/key.
+// The "value" is marshalled to JSON and written to the DHT.
+// Returns 200 OK on success with the key in the response.
+// Returns 400 Bad Request on invalid request or JSON errors.
 func (api *API) PostToDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 

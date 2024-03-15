@@ -14,6 +14,10 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
+// PublishPublicKeyHandler handles the /publickey endpoint. It retrieves the node's
+// public key, signs the public key with the private key, creates a public key
+// message with the key info, signs it, and publishes it to the public key topic.
+// This allows other nodes to obtain this node's public key.
 func (api *API) PublishPublicKeyHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if api.Node == nil || api.Node.PubSubManager == nil {
@@ -56,6 +60,9 @@ func (api *API) PublishPublicKeyHandler() gin.HandlerFunc {
 	}
 }
 
+// GetPublicKeysHandler handles the endpoint to retrieve all known public keys.
+// It gets the public key subscription handler from the PubSub manager,
+// extracts the public keys, and returns them in the response.
 func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if api.Node == nil || api.Node.PubSubManager == nil {

@@ -12,6 +12,13 @@ import (
 	"time"
 )
 
+// GenerateSelfSignedCert generates a self-signed X.509 certificate and private key,
+// saving them to the provided file paths.
+//
+// It generates a new ECDSA P-256 private key. It sets the certificate fields like
+// validity period, subject, extensions etc. based on best practices. Finally, it
+// encodes the certificate and private key in PEM format and saves them to the
+// provided file paths.
 func GenerateSelfSignedCert(certPath, keyPath string) error {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {

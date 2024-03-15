@@ -17,6 +17,11 @@ import (
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
+// ListenToNodeTracker listens to the NodeTracker's NodeDataChan
+// and publishes any received node data to the node gossip topic.
+// It also sends the node data directly to the peer if it's a
+// join event and this node isn't a bootnode or has been running
+// for more than 5 minutes.
 func (node *OracleNode) ListenToNodeTracker() {
 	for {
 		select {
@@ -47,6 +52,10 @@ func (node *OracleNode) ListenToNodeTracker() {
 	}
 }
 
+// HandleMessage unmarshals the node data from the pubsub message,
+// and passes it to the NodeTracker to handle. This allows the
+// OracleNode to receive node data published on the network, and
+// process it.
 func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
 	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
@@ -64,6 +73,10 @@ type NodeDataPage struct {
 	TotalRecords int                `json:"totalRecords"`
 }
 
+// SendNodeDataPage sends a page of node data over the given stream.
+// It paginates the provided node data slice into pages of size config.PageSize.
+// The pageNumber parameter specifies which page to send, starting from 0.
+// The response includes the page of data, page number, total pages, and total records.
 func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream network.Stream, pageNumber int) {
 	logrus.Debugf("SendNodeDataPage --> %s: Page: %d", stream.Conn().RemotePeer(), pageNumber)
 	totalRecords := len(allNodeData)
@@ -93,15 +106,14 @@ func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream 
 	}
 }
 
+// SendNodeData sends all node data to the peer with the given ID.
+// It first checks if the node is staked, and if not, aborts.
+// It gets the node data to send based on the last time the peer was seen.
+// It paginates the node data into pages and sends each page over the stream.
 func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	if peerID == node.Host.ID() {
 		return
 	}
-	// Check if the node is staked before proceeding
-	//if !node.NodeTracker.IsStaked(peerID.String()) {
-	//	logrus.Debugf("Node %s is not staked. Aborting SendNodeData.", peerID)
-	//	return
-	//}
 
 	recipientNodeData := node.NodeTracker.GetNodeData(peerID.String())
 	var nodeData []pubsub2.NodeData
@@ -132,6 +144,9 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	}
 }
 
+// ReceiveNodeData handles receiving NodeData pages from a peer
+// over a network stream. It scans the stream and unmarshals each
+// page of NodeData, refreshing the local NodeTracker with the data.
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	logrus.Debug("ReceiveNodeData")
 	scanner := bufio.NewScanner(stream)
@@ -154,6 +169,11 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	}
 }
 
+// GossipNodeData handles receiving NodeData from a peer
+// over a network stream. It reads the stream to get the
+// remote peer ID and NodeData, updates the local NodeTracker
+// with the data if it is about another node, and closes the
+// stream when finished.
 func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	logrus.Info("GossipNodeData")
 	remotePeerId, nodeData, err := node.handleStreamData(stream)
@@ -171,6 +191,8 @@ func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	}
 }
 
+// handleStreamData reads a network stream to get the remote peer ID
+// and NodeData. It returns the remote peer ID, NodeData, and any error.
 func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub2.NodeData, error) {
 	// Log the peer.ID of the remote peer
 	remotePeerID := stream.Conn().RemotePeer()

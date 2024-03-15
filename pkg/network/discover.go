@@ -2,9 +2,10 @@ package network
 
 import (
 	"context"
+	"time"
+
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"time"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -14,6 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Discover searches for and connects to peers that support the given protocol ID.
+// It initializes discovery via the DHT and advertises this node.
+// It runs discovery in a loop with a ticker, re-advertising and finding new peers.
+// For each discovered peer, it checks if already connected, and if not, dials them.
 func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol protocol.ID) {
 	protocolString := string(protocol)
 	logrus.Infof("Discovering peers for protocol: %s", protocolString)

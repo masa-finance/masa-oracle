@@ -44,6 +44,8 @@ const (
 	ClaudeApiKey    = "CLAUDE_API_KEY"
 )
 
+// ProtocolWithVersion returns a libp2p protocol ID string
+// with the configured version and environment suffix.
 func ProtocolWithVersion(protocolName string) protocol.ID {
 	if GetInstance().Environment == "" {
 		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, Version))
@@ -51,6 +53,8 @@ func ProtocolWithVersion(protocolName string) protocol.ID {
 	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, Version, viper.GetString(Environment)))
 }
 
+// TopicWithVersion returns a topic string with the configured version
+// and environment suffix.
 func TopicWithVersion(protocolName string) string {
 	if GetInstance().Environment == "" {
 		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, Version)
