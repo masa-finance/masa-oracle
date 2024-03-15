@@ -182,8 +182,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			nodes := nodeStatusHandler.NodeStatus
 			for _, n := range nodes {
 				jsonData, _ := json.Marshal(n)
-				logrus.Printf("%s", jsonData)
-				// _, _ = WriteData(node, "/db/"+n.PeerID, jsonData)
+				_, _ = WriteData(node, "/db/"+n.PeerID, jsonData)
 			}
 		case <-ctx.Done():
 			return
