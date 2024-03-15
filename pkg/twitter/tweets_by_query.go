@@ -3,9 +3,8 @@ package twitter
 import (
 	"context"
 	"fmt"
-	"log"
-
 	twitterscraper "github.com/n0madic/twitter-scraper"
+	"github.com/sirupsen/logrus"
 )
 
 // ScrapeTweetsByQuery searches tweets based on a query, with options for filtering and search mode.
@@ -15,7 +14,7 @@ func ScrapeTweetsByQuery(scraper *twitterscraper.Scraper, query string, count in
 	var tweets []*twitterscraper.Tweet
 
 	if scraper == nil {
-		log.Fatal("Scraper instance is nil. Please initialize and log in before calling ScrapeTweetsByQuery.")
+		logrus.Debug("Scraper instance is nil. Please initialize and log in before calling ScrapeTweetsByQuery.")
 		return nil, fmt.Errorf("scraper instance is nil")
 	}
 
@@ -25,7 +24,7 @@ func ScrapeTweetsByQuery(scraper *twitterscraper.Scraper, query string, count in
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
 		if tweetResult.Error != nil {
-			log.Printf("Error fetching tweet: %v", tweetResult.Error)
+			logrus.Printf("Error fetching tweet: %v", tweetResult.Error)
 			continue
 		}
 		tweets = append(tweets, &tweetResult.Tweet)
