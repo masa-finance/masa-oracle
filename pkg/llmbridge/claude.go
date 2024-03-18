@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"io"
 	"net/http"
 	"strings"
@@ -13,7 +14,10 @@ import (
 )
 
 // AnalyzeSentiment sends tweets to Claude for sentiment analysis and returns the analysis result.
-func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, error) {
+func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, string, error) {
+	appConfig := config.GetInstance()
+	claudeKey := appConfig.ClaudeApiKey
+
 	// Concatenate the text of each tweet into a single string
 	var tweetsTexts []string
 	for _, tweet := range tweets {
@@ -42,27 +46,25 @@ func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		logrus.Errorf("Error marshaling payload: %v", err)
-		return "", fmt.Errorf("error marshaling payload: %v", err)
+		return "", "", fmt.Errorf("error marshaling payload: %v", err)
 	}
-
-	logrus.Infof("Payload for Claude API: %s", string(payloadBytes))
 
 	// Send the request to Claude API
 	logrus.Info("Sending request to Claude API")
 	req, err := http.NewRequest("POST", "https://api.anthropic.com/v1/messages", bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		logrus.Errorf("Error creating request to Claude API: %v", err)
-		return "", fmt.Errorf("error creating request to Claude API: %v", err)
+		return "", "", fmt.Errorf("error creating request to Claude API: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", "-")
+	req.Header.Set("x-api-key", claudeKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		logrus.Errorf("Error sending request to Claude API: %v", err)
-		return "", fmt.Errorf("error sending request to Claude API: %v", err)
+		return "", "", fmt.Errorf("error sending request to Claude API: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -72,19 +74,9 @@ func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Errorf("Error reading response body: %v", err)
-		return "", fmt.Errorf("error reading response body: %v", err)
+		return "", "", fmt.Errorf("error reading response body: %v", err)
 	}
 
 	logrus.Infof("Response from Claude API: %s", string(body))
-
-	var response struct {
-		SentimentSummary string `json:"sentiment_summary"`
-	}
-	if err := json.Unmarshal(body, &response); err != nil {
-		logrus.Errorf("Error parsing response from Claude: %v", err)
-		return "", fmt.Errorf("error parsing response from Claude: %v", err)
-	}
-
-	logrus.Infof("Sentiment Summary: %s", response.SentimentSummary)
-	return response.SentimentSummary, nil
+	return string(payloadBytes), string(body), nil
 }

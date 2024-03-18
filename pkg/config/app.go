@@ -119,6 +119,9 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
 		viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
 		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
+		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
+		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
+		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")

@@ -29,7 +29,7 @@ func SubscribeToTopics(node *OracleNode) error {
 		return err
 	}
 
-	// Initialize and subscribe to NodeStatusTopic for receiving advertisement-related messages.
+	// Initialize and subscribe to NodeStatusTopic for receiving nodeStatus messages.
 	node.NodeStatusSubscriptionsHandler = &nodestatus.SubscriptionHandler{}
 	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.NodeStatusTopic), node.NodeStatusSubscriptionsHandler); err != nil {
 		logrus.Errorf("Failed to subscribe to nodeStatus topic: %v", err)
