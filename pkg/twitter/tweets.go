@@ -1,14 +1,18 @@
 package twitter
 
 import (
-	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	"context"
+	"crypto/tls"
 	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
+
+	clickhouse "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	twitterscraper "github.com/n0madic/twitter-scraper"
 )
 
 func auth() *twitterscraper.Scraper {
@@ -108,51 +112,26 @@ func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet, siz
 	}
 }
 
-// ctx := context.Background()
-//config := &clientcredentials.Config{
-//	ClientID:     os.Getenv("CONSUMER_KEY"),
-//	ClientSecret: os.Getenv("CONSUMER_SECRET"),
-//	TokenURL:     os.Getenv("TWITTER_TOKEN_URL"),
-//	Scopes:       []string{"read"},
-//}
-//
-//// Context with OAuth2 configuration
-//httpClient := config.Client(ctx)
-//
-//// searchURL := "https://api.twitter.com/2/tweets/search/recent?query=MASA"
-//searchURL := "https://api.twitter.com/2/users/me"
-//
-//// Make a GET request to Twitter API v2
-//resp, err := httpClient.Get(searchURL)
-//if err != nil {
-//	log.Fatalf("Failed to make request: %v", err)
-//}
-//defer resp.Body.Close()
-//
-//// Read and print the response body
-//// In a real application, you'd probably want to unmarshal the JSON response
-//body, err := io.ReadAll(resp.Body)
-//if err != nil {
-//	log.Fatalf("Failed to read response body: %v", err)
-//}
-//
-//fmt.Printf("Response: %s\n", body)
+func storeTweets() error {
+	ctx := context.Background()
 
-//conn, err := clickhouse.Open(&clickhouse.Options{
-//	Addr: []string{os.Getenv("CH_API_URL")},
-//	Auth: clickhouse.Auth{
-//		Database: "default",
-//		Username: "default",
-//		// Password: "<password>",
-//	},
-//	TLS: &tls.Config{},
-//})
-//
-//if e := conn.Ping(ctx); err != nil {
-//	if ex, ok := e.(*clickhouse.Exception); ok {
-//		logrus.Printf("Exception [%d %s \n%s\n", ex.Code, ex.Message, ex.StackTrace)
-//	}
-//	// return nil, e
-//	logrus.Printf("%v", e)
-//}
-//logrus.Printf("%v", conn)
+	conn, err := clickhouse.Open(&clickhouse.Options{
+		Addr: []string{os.Getenv("CH_API_URL")},
+		Auth: clickhouse.Auth{
+			Database: "default",
+			Username: "default",
+			// Password: "<password>",
+		},
+		TLS: &tls.Config{},
+	})
+
+	if e := conn.Ping(ctx); err != nil {
+		if ex, ok := e.(*clickhouse.Exception); ok {
+			logrus.Printf("Exception [%d %s \n%s\n", ex.Code, ex.Message, ex.StackTrace)
+		}
+		return e
+	}
+	logrus.Printf("%v", conn)
+
+	return nil
+}
