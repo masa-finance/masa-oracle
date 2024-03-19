@@ -69,7 +69,7 @@ func main() {
 	go db.InitResolverCache(node, keyManager)
 
 	// WIP testing scraper
-	// twitter.Scrape("$MASA", 5)
+	// twitter.Scrape("$MASA Token Masa", 5)
 	// WIP testing scraper
 
 	// WIP testing db

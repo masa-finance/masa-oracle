@@ -1,11 +1,10 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
+	"net/http"
 )
 
 // SearchTweetsRequest remains unchanged

@@ -44,7 +44,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 				// the node start time is greater than 5 minutes ago,
 				// call SendNodeData in a separate goroutine
 				if nodeData.Activity == pubsub2.ActivityJoined &&
-					(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > 5*time.Minute) {
+					(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > time.Minute*5) {
 					go node.SendNodeData(nodeData.PeerId)
 				}
 			}

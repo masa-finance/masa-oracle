@@ -75,6 +75,8 @@ type AppConfig struct {
 	TwitterPassword    string `mapstructure:"TwitterPassword"`
 	Twitter2FaCode     string `mapstructure:"Twitter2FaCode"`
 	ClaudeApiKey       string `mapstructure:"ClaudeApiKey"`
+	ClaudeApiURL       string `mapstructure:"ClaudeApiURL"`
+	ClaudeApiVersion   string `mapstructure:"ClaudeApiVersion"`
 }
 
 func GetInstance() *AppConfig {
@@ -122,13 +124,18 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
 		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
 		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
+		viper.SetDefault(ClaudeApiURL, os.Getenv("CLAUDE_API_URL"))
+		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 		viper.SetDefault(WriterNode, "false")
 		viper.SetDefault(CachePath, "CACHE")
+		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
+		viper.SetDefault(ClaudeApiVersion, "2023-06-01")
 	}
 
+	// Set defaults
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)

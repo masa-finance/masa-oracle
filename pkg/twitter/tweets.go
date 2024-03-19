@@ -66,7 +66,7 @@ func auth() *twitterscraper.Scraper {
 	return scraper
 }
 
-func Scrape(query string, count int) {
+func Scrape(query string, count int) ([]*twitterscraper.Tweet, error) {
 	rowChan := make(chan []*twitterscraper.Tweet)
 	scraper := auth()
 	go scrapeTweetsToChannel(scraper, query, count, rowChan)
@@ -86,6 +86,8 @@ func Scrape(query string, count int) {
 	}
 	wg.Wait()
 	logrus.Println("size", size)
+
+	return nil, nil
 }
 
 func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet, size *int64) {
@@ -96,14 +98,14 @@ func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet, siz
 			logrus.Println("rows", rows)
 			for _, row := range rows {
 				atomic.AddInt64(size, 1) // testing counts
-				logrus.Println("row ===> %s", row)
+				logrus.Printf("row ===> %v\n", row)
 			}
 			deserializedTweets, err := serializeTweets(rows)
 			if err != nil {
 				logrus.WithError(err).Error("Failed to deserialize tweets data")
 				return
 			}
-
+			// also getting sentiment request to save to datastore
 			sentimentRequest, sentimentSummary, e := llmbridge.AnalyzeSentiment(deserializedTweets)
 			if e != nil {
 				logrus.WithError(e).Error("Failed to analyze sentiment")
