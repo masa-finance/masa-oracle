@@ -27,24 +27,26 @@ func (node *OracleNode) ListenToNodeTracker() {
 		select {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
 			time.Sleep(1 * time.Second)
-			// Marshal the nodeData into JSON
-			jsonData, err := json.Marshal(nodeData)
-			if err != nil {
-				logrus.Errorf("Error marshaling node data: %v", err)
-				continue
-			}
-			// Publish the JSON data on the node.topic
-			err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
-			if err != nil {
-				logrus.Errorf("Error publishing node data: %v", err)
-			}
-			// If the nodeData represents a join event and
-			// the node is a boot node or (we don't want boot nodes to wait)
-			// the node start time is greater than 5 minutes ago,
-			// call SendNodeData in a separate goroutine
-			if nodeData.Activity == pubsub2.ActivityJoined &&
-				(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > 5*time.Minute) {
-				go node.SendNodeData(nodeData.PeerId)
+			if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) { // IsStaked
+				// Marshal the nodeData into JSON
+				jsonData, err := json.Marshal(nodeData)
+				if err != nil {
+					logrus.Errorf("Error marshaling node data: %v", err)
+					continue
+				}
+				// Publish the JSON data on the node.topic
+				err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
+				if err != nil {
+					logrus.Errorf("Error publishing node data: %v", err)
+				}
+				// If the nodeData represents a join event and
+				// the node is a boot node or (we don't want boot nodes to wait)
+				// the node start time is greater than 5 minutes ago,
+				// call SendNodeData in a separate goroutine
+				if nodeData.Activity == pubsub2.ActivityJoined &&
+					(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > 5*time.Minute) {
+					go node.SendNodeData(nodeData.PeerId)
+				}
 			}
 		case <-node.Context.Done():
 			return
@@ -112,6 +114,11 @@ func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream 
 // It paginates the node data into pages and sends each page over the stream.
 func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	if peerID == node.Host.ID() {
+		return
+	}
+	// IsStaked
+	if !node.NodeTracker.IsStaked(peerID.String()) {
+		logrus.Debugf("Node %s is not staked. Aborting SendNodeData.", peerID)
 		return
 	}
 
@@ -226,5 +233,8 @@ func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub
 		logrus.Errorf("%s", buffer.String())
 		return "", pubsub2.NodeData{}, err
 	}
+	// if !nodeData.IsStaked { // IsStaked
+	// 	return "", pubsub2.NodeData{}, errors.New(fmt.Sprintf("un-staked node is ignored: %s", nodeData.PeerId))
+	// }
 	return remotePeerID, nodeData, nil
 }

@@ -1,11 +1,18 @@
 package api
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
+	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 
@@ -131,7 +138,7 @@ func (api *API) GetPeersHandler() gin.HandlerFunc {
 	}
 }
 
-// GetPeerAddressesHandler handles GET requests to retrieve the list of peer
+// GetPeerAddresses handles GET requests to retrieve the list of peer
 // addresses from the node's libp2p host network. It gets the list of connected
 // peers, finds the multiaddrs for connections to each peer, and returns the
 // peer IDs mapped to their addresses.
@@ -168,6 +175,86 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 			"success":    true,
 			"data":       data,
 			"totalCount": len(peers),
+		})
+	}
+}
+
+// PublishPublicKeyHandler handles the /publickey endpoint. It retrieves the node's
+// public key, signs the public key with the private key, creates a public key
+// message with the key info, signs it, and publishes it to the public key topic.
+// This allows other nodes to obtain this node's public key.
+func (api *API) PublishPublicKeyHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if api.Node == nil || api.Node.PubSubManager == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Node or PubSubManager is not initialized"})
+			return
+		}
+
+		keyManager := masacrypto.KeyManagerInstance()
+
+		// Set the data to be signed as the signer's Peer ID
+		data := []byte(api.Node.Host.ID().String())
+
+		// Sign the data using the private key
+		signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to sign data: %v", err)})
+			return
+		}
+
+		// Serialize the public key message
+		msg := pubsub.PublicKeyMessage{
+			PublicKey: keyManager.HexPubKey,
+			Signature: hex.EncodeToString(signature),
+			Data:      string(data),
+		}
+		msgBytes, err := json.Marshal(msg)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal public key message"})
+			return
+		}
+
+		// Publish the public key using its string representation, data, and signature
+		publicKeyTopic := config.TopicWithVersion(config.PublicKeyTopic)
+		if err := api.Node.PubSubManager.Publish(publicKeyTopic, msgBytes); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "Public key published successfully"})
+	}
+}
+
+// GetPublicKeysHandler handles the endpoint to retrieve all known public keys.
+// It gets the public key subscription handler from the PubSub manager,
+// extracts the public keys, and returns them in the response.
+func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if api.Node == nil || api.Node.PubSubManager == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "An unexpected error occurred.",
+			})
+			return
+		}
+
+		// Use the PublicKeyTopic constant from the masa package
+		handler, err := api.Node.PubSubManager.GetHandler(string(config.ProtocolWithVersion(config.PublicKeyTopic)))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		publicKeyHandler, ok := handler.(*pubsub.PublicKeySubscriptionHandler)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "handler is not of type PublicKeySubscriptionHandler"})
+			return
+		}
+
+		publicKeys := publicKeyHandler.GetPublicKeys()
+		c.JSON(http.StatusOK, gin.H{
+			"success":    true,
+			"publicKeys": publicKeys,
 		})
 	}
 }
@@ -236,5 +323,68 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			"success": success,
 			"message": keyStr,
 		})
+	}
+}
+
+// PostNodeStatusHandler allows posting a message to the NodeStatus Topic
+func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// WIP
+		var nodeStatus nodestatus.NodeStatus
+
+		if err := c.BindJSON(&nodeStatus); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if api.Node == nil || api.Node.PubSubManager == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Node or PubSubManager is not initialized"})
+			return
+		}
+
+		jsonData, _ := json.Marshal(nodeStatus)
+		logrus.Printf("jsonData %s", jsonData)
+
+		// Publish the message to the specified topic.
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "Message posted to topic successfully"})
+	}
+}
+
+// NodeStatusPageHandler handles HTTP requests to show the node status page.
+// It retrieves the node data from the node tracker, formats it, and renders
+// an HTML page displaying the node's status and uptime info.
+func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())
+		if nodeData == nil {
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"Name":          "Masa Status Page",
+				"PeerID":        api.Node.Host.ID().String(),
+				"IsStaked":      false,
+				"FirstJoined":   time.Now().Format("2006-01-02 15:04:05"),
+				"LastJoined":    time.Now().Format("2006-01-02 15:04:05"),
+				"CurrentUptime": "0",
+				"Rewards":       "Coming Soon!",
+			})
+			return
+		}
+		nodeData.CurrentUptime = nodeData.GetCurrentUptime()
+		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"Name":          "Masa Status Page",
+			"PeerID":        nodeData.PeerId.String(),
+			"IsStaked":      nodeData.IsStaked,
+			"FirstJoined":   nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
+			"LastJoined":    nodeData.LastJoined.Format("2006-01-02 15:04:05"),
+			"CurrentUptime": nodeData.AccumulatedUptimeStr,
+			"Rewards":       "Coming Soon!",
+		})
+		return
 	}
 }
