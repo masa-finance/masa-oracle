@@ -4,10 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"time"
-
-	"log"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
@@ -37,7 +33,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	cachePath := config.GetInstance().CachePath
 	cache, err = leveldb.NewDatastore(cachePath, nil)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 	fmt.Println("ResolverCache initialized")
 
