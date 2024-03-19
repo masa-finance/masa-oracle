@@ -10,7 +10,6 @@ import (
 	"syscall"
 
 	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -72,7 +71,7 @@ func main() {
 	go db.InitResolverCache(node, keyManager)
 
 	// WIP testing scraper
-	twitter.Scrape("$MASA", 5)
+	// twitter.Scrape("$MASA", 5)
 	// WIP testing scraper
 
 	// WIP testing db
@@ -87,6 +86,8 @@ func main() {
 	if err != nil {
 		logrus.Println(err)
 	}
+	defer database.Close()
+
 	data := []Sentiment{}
 	query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
 	rows, err := database.Query(query)
@@ -107,7 +108,7 @@ func main() {
 		}
 		data = append(data, Sentiment{conversationId, tweet, promptId})
 	}
-	fmt.Println(data[0].Tweet)
+	fmt.Println(data)
 	// WIP testing
 
 	// Listen for SIGINT (CTRL+C)
