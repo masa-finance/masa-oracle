@@ -92,7 +92,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 		wg.Add(1)
 		counter := 0
 		go func() {
-			ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*30)
 			defer cancel() // Cancel the context when done to release resources
 
 			defer wg.Done()
@@ -117,10 +117,12 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 						logrus.Error("Error closing stream:", err)
 					}
 				}(stream) // Close the stream when done
-				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
-				if err != nil {
-					logrus.Error("Error writing to stream:", err)
-					return
+				if isStaked { // isStaked
+					_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+					if err != nil {
+						logrus.Error("Error writing to stream:", err)
+						return
+					}
 				}
 			}
 		}()

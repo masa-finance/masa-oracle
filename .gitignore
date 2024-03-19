@@ -33,7 +33,7 @@ masa-oracle
 tools/tools
 tools/*.json
 tools/*.bin
-bin/masa-node
+bin/
 
 # smart contracts
 node_modules

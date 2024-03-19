@@ -68,6 +68,14 @@ func KeyManagerInstance() *KeyManager {
 	return keyManagerInstance
 }
 
+// loadPrivateKey loads the node's private key from the environment or a file.
+// It first checks for a private key set via the PrivateKey config. If not found,
+// it tries to load the key from the PrivateKeyFile. As a last resort, it
+// generates a new key and saves it to the private key file.
+
+// The private key is loaded into both Libp2p and ECDSA formats for use by
+// different parts of the system. The public key and hex-encoded key representations
+// are also derived.
 func (km *KeyManager) loadPrivateKey() (err error) {
 	var keyFile string
 	cfg := config.GetInstance()

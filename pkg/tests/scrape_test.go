@@ -4,15 +4,14 @@ package tests
 
 import (
 	"encoding/json"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	twitterscraper "github.com/n0madic/twitter-scraper"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"testing"
 
-	twitterscraper "github.com/n0madic/twitter-scraper"
-	"github.com/sirupsen/logrus"
-
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 )
 
@@ -73,10 +72,9 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 	// Ensure setup is done before running the test
 	setup()
 
-	query := "$MASA"
+	query := "$MASA Token Masa"
 	count := 100
-	searchMode := twitterscraper.SearchLatest
-	tweets, err := twitter.ScrapeTweetsByQuery(scraper, query, count, searchMode)
+	tweets, err := twitter.Scrape(query, count)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to scrape tweets")
 		return
@@ -115,10 +113,13 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 
 	// Now, deserializedTweets contains the tweets loaded from the file
 	// Send the tweets data to Claude for sentiment analysis
-	sentimentSummary, err := llmbridge.AnalyzeSentiment(deserializedTweets)
+	sentimentRequest, sentimentSummary, err := llmbridge.AnalyzeSentiment(deserializedTweets)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to analyze sentiment")
 		return
 	}
-	logrus.WithField("sentimentSummary", sentimentSummary).Debug("Sentiment analysis completed successfully.")
+	logrus.WithFields(logrus.Fields{
+		"sentimentRequest": sentimentRequest,
+		"sentimentSummary": sentimentSummary,
+	}).Debug("Sentiment analysis completed successfully.")
 }

@@ -17,6 +17,9 @@ type NodeLifecycleEvent struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
+// BroadcastEvent marshals a NodeLifecycleEvent into JSON, publishes it
+// to the given PubSub topic, and logs the operation. Returns any error.
+// This allows broadcasting node join/leave events to other nodes.
 func BroadcastEvent(ctx context.Context, ps *pubsub.PubSub, topicName string, event NodeLifecycleEvent) error {
 	event.Timestamp = time.Now().Unix()
 

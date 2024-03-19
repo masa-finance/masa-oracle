@@ -13,6 +13,10 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
+// VerifyStakingEvent checks if the given user address has staked tokens by
+// calling the stakes() view function on the OracleNodeStaking contract.
+// It connects to an Ethereum node, encodes the stakes call, calls the contract,
+// unpacks the result, and returns true if the stakes amount is > 0.
 func VerifyStakingEvent(userAddress string) (bool, error) {
 	rpcURL := config.GetInstance().RpcUrl
 	if rpcURL == "" {

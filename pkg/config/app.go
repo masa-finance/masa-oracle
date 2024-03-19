@@ -75,6 +75,8 @@ type AppConfig struct {
 	TwitterPassword    string `mapstructure:"TwitterPassword"`
 	Twitter2FaCode     string `mapstructure:"Twitter2FaCode"`
 	ClaudeApiKey       string `mapstructure:"ClaudeApiKey"`
+	ClaudeApiURL       string `mapstructure:"ClaudeApiURL"`
+	ClaudeApiVersion   string `mapstructure:"ClaudeApiVersion"`
 }
 
 func GetInstance() *AppConfig {
@@ -119,13 +121,22 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
 		viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
 		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
+		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
+		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
+		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
+		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
+		viper.SetDefault(ClaudeApiURL, os.Getenv("CLAUDE_API_URL"))
+		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 		viper.SetDefault(WriterNode, "false")
 		viper.SetDefault(CachePath, "CACHE")
+		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
+		viper.SetDefault(ClaudeApiVersion, "2023-06-01")
 	}
 
+	// Set defaults
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -177,7 +188,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
 	pflag.StringVar(&c.Twitter2FaCode, Twitter2FaCode, viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
-	pflag.StringVar(&c.ClaudeApiKey, ClaudeApiKey, viper.GetString(ClaudeApiKey), "Claude API Key")
+	pflag.StringVar(&c.ClaudeApiKey, "claudeApiKey", viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

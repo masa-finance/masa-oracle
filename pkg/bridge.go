@@ -26,6 +26,11 @@ func NewBridge() error {
 	return nil
 }
 
+// authMiddleware returns a middleware function that checks for a valid
+// authorization token in the request header. If the token is not valid,
+// it aborts the request with a 401 Unauthorized status code. Otherwise
+// it calls the next handler in the chain. This can be used to protect
+// routes that require authentication.
 func authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the token from the Authorization header
@@ -40,6 +45,8 @@ func authMiddleware() gin.HandlerFunc {
 	}
 }
 
+// webhookHandler handles incoming webhook requests.
+// It simply returns a 200 OK response with a message.
 func webhookHandler(c *gin.Context) {
 	// Handle the webhook request here
 

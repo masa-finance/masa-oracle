@@ -30,6 +30,10 @@ type ConnectBufferEntry struct {
 	ConnectTime time.Time
 }
 
+// NewNodeEventTracker creates a new NodeEventTracker instance.
+// It initializes the node data map, node data channel, node data file path,
+// connect buffer map. It loads existing node data from file, starts a goroutine
+// to clear expired buffer entries, and returns the initialized instance.
 func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
@@ -45,6 +49,8 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 	return net
 }
 
+// Listen is called when the node starts listening on a new multiaddr.
+// It logs the network and address that listening started on.
 func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
 	// This method is called when the node starts listening on a multiaddr
 	logrus.WithFields(logrus.Fields{
@@ -53,6 +59,8 @@ func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
 	}).Info("Started listening")
 }
 
+// ListenClose logs when the node stops listening on a multiaddr.
+// It logs the network and multiaddr that was stopped listening on.
 func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 	// This method is called when the node stops listening on a multiaddr
 	logrus.WithFields(logrus.Fields{
@@ -61,6 +69,12 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 	}).Info("Stopped listening")
 }
 
+// Connected handles when a remote peer connects to this node.
+// It checks if the connecting node already exists in nodeData.
+// If not, it returns without doing anything.
+// If it exists but is not active, it buffers the connect event.
+// If it exists and is active, it marks the node as joined and
+// saves the updated nodeData.
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
 	remotePeer := c.RemotePeer()
@@ -70,15 +84,17 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	if !exists {
 		return
 	} else {
-		if nodeData.IsActive {
-			// Node appears already connected, buffer this connect event
-			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
-		} else {
-			nodeData.Joined()
-			err := net.AddOrUpdateNodeData(nodeData, true)
-			if err != nil {
-				logrus.Error(err)
-				return
+		if nodeData.IsStaked { // IsStaked
+			if nodeData.IsActive {
+				// Node appears already connected, buffer this connect event
+				net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
+			} else {
+				nodeData.Joined()
+				err := net.AddOrUpdateNodeData(nodeData, true)
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
 			}
 		}
 	}
@@ -89,6 +105,11 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	}).Info("Connected")
 }
 
+// Disconnected handles when a remote peer disconnects from this node.
+// It looks up the disconnected node's data. If it doesn't exist, it returns.
+// If it exists but is not staked, it returns. Otherwise it handles
+// disconnect logic like updating the node data, deleting buffered connect
+// events, and sending updated node data through the channel.
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	logrus.Debug("Disconnect")
 
@@ -121,6 +142,9 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	}).Info("Disconnected")
 }
 
+// HandleMessage unmarshals the received pubsub message into a NodeData struct,
+// and passes it to HandleNodeData for further processing. This allows the
+// NodeEventTracker to handle incoming node data messages from the pubsub layer.
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
@@ -131,12 +155,23 @@ func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	net.HandleNodeData(nodeData)
 }
 
+// RefreshFromBoot updates the node data map with the provided NodeData
+// when the node boots up. It associates the NodeData with the peer ID string
+// as the map key.
 func (net *NodeEventTracker) RefreshFromBoot(data NodeData) {
 	net.nodeData.Set(data.PeerId.String(), &data)
 }
 
+// HandleNodeData processes incoming NodeData from the pubsub layer.
+// It adds new NodeData to the nodeData map, checks for replay attacks,
+// and reconciles discrepancies between incoming and existing NodeData.
+// This allows the tracker to maintain an up-to-date view of the node
+// topology based on pubsub messages.
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
+	// if !data.IsStaked { // IsStaked
+	// 	return
+	// }
 	// we want nodeData for status even if staked is false
 	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {
@@ -193,6 +228,8 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	}
 }
 
+// GetNodeData returns the NodeData for the node with the given peer ID,
+// or nil if no NodeData exists for that peer ID.
 func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
 	nodeData, exists := net.nodeData.Get(peerID)
 	if !exists {
@@ -201,11 +238,15 @@ func (net *NodeEventTracker) GetNodeData(peerID string) *NodeData {
 	return nodeData
 }
 
+// GetAllNodeData returns a slice containing the NodeData for all nodes currently tracked.
 func (net *NodeEventTracker) GetAllNodeData() []NodeData {
 	logrus.Debug("Getting all node data")
 	return net.nodeData.GetStakedNodesSlice()
 }
 
+// GetUpdatedNodes returns a slice of NodeData for nodes that have been updated since the given time.
+// It filters the full node data set to only those updated after the passed in time,
+// sorts the filtered results by update timestamp, and returns the sorted slice.
 func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 	// Filter allNodeData to only include nodes that have been updated since the given time
 	var updatedNodeData []NodeData
@@ -221,6 +262,10 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 	return updatedNodeData
 }
 
+// DumpNodeData writes the NodeData map to a JSON file. It determines the file path
+// based on the configured data directory, defaulting to nodeDataFile if not set.
+// It logs any errors writing the file. This allows periodically persisting the
+// node data.
 func (net *NodeEventTracker) DumpNodeData() {
 	// Write the JSON data to a file
 	var filePath string
@@ -237,6 +282,10 @@ func (net *NodeEventTracker) DumpNodeData() {
 	}
 }
 
+// LoadNodeData loads the node data from a JSON file. It determines the file path
+// based on the configured data directory, defaulting to nodeDataFile if not set.
+// It logs any errors reading or parsing the file. This allows initializing the
+// node data tracker from persisted data.
 func (net *NodeEventTracker) LoadNodeData() error {
 	// Read the JSON data from a file
 	var filePath string
@@ -259,6 +308,10 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	return nil
 }
 
+// getEthAddress returns the Ethereum address for the given remote peer.
+// It gets the peer's public key from the network's peerstore, converts
+// it to a hex string, and converts that to an Ethereum address.
+// Returns an empty string if there is no public key for the peer.
 func getEthAddress(remotePeer peer.ID, n network.Network) string {
 	var publicKeyHex string
 	var err error
@@ -280,6 +333,8 @@ func getEthAddress(remotePeer peer.ID, n network.Network) string {
 	return publicKeyHex
 }
 
+// IsStaked returns whether the node with the given peerID is marked as staked in the node data tracker.
+// Returns false if no node data is found for the given peerID.
 func (net *NodeEventTracker) IsStaked(peerID string) bool {
 	peerNd := net.GetNodeData(peerID)
 	if peerNd == nil {
@@ -303,11 +358,13 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.SelfIdentified = true
 		}
-		dataChanged = true
-		nd.IsStaked = nodeData.IsStaked
-		logrus.WithFields(logrus.Fields{
-			"Peer": nd.PeerId.String(),
-		}).Info("Connected")
+		if !nd.IsStaked && nodeData.IsStaked { // IsStaked
+			dataChanged = true
+			nd.IsStaked = nodeData.IsStaked
+			logrus.WithFields(logrus.Fields{
+				"Peer": nd.PeerId.String(),
+			}).Info("Connected")
+		}
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
@@ -331,6 +388,10 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 	return nil
 }
 
+// ClearExpiredBufferEntries periodically clears expired entries from the
+// connect buffer cache. It loops forever sleeping for a configured interval.
+// On each loop it checks the current time against the connect time for each
+// entry, and if expired, processes the connect and removes the entry.
 func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	for {
 		time.Sleep(30 * time.Second) // E.g., every 5 seconds

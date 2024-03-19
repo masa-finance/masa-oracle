@@ -11,6 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// Approve approves the specified amount of MASA tokens for transfer from the
+// caller's account to the OracleNodeStakingContractAddress. It constructs an
+// Ethereum transaction with the approve call, signs it, sends it to the network,
+// waits for confirmation, and returns the transaction hash if successful.
 func (sc *Client) Approve(amount *big.Int) (string, error) {
 	parsedABI, err := GetABI(MasaTokenABIPath)
 	if err != nil {

@@ -2,6 +2,11 @@
 
 ## Long term data normalization & pinning
 
+Extensions
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```
+
 ### NodeData
 
 Type
@@ -53,4 +58,29 @@ INSERT INTO nodes (node) VALUES
 Query (example)
 ```sql
 SELECT (node).isStaked FROM nodes WHERE (node).peerId = '16Uiu2HAmTHk1nxbU74Co5vfbxEv56HfvPDRcJCdvYNZkGAHHQyJs'
+```
+
+### AI Sentiment Data
+
+Sequences
+```sql
+CREATE SEQUENCE IF NOT EXISTS sentiment_id_seq;
+CREATE SEQUENCE IF NOT EXISTS prompt_id_seq;
+```
+
+Tables
+```sql
+CREATE TABLE IF NOT EXISTS "public"."sentiment" (
+    "id" int8 NOT NULL DEFAULT nextval('sentiment_id_seq'::regclass),
+    "conversationId" int8 NOT NULL,
+    "tweet" json,
+    "promptId" int8
+);
+ALTER TABLE "public"."sentiment" ADD CONSTRAINT "sentiment_pkey" PRIMARY KEY ("id");
+
+CREATE TABLE IF NOT EXISTS "public"."prompt" (
+    "id" int8 NOT NULL DEFAULT nextval('prompt_id_seq'::regclass),
+    "input" varchar(255) COLLATE "pg_catalog"."default"
+);
+ALTER TABLE "public"."prompt" ADD CONSTRAINT "prompt_pkey" PRIMARY KEY ("id");
 ```

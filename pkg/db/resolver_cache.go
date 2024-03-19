@@ -106,35 +106,6 @@ func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, err
 	return true, nil
 }
 
-func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			iterateAndPublish(ctx, node)
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
-	records, err := QueryAll(ctx)
-	if err != nil {
-		logrus.Errorf("%+v", err)
-	}
-	for _, record := range records {
-		logrus.Printf("syncing record %s %s", record.Key, record.Value)
-		// ok := DelCache(ctx, record.Key)
-		//if ok {
-		//	logrus.Println("deleted")
-		//}
-		_, _ = WriteData(node, record.Key, record.Value)
-	}
-}
-
 func QueryAll(ctx context.Context) ([]Record, error) {
 	results, err := cache.Query(ctx, query.Query{})
 	if err != nil {
@@ -155,6 +126,31 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 	}
 
 	return records, nil
+}
+
+func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			iterateAndPublish(ctx, node)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
+	records, err := QueryAll(ctx)
+	if err != nil {
+		logrus.Errorf("%+v", err)
+	}
+	for _, record := range records {
+		logrus.Printf("syncing record %s", record.Key)
+		_, _ = WriteData(node, record.Key, record.Value)
+	}
 }
 
 func monitorNodeData(ctx context.Context, node *masa.OracleNode) {

@@ -47,6 +47,10 @@ type OracleNode struct {
 	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
 }
 
+// GetMultiAddrs returns the priority multiaddr for this node.
+// It first checks if the priority address is already set, and returns it if so.
+// If not, it determines the priority address from the available multiaddrs using
+// the GetPriorityAddress utility function, sets it, and returns it.
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	if node.priorityAddrs == nil {
 		pAddr := myNetwork.GetPriorityAddress(node.multiAddrs)
@@ -55,6 +59,9 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.priorityAddrs
 }
 
+// NewOracleNode creates a new OracleNode instance with the provided context and
+// staking status. It initializes the libp2p host, DHT, pubsub manager, and other
+// components needed for an Oracle node to join the network and participate.
 func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	cfg := config.GetInstance()
@@ -116,6 +123,10 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	}, nil
 }
 
+// Start initializes the OracleNode by setting up libp2p stream handlers,
+// connecting to the DHT and bootnodes, and subscribing to topics. It launches
+// goroutines to handle discovered peers, listen to the node tracker, and
+// discover peers. If this is a bootnode, it adds itself to the node tracker.
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 
@@ -126,7 +137,8 @@ func (node *OracleNode) Start() (err error) {
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
-	// node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeStatusTopic), node.ReceiveNodeData)
+	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeStatusTopic), node.ReceiveNodeData)
+
 	if node.IsStaked {
 		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
 	}
@@ -166,6 +178,10 @@ func (node *OracleNode) Start() (err error) {
 	return nil
 }
 
+// handleDiscoveredPeers listens on the PeerChan for discovered peers from the
+// network discovery routines. It handles connecting to new peers and closing
+// connections to peers that disconnect. This runs continuously to handle
+// discovered peers.
 func (node *OracleNode) handleDiscoveredPeers() {
 	for {
 		select {
@@ -189,6 +205,9 @@ func (node *OracleNode) handleDiscoveredPeers() {
 	}
 }
 
+// handleStream handles an incoming libp2p stream from a remote peer.
+// It reads the stream data, validates the remote peer ID, updates the node tracker
+// with the remote peer's information, and logs the event.
 func (node *OracleNode) handleStream(stream network.Stream) {
 	remotePeer, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
@@ -214,15 +233,22 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())
 }
 
+// IsPublisher returns true if this node is a publisher node.
+// A publisher node is one that has a non-empty signature.
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
 }
 
+// Version returns the current version string of the oracle node software.
 func (node *OracleNode) Version() string {
 	return config.Version
 }
 
+// LogActiveTopics logs the currently active topic names to the
+// default logger. It gets the list of active topics from the
+// PubSubManager and logs them if there are any, otherwise it logs
+// that there are no active topics.
 func (node *OracleNode) LogActiveTopics() {
 	topicNames := node.PubSubManager.GetTopicNames()
 	if len(topicNames) > 0 {

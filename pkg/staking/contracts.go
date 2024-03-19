@@ -18,6 +18,9 @@ type Client struct {
 	PrivateKey *ecdsa.PrivateKey
 }
 
+// NewClient initializes a new Client instance with the provided private key.
+// It loads the contract addresses, initializes an Ethereum client, and returns
+// a Client instance.
 func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	addresses, err := LoadContractAddresses()
 	if err != nil {
