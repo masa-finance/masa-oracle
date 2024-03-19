@@ -50,12 +50,14 @@ func (sm *SafeMap) GetStakedNodesSlice() []NodeData {
 	defer sm.mu.RUnlock()
 	result := make([]NodeData, 0)
 	for _, nodeData := range sm.items {
-		nd := *nodeData
-		nd.CurrentUptime = nodeData.GetCurrentUptime()
-		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
-		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
-		result = append(result, nd)
+		if nodeData.IsStaked { // IsStaked
+			nd := *nodeData
+			nd.CurrentUptime = nodeData.GetCurrentUptime()
+			nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+			nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
+			nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
+			result = append(result, nd)
+		}
 	}
 	// Sort the slice based on the timestamp
 	sort.Slice(result, func(i, j int) bool {

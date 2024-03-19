@@ -32,4 +32,5 @@ func scrapeTweetsToChannel(scraper *twitterscraper.Scraper, query string, count 
 
 	defer close(rowChan)
 	rowChan <- tweets
+
 }

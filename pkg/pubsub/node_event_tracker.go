@@ -84,15 +84,17 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	if !exists {
 		return
 	} else {
-		if nodeData.IsActive {
-			// Node appears already connected, buffer this connect event
-			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
-		} else {
-			nodeData.Joined()
-			err := net.AddOrUpdateNodeData(nodeData, true)
-			if err != nil {
-				logrus.Error(err)
-				return
+		if nodeData.IsStaked { // IsStaked
+			if nodeData.IsActive {
+				// Node appears already connected, buffer this connect event
+				net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
+			} else {
+				nodeData.Joined()
+				err := net.AddOrUpdateNodeData(nodeData, true)
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
 			}
 		}
 	}
@@ -167,6 +169,9 @@ func (net *NodeEventTracker) RefreshFromBoot(data NodeData) {
 // topology based on pubsub messages.
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
+	// if !data.IsStaked { // IsStaked
+	// 	return
+	// }
 	// we want nodeData for status even if staked is false
 	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {
@@ -353,11 +358,13 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.SelfIdentified = true
 		}
-		dataChanged = true
-		nd.IsStaked = nodeData.IsStaked
-		logrus.WithFields(logrus.Fields{
-			"Peer": nd.PeerId.String(),
-		}).Info("Connected")
+		if !nd.IsStaked && nodeData.IsStaked { // IsStaked
+			dataChanged = true
+			nd.IsStaked = nodeData.IsStaked
+			logrus.WithFields(logrus.Fields{
+				"Peer": nd.PeerId.String(),
+			}).Info("Connected")
+		}
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress

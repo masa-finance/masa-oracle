@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 	"github.com/sirupsen/logrus"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -68,11 +70,44 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// WIP testing Twitter scrape to sentiment
-	// created a tweet reader with worker threads
-	// simplified the flow using channels
-	// store AI request and sentiment to datastore
-	twitter.Scrape("$MASA", 10)
+	// WIP testing scraper
+	twitter.Scrape("$MASA", 5)
+	// WIP testing scraper
+
+	// WIP testing db
+	type Sentiment struct {
+		ConversationId int64
+		Tweet          string
+		PromptId       int64
+	}
+
+	// IMPORTANT migrations true will drop all
+	database, err := db.ConnectToPostgres(false)
+	if err != nil {
+		logrus.Println(err)
+	}
+	data := []Sentiment{}
+	query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
+	rows, err := database.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var (
+		conversationId int64
+		tweet          string
+		promptId       int64
+	)
+
+	for rows.Next() {
+		if err = rows.Scan(&conversationId, &tweet, &promptId); err != nil {
+			log.Fatal(err)
+		}
+		data = append(data, Sentiment{conversationId, tweet, promptId})
+	}
+	fmt.Println(data[0].Tweet)
+	// WIP testing
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
@@ -91,7 +126,7 @@ func main() {
 
 	router := api.SetupRoutes(node)
 	go func() {
-		err := router.Run()
+		err = router.Run()
 		if err != nil {
 			logrus.Fatal(err)
 		}

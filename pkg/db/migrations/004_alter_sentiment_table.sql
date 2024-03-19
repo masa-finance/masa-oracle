@@ -1,0 +1,1 @@
+ALTER TABLE "public"."sentiment" ADD CONSTRAINT "sentiment_pkey" PRIMARY KEY ("id");

@@ -51,8 +51,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Serving html
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
 	router.SetHTMLTemplate(templ)
-
 	router.GET("/status", API.NodeStatusPageHandler())
+
+	router.POST("/sentiments", API.PostSentiment())
 
 	return router
 }
