@@ -124,6 +124,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
 		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
 		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
+		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
 		viper.SetDefault(ClaudeApiURL, os.Getenv("CLAUDE_API_URL"))
 		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
 	} else {
@@ -187,7 +188,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.TwitterUsername, TwitterUsername, viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, TwitterPassword, viper.GetString(TwitterPassword), "Twitter Password")
 	pflag.StringVar(&c.Twitter2FaCode, Twitter2FaCode, viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
-	pflag.StringVar(&c.ClaudeApiKey, ClaudeApiKey, viper.GetString(ClaudeApiKey), "Claude API Key")
+	pflag.StringVar(&c.ClaudeApiKey, "claudeApiKey", viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)
