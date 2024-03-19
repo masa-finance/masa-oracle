@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -72,7 +71,7 @@ func main() {
 	// created a tweet reader with worker threads
 	// simplified the flow using channels
 	// store AI request and sentiment to datastore
-	twitter.Scrape("$MASA", 10)
+	// twitter.Scrape("$MASA", 10)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
