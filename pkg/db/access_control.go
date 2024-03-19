@@ -82,12 +82,13 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 		return false
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"hostID":        h.ID().String(),
-		"allowedPeerID": allowedPeerID,
-	}).Info("Host is allowed to write to the database")
-
 	if strings.ToLower(cfg.WriterNode) == "true" {
+
+		logrus.WithFields(logrus.Fields{
+			"hostID":        h.ID().String(),
+			"allowedPeerID": allowedPeerID,
+		}).Info("Host is allowed to write to the database")
+
 		authorizedNodes = map[string]bool{
 			allowedPeerID: true,
 		}

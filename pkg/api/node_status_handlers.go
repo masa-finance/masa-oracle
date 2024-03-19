@@ -62,7 +62,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"Name":          "Masa Status Page",
 			"PeerID":        nodeData.PeerId.String(),
 			"IsStaked":      nodeData.IsStaked,
-			"FirstJoined":   time.Now().Add(-nodeData.AccumulatedUptime).Format("2006-01-02 15:04:05"),
+			"FirstJoined":   nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
 			"LastJoined":    nodeData.LastJoined.Format("2006-01-02 15:04:05"),
 			"CurrentUptime": nodeData.AccumulatedUptimeStr,
 			"Rewards":       "Coming Soon!",

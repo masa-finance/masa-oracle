@@ -191,7 +191,7 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 		}
 
 		var keyStr = sharedData["key"].(string)
-		jsonData, err := json.Marshal(sharedData)
+		jsonData, err := json.Marshal(sharedData["value"])
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,

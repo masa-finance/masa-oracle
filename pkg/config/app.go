@@ -124,6 +124,7 @@ func (c *AppConfig) setDefaultConfig() {
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
+		viper.SetDefault(WriterNode, "false")
 		viper.SetDefault(CachePath, "CACHE")
 	}
 

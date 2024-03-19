@@ -7,10 +7,12 @@ import (
 	"log"
 	"time"
 
+	"log"
+	"time"
+
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
-	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
@@ -46,7 +48,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	}
 	_ = Verifier(node.Host, data, signature)
 
-	// go monitorNodeData(context.Background(), node)
+	go monitorNodeData(context.Background(), node)
 
 	if !isAuthorized(node.Host.ID().String()) {
 		logrus.WithFields(logrus.Fields{
@@ -57,7 +59,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 		return
 	} else {
 		syncInterval := time.Second * 60 // Change as needed
-		sync(context.Background(), node, syncInterval)
+		go sync(context.Background(), node, syncInterval)
 	}
 
 }
@@ -129,7 +131,11 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		logrus.Errorf("%+v", err)
 	}
 	for _, record := range records {
-		logrus.Debugf("syncing record %s", record.Key)
+		logrus.Printf("syncing record %s %s", record.Key, record.Value)
+		// ok := DelCache(ctx, record.Key)
+		//if ok {
+		//	logrus.Println("deleted")
+		//}
 		_, _ = WriteData(node, record.Key, record.Value)
 	}
 }
@@ -171,11 +177,6 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 		case <-ticker.C:
 
 			nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-			nodeData.CurrentUptime = nodeData.GetCurrentUptime()
-			nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-			nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
-			nodeData.LastJoined = nodeData.LastJoined.Add(-nodeData.CurrentUptime)
-
 			jsonData, _ := json.Marshal(nodeData)
 			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData)
 			if e != nil {
@@ -185,7 +186,6 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 		case <-nodeStatusCh:
 			nodes := nodeStatusHandler.NodeStatus
 			for _, n := range nodes {
-				n.FirstJoined = time.Now().Add(-n.AccumulatedUptime)
 				jsonData, _ := json.Marshal(n)
 				_, _ = WriteData(node, "/db/"+n.PeerID, jsonData)
 			}
