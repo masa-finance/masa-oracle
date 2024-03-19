@@ -117,13 +117,14 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 						logrus.Error("Error closing stream:", err)
 					}
 				}(stream) // Close the stream when done
-				if isStaked { // isStaked
-					_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
-					if err != nil {
-						logrus.Error("Error writing to stream:", err)
-						return
-					}
+				// isStaked
+				// if isStaked {
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+				if err != nil {
+					logrus.Error("Error writing to stream:", err)
+					return
 				}
+				// }
 			}
 		}()
 	}
