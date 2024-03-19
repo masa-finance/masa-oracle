@@ -92,7 +92,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 		wg.Add(1)
 		counter := 0
 		go func() {
-			ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, 60*time.Second)
 			defer cancel() // Cancel the context when done to release resources
 
 			defer wg.Done()

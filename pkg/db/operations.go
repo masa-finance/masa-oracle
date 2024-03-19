@@ -25,7 +25,6 @@ func ConnectToPostgres(migrations bool) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	// defer database.Close()
 
 	if err = database.Ping(); err != nil {
 		return nil, err

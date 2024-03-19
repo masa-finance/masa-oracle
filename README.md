@@ -61,6 +61,34 @@ export RPC_URL=https://1rpc.io/sepolia	# This is optional and will be set to the
 ./masa-node --start --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
 ```
 
+## Makefile Commands
+
+The Makefile provides several commands to build, install, run, test, and clean the Masa Node project. Here's a description of each command:
+
+### make build
+
+The build command compiles the Masa Node binary and places it in the ./bin directory. It uses the go build command with the following flags:
+
+-v: Enables verbose output to show the packages being compiled.
+-o ./bin/masa-node: Specifies the output binary name and location.
+./cmd/masa-node: Specifies the package to build (the main package).
+make install
+The install command runs the node_install.sh script to install any necessary dependencies or perform additional setup steps required by the Masa Node.
+
+### make run
+
+The run command first builds the Masa Node binary using the build command and then executes the binary located at ./bin/masa-node. This command allows you to compile and run the Masa Node in a single step.
+
+### make test
+
+The test command runs all the tests in the project using the go test command. It recursively searches for test files in all subdirectories and runs them.
+
+### make clean
+
+The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_oracle_node.log file, which may contain log output from previous runs.
+
+To execute any of these commands, simply run make <command> in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
+
 ## Funding the Node (in order to Stake)
 
 

@@ -21,11 +21,17 @@ var htmlTemplates embed.FS
 // topics, the DHT, node status, and serving HTML pages. Middleware is added
 // for CORS and templates.
 func SetupRoutes(node *masa.OracleNode) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+
 	// @TODO need to add a Authorization Bearer methodology for api security
 	// add cors middleware
 
 	API := NewAPI(node)
+
+	// Serving html
+	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
+	router.SetHTMLTemplate(templ)
 
 	router.GET("/peers", API.GetPeersHandler())
 	router.GET("/peerAddresses", API.GetPeerAddresses())
@@ -48,9 +54,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.POST("/nodestatus", API.PostNodeStatusHandler())
 
-	// Serving html
-	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
-	router.SetHTMLTemplate(templ)
 	router.GET("/status", API.NodeStatusPageHandler())
 
 	router.POST("/sentiments", API.PostSentiment())

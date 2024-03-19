@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -75,40 +73,40 @@ func main() {
 	// WIP testing scraper
 
 	// WIP testing db
-	type Sentiment struct {
-		ConversationId int64
-		Tweet          string
-		PromptId       int64
-	}
+	// type Sentiment struct {
+	// 	ConversationId int64
+	// 	Tweet          string
+	// 	PromptId       int64
+	// }
 
-	// IMPORTANT migrations true will drop all
-	database, err := db.ConnectToPostgres(false)
-	if err != nil {
-		logrus.Println(err)
-	}
-	defer database.Close()
+	// // IMPORTANT migrations true will drop all
+	// database, err := db.ConnectToPostgres(false)
+	// if err != nil {
+	// 	logrus.Println(err)
+	// }
+	// defer database.Close()
 
-	data := []Sentiment{}
-	query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
-	rows, err := database.Query(query)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
+	// data := []Sentiment{}
+	// query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
+	// rows, err := database.Query(query)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer rows.Close()
 
-	var (
-		conversationId int64
-		tweet          string
-		promptId       int64
-	)
+	// var (
+	// 	conversationId int64
+	// 	tweet          string
+	// 	promptId       int64
+	// )
 
-	for rows.Next() {
-		if err = rows.Scan(&conversationId, &tweet, &promptId); err != nil {
-			log.Fatal(err)
-		}
-		data = append(data, Sentiment{conversationId, tweet, promptId})
-	}
-	fmt.Println(data)
+	// for rows.Next() {
+	// 	if err = rows.Scan(&conversationId, &tweet, &promptId); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	data = append(data, Sentiment{conversationId, tweet, promptId})
+	// }
+	// fmt.Println(data)
 	// WIP testing
 
 	// Listen for SIGINT (CTRL+C)

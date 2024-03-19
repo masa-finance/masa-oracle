@@ -152,7 +152,7 @@ func connectToClickHouse() (driver.Conn, error) {
 		return nil, e
 	}
 
-	if bae := batch.Append(uint64(1), uint32(1), "hello"); bae != nil {
+	if bae := batch.Append(uint64(1), uint32(1), "hello", uint32(1)); bae != nil {
 		return nil, bae
 	}
 
