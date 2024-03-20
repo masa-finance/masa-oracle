@@ -120,9 +120,11 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		// this should never happen
 		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
 		return
-	} else if !nodeData.IsStaked {
-		return
 	}
+	// IsStaked
+	// else if !nodeData.IsStaked {
+	// 	return
+	// }
 	buffered := net.ConnectBuffer[peerID]
 	if buffered.NodeData != nil {
 		buffered.NodeData.Left()

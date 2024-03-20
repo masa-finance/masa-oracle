@@ -78,7 +78,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	libp2pOptions := []libp2p.Option{
 		libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey),
 		libp2p.ResourceManager(resourceManager),
-		libp2p.Ping(true), // disable built-in ping
+		libp2p.Ping(false), // disable built-in ping
 		libp2p.EnableNATService(),
 		libp2p.NATPortMap(),
 		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop

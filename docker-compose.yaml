@@ -7,6 +7,7 @@ services:
       - "8080:8080"
     environment:
       BOOTNODES: "${BOOTNODES}"
+      ENV: "${ENV}"
       RPC_URL: "${RPC_URL}"
       FILE_PATH: "${FILE_PATH}"
       WRITER_NODE: "${WRITER_NODE}"

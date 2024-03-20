@@ -82,7 +82,7 @@ func main() {
 	// // IMPORTANT migrations true will drop all
 	// database, err := db.ConnectToPostgres(false)
 	// if err != nil {
-	// 	logrus.Println(err)
+	// 	logrus.Errorf(err)
 	// }
 	// defer database.Close()
 

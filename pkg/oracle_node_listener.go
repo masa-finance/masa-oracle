@@ -3,7 +3,9 @@ package masa
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"io"
 	"math"
 	"time"
@@ -31,6 +33,14 @@ func (node *OracleNode) ListenToNodeTracker() {
 			// if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) {
 			// Marshal the nodeData into JSON
 			jsonData, err := json.Marshal(nodeData)
+			var ns nodestatus.NodeStatus
+			_ = json.Unmarshal(jsonData, &ns)
+			logrus.Println(nodeData)
+			err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+			if err != nil {
+				logrus.Errorf("%v", err)
+			}
+
 			if err != nil {
 				logrus.Errorf("Error marshaling node data: %v", err)
 				continue

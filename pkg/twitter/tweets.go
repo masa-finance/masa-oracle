@@ -77,7 +77,7 @@ func Scrape(query string, count int) ([]*twitterscraper.Tweet, error) {
 
 	//conn, err := connectToClickHouse()
 	//if err != nil {
-	//	logrus.Printf("clickhouse connect err %s", err)
+	//	logrus.Errorf("clickhouse connect err %s", err)
 	//}
 
 	for i := 0; i < numWorkers; i++ {
@@ -139,7 +139,7 @@ func connectToClickHouse() (driver.Conn, error) {
 	if pe := conn.Ping(ctx); err != nil {
 		var ex *clickhouse.Exception
 		if errors.As(pe, &ex) {
-			logrus.Printf("Exception [%d %s \n%s\n", ex.Code, ex.Message, ex.StackTrace)
+			logrus.Errorf("Exception [%d %s \n%s\n", ex.Code, ex.Message, ex.StackTrace)
 		}
 		return nil, pe
 	}
@@ -191,7 +191,7 @@ func ingestTweets(wg *sync.WaitGroup, rowChan <-chan []*twitterscraper.Tweet, co
 		ctx := context.Background()
 		batch, err := conn.PrepareBatch(ctx, `INSERT INTO sentiment (conversation_id, tweet)`)
 		if err != nil {
-			logrus.Printf("err %v", err)
+			logrus.Errorf("err %v", err)
 		}
 		return batch
 	}
@@ -203,17 +203,17 @@ func ingestTweets(wg *sync.WaitGroup, rowChan <-chan []*twitterscraper.Tweet, co
 
 		err := batch.Append(conversationID, body)
 		if err != nil {
-			logrus.Printf("err %v", err)
+			logrus.Errorf("err %v", err)
 		}
 		tweetsProcessed++
 		if tweetsProcessed%tweetsProcessed == 0 {
 			if err := batch.Send(); err != nil {
-				logrus.Printf("%v", err)
+				logrus.Errorf("%v", err)
 			}
 			batch = newBatch()
 		}
 	}
 	if err := batch.Send(); err != nil {
-		logrus.Printf("%v", err)
+		logrus.Errorf("%v", err)
 	}
 }

@@ -34,7 +34,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("ResolverCache initialized")
+	logrus.Info("ResolverCache initialized")
 
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
@@ -158,7 +158,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	nodeStatusHandler := &nodestatus.SubscriptionHandler{NodeStatusCh: nodeStatusCh}
 	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeStatusTopic), nodeStatusHandler)
 	if err != nil {
-		logrus.Println(err)
+		logrus.Errorf("%v", err)
 	}
 
 	ticker := time.NewTicker(syncInterval)
@@ -166,14 +166,12 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	for {
 		select {
 		case <-ticker.C:
-
 			nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 			jsonData, _ := json.Marshal(nodeData)
 			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData)
 			if e != nil {
-				logrus.Printf("%v", e)
+				logrus.Errorf("%v", e)
 			}
-
 		case <-nodeStatusCh:
 			nodes := nodeStatusHandler.NodeStatus
 			for _, n := range nodes {
