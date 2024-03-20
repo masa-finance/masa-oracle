@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ type OracleNode struct {
 	PubSubManager                  *pubsub2.Manager
 	Signature                      string
 	IsStaked                       bool
+	IsWriter                       bool
 	StartTime                      time.Time
 	AdSubscriptionHandler          *ad.SubscriptionHandler
 	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
@@ -110,6 +112,8 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		return nil, err
 	}
 
+	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
+
 	return &OracleNode{
 		Host:          hst,
 		PrivKey:       masacrypto.KeyManagerInstance().EcdsaPrivKey,
@@ -120,6 +124,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		NodeTracker:   pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
+		IsWriter:      isWriter,
 	}, nil
 }
 

@@ -33,12 +33,13 @@ func (node *OracleNode) ListenToNodeTracker() {
 			// if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) {
 			// Marshal the nodeData into JSON
 			jsonData, err := json.Marshal(nodeData)
-			var ns nodestatus.NodeStatus
-			_ = json.Unmarshal(jsonData, &ns)
-			logrus.Println(nodeData)
-			err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
-			if err != nil {
-				logrus.Errorf("%v", err)
+			if node.IsWriter {
+				var ns nodestatus.NodeStatus
+				_ = json.Unmarshal(jsonData, &ns)
+				err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+				if err != nil {
+					logrus.Errorf("%v", err)
+				}
 			}
 
 			if err != nil {
