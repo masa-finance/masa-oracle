@@ -35,7 +35,6 @@ func (node *OracleNode) ListenToNodeTracker() {
 			jsonData, err := json.Marshal(nodeData)
 			var ns nodestatus.NodeStatus
 			_ = json.Unmarshal(jsonData, &ns)
-			logrus.Println(nodeData)
 			err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
 			if err != nil {
 				logrus.Errorf("%v", err)
