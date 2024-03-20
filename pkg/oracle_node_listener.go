@@ -5,10 +5,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"io"
 	"math"
 	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
