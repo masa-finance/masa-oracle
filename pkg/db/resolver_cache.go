@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
-	"log"
-	"time"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
@@ -27,6 +28,21 @@ type Record struct {
 	Value []byte
 }
 
+// InitResolverCache initializes the resolver cache for the Masa Oracle node.
+//
+// Parameters:
+//   - node: A pointer to the Masa Oracle node (masa.OracleNode) that the resolver cache will be associated with.
+//   - keyManager: A pointer to the key manager (masacrypto.KeyManager) used for cryptographic operations.
+//
+// This function sets up the resolver cache for the Masa Oracle node. The resolver cache is responsible for storing and managing resolved data within the node.
+//
+// The function takes two parameters:
+//  1. `node`: It represents the Masa Oracle node instance to which the resolver cache will be attached. The node provides the necessary context and dependencies for the resolver cache to operate.
+//  2. `keyManager`: It is an instance of the key manager that handles cryptographic operations. The key manager is used by the resolver cache for any required cryptographic tasks, such as signing or verifying data.
+//
+// The purpose of this function is to initialize the resolver cache and perform any necessary setup or configuration. It associates the resolver cache with the provided Masa Oracle node and key manager.
+//
+// Note: The specific implementation details of the `InitResolverCache` function are not provided in the given code snippet. The function signature suggests that it initializes the resolver cache, but the actual initialization logic would be present in the function body.
 func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager) {
 	var err error
 	cachePath := config.GetInstance().CachePath
@@ -59,6 +75,13 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 
 }
 
+// PutCache puts a key-value pair into the resolver cache.
+//
+// It takes a context, a key as a string, and a value as a byte slice.
+// It converts the key into a datastore key and puts the key-value pair
+// into the cache.
+//
+// It returns the original key string and a possible error.
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
 	// key, _ := stringToCid(keyStr)
 	err := cache.Put(ctx, ds.NewKey(keyStr), value)
@@ -68,6 +91,9 @@ func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
 	return keyStr, nil
 }
 
+// GetCache retrieves a value from the resolver cache for the given key.
+// It takes a context and a key string, converts the key into a datastore key,
+// gets the value from the cache, and returns the value byte slice and a possible error.
 func GetCache(ctx context.Context, keyStr string) ([]byte, error) {
 	value, err := cache.Get(ctx, ds.NewKey(keyStr))
 	if err != nil {
@@ -76,6 +102,10 @@ func GetCache(ctx context.Context, keyStr string) ([]byte, error) {
 	return value, nil
 }
 
+// DelCache deletes a key-value pair from the resolver cache.
+// It takes a context and a key string, converts the key into a datastore key,
+// and deletes the key-value pair from the cache.
+// It returns a bool indicating if the deletion succeeded.
 func DelCache(ctx context.Context, keyStr string) bool {
 	var err error
 	key := ds.NewKey(keyStr)
@@ -86,6 +116,11 @@ func DelCache(ctx context.Context, keyStr string) bool {
 	return true
 }
 
+// UpdateCache updates the value for the given key in the resolver cache.
+// It first checks if the key already exists using Has().
+// If it doesn't exist, it returns an error.
+// If the key does exist, it puts the new value into the cache using Put().
+// It returns a bool indicating if the update succeeded, and a possible error.
 func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, error) {
 	// Check if the key exists
 	key := ds.NewKey(keyStr)
@@ -106,6 +141,9 @@ func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, err
 	return true, nil
 }
 
+// QueryAll queries the resolver cache for all records and returns them as a slice of Record structs.
+// It executes a query.Query{} to get all results, closes the results when done, iterates through
+// the results, appending each record to a slice, and returns the slice.
 func QueryAll(ctx context.Context) ([]Record, error) {
 	results, err := cache.Query(ctx, query.Query{})
 	if err != nil {
@@ -128,6 +166,9 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 	return records, nil
 }
 
+// sync periodically calls iterateAndPublish to synchronize the node's state with
+// the blockchain on the provided interval. It runs this in a loop, exiting
+// when the context is canceled.
 func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -142,6 +183,10 @@ func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 	}
 }
 
+// iterateAndPublish synchronizes the node's local cache with the blockchain
+// by querying all records, and publishing each one to the blockchain. It
+// logs any errors encountered. This allows periodically syncing the node's
+// cached data with the latest blockchain state.
 func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	records, err := QueryAll(ctx)
 	if err != nil {
@@ -153,6 +198,9 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	}
 }
 
+// monitorNodeData periodically publishes the local node's status to the
+// blockchain, and syncs node status data published by other nodes.
+// It runs a ticker to call iterateAndPublish on the provided interval.
 func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
 	nodeStatusHandler := &nodestatus.SubscriptionHandler{NodeStatusCh: nodeStatusCh}

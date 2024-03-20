@@ -20,6 +20,10 @@ type Content struct {
 	Text string `json:"text"`
 }
 
+// CreatePayload generates a JSON payload for the OpenAI API from the given
+// tweetsContent string. This payload configures the model, max tokens,
+// temperature and prompt to analyze the sentiment of the tweets without
+// bias and summarize the overall sentiment.
 func CreatePayload(tweetsContent string) ([]byte, error) {
 	payload := Payload{
 		Model:       "claude-3-opus-20240229",

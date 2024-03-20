@@ -7,6 +7,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// AnalyzeSentiment analyzes the sentiment of the provided tweets by sending them to the Claude API.
+// It concatenates the tweets, creates a payload, sends a request to Claude, parses the response,
+// and returns the concatenated tweets content, a sentiment summary, and any error.
 func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, string, error) {
 	client := NewClaudeClient() // Adjusted to call without arguments
 
@@ -33,6 +36,8 @@ func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, string, error) {
 	return tweetsContent, sentimentSummary, nil
 }
 
+// ConcatenateTweets concatenates the text of the provided tweets into a single string,
+// with each tweet separated by a newline character.
 func ConcatenateTweets(tweets []*twitterscraper.Tweet) string {
 	var tweetsTexts []string
 	for _, tweet := range tweets {

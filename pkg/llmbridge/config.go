@@ -8,6 +8,8 @@ type ClaudeAPIConfig struct {
 	Version string
 }
 
+// NewClaudeAPIConfig creates a new ClaudeAPIConfig instance with values loaded
+// from the application config.
 func NewClaudeAPIConfig() *ClaudeAPIConfig {
 	appConfig := config.GetInstance()
 
