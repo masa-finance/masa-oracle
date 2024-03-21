@@ -79,21 +79,19 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					ID:    host.ID(),
 					Addrs: []multiaddr.Multiaddr{},
 				}
-				if availPeerAddrInfo.ID == hostAddrInfo.ID {
+				if availPeerAddrInfo.ID.String() == hostAddrInfo.ID.String() {
 					logrus.Debugf("Skipping connect to self: %s", availPeer.String())
 					continue
 				}
 				logrus.Infof("Available Peer: %s", availPeer.String())
 
 				if host.Network().Connectedness(availPeer.ID) != network.Connected {
-					//err := host.Connect(ctx, availPeer)
 					_, err := host.Network().DialPeer(ctx, availPeer.ID)
 					if err != nil {
 						logrus.Warningf("Failed to connect to peer %s: %v", availPeer.ID.String(), err)
 						continue
 					}
 					logrus.Infof("Connected to peer %s", availPeer.ID.String())
-					//logrus.Infof("Connected to peer %s", conn.RemoteMultiaddr().String())
 				}
 			case <-ctx.Done():
 				logrus.Info("Stopping peer discovery")
