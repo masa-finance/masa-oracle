@@ -182,10 +182,8 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		for _, nd := range page.Data {
 
 			if node.IsWriter {
-
 				for _, p := range page.Data {
-					logrus.Println(p)
-					jsonData, _ := json.Marshal(page.Data)
+					jsonData, _ := json.Marshal(p)
 					var ns nodestatus.NodeStatus
 					_ = json.Unmarshal(jsonData, &ns)
 					err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
@@ -193,16 +191,6 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 						logrus.Errorf("%v", err)
 					}
 				}
-
-				//jsonData, _ := json.Marshal(page.Data)
-				//var ns nodestatus.NodeStatus
-				//_ = json.Unmarshal(jsonData, &ns)
-				//if ns.PeerID != "" {
-				//	err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
-				//	if err != nil {
-				//		logrus.Errorf("%v", err)
-				//	}
-				//}
 			}
 
 			node.NodeTracker.RefreshFromBoot(nd)

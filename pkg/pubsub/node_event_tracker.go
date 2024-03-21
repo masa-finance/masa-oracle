@@ -221,7 +221,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	if data.IsStaked && !existingData.IsStaked {
 		existingData.IsStaked = data.IsStaked
 	} else if !data.IsStaked && existingData.IsStaked {
-		logrus.Warnf("Received unstaked status for node: %s", data.PeerId)
+		logrus.Debugf("Received unstaked status for node: %s", data.PeerId)
 	}
 	err := net.AddOrUpdateNodeData(existingData, true)
 	if err != nil {
