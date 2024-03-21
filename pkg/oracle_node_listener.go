@@ -37,11 +37,9 @@ func (node *OracleNode) ListenToNodeTracker() {
 			if node.IsWriter {
 				var ns nodestatus.NodeStatus
 				_ = json.Unmarshal(jsonData, &ns)
-				if ns.PeerID != "" {
-					err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
-					if err != nil {
-						logrus.Errorf("%v", err)
-					}
+				err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+				if err != nil {
+					logrus.Errorf("%v", err)
 				}
 			}
 
@@ -58,8 +56,6 @@ func (node *OracleNode) ListenToNodeTracker() {
 			// the node is a boot node or (we don't want boot nodes to wait)
 			// the node start time is greater than 5 minutes ago,
 			// call SendNodeData in a separate goroutine
-			logrus.Printf("time checking :: %v %v", time.Now().Sub(node.StartTime), time.Since(node.StartTime))
-
 			if nodeData.Activity == pubsub2.ActivityJoined &&
 				(!config.GetInstance().HasBootnodes() || time.Since(node.StartTime) > time.Minute*5) {
 				go node.SendNodeData(nodeData.PeerId)
@@ -186,15 +182,27 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		for _, nd := range page.Data {
 
 			if node.IsWriter {
-				jsonData, _ := json.Marshal(page.Data)
-				var ns nodestatus.NodeStatus
-				_ = json.Unmarshal(jsonData, &ns)
-				if ns.PeerID != "" {
+
+				for _, p := range page.Data {
+					logrus.Println(p)
+					jsonData, _ := json.Marshal(page.Data)
+					var ns nodestatus.NodeStatus
+					_ = json.Unmarshal(jsonData, &ns)
 					err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
 					if err != nil {
 						logrus.Errorf("%v", err)
 					}
 				}
+
+				//jsonData, _ := json.Marshal(page.Data)
+				//var ns nodestatus.NodeStatus
+				//_ = json.Unmarshal(jsonData, &ns)
+				//if ns.PeerID != "" {
+				//	err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+				//	if err != nil {
+				//		logrus.Errorf("%v", err)
+				//	}
+				//}
 			}
 
 			node.NodeTracker.RefreshFromBoot(nd)
