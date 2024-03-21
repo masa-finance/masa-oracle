@@ -61,7 +61,6 @@ func (node *OracleNode) ListenToNodeTracker() {
 			logrus.Printf("time checking :: %v %v", time.Now().Sub(node.StartTime), time.Since(node.StartTime))
 
 			if nodeData.Activity == pubsub2.ActivityJoined &&
-				// (!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > time.Minute*5) {
 				(!config.GetInstance().HasBootnodes() || time.Since(node.StartTime) > time.Minute*5) {
 				go node.SendNodeData(nodeData.PeerId)
 			}
