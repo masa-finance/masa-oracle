@@ -58,8 +58,11 @@ func (node *OracleNode) ListenToNodeTracker() {
 			// the node is a boot node or (we don't want boot nodes to wait)
 			// the node start time is greater than 5 minutes ago,
 			// call SendNodeData in a separate goroutine
+			logrus.Printf("time checking :: %v %v", time.Now().Sub(node.StartTime), time.Since(node.StartTime))
+
 			if nodeData.Activity == pubsub2.ActivityJoined &&
-				(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > time.Minute*5) {
+				// (!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > time.Minute*5) {
+				(!config.GetInstance().HasBootnodes() || time.Since(node.StartTime) > time.Minute*5) {
 				go node.SendNodeData(nodeData.PeerId)
 			}
 			// }

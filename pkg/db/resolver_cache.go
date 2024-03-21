@@ -107,13 +107,13 @@ func GetCache(ctx context.Context, keyStr string) ([]byte, error) {
 // and deletes the key-value pair from the cache.
 // It returns a bool indicating if the deletion succeeded.
 func DelCache(ctx context.Context, keyStr string) bool {
-	var err error
 	key := ds.NewKey(keyStr)
-	err = cache.Delete(ctx, key)
+	err := cache.Delete(ctx, key)
 	if err != nil {
 		return false
+	} else {
+		return true
 	}
-	return true
 }
 
 // UpdateCache updates the value for the given key in the resolver cache.
@@ -167,7 +167,7 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 }
 
 // sync periodically calls iterateAndPublish to synchronize the node's state with
-// the blockchain on the provided interval. It runs this in a loop, exiting
+// the dht on the provided interval. It runs this in a loop, exiting
 // when the context is canceled.
 func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 	ticker := time.NewTicker(interval)
@@ -183,23 +183,23 @@ func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 	}
 }
 
-// iterateAndPublish synchronizes the node's local cache with the blockchain
-// by querying all records, and publishing each one to the blockchain. It
+// iterateAndPublish synchronizes the node's local cache with the dht
+// by querying all records, and publishing each one to the dht. It
 // logs any errors encountered. This allows periodically syncing the node's
-// cached data with the latest blockchain state.
+// cached data with the latest dht state.
 func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	records, err := QueryAll(ctx)
 	if err != nil {
 		logrus.Errorf("%+v", err)
 	}
 	for _, record := range records {
-		logrus.Printf("syncing record %s", record.Key)
+		logrus.Printf("syncing record %v", record)
 		_, _ = WriteData(node, record.Key, record.Value)
 	}
 }
 
 // monitorNodeData periodically publishes the local node's status to the
-// blockchain, and syncs node status data published by other nodes.
+// dht, and syncs node status data published by other nodes.
 // It runs a ticker to call iterateAndPublish on the provided interval.
 func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60

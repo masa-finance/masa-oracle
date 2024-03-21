@@ -143,10 +143,10 @@ func (node *OracleNode) Start() (err error) {
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeStatusTopic), node.ReceiveNodeData)
-
-	if node.IsStaked {
-		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
-	}
+	// IsStaked
+	// if node.IsStaked {
+	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+	// }
 	node.Host.Network().Notify(node.NodeTracker)
 
 	go node.ListenToNodeTracker()
@@ -162,18 +162,18 @@ func (node *OracleNode) Start() (err error) {
 	}
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
-	// if this is the original boot node then add it to the node tracker
-	if config.GetInstance().HasBootnodes() {
-		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-		if nodeData == nil {
-			publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
-			nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
-			nodeData.IsStaked = node.IsStaked
-			nodeData.SelfIdentified = true
-		}
-		nodeData.Joined()
-		node.NodeTracker.HandleNodeData(*nodeData)
+
+	// if config.GetInstance().HasBootnodes() {
+	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	if nodeData == nil {
+		publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
+		nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+		nodeData.IsStaked = node.IsStaked
+		nodeData.SelfIdentified = true
 	}
+	nodeData.Joined()
+	node.NodeTracker.HandleNodeData(*nodeData)
+	// }
 	// call SubscribeToTopics on startup
 	if err := SubscribeToTopics(node); err != nil {
 		return err
