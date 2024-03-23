@@ -58,3 +58,9 @@ yarn.lock
 /pkg/masacrypto/testCert.pem
 /pkg/masacrypto/testKey.pem
 CACHE/
+
+cmd/masa-node-cli/key.txt
+cmd/masa-node-cli/elabkey.txt
+cmd/masa-node-cli/output.mp3
+cmd/masa-node-cli/log.txt
+output.mp3

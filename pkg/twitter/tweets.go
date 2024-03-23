@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -64,6 +65,29 @@ func auth() *twitterscraper.Scraper {
 	}).Debug("Login successful")
 
 	return scraper
+}
+
+func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, error) {
+	scraper := auth()
+	var tweets []*twitterscraper.Tweet
+
+	if scraper == nil {
+		return nil, fmt.Errorf("scraper instance is nil")
+	}
+
+	// Set search mode
+	scraper.SetSearchMode(twitterscraper.SearchLatest)
+
+	// Perform the search with the specified query and count
+	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
+		if tweetResult.Error != nil {
+			logrus.Printf("Error fetching tweet: %v", tweetResult.Error)
+			continue
+		}
+		tweets = append(tweets, &tweetResult.Tweet)
+	}
+
+	return tweets, nil
 }
 
 func Scrape(query string, count int) ([]*twitterscraper.Tweet, error) {
@@ -136,7 +160,7 @@ func connectToClickHouse() (driver.Conn, error) {
 		return nil, err
 	}
 
-	if pe := conn.Ping(ctx); err != nil {
+	if pe := conn.Ping(ctx); pe != nil {
 		var ex *clickhouse.Exception
 		if errors.As(pe, &ex) {
 			logrus.Errorf("Exception [%d %s \n%s\n", ex.Code, ex.Message, ex.StackTrace)

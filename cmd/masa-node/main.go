@@ -35,7 +35,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	var isStaked bool
+	// var isStaked bool
 	// Verify the staking event
 	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
 	if err != nil {
