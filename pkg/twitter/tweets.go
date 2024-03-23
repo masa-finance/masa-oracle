@@ -51,7 +51,7 @@ func auth() *twitterscraper.Scraper {
 	}
 
 	if err != nil {
-		logrus.WithError(err).Fatal("Login failed")
+		logrus.WithError(err).Warning("Login failed")
 		return nil
 	}
 

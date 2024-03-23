@@ -81,7 +81,8 @@ func extractIPAddress(multiAddr string) string {
 func openfile(f string) string {
 	dat, err := os.ReadFile(f)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return ""
 	}
 	return string(dat)
 }
@@ -96,7 +97,8 @@ func saveFile(f string, content string) {
 	file, err := os.OpenFile(f, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	file.WriteString(content + "\n")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 }
 
@@ -132,7 +134,8 @@ func gpt(prompt string, user_message string) (string, error) {
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return "", err
 	}
 	return resp.Choices[0].Message.Content, nil
 }
@@ -165,7 +168,8 @@ func speak(response string) {
 
 	req, err := http.NewRequest(http.MethodPost, "https://api.elevenlabs.io/v1/text-to-speech/ErXwobaYiN019PkySvjV/stream", bytes.NewBuffer(buf))
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	req.Header.Set("accept", "*/*")
 	req.Header.Set("xi-api-key", key)
@@ -173,19 +177,22 @@ func speak(response string) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
+			return
 		}
 		file, err := os.Create("output.mp3")
 		file.Write(bodyBytes)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
+			return
 		} else {
 			cmd := exec.Command("afplay", "output.mp3")
 			go cmd.Run()

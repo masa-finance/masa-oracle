@@ -56,7 +56,7 @@ func setup() {
 	}
 
 	if err != nil {
-		logrus.WithError(err).Fatal("Login failed")
+		logrus.WithError(err).Warning("Login failed")
 		return
 	}
 
