@@ -110,7 +110,7 @@ func saveFile(f string, content string) {
 // Returns:
 // - A string containing the AI's response.
 // - An error if the request to the OpenAI API fails.
-func gpt(prompt string, user_message string) (string, error) {
+func gpt(prompt string, userMessage string) (string, error) {
 	key := os.Getenv("OPENAI_API_KEY")
 	if key == "" {
 		log.Println("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
@@ -128,7 +128,7 @@ func gpt(prompt string, user_message string) (string, error) {
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: user_message,
+					Content: userMessage,
 				},
 			},
 		},
@@ -365,7 +365,9 @@ func main() {
 					logrus.Errorf("%v", err)
 				}
 				fmt.Println(resp)
-				speak(resp)
+				if os.Getenv("ELAB_KEY") != "" {
+					speak(resp)
+				}
 			}
 			clearScreen()
 			fmt.Printf("Returned to main menu")

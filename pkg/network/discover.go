@@ -105,8 +105,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					continue
 				}
 				if len(availPeerAddrInfo.Addrs) == 0 {
-					cfg := config.GetInstance()
-					for _, bn := range cfg.Bootnodes {
+					for _, bn := range config.GetInstance().Bootnodes {
 						bootNode := strings.Split(bn, "/")[len(strings.Split(bn, "/"))-1]
 						if availPeerAddrInfo.ID.String() != bootNode {
 							logrus.Warningf("Skipping connect to non bootnode peer with no multiaddress: %s", availPeerAddrInfo.ID.String())
@@ -126,8 +125,10 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 							logrus.Infof("Connected to peer %s", availPeer.ID.String())
 						}
 					} else {
-						logrus.Info("Not connected to any bootnode. Attempting to reconnect...")
-						reconnectToBootnodes(ctx, host, config.GetInstance().Bootnodes)
+						if len(config.GetInstance().Bootnodes) > 0 {
+							logrus.Info("Not connected to any bootnode. Attempting to reconnect...")
+							reconnectToBootnodes(ctx, host, config.GetInstance().Bootnodes)
+						}
 					}
 				}
 			case <-ctx.Done():
