@@ -74,6 +74,11 @@ func clearScreen() {
 	cmd.Run()
 }
 
+// extractIPAddress takes a multi-address string as input and extracts the IP address from it.
+// The function supports both "/ip4/" and "/dns/" multi-address formats.
+// If the multi-address contains an IP address, it is returned directly.
+// If the multi-address contains a DNS name, it is also returned as is.
+// In case the multi-address does not follow the expected format or the IP address/DNS name is not found, an empty string is returned.
 func extractIPAddress(multiAddr string) string {
 	parts := strings.Split(multiAddr, "/")
 	// Assuming the IP address is always after "/ip4/"
@@ -87,20 +92,20 @@ func extractIPAddress(multiAddr string) string {
 	return ""
 }
 
-// openfile reads the content of a file specified by the filename 'f' and returns it as a string.
+// openFile reads the content of a file specified by the filename 'f' and returns it as a string.
 // If the file cannot be read, the function logs a fatal error and exits the program.
 // Parameters:
 // - f: The name of the file to read.
 // Returns:
 // - A string containing the content of the file.
-func openfile(f string) string {
-	dat, err := os.ReadFile(f)
-	if err != nil {
-		log.Print(err)
-		return ""
-	}
-	return string(dat)
-}
+// func openFile(f string) string {
+// 	dat, err := os.ReadFile(f)
+// 	if err != nil {
+// 		log.Print(err)
+// 		return ""
+// 	}
+// 	return string(dat)
+// }
 
 // saveFile writes the provided content to a file specified by the filename 'f'.
 // It appends the content to the file if it already exists, or creates a new file with the content if it does not.
@@ -108,14 +113,14 @@ func openfile(f string) string {
 // Parameters:
 // - f: The name of the file to which the content will be written.
 // - content: The content to write to the file.
-func saveFile(f string, content string) {
-	file, err := os.OpenFile(f, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-	file.WriteString(content + "\n")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-}
+// func saveFile(f string, content string) {
+// 	file, err := os.OpenFile(f, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+// 	file.WriteString(content + "\n")
+// 	if err != nil {
+// 		log.Println(err)
+// 		return
+// 	}
+// }
 
 // gpt takes a prompt and a user message, sends them to the OpenAI API, and returns the generated response.
 // It utilizes the OPENAI_API_KEY environment variable for authentication.
@@ -173,7 +178,7 @@ func speak(response string) {
 
 	buf, _ := json.Marshal(data)
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.elevenlabs.io/v1/text-to-speech/ErXwobaYiN019PkySvjV/stream", bytes.NewBuffer(buf))
+	req, err := http.NewRequest(http.MethodPost, os.Getenv("ELAB_URL"), bytes.NewBuffer(buf))
 	if err != nil {
 		log.Print(err)
 		return
@@ -209,27 +214,27 @@ func speak(response string) {
 
 // transcribe takes an audio file and a target text file as input.
 // It uses the OpenAI API to transcribe the audio to text, then saves the text to the specified text file.
-func transcribe(audioFile string, txtFile string) error {
-	key := os.Getenv("OPENAI_API_KEY")
-	if key == "" {
-		log.Println("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
-		return errors.New("OPENAI_API_KEY is not set")
-	}
-	client := openai.NewClient(key)
-	ctx := context.Background()
-	req := openai.AudioRequest{
-		Model:    openai.Whisper1,
-		FilePath: audioFile,
-	}
-	resp, err := client.CreateTranscription(ctx, req)
-	if err != nil {
-		fmt.Printf("Transcription error: %v\n", err)
-		return err
-	} else {
-		saveFile(txtFile, resp.Text)
-	}
-	return nil
-}
+// func transcribe(audioFile string, txtFile string) error {
+// 	key := os.Getenv("OPENAI_API_KEY")
+// 	if key == "" {
+// 		log.Println("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
+// 		return errors.New("OPENAI_API_KEY is not set")
+// 	}
+// 	client := openai.NewClient(key)
+// 	ctx := context.Background()
+// 	req := openai.AudioRequest{
+// 		Model:    openai.Whisper1,
+// 		FilePath: audioFile,
+// 	}
+// 	resp, err := client.CreateTranscription(ctx, req)
+// 	if err != nil {
+// 		fmt.Printf("Transcription error: %v\n", err)
+// 		return err
+// 	} else {
+// 		saveFile(txtFile, resp.Text)
+// 	}
+// 	return nil
+// }
 
 // HandleMessage implement subscription handler here
 func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
@@ -333,13 +338,13 @@ func (r *RadioButtons) MouseHandler() func(action tview.MouseAction, event *tcel
 // showMenu creates and returns the menu component.
 func showMenu(app *tview.Application, output *tview.TextView) *tview.List {
 	menu := tview.NewList().
-		AddItem("Connect", "To a Masa Oracle Node.", '1', func() {
+		AddItem("Connect", "Connect to an oracle node.", '1', func() {
 			handleOption(app, "1", output)
 		}).
 		AddItem("LLM Model", "Select an llm model to use.", '2', func() {
 			handleOption(app, "2", output)
 		}).
-		AddItem("Twitter", "Set your Twitter/X account credentials.", '3', func() {
+		AddItem("Twitter", "Set your Twitter/X credentials.", '3', func() {
 			// handleOption(app, "3", output)
 			output.SetText(appConfig.Model)
 		}).
@@ -390,7 +395,7 @@ func showMenu(app *tview.Application, output *tview.TextView) *tview.List {
 			// }
 
 		}).
-		AddItem("Subscribe", "Masa will analyze a sentiment from tweets.", '5', func() {
+		AddItem("Sentiment", "Analyze sentiment from tweets.", '5', func() {
 			// handleOption(app, "2", output)
 			output.SetText("Subscribe to the Sentiment Topic")
 		})
@@ -409,9 +414,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 	switch option {
 	case "1":
-
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
-
 		inputField := tview.NewInputField().
 			SetLabel("Multiaddress: ").
 			SetFieldWidth(20)
@@ -460,7 +463,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			AddItem(modal, 0, 2, false)
 
 		app.SetRoot(modalFlex, true).SetFocus(inputField)
-
 	case "2":
 		radioButtons := NewRadioButtons([]string{"Claude", "GPT4"}, func(option string) {
 			appConfig.Model = option
@@ -472,7 +474,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			SetRect(0, 0, 30, 5)
 
 		app.SetRoot(radioButtons, false)
-
 	case "3":
 		fmt.Print("Enter Twitter Username: ")
 		scanner.Scan()
@@ -577,8 +578,8 @@ const (
 	mouse      = `[yellow]or use your mouse`
 )
 
-// Cover returns the cover page.
-func Cover(nextSlide func()) (title string, content tview.Primitive) {
+// Splash shows the app info
+func Splash() (content tview.Primitive) {
 	// What's the size of the logo?
 	lines := strings.Split(logo, "\n")
 	logoWidth := 0
@@ -591,7 +592,7 @@ func Cover(nextSlide func()) (title string, content tview.Primitive) {
 	logoBox := tview.NewTextView().
 		SetTextColor(tcell.ColorGreen).
 		SetDoneFunc(func(key tcell.Key) {
-			nextSlide()
+			// nextSlide()
 		})
 	fmt.Fprint(logoBox, logo)
 
@@ -612,7 +613,7 @@ func Cover(nextSlide func()) (title string, content tview.Primitive) {
 			AddItem(tview.NewBox(), 0, 1, false), logoHeight, 1, true).
 		AddItem(frame, 0, 10, false)
 
-	return "Start", flex
+	return flex
 }
 
 func main() {
@@ -629,7 +630,7 @@ func main() {
 		SetDynamicColors(true).
 		SetText(" Welcome to the MASA Oracle Client ")
 
-	_, content := Cover(nil)
+	content := Splash()
 
 	mainFlex = tview.NewFlex().SetDirection(tview.FlexColumn).
 		AddItem(content, 0, 1, true).
