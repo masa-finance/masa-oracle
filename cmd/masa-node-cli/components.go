@@ -99,8 +99,7 @@ const logo = `
 `
 
 const (
-	subtitle = `masa oracle client`
-	// navigation = `[yellow] Up    [yellow]: Down    [yellow]Q[-]: Quit`
+	subtitle   = `masa oracle client`
 	navigation = `[yellow]use keys to navigate the menu`
 	mouse      = `[yellow]or use your mouse`
 )
@@ -118,7 +117,7 @@ func Splash() (content tview.Primitive) {
 	logoBox := tview.NewTextView().
 		SetTextColor(tcell.ColorGreen).
 		SetDoneFunc(func(key tcell.Key) {
-			// nextSlide()
+			// nothing todo
 		})
 	fmt.Fprint(logoBox, logo)
 

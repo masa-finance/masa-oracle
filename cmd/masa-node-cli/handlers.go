@@ -234,7 +234,7 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 			output.SetText(appConfig.Model)
 		}).
 		AddItem("ChatGPT", "[darkgray]chat with a helpful assistant", '4', func() {
-
+			// handleOption(app, "4", output)
 			flex := tview.NewFlex().SetDirection(tview.FlexRow)
 			var inputField *tview.InputField
 
@@ -281,7 +281,7 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 
 		}).
 		AddItem("Sentiment", "[darkgray]analyze sentiment from tweets", '5', func() {
-			// handleOption(app, "2", output)
+			// handleOption(app, "5", output)
 			output.SetText("Subscribe to the Sentiment Topic")
 		})
 
