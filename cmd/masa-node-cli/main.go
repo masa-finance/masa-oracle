@@ -7,9 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/joho/godotenv"
-	"github.com/rivo/tview"
 	"io"
 	"log"
 	"net/http"
@@ -20,7 +17,15 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gdamore/tcell/v2"
+	"github.com/joho/godotenv"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/rivo/tview"
+
+	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p/core/peer"
+	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 )
@@ -243,56 +248,156 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	logrus.Infof("added: %+v", gossip)
 }
 
-// showMenu displays the secretive menu options to the user.
-func showMenuOld() {
-	// Colors
-	yellow := "\033[33m"
-	// blue := "\033[34m"
-	// red := "\033[31m"
-	green := "\033[32m"
-	reset := "\033[0m"
+// RadioButtons implements a simple primitive for radio button selections.
+type RadioButtons struct {
+	*tview.Box
+	options       []string
+	currentOption int
+	onSelect      func(option string)
+}
 
-	asciiArt := ` 
-  _____ _____    ___________   
- /     \\__  \  /  ___/\__  \  
-|  Y Y  \/ __ \_\___ \  / __ \_
-|__|_|  (____  /____  >(____  /
-      \/     \/     \/      \/ 
-`
-	fmt.Println(green + asciiArt + reset)
+// NewRadioButtons returns a new radio button primitive.
+func NewRadioButtons(options []string, onSelect func(option string)) *RadioButtons {
+	return &RadioButtons{
+		Box:      tview.NewBox(),
+		options:  options,
+		onSelect: onSelect,
+	}
+}
 
-	fmt.Println(yellow + "MASA ORACLE NODE CLIENT" + reset)
+// Draw draws this primitive onto the screen.
+func (r *RadioButtons) Draw(screen tcell.Screen) {
+	r.Box.DrawForSubclass(screen, r)
+	x, y, width, height := r.GetInnerRect()
 
-	fmt.Println("-----------------------")
-	fmt.Println("1. Connect to the Masa Oracle Network")
-	fmt.Println("2. Choose your model")
-	fmt.Println("3. Set your Twitter/X account credentials")
-	fmt.Println("4. GPTChat")
-	fmt.Println("5. Subscribe to the Sentiment Topic")
-	fmt.Println("6. Quit")
-	fmt.Println("")
-	fmt.Println("Select an option:")
+	for index, option := range r.options {
+		if index >= height {
+			break
+		}
+		radioButton := "\u25ef" // Unchecked.
+		if index == r.currentOption {
+			radioButton = "\u25c9" // Checked.
+		}
+		line := fmt.Sprintf(`%s[white]  %s`, radioButton, option)
+		tview.Print(screen, line, x, y+index, width, tview.AlignLeft, tcell.ColorYellow)
+	}
+}
+
+// InputHandler returns the handler for this primitive.
+func (r *RadioButtons) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+	return r.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+		switch event.Key() {
+		case tcell.KeyUp:
+			r.currentOption--
+			if r.currentOption < 0 {
+				r.currentOption = 0
+			}
+		case tcell.KeyDown:
+			r.currentOption++
+			if r.currentOption >= len(r.options) {
+				r.currentOption = len(r.options) - 1
+			}
+		case tcell.KeyEnter:
+			if r.onSelect != nil {
+				r.onSelect(r.options[r.currentOption]) // Call the onSelect callback with the selected option
+			}
+		}
+	})
+}
+
+// MouseHandler returns the mouse handler for this primitive.
+func (r *RadioButtons) MouseHandler() func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (consumed bool, capture tview.Primitive) {
+	return r.WrapMouseHandler(func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (consumed bool, capture tview.Primitive) {
+		x, y := event.Position()
+		_, rectY, _, _ := r.GetInnerRect()
+		if !r.InRect(x, y) {
+			return false, nil
+		}
+
+		if action == tview.MouseLeftClick {
+			setFocus(r)
+			index := y - rectY
+			if index >= 0 && index < len(r.options) {
+				r.currentOption = index
+				consumed = true
+				if r.onSelect != nil {
+					r.onSelect(r.options[r.currentOption]) // Call the callback with the selected option
+					// Logic to close the RadioButtons view goes here
+				}
+			}
+		}
+		return
+	})
 }
 
 // showMenu creates and returns the menu component.
 func showMenu(app *tview.Application, output *tview.TextView) *tview.List {
 	menu := tview.NewList().
-		AddItem("Connect to the Masa Oracle Network", "", 'c', func() {
+		AddItem("Connect", "To a Masa Oracle Node.", '1', func() {
 			handleOption(app, "1", output)
 		}).
-		AddItem("Choose your model", "", 'm', func() {
-			// handleOption(app, "2", output)
-			output.SetText("Choose a model Claude or GPT4")
+		AddItem("LLM Model", "Select an llm model to use.", '2', func() {
+			handleOption(app, "2", output)
 		}).
-		AddItem("Quit", "Press to exit", 'q', func() {
-			app.Stop()
+		AddItem("Twitter", "Set your Twitter/X account credentials.", '3', func() {
+			// handleOption(app, "3", output)
+			output.SetText(appConfig.Model)
+		}).
+		AddItem("ChatGPT", "Chat with a helpful assistant.", '4', func() {
+
+			flex := tview.NewFlex().SetDirection(tview.FlexRow)
+			var inputField *tview.InputField
+
+			inputField = tview.NewInputField().
+				SetLabel("> ").
+				SetFieldWidth(100).
+				SetDoneFunc(func(key tcell.Key) {
+					if key == tcell.KeyEnter {
+						// Handle input here, similar to the loop in your ChatGPT interaction
+						output.SetText(inputField.GetText())
+						// Switch back to the main menu or clear the input field as needed
+						app.SetRoot(mainFlex, true) // Return to main view
+					}
+				})
+
+			flex.AddItem(inputField, 3, 1, true)
+			app.SetRoot(flex, true)
+
+			// fmt.Print("type \\q to return to main menu\n")
+			// for {
+			// 	fmt.Print("> ")
+			// 	reader := bufio.NewReader(os.Stdin)
+			// 	userMessage, err := reader.ReadString('\n')
+			// 	if err != nil {
+			// 		logrus.Errorf("%v", err)
+			// 	}
+			// 	userMessage = strings.TrimSuffix(userMessage, "\n")
+
+			// 	if userMessage == "\\q" {
+			// 		break
+			// 	}
+
+			// 	prompt := os.Getenv("PROMPT")
+
+			// 	resp, err := gpt(prompt, userMessage)
+			// 	if err != nil {
+			// 		logrus.Errorf("%v", err)
+			// 	}
+			// 	fmt.Println(resp)
+			// 	if os.Getenv("ELAB_KEY") != "" {
+			// 		speak(resp)
+			// 	}
+			// }
+
+		}).
+		AddItem("Subscribe", "Masa will analyze a sentiment from tweets.", '5', func() {
+			// handleOption(app, "2", output)
+			output.SetText("Subscribe to the Sentiment Topic")
 		})
 
-	// Example of how to handle menu selection that updates the output.
-	// This is a placeholder to demonstrate interaction between the menu and the output.
-	menu.AddItem("Show Message", "Press to show a message in the output", 's', func() {
-		output.SetText("This is a message shown in the output panel.")
-	}).SetBorder(true).SetBorderColor(tcell.ColorGoldenrod)
+	menu.AddItem("Quit", "Press to exit", 'q', func() {
+		app.Stop()
+	}).SetBorder(true).SetBorderColor(tcell.ColorBlue)
 
 	return menu
 }
@@ -304,70 +409,70 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 	switch option {
 	case "1":
-		// Use a modal dialog to get the Masa node multiaddress
-		inputField := tview.NewInputField().SetLabel("Enter the Masa node multiaddress: ")
+
+		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+
+		inputField := tview.NewInputField().
+			SetLabel("Multiaddress: ").
+			SetFieldWidth(20)
+
 		modal := tview.NewModal().
-			SetText("Enter the Masa node multiaddress:").
+			SetText("Enter the masa node multiaddress and click OK.").
 			AddButtons([]string{"OK", "Cancel"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				if buttonLabel == "OK" {
-					multiaddress := inputField.GetText()
-					if multiaddress == "" {
+					appConfig.Address = inputField.GetText()
+					if appConfig.Address == "" {
 						output.SetText("A multiaddress was not entered. Please enter the masa node multiaddress and try again.")
 					} else {
-						// Here you would normally handle the connection, but for simplicity, we just update the output
-						output.SetText(fmt.Sprintf("Connecting to: %s", multiaddress))
-						// Simulate connection logic...
+						output.SetText(fmt.Sprintf("Connecting to: %s", appConfig.Address))
+
+						maddr, err := multiaddr.NewMultiaddr(appConfig.Address)
+						if err != nil {
+							logrus.Errorf("%v", err)
+						}
+
+						// Create a libp2p host to connect to the Masa node
+						host, err := libp2p.New(libp2p.NoSecurity, libp2p.Transport(quic.NewTransport))
+						if err != nil {
+							logrus.Errorf("%v", err)
+						}
+
+						// Extract the peer ID from the multiaddress
+						peerInfo, err := peer.AddrInfoFromP2pAddr(maddr)
+						if err != nil {
+							logrus.Errorf("%v", err)
+						}
+
+						// Connect to the peer
+						if err := host.Connect(context.Background(), *peerInfo); err != nil {
+							logrus.Errorf("%v", err)
+						}
+
+						output.SetText(fmt.Sprintf("Successfully connected to node: %s", appConfig.Address))
+
 					}
 				}
 				app.SetRoot(mainFlex, true) // Return to main view
 			})
-		app.SetRoot(modal, false) // Show modal dialog
 
-		//fmt.Print("Enter the Masa node multiaddress: ")
-		//scanner.Scan()
-		//if scanner.Text() == "" {
-		//	fmt.Println("A multiaddress was not entered. Please enter the masa node multiaddress and try again.")
-		//	break
-		//}
-		//
-		//appConfig.Address = scanner.Text()
-		//
-		//maddr, err := multiaddr.NewMultiaddr(appConfig.Address)
-		//if err != nil {
-		//	logrus.Errorf("%v", err)
-		//}
-		//
-		//// Create a libp2p host to connect to the Masa node
-		//host, err := libp2p.New(libp2p.NoSecurity, libp2p.Transport(quic.NewTransport))
-		//if err != nil {
-		//	logrus.Errorf("%v", err)
-		//}
-		//
-		//// Extract the peer ID from the multiaddress
-		//peerInfo, err := peer.AddrInfoFromP2pAddr(maddr)
-		//if err != nil {
-		//	logrus.Errorf("%v", err)
-		//}
-		//
-		//// Connect to the peer
-		//if err := host.Connect(context.Background(), *peerInfo); err != nil {
-		//	logrus.Errorf("%v", err)
-		//}
-		//fmt.Println("Successfully connected to node")
+		modalFlex.AddItem(inputField, 2, 1, true).
+			AddItem(modal, 0, 2, false)
+
+		app.SetRoot(modalFlex, true).SetFocus(inputField)
+
 	case "2":
-		fmt.Println("Choose your model:\n1. Claude\n2. GPT4")
-		scanner.Scan()
-		modelChoice := scanner.Text()
-		switch modelChoice {
-		case "1":
-			appConfig.Model = "Claude"
-		case "2":
-			appConfig.Model = "GPT4"
-		default:
-			fmt.Println("Invalid model selected.")
-		}
-		fmt.Printf("You selected: %s\n", appConfig.Model)
+		radioButtons := NewRadioButtons([]string{"Claude", "GPT4"}, func(option string) {
+			appConfig.Model = option
+			output.SetText(fmt.Sprintf("Selected model: %s", option))
+			app.SetRoot(mainFlex, true) // Return to main view after selection
+		})
+		radioButtons.SetBorder(true).
+			SetTitle(" Choose LLM Model ").
+			SetRect(0, 0, 30, 5)
+
+		app.SetRoot(radioButtons, false)
+
 	case "3":
 		fmt.Print("Enter Twitter Username: ")
 		scanner.Scan()
@@ -455,7 +560,59 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 	default:
 		fmt.Println("Invalid option, please select again")
 	}
-	return
+}
+
+const logo = ` 
+  _____ _____    ___________   
+ /     \\__  \  /  ___/\__  \  
+|  Y Y  \/ __ \_\___ \  / __ \_
+|__|_|  (____  /____  >(____  /
+      \/     \/     \/      \/ 
+`
+
+const (
+	subtitle = `masa oracle client`
+	// navigation = `[yellow] Up    [yellow]: Down    [yellow]Q[-]: Quit`
+	navigation = `[yellow]use keys to navigate the menu`
+	mouse      = `[yellow]or use your mouse`
+)
+
+// Cover returns the cover page.
+func Cover(nextSlide func()) (title string, content tview.Primitive) {
+	// What's the size of the logo?
+	lines := strings.Split(logo, "\n")
+	logoWidth := 0
+	logoHeight := len(lines)
+	for _, line := range lines {
+		if len(line) > logoWidth {
+			logoWidth = len(line)
+		}
+	}
+	logoBox := tview.NewTextView().
+		SetTextColor(tcell.ColorGreen).
+		SetDoneFunc(func(key tcell.Key) {
+			nextSlide()
+		})
+	fmt.Fprint(logoBox, logo)
+
+	frame := tview.NewFrame(tview.NewBox()).
+		SetBorders(0, 0, 0, 0, 0, 0).
+		AddText(subtitle, true, tview.AlignCenter, tcell.ColorWhite).
+		AddText("", true, tview.AlignCenter, tcell.ColorWhite).
+		AddText(navigation, true, tview.AlignCenter, tcell.ColorDarkMagenta).
+		AddText(mouse, true, tview.AlignCenter, tcell.ColorDarkMagenta)
+
+	// Create a Flex layout that centers the logo and subtitle.
+	flex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(tview.NewBox(), 0, 7, false).
+		AddItem(tview.NewFlex().
+			AddItem(tview.NewBox(), 0, 1, false).
+			AddItem(logoBox, logoWidth, 1, true).
+			AddItem(tview.NewBox(), 0, 1, false), logoHeight, 1, true).
+		AddItem(frame, 0, 10, false)
+
+	return "Start", flex
 }
 
 func main() {
@@ -466,60 +623,24 @@ func main() {
 		_ = godotenv.Load()
 	}
 
-	// Colors
-	// yellow := "\033[33m"
-	// blue := "\033[34m"
-	// red := "\033[31m"
-	// green := "\033[32m"
-	// reset := "\033[0m"
-
-	//asciiArt := `
-	// _____ _____    ___________
-	///     \\__  \  /  ___/\__  \
-	//|  Y Y  \/ __ \_\___ \  / __ \_
-	//|__|_|  (____  /____  >(____  /
-	//     \/     \/     \/      \/
-	//`
-	// fmt.Println(green + asciiArt + reset)
-
 	app := tview.NewApplication()
 
 	output := tview.NewTextView().
 		SetDynamicColors(true).
-		SetText("Welcome to the MASA Oracle Node Client.\nSelect an option from the menu.")
+		SetText(" Welcome to the MASA Oracle Client ")
 
-	// Create the grid layout.
-	//grid := tview.NewGrid().
-	//	SetRows(0).
-	//	SetColumns(30, 0).SetBorders(true).
-	//	AddItem(showMenu(app, output), 0, 0, 1, 1, 0, 0, true).
-	//	AddItem(output, 0, 1, 1, 1, 0, 0, false)
-	//
-	//mainFlex = tview.NewFlex().SetDirection(tview.FlexRow).
-	//	AddItem(grid, 0, 1, false)
-
-	output.SetBorder(true).SetBorderColor(tcell.ColorGoldenrod)
+	_, content := Cover(nil)
 
 	mainFlex = tview.NewFlex().SetDirection(tview.FlexColumn).
+		AddItem(content, 0, 1, true).
 		AddItem(showMenu(app, output), 0, 1, true).
 		AddItem(output, 0, 3, false)
 
-	// mainFlex.SetBorder(true).SetTitle(" MASA ORACLE CLIENT ").SetBorderColor(tcell.ColorGoldenrod)
+	output.SetBorder(true).SetBorderColor(tcell.ColorBlue)
 
 	app.SetFocus(showMenu(app, output))
 
 	if err := app.SetRoot(mainFlex, true).EnableMouse(true).Run(); err != nil {
 		panic(err)
 	}
-
-	//reader := bufio.NewReader(os.Stdin)
-	//for {
-	//	clearScreen()
-	//	showMenu()
-	//	option, _ := reader.ReadString('\n')
-	//	option = option[:len(option)-1]
-	//	handleOption(option)
-	//	fmt.Println("Press 'Enter' to continue...")
-	//	_, _ = reader.ReadString('\n')
-	//}
 }
