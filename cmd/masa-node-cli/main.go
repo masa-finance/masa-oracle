@@ -338,17 +338,17 @@ func (r *RadioButtons) MouseHandler() func(action tview.MouseAction, event *tcel
 // showMenu creates and returns the menu component.
 func showMenu(app *tview.Application, output *tview.TextView) *tview.List {
 	menu := tview.NewList().
-		AddItem("Connect", "Connect to an oracle node.", '1', func() {
+		AddItem("Connect", "[darkgray]connect to an oracle node", '1', func() {
 			handleOption(app, "1", output)
 		}).
-		AddItem("LLM Model", "Select an llm model to use.", '2', func() {
+		AddItem("LLM Model", "[darkgray]select an llm model to use", '2', func() {
 			handleOption(app, "2", output)
 		}).
-		AddItem("Twitter", "Set your Twitter/X credentials.", '3', func() {
+		AddItem("Twitter", "[darkgray]set your Twitter/X credentials", '3', func() {
 			// handleOption(app, "3", output)
 			output.SetText(appConfig.Model)
 		}).
-		AddItem("ChatGPT", "Chat with a helpful assistant.", '4', func() {
+		AddItem("ChatGPT", "[darkgray]chat with a helpful assistant", '4', func() {
 
 			flex := tview.NewFlex().SetDirection(tview.FlexRow)
 			var inputField *tview.InputField
@@ -389,20 +389,20 @@ func showMenu(app *tview.Application, output *tview.TextView) *tview.List {
 			// 		logrus.Errorf("%v", err)
 			// 	}
 			// 	fmt.Println(resp)
-			// 	if os.Getenv("ELAB_KEY") != "" {
-			// 		speak(resp)
-			// 	}
+			// if os.Getenv("ELAB_KEY") != "" || os.Getenv("ELAB_URL") != "" {
+			// 	speak(resp)
+			// }
 			// }
 
 		}).
-		AddItem("Sentiment", "Analyze sentiment from tweets.", '5', func() {
+		AddItem("Sentiment", "[darkgray]analyze sentiment from tweets", '5', func() {
 			// handleOption(app, "2", output)
 			output.SetText("Subscribe to the Sentiment Topic")
 		})
 
-	menu.AddItem("Quit", "Press to exit", 'q', func() {
+	menu.AddItem("Quit", "[darkgray]press to exit", 'q', func() {
 		app.Stop()
-	}).SetBorder(true).SetBorderColor(tcell.ColorBlue)
+	}).SetBorder(true).SetBorderColor(tcell.ColorGray)
 
 	return menu
 }
@@ -415,9 +415,11 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 	switch option {
 	case "1":
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+		modalFlex.SetBorderPadding(1, 1, 1, 1)
+
 		inputField := tview.NewInputField().
 			SetLabel("Multiaddress: ").
-			SetFieldWidth(20)
+			SetFieldWidth(60)
 
 		modal := tview.NewModal().
 			SetText("Enter the masa node multiaddress and click OK.").
@@ -469,9 +471,10 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			output.SetText(fmt.Sprintf("Selected model: %s", option))
 			app.SetRoot(mainFlex, true) // Return to main view after selection
 		})
+
 		radioButtons.SetBorder(true).
 			SetTitle(" Choose LLM Model ").
-			SetRect(0, 0, 30, 5)
+			SetRect(85, 20, 30, 5) // centering on screen
 
 		app.SetRoot(radioButtons, false)
 	case "3":
@@ -506,7 +509,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 				logrus.Errorf("%v", err)
 			}
 			fmt.Println(resp)
-			if os.Getenv("ELAB_KEY") != "" {
+			if os.Getenv("ELAB_KEY") != "" || os.Getenv("ELAB_URL") != "" {
 				speak(resp)
 			}
 		}
@@ -580,7 +583,6 @@ const (
 
 // Splash shows the app info
 func Splash() (content tview.Primitive) {
-	// What's the size of the logo?
 	lines := strings.Split(logo, "\n")
 	logoWidth := 0
 	logoHeight := len(lines)
@@ -609,8 +611,8 @@ func Splash() (content tview.Primitive) {
 		AddItem(tview.NewBox(), 0, 7, false).
 		AddItem(tview.NewFlex().
 			AddItem(tview.NewBox(), 0, 1, false).
-			AddItem(logoBox, logoWidth, 1, true).
-			AddItem(tview.NewBox(), 0, 1, false), logoHeight, 1, true).
+			AddItem(logoBox, logoWidth, 1, false).
+			AddItem(tview.NewBox(), 0, 1, false), logoHeight, 1, false).
 		AddItem(frame, 0, 10, false)
 
 	return flex
