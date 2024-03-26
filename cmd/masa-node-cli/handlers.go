@@ -328,6 +328,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 				app.SetRoot(mainFlex, true) // Return to main view
 			}).
 			AddButton("Cancel", func() {
+				output.SetText("Cancelled entering a masa node multiaddress.")
 				app.SetRoot(mainFlex, true) // Return to main view
 			})
 
@@ -349,17 +350,42 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(radioButtons, false)
 	case "3":
-		output.SetText("Twitta WIP")
+		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+		modalFlex.SetBorderPadding(1, 1, 1, 1)
 
-		// fmt.Print("Enter Twitter Username: ")
-		// scanner.Scan()
-		// appConfig.TwitterUser = scanner.Text()
+		var form *tview.Form
 
-		// fmt.Print("Enter Twitter Password: ")
-		// scanner.Scan()
-		// appConfig.TwitterPassword = scanner.Text()
+		// Create a new form
+		form = tview.NewForm().
+			AddInputField("Username", "", 60, nil, nil).
+			AddPasswordField("Password", "", 60, '*', nil).
+			AddButton("OK", func() {
+				inputValue := form.GetFormItemByLabel("Username").(*tview.InputField).GetText()
+				passValue := form.GetFormItemByLabel("Password").(*tview.InputField).GetText()
+				appConfig.TwitterUser = inputValue
+				appConfig.TwitterPassword = passValue
 
-		// fmt.Println("Credentials saved during this session only.")
+				if appConfig.TwitterUser == "" {
+					output.SetText("A Twitter username was not entered. Please enter your username and try again.")
+					return
+				} else if appConfig.TwitterPassword == "" {
+					output.SetText("A Twitter password was not entered. Please enter your password and try again.")
+					return
+				} else {
+					output.SetText("Twitter credentials saved for this session only!")
+				}
+				app.SetRoot(mainFlex, true) // Return to main view
+			}).
+			AddButton("Cancel", func() {
+				output.SetText("Cancelled storing Twitter credentials.")
+				app.SetRoot(mainFlex, true) // Return to main view
+			})
+
+		form.SetBorder(true).SetBorderColor(tcell.ColorBlue).SetTitle(" Twitter Credentials ")
+
+		modalFlex.AddItem(form, 0, 1, true)
+
+		app.SetRoot(modalFlex, true).SetFocus(form)
 	case "4":
 		// Create the input field for user messages.
 		inputField := tview.NewInputField().
@@ -395,7 +421,8 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 			resp, err := handleGPT(prompt, userMessage)
 			if err != nil {
-				logrus.Errorf("%v", err)
+				output.SetText(fmt.Sprintf("%v", err))
+				return
 			}
 			if os.Getenv("ELAB_KEY") != "" || os.Getenv("ELAB_URL") != "" {
 				handleSpeak(resp)
@@ -420,16 +447,88 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			AddItem(flex, 0, 3, false)
 
 		flex.SetBorder(true).SetBorderColor(tcell.ColorBlue).
-			SetTitle(" Start typing in the input box or type \\q to exit ")
+			SetTitle(" Start typing in the input box and press enter or type \\q to exit ")
 
 		app.SetRoot(mainFlex, true).SetFocus(flex)
 	case "5":
-		output.SetText("Sentiment WIP")
 
-		// if appConfig.Address == "" {
-		// 	fmt.Println("Please connect to a masa node and try again.")
-		// 	break
-		// }
+		if appConfig.Address == "" {
+			output.SetText("Please connect to a masa node and try again.")
+			break
+		}
+
+		var userMessage string
+
+		// Create the input field for user messages.
+		inputField := tview.NewInputField().
+			SetLabel("> ").
+			SetFieldWidth(100)
+
+		// Create the text view to display responses.
+		textView := tview.NewTextView().
+			SetDynamicColors(true).
+			SetRegions(true).
+			SetWordWrap(true)
+
+		content := Splash()
+
+		// Add an event listener to the input field.
+		inputField.SetDoneFunc(func(key tcell.Key) {
+			userMessage = inputField.GetText()
+			// Clear the input field for the next message.
+			inputField.SetText("")
+
+			if userMessage == "\\q" {
+
+				mainFlex.Clear().
+					AddItem(content, 0, 1, false).
+					AddItem(handleMenu(app, output), 0, 1, true).
+					AddItem(output, 0, 3, false)
+
+				app.SetRoot(mainFlex, true) // Return to main view
+				return
+			}
+
+			count := 5
+			queryData := fmt.Sprintf(`{"query":"%s","count":%d}`, userMessage, count)
+
+			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/analyzeSentiment"
+			resp, err := http.Post(uri, "application/json", strings.NewReader(queryData))
+			if err != nil {
+				output.SetText(fmt.Sprintf("%v", err))
+				return
+			}
+			var result map[string]interface{}
+			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+				output.SetText(fmt.Sprintf("%v", err))
+				return
+			}
+			for _, r := range result {
+				// Display the response in the text view.
+				fmt.Fprintf(textView, "\n%s\n", r)
+			}
+
+		})
+
+		inputField.Autocomplete().SetFieldWidth(0)
+
+		// Arrange the input field and text view in a layout.
+		flex := tview.NewFlex().
+			SetDirection(tview.FlexRow).
+			AddItem(textView, 0, 1, false).
+			AddItem(inputField, 3, 1, true) // Set input field to be focused.
+
+		mainFlex.Clear().
+			AddItem(content, 0, 1, false).
+			AddItem(handleMenu(app, output), 0, 1, true).
+			AddItem(flex, 0, 3, false)
+
+		flex.SetBorder(true).SetBorderColor(tcell.ColorBlue).
+			SetTitle(" Start typing in the input box and press enter or type \\q to exit ")
+
+		app.SetRoot(mainFlex, true).SetFocus(flex)
+
+		// @todo use gossip topic instead of api to allow all staked nodes to participate in this analysis
 
 		// node := struct {
 		// 	*masa.OracleNode
@@ -446,29 +545,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		// if err != nil {
 		// 	fmt.Println("Failed to publish message:", err)
 		// 	return
-		// }
-
-		// fmt.Println("Subscribed to Sentiment Topic. Type your query:")
-		// scanner.Scan()
-		// query := scanner.Text()
-		// count := 5
-		// queryData := fmt.Sprintf(`{"query":"%s","count":%d}`, query, count)
-
-		// uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/analyzeSentiment"
-		// // uri := "http://" + "localhost" + ":8080/analyzeSentiment"
-		// resp, err := http.Post(uri, "application/json", strings.NewReader(queryData))
-		// if err != nil {
-		// 	logrus.Errorf("%v", err)
-		// 	return
-		// }
-		// var result map[string]interface{}
-		// if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		// 	logrus.Errorf("%v", err)
-		// 	return
-		// }
-		// handleClearScreen()
-		// for _, r := range result {
-		// 	fmt.Println("\n", r)
 		// }
 	case "6":
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
