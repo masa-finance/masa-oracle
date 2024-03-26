@@ -407,6 +407,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			inputField.SetText("")
 
 			if userMessage == "\\q" {
+				output.SetText(" Welcome to the MASA Oracle Client ")
 
 				mainFlex.Clear().
 					AddItem(content, 0, 1, false).
@@ -479,6 +480,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			inputField.SetText("")
 
 			if userMessage == "\\q" {
+				output.SetText(" Welcome to the MASA Oracle Client ")
 
 				mainFlex.Clear().
 					AddItem(content, 0, 1, false).
