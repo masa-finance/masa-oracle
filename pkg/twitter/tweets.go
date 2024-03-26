@@ -5,11 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sync"
-	"sync/atomic"
-
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	_ "github.com/lib/pq"
@@ -17,6 +12,9 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/sirupsen/logrus"
+	"os"
+	"path/filepath"
+	"sync"
 )
 
 type Sentiment struct {
@@ -90,38 +88,31 @@ func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, erro
 	return tweets, nil
 }
 
-func Scrape(query string, count int) ([]*twitterscraper.Tweet, error) {
+func ScrapeTweetsByQueryWaitGroups(query string, count int) ([]*twitterscraper.Tweet, error) {
 	rowChan := make(chan []*twitterscraper.Tweet)
 	scraper := auth()
 	go scrapeTweetsToChannel(scraper, query, count, rowChan)
 
 	var wg sync.WaitGroup
-	var size int64
 	var numWorkers = 5
-
-	//conn, err := connectToClickHouse()
-	//if err != nil {
-	//	logrus.Errorf("clickhouse connect err %s", err)
-	//}
 
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go processTweets(&wg, rowChan, &size)
+		go processTweets(&wg, rowChan)
 	}
 	wg.Wait()
-	logrus.Println("size", size)
-
+	// @todo pass results to topic
 	return nil, nil
 }
 
-func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet, size *int64) {
+func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet) {
 	defer wg.Done()
 
 	for rows := range rowChan {
 		if rows != nil {
 			logrus.Println("rows", rows)
 			for _, row := range rows {
-				atomic.AddInt64(size, 1) // testing counts
+				// @todo do we want to process each tweet or all tweets
 				logrus.Printf("row ===> %v\n", row)
 			}
 			deserializedTweets, err := serializeTweets(rows)

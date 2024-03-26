@@ -22,7 +22,8 @@ func main() {
 
 	output := tview.NewTextView().
 		SetDynamicColors(true).
-		SetText(" Welcome to the MASA Oracle Client ")
+		SetText(" Welcome to the MASA Oracle Client ").
+		SetTextAlign(tview.AlignCenter)
 
 	content := Splash()
 

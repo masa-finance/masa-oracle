@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -220,6 +219,38 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	logrus.Infof("added: %+v", gossip)
 }
 
+// testing custom box widget for gptchat
+type InputBox struct {
+	*tview.Box
+	input    chan rune
+	textView *tview.TextView
+}
+
+func NewInputBox() *InputBox {
+	textView := tview.NewTextView().SetDynamicColors(true).SetRegions(true)
+	return &InputBox{
+		Box:      tview.NewBox().SetBorder(true).SetTitle("Input"),
+		input:    make(chan rune),
+		textView: textView,
+	}
+}
+
+func (i *InputBox) InputHandler() func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune {
+			i.input <- event.Rune()
+		}
+		return event
+	}
+}
+
+func (i *InputBox) Draw(screen tcell.Screen) {
+	i.Box.DrawForSubclass(screen, i.Box)
+	x, y, width, height := i.GetInnerRect()
+	i.textView.SetRect(x, y, width, height)
+	i.textView.Draw(screen)
+}
+
 // showMenu creates and returns the menu component.
 func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 	menu := tview.NewList().
@@ -230,61 +261,13 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 			handleOption(app, "2", output)
 		}).
 		AddItem("Twitter", "[darkgray]set your Twitter/X credentials", '3', func() {
-			// handleOption(app, "3", output)
-			output.SetText("Twitta WIP")
+			handleOption(app, "3", output)
 		}).
 		AddItem("ChatGPT", "[darkgray]chat with a helpful assistant", '4', func() {
-			// handleOption(app, "4", output)
-			output.SetText("GPT WIP")
-
-			// flex := tview.NewFlex().SetDirection(tview.FlexRow)
-			// var inputField *tview.InputField
-
-			// inputField = tview.NewInputField().
-			// 	SetLabel("> ").
-			// 	SetFieldWidth(100).
-			// 	SetDoneFunc(func(key tcell.Key) {
-			// 		if key == tcell.KeyEnter {
-			// 			// Handle input here, similar to the loop in your ChatGPT interaction
-			// 			output.SetText(inputField.GetText())
-			// 			// Switch back to the main menu or clear the input field as needed
-			// 			app.SetRoot(mainFlex, true) // Return to main view
-			// 		}
-			// 	})
-
-			// flex.AddItem(inputField, 3, 1, true)
-			// app.SetRoot(flex, true)
-
-			// fmt.Print("type \\q to return to main menu\n")
-			// for {
-			// 	fmt.Print("> ")
-			// 	reader := bufio.NewReader(os.Stdin)
-			// 	userMessage, err := reader.ReadString('\n')
-			// 	if err != nil {
-			// 		logrus.Errorf("%v", err)
-			// 	}
-			// 	userMessage = strings.TrimSuffix(userMessage, "\n")
-
-			// 	if userMessage == "\\q" {
-			// 		break
-			// 	}
-
-			// 	prompt := os.Getenv("PROMPT")
-
-			// 	resp, err := handleGPT(prompt, userMessage)
-			// 	if err != nil {
-			// 		logrus.Errorf("%v", err)
-			// 	}
-			// 	fmt.Println(resp)
-			// if os.Getenv("ELAB_KEY") != "" || os.Getenv("ELAB_URL") != "" {
-			// 	handleSpeak(resp)
-			// }
-			// }
-
+			handleOption(app, "4", output)
 		}).
 		AddItem("Sentiment", "[darkgray]analyze sentiment from tweets", '5', func() {
-			// handleOption(app, "5", output)
-			output.SetText("Sentiment WIP")
+			handleOption(app, "5", output)
 		})
 
 	menu.AddItem("Quit", "[darkgray]press to exit", 'q', func() {
@@ -297,7 +280,7 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 // handleOption triggers actions based on user selection.
 func handleOption(app *tview.Application, option string, output *tview.TextView) {
 
-	scanner := bufio.NewScanner(os.Stdin)
+	// scanner := bufio.NewScanner(os.Stdin)
 
 	switch option {
 	case "1":
@@ -353,11 +336,10 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		modalFlex.AddItem(form, 0, 1, true)
 
 		app.SetRoot(modalFlex, true).SetFocus(form)
-
 	case "2":
 		radioButtons := NewRadioButtons([]string{"Claude", "GPT4"}, func(option string) {
 			appConfig.Model = option
-			output.SetText(fmt.Sprintf("Selected model: %s", option))
+			output.SetText(fmt.Sprintf("Selected model: %s", option)).SetTextAlign(tview.AlignLeft)
 			app.SetRoot(mainFlex, true) // Return to main view after selection
 		})
 
@@ -367,28 +349,46 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(radioButtons, false)
 	case "3":
-		fmt.Print("Enter Twitter Username: ")
-		scanner.Scan()
-		appConfig.TwitterUser = scanner.Text()
+		output.SetText("Twitta WIP")
 
-		fmt.Print("Enter Twitter Password: ")
-		scanner.Scan()
-		appConfig.TwitterPassword = scanner.Text()
+		// fmt.Print("Enter Twitter Username: ")
+		// scanner.Scan()
+		// appConfig.TwitterUser = scanner.Text()
 
-		fmt.Println("Credentials saved during this session only.")
+		// fmt.Print("Enter Twitter Password: ")
+		// scanner.Scan()
+		// appConfig.TwitterPassword = scanner.Text()
+
+		// fmt.Println("Credentials saved during this session only.")
 	case "4":
-		fmt.Print("type \\q to return to main menu\n")
-		for {
-			fmt.Print("> ")
-			reader := bufio.NewReader(os.Stdin)
-			userMessage, err := reader.ReadString('\n')
-			if err != nil {
-				logrus.Errorf("%v", err)
-			}
-			userMessage = strings.TrimSuffix(userMessage, "\n")
+		// Create the input field for user messages.
+		inputField := tview.NewInputField().
+			SetLabel("> ").
+			SetFieldWidth(100)
+
+		// Create the text view to display responses.
+		textView := tview.NewTextView().
+			SetDynamicColors(true).
+			SetRegions(true).
+			SetWordWrap(true)
+
+		content := Splash()
+
+		// Add an event listener to the input field.
+		inputField.SetDoneFunc(func(key tcell.Key) {
+			userMessage := inputField.GetText()
+			// Clear the input field for the next message.
+			inputField.SetText("")
 
 			if userMessage == "\\q" {
-				break
+
+				mainFlex.Clear().
+					AddItem(content, 0, 1, false).
+					AddItem(handleMenu(app, output), 0, 1, true).
+					AddItem(output, 0, 3, false)
+
+				app.SetRoot(mainFlex, true) // Return to main view
+				return
 			}
 
 			prompt := os.Getenv("PROMPT")
@@ -397,16 +397,39 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			if err != nil {
 				logrus.Errorf("%v", err)
 			}
-			fmt.Println(resp)
 			if os.Getenv("ELAB_KEY") != "" || os.Getenv("ELAB_URL") != "" {
 				handleSpeak(resp)
 			}
-		}
+
+			// Display the response in the text view.
+			fmt.Fprintf(textView, "%s\n", resp)
+
+		})
+
+		inputField.Autocomplete().SetFieldWidth(0)
+
+		// Arrange the input field and text view in a layout.
+		flex := tview.NewFlex().
+			SetDirection(tview.FlexRow).
+			AddItem(textView, 0, 1, false).
+			AddItem(inputField, 3, 1, true) // Set input field to be focused.
+
+		mainFlex.Clear().
+			AddItem(content, 0, 1, false).
+			AddItem(handleMenu(app, output), 0, 1, true).
+			AddItem(flex, 0, 3, false)
+
+		flex.SetBorder(true).SetBorderColor(tcell.ColorBlue).
+			SetTitle(" Start typing in the input box or type \\q to exit ")
+
+		app.SetRoot(mainFlex, true).SetFocus(flex)
 	case "5":
-		if appConfig.Address == "" {
-			fmt.Println("Please connect to a masa node and try again.")
-			break
-		}
+		output.SetText("Sentiment WIP")
+
+		// if appConfig.Address == "" {
+		// 	fmt.Println("Please connect to a masa node and try again.")
+		// 	break
+		// }
 
 		// node := struct {
 		// 	*masa.OracleNode
@@ -425,28 +448,28 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		// 	return
 		// }
 
-		fmt.Println("Subscribed to Sentiment Topic. Type your query:")
-		scanner.Scan()
-		query := scanner.Text()
-		count := 5
-		queryData := fmt.Sprintf(`{"query":"%s","count":%d}`, query, count)
+		// fmt.Println("Subscribed to Sentiment Topic. Type your query:")
+		// scanner.Scan()
+		// query := scanner.Text()
+		// count := 5
+		// queryData := fmt.Sprintf(`{"query":"%s","count":%d}`, query, count)
 
-		uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/analyzeSentiment"
-		// uri := "http://" + "localhost" + ":8080/analyzeSentiment"
-		resp, err := http.Post(uri, "application/json", strings.NewReader(queryData))
-		if err != nil {
-			logrus.Errorf("%v", err)
-			return
-		}
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			logrus.Errorf("%v", err)
-			return
-		}
-		handleClearScreen()
-		for _, r := range result {
-			fmt.Println("\n", r)
-		}
+		// uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/analyzeSentiment"
+		// // uri := "http://" + "localhost" + ":8080/analyzeSentiment"
+		// resp, err := http.Post(uri, "application/json", strings.NewReader(queryData))
+		// if err != nil {
+		// 	logrus.Errorf("%v", err)
+		// 	return
+		// }
+		// var result map[string]interface{}
+		// if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		// 	logrus.Errorf("%v", err)
+		// 	return
+		// }
+		// handleClearScreen()
+		// for _, r := range result {
+		// 	fmt.Println("\n", r)
+		// }
 	case "6":
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 		modalFlex.SetBorderPadding(1, 1, 1, 1)
