@@ -280,8 +280,6 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 // handleOption triggers actions based on user selection.
 func handleOption(app *tview.Application, option string, output *tview.TextView) {
 
-	// scanner := bufio.NewScanner(os.Stdin)
-
 	switch option {
 	case "1":
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -350,6 +348,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(radioButtons, false)
 	case "3":
+		// @todo used session stored twitter creds, right now pulling from .env
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 		modalFlex.SetBorderPadding(1, 1, 1, 1)
 
@@ -452,6 +451,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(mainFlex, true).SetFocus(flex)
 	case "5":
+		// @todo use gossip topic instead of api to allow all staked nodes to participate in this analysis
 
 		if appConfig.Address == "" {
 			output.SetText("Please connect to a masa node and try again.")
@@ -529,8 +529,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			SetTitle(" Start typing in the input box and press enter or type \\q to exit ")
 
 		app.SetRoot(mainFlex, true).SetFocus(flex)
-
-		// @todo use gossip topic instead of api to allow all staked nodes to participate in this analysis
 
 		// node := struct {
 		// 	*masa.OracleNode
