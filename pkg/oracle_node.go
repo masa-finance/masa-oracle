@@ -89,6 +89,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	securityOptions := []libp2p.Option{
 		libp2p.Security(noise.ID, noise.New),
 	}
+	// @todo failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 2048 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
 	if cfg.UDP {
 		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))

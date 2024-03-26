@@ -36,3 +36,16 @@ type SubscriptionHandler struct {
 	GossipTopic *pubsub.Topic
 	mu          sync.Mutex
 }
+
+type RadioButtons struct {
+	*tview.Box
+	options       []string
+	currentOption int
+	onSelect      func(option string)
+}
+
+type InputBox struct {
+	*tview.Box
+	input    chan rune
+	textView *tview.TextView
+}

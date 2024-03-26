@@ -8,12 +8,33 @@ import (
 	"github.com/rivo/tview"
 )
 
-// RadioButtons implements a simple primitive for radio button selections.
-type RadioButtons struct {
-	*tview.Box
-	options       []string
-	currentOption int
-	onSelect      func(option string)
+// NewInputBox returns a new inputbox primitive.
+func NewInputBox() *InputBox {
+	textView := tview.NewTextView().SetDynamicColors(true).SetRegions(true)
+	return &InputBox{
+		Box:      tview.NewBox().SetBorder(true).SetTitle("Input"),
+		input:    make(chan rune),
+		textView: textView,
+	}
+}
+
+// InputHandler returns a function that processes keyboard input events for the InputBox.
+// It listens for rune input (character keys) and sends the rune (character) to the input channel of the InputBox.
+func (i *InputBox) InputHandler() func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune {
+			i.input <- event.Rune()
+		}
+		return event
+	}
+}
+
+// Draw renders the InputBox on the provided screen.
+func (i *InputBox) Draw(screen tcell.Screen) {
+	i.Box.DrawForSubclass(screen, i.Box)
+	x, y, width, height := i.GetInnerRect()
+	i.textView.SetRect(x, y, width, height)
+	i.textView.Draw(screen)
 }
 
 // NewRadioButtons returns a new radio button primitive.
@@ -100,8 +121,8 @@ const logo = `
 
 const (
 	subtitle   = `masa oracle client`
-	navigation = `[yellow]use keys to navigate the menu`
-	mouse      = `[yellow]or use your mouse`
+	navigation = `[yellow]use keys or mouse to navigate`
+	mouse      = `[green]v0.0.2-alpha`
 )
 
 // Splash shows the app info

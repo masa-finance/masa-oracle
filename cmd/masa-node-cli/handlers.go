@@ -219,38 +219,6 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	logrus.Infof("added: %+v", gossip)
 }
 
-// testing custom box widget for gptchat
-type InputBox struct {
-	*tview.Box
-	input    chan rune
-	textView *tview.TextView
-}
-
-func NewInputBox() *InputBox {
-	textView := tview.NewTextView().SetDynamicColors(true).SetRegions(true)
-	return &InputBox{
-		Box:      tview.NewBox().SetBorder(true).SetTitle("Input"),
-		input:    make(chan rune),
-		textView: textView,
-	}
-}
-
-func (i *InputBox) InputHandler() func(event *tcell.EventKey) *tcell.EventKey {
-	return func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyRune {
-			i.input <- event.Rune()
-		}
-		return event
-	}
-}
-
-func (i *InputBox) Draw(screen tcell.Screen) {
-	i.Box.DrawForSubclass(screen, i.Box)
-	x, y, width, height := i.GetInnerRect()
-	i.textView.SetRect(x, y, width, height)
-	i.textView.Draw(screen)
-}
-
 // showMenu creates and returns the menu component.
 func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 	menu := tview.NewList().
@@ -268,10 +236,13 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 		}).
 		AddItem("Sentiment", "[darkgray]analyze sentiment from tweets", '5', func() {
 			handleOption(app, "5", output)
+		}).
+		AddItem("Oracle Nodes", "[darkgray]view active nodes", '6', func() {
+			handleOption(app, "6", output)
 		})
 
 	menu.AddItem("Quit", "[darkgray]press to exit", 'q', func() {
-		handleOption(app, "6", output)
+		handleOption(app, "7", output)
 	}).SetBorder(true).SetBorderColor(tcell.ColorGray)
 
 	return menu
@@ -530,23 +501,71 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(mainFlex, true).SetFocus(flex)
 
-		// node := struct {
-		// 	*masa.OracleNode
-		// }{}
+	// node := struct {
+	// 	*masa.OracleNode
+	// }{}
 
-		// gossipStatusHandler := &SubscriptionHandler{}
-		// err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), gossipStatusHandler)
-		// if err != nil {
-		// 	fmt.Println("Failed to subscribe to Sentiment Topic:", err)
-		// 	return
-		// }
+	// gossipStatusHandler := &SubscriptionHandler{}
+	// err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), gossipStatusHandler)
+	// if err != nil {
+	// 	fmt.Println("Failed to subscribe to Sentiment Topic:", err)
+	// 	return
+	// }
 
-		// err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), []byte(message))
-		// if err != nil {
-		// 	fmt.Println("Failed to publish message:", err)
-		// 	return
-		// }
+	// err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), []byte(message))
+	// if err != nil {
+	// 	fmt.Println("Failed to publish message:", err)
+	// 	return
+	// }
 	case "6":
+		content := Splash()
+
+		table := tview.NewTable().SetBorders(true).SetFixed(1, 0)
+
+		// Set header titles
+		table.SetCell(0, 0, tview.NewTableCell("Address").SetTextColor(tcell.ColorYellow).SetAlign(tview.AlignCenter))
+		table.SetCell(0, 1, tview.NewTableCell("IsStaked").SetTextColor(tcell.ColorYellow).SetAlign(tview.AlignCenter))
+		table.SetCell(0, 2, tview.NewTableCell("IsWriter").SetTextColor(tcell.ColorYellow).SetAlign(tview.AlignCenter))
+
+		// Set cell values for each row
+		for i := 1; i <= 10; i++ {
+			table.SetCell(i, 0, tview.NewTableCell("/ip4/127.0.0.1/udp/4001/quic-v1/p2p/16Uiu2HAmVRNDAZ6J1eHTV8twU6VaX8vqhe7VehPBNrCzDrHB9aQn"))
+			table.SetCell(i, 1, tview.NewTableCell("false"))
+			table.SetCell(i, 2, tview.NewTableCell("false"))
+		}
+
+		table.Select(0, 0).SetFixed(1, 1).SetDoneFunc(func(key tcell.Key) {
+			if key == tcell.KeyEscape {
+				mainFlex.Clear().
+					AddItem(content, 0, 1, false).
+					AddItem(handleMenu(app, output), 0, 1, true).
+					AddItem(output, 0, 3, false)
+
+				app.SetRoot(mainFlex, true) // Return to main view
+				return
+			}
+			if key == tcell.KeyEnter {
+				table.SetSelectable(true, true)
+			}
+		}).SetSelectedFunc(func(row int, column int) {
+			table.GetCell(row, column).SetTextColor(tcell.ColorRed)
+			table.SetSelectable(false, false)
+		})
+
+		flex := tview.NewFlex().
+			SetDirection(tview.FlexRow).
+			AddItem(table, 0, 1, false)
+
+		mainFlex.Clear().
+			AddItem(content, 0, 1, false).
+			AddItem(handleMenu(app, output), 0, 1, false).
+			AddItem(flex, 0, 3, true)
+
+		flex.SetBorder(true).SetBorderColor(tcell.ColorBlue).
+			SetTitle(" Masa Oracle Nodes, press esc to return to menu ")
+
+		app.SetRoot(mainFlex, true).SetFocus(table)
+	case "7":
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 		modalFlex.SetBorderPadding(1, 1, 1, 1)
 
