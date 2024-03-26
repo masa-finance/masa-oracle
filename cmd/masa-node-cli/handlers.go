@@ -231,27 +231,29 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 		}).
 		AddItem("Twitter", "[darkgray]set your Twitter/X credentials", '3', func() {
 			// handleOption(app, "3", output)
-			output.SetText(appConfig.Model)
+			output.SetText("Twitta WIP")
 		}).
 		AddItem("ChatGPT", "[darkgray]chat with a helpful assistant", '4', func() {
 			// handleOption(app, "4", output)
-			flex := tview.NewFlex().SetDirection(tview.FlexRow)
-			var inputField *tview.InputField
+			output.SetText("GPT WIP")
 
-			inputField = tview.NewInputField().
-				SetLabel("> ").
-				SetFieldWidth(100).
-				SetDoneFunc(func(key tcell.Key) {
-					if key == tcell.KeyEnter {
-						// Handle input here, similar to the loop in your ChatGPT interaction
-						output.SetText(inputField.GetText())
-						// Switch back to the main menu or clear the input field as needed
-						app.SetRoot(mainFlex, true) // Return to main view
-					}
-				})
+			// flex := tview.NewFlex().SetDirection(tview.FlexRow)
+			// var inputField *tview.InputField
 
-			flex.AddItem(inputField, 3, 1, true)
-			app.SetRoot(flex, true)
+			// inputField = tview.NewInputField().
+			// 	SetLabel("> ").
+			// 	SetFieldWidth(100).
+			// 	SetDoneFunc(func(key tcell.Key) {
+			// 		if key == tcell.KeyEnter {
+			// 			// Handle input here, similar to the loop in your ChatGPT interaction
+			// 			output.SetText(inputField.GetText())
+			// 			// Switch back to the main menu or clear the input field as needed
+			// 			app.SetRoot(mainFlex, true) // Return to main view
+			// 		}
+			// 	})
+
+			// flex.AddItem(inputField, 3, 1, true)
+			// app.SetRoot(flex, true)
 
 			// fmt.Print("type \\q to return to main menu\n")
 			// for {
@@ -282,11 +284,11 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 		}).
 		AddItem("Sentiment", "[darkgray]analyze sentiment from tweets", '5', func() {
 			// handleOption(app, "5", output)
-			output.SetText("Subscribe to the Sentiment Topic")
+			output.SetText("Sentiment WIP")
 		})
 
 	menu.AddItem("Quit", "[darkgray]press to exit", 'q', func() {
-		app.Stop()
+		handleOption(app, "6", output)
 	}).SetBorder(true).SetBorderColor(tcell.ColorGray)
 
 	return menu
@@ -302,54 +304,56 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 		modalFlex.SetBorderPadding(1, 1, 1, 1)
 
-		inputField := tview.NewInputField().
-			SetLabel("Multiaddress: ").
-			SetFieldWidth(60)
+		var form *tview.Form
 
-		modal := tview.NewModal().
-			SetText("Enter the masa node multiaddress and click OK.").
-			AddButtons([]string{"OK", "Cancel"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				if buttonLabel == "OK" {
-					appConfig.Address = inputField.GetText()
-					if appConfig.Address == "" {
-						output.SetText("A multiaddress was not entered. Please enter the masa node multiaddress and try again.")
-					} else {
-						output.SetText(fmt.Sprintf("Connecting to: %s", appConfig.Address))
+		// Create a new form
+		form = tview.NewForm().
+			AddInputField("Node Multiaddress", "", 60, nil, nil).
+			AddButton("OK", func() {
+				inputValue := form.GetFormItemByLabel("Node Multiaddress").(*tview.InputField).GetText()
+				appConfig.Address = inputValue
 
-						maddr, err := multiaddr.NewMultiaddr(appConfig.Address)
-						if err != nil {
-							logrus.Errorf("%v", err)
-						}
+				if appConfig.Address == "" {
+					output.SetText("A multiaddress was not entered. Please enter the masa node multiaddress and try again.")
+				} else {
+					output.SetText(fmt.Sprintf("Connecting to: %s", appConfig.Address))
 
-						// Create a libp2p host to connect to the Masa node
-						host, err := libp2p.New(libp2p.NoSecurity, libp2p.Transport(quic.NewTransport))
-						if err != nil {
-							logrus.Errorf("%v", err)
-						}
-
-						// Extract the peer ID from the multiaddress
-						peerInfo, err := peer.AddrInfoFromP2pAddr(maddr)
-						if err != nil {
-							logrus.Errorf("%v", err)
-						}
-
-						// Connect to the peer
-						if err := host.Connect(context.Background(), *peerInfo); err != nil {
-							logrus.Errorf("%v", err)
-						}
-
-						output.SetText(fmt.Sprintf("Successfully connected to node: %s", appConfig.Address))
-
+					maddr, err := multiaddr.NewMultiaddr(appConfig.Address)
+					if err != nil {
+						logrus.Errorf("%v", err)
 					}
+
+					// Create a libp2p host to connect to the Masa node
+					host, err := libp2p.New(libp2p.NoSecurity, libp2p.Transport(quic.NewTransport))
+					if err != nil {
+						logrus.Errorf("%v", err)
+					}
+
+					// Extract the peer ID from the multiaddress
+					peerInfo, err := peer.AddrInfoFromP2pAddr(maddr)
+					if err != nil {
+						logrus.Errorf("%v", err)
+					}
+
+					// Connect to the peer
+					if err := host.Connect(context.Background(), *peerInfo); err != nil {
+						logrus.Errorf("%v", err)
+					}
+
+					output.SetText(fmt.Sprintf("Successfully connected to node: %s", appConfig.Address))
 				}
+				app.SetRoot(mainFlex, true) // Return to main view
+			}).
+			AddButton("Cancel", func() {
 				app.SetRoot(mainFlex, true) // Return to main view
 			})
 
-		modalFlex.AddItem(inputField, 2, 1, true).
-			AddItem(modal, 0, 2, false)
+		form.SetBorder(true).SetBorderColor(tcell.ColorBlue)
 
-		app.SetRoot(modalFlex, true).SetFocus(inputField)
+		modalFlex.AddItem(form, 0, 1, true)
+
+		app.SetRoot(modalFlex, true).SetFocus(form)
+
 	case "2":
 		radioButtons := NewRadioButtons([]string{"Claude", "GPT4"}, func(option string) {
 			appConfig.Model = option
@@ -444,9 +448,23 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			fmt.Println("\n", r)
 		}
 	case "6":
-		fmt.Println("Exiting...")
-		os.Exit(0)
+		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+		modalFlex.SetBorderPadding(1, 1, 1, 1)
+
+		modal := tview.NewModal().
+			SetText("Are you sure you want to quit?").
+			AddButtons([]string{"Yes", "No"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				if buttonLabel == "Yes" {
+					app.Stop()
+				}
+				app.SetRoot(mainFlex, true) // Return to main view
+			})
+
+		modalFlex.AddItem(modal, 0, 1, true)
+
+		app.SetRoot(modalFlex, true)
 	default:
-		fmt.Println("Invalid option, please select again")
+		break
 	}
 }

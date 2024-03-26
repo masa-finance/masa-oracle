@@ -27,7 +27,7 @@ func main() {
 	content := Splash()
 
 	mainFlex = tview.NewFlex().SetDirection(tview.FlexColumn).
-		AddItem(content, 0, 1, true).
+		AddItem(content, 0, 1, false).
 		AddItem(handleMenu(app, output), 0, 1, true).
 		AddItem(output, 0, 3, false)
 
