@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -24,20 +24,6 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 )
-
-// handleClearScreen clears the terminal screen by executing the appropriate command based on the operating system.
-// It uses "cls" command for Windows and "clear" for Unix-like systems.
-func handleClearScreen() {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "cls")
-	default:
-		cmd = exec.Command("clear") // Works on Unix-like systems
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Run()
-}
 
 // handleIPAddress takes a multi-address string as input and extracts the IP address from it.
 // The function supports both "/ip4/" and "/dns/" multi-address formats.
@@ -424,12 +410,35 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 	case "5":
 		// @todo use gossip topic instead of api to allow all staked nodes to participate in this analysis
 
+		// node := &masa.OracleNode{}
+
+		// gossipStatusHandler := &SubscriptionHandler{}
+		// err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), gossipStatusHandler)
+		// if err != nil {
+		// 	fmt.Println("Failed to subscribe to Sentiment Topic:", err)
+		// 	return
+		// }
+
+		// err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), []byte(message))
+		// if err != nil {
+		// 	fmt.Println("Failed to publish message:", err)
+		// 	return
+		// }
+
 		if appConfig.Address == "" {
 			output.SetText("Please connect to a masa node and try again.")
 			break
 		}
 
+		var countMessage string
 		var userMessage string
+
+		// Create the input field for user messages.
+		inputCountField := tview.NewInputField().
+			SetLabel("# of Tweets to analyze ").
+			SetFieldWidth(10)
+
+		inputCountField.SetText("5")
 
 		// Create the input field for user messages.
 		inputField := tview.NewInputField().
@@ -443,6 +452,10 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			SetWordWrap(true)
 
 		content := Splash()
+
+		inputCountField.SetDoneFunc(func(key tcell.Key) {
+			countMessage = inputCountField.GetText()
+		})
 
 		// Add an event listener to the input field.
 		inputField.SetDoneFunc(func(key tcell.Key) {
@@ -462,7 +475,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 				return
 			}
 
-			count := 5
+			count, _ := strconv.Atoi(countMessage)
 			queryData := fmt.Sprintf(`{"query":"%s","count":%d}`, userMessage, count)
 
 			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/analyzeSentiment"
@@ -489,7 +502,8 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		flex := tview.NewFlex().
 			SetDirection(tview.FlexRow).
 			AddItem(textView, 0, 1, false).
-			AddItem(inputField, 3, 1, true) // Set input field to be focused.
+			AddItem(inputCountField, 2, 1, false).
+			AddItem(inputField, 3, 1, true)
 
 		mainFlex.Clear().
 			AddItem(content, 0, 1, false).
@@ -500,23 +514,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			SetTitle(" Start typing in the input box and press enter or type \\q to exit ")
 
 		app.SetRoot(mainFlex, true).SetFocus(flex)
-
-	// node := struct {
-	// 	*masa.OracleNode
-	// }{}
-
-	// gossipStatusHandler := &SubscriptionHandler{}
-	// err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), gossipStatusHandler)
-	// if err != nil {
-	// 	fmt.Println("Failed to subscribe to Sentiment Topic:", err)
-	// 	return
-	// }
-
-	// err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), []byte(message))
-	// if err != nil {
-	// 	fmt.Println("Failed to publish message:", err)
-	// 	return
-	// }
 	case "6":
 		content := Splash()
 
