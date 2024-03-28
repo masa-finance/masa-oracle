@@ -77,6 +77,7 @@ type AppConfig struct {
 	ClaudeApiKey       string `mapstructure:"ClaudeApiKey"`
 	ClaudeApiURL       string `mapstructure:"ClaudeApiURL"`
 	ClaudeApiVersion   string `mapstructure:"ClaudeApiVersion"`
+	GPTApiKey          string `mapstructure:"GPTApiKey"`
 }
 
 func GetInstance() *AppConfig {
@@ -126,6 +127,8 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
 		viper.SetDefault(ClaudeApiURL, os.Getenv("CLAUDE_API_URL"))
 		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
+		viper.SetDefault(GPTApiKey, os.Getenv("OPENAI_API_KEY"))
+
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
@@ -190,6 +193,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.ClaudeApiKey, "claudeApiKey", viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API Url")
 	pflag.StringVar(&c.ClaudeApiVersion, "claudeApiVersion", viper.GetString(ClaudeApiVersion), "Claude API Version")
+	pflag.StringVar(&c.GPTApiKey, "gptApiKey", viper.GetString(GPTApiKey), "OpenAI API Key")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

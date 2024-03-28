@@ -114,7 +114,7 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 
 	// Now, deserializedTweets contains the tweets loaded from the file
 	// Send the tweets data to Claude for sentiment analysis
-	sentimentRequest, sentimentSummary, err := llmbridge.AnalyzeSentiment(deserializedTweets)
+	sentimentRequest, sentimentSummary, err := llmbridge.AnalyzeSentiment(deserializedTweets, "claude-3-opus-20240229")
 	if err != nil {
 		logrus.WithError(err).Error("Failed to analyze sentiment")
 		return
