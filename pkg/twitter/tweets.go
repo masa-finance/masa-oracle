@@ -2,26 +2,34 @@ package twitter
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"os"
+	"path/filepath"
+	"sync"
+	"time"
+
+	"github.com/anthdm/hollywood/actor"
 	_ "github.com/lib/pq"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/sirupsen/logrus"
-	"os"
-	"path/filepath"
-	"sync"
 )
 
-type Sentiment struct {
-	ID             int64           `json:"id"`
-	ConversationId int64           `json:"conversation_id"`
-	Tweet          json.RawMessage `json:"tweet"`
-	PromptId       int64           `json:"prompt_id"`
+var sentimentCh = make(chan string)
+
+type TweetRequest struct {
+	Count int
+	Query []string
+}
+
+type Manager struct {
+	workers map[*actor.PID]bool
+}
+
+type Worker struct {
+	TweetRequest
+	pid *actor.PID
 }
 
 func auth() *twitterscraper.Scraper {
@@ -65,6 +73,96 @@ func auth() *twitterscraper.Scraper {
 	return scraper
 }
 
+func NewManager() actor.Producer {
+	return func() actor.Receiver {
+		return &Manager{
+			workers: make(map[*actor.PID]bool),
+		}
+	}
+}
+
+func (m *Manager) Receive(c *actor.Context) {
+	switch msg := c.Message().(type) {
+	case TweetRequest:
+		_ = m.handleTweetRequest(c, msg)
+	case actor.Started:
+		logrus.Info("Actor engine initialized")
+	case actor.Stopped:
+		logrus.Info("Actor engine stopped")
+	}
+}
+
+func (m *Manager) handleTweetRequest(c *actor.Context, msg TweetRequest) error {
+	for i, tweet := range msg.Query {
+		if _, ok := m.workers[c.PID()]; !ok {
+			logrus.Debugf("Tweet %+v with %v", tweet, c.PID())
+			c.SpawnChild(NewTweetWorker(&msg, c.PID()), fmt.Sprintf("worker/%d", i))
+			m.workers[c.PID()] = true
+		}
+	}
+	return nil
+}
+
+func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
+	return func() actor.Receiver {
+		return &Worker{TweetRequest{
+			Count: t.Count,
+			Query: t.Query,
+		}, pid}
+	}
+}
+
+func (w *Worker) Receive(c *actor.Context) {
+	switch c.Message().(type) {
+	case actor.Started:
+
+		logrus.Infof("Worker started with pid %+v", c.PID())
+		tweets, err := ScrapeTweetsByQuery(w.Query[0], w.Count)
+		if err != nil {
+			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
+		}
+		_, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets)
+		if err != nil {
+			sentimentCh <- err.Error()
+		}
+		sentimentCh <- sentimentSummary
+		c.Engine().Poison(c.PID()) // stop this worker by pid
+	case actor.Stopped:
+		logrus.Info("Worker stopped")
+	}
+}
+
+func ScrapeTweetsUsingActors(query string, count int) (string, error) {
+
+	done := make(chan bool)
+
+	go func() {
+		// Concurrent Actor Framework ref: https://en.wikipedia.org/wiki/Actor_model
+		e, err := actor.NewEngine(actor.NewEngineConfig())
+		if err != nil {
+			logrus.Errorf("%v", err)
+		} else {
+			pid := e.Spawn(NewManager(), "Manager")
+			time.Sleep(time.Millisecond * 200)
+			logrus.Printf("Started new actor engine with pid %v \n", pid)
+			e.Send(pid, TweetRequest{Count: count, Query: []string{query}})
+		}
+
+	}()
+
+	for {
+		select {
+		case sentiment := <-sentimentCh:
+			{
+				return sentiment, nil
+			}
+		case <-done:
+			break
+		}
+	}
+
+}
+
 func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, error) {
 	scraper := auth()
 	var tweets []*twitterscraper.Tweet
@@ -84,7 +182,6 @@ func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, erro
 		}
 		tweets = append(tweets, &tweetResult.Tweet)
 	}
-
 	return tweets, nil
 }
 
@@ -130,105 +227,5 @@ func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet) {
 			logrus.Println("sentimentRequest", sentimentRequest)
 			logrus.Println("sentimentSummary", sentimentSummary)
 		}
-	}
-}
-
-// connectToClickHouse tests
-func connectToClickHouse() (driver.Conn, error) {
-	var (
-		ctx       = context.Background()
-		conn, err = clickhouse.Open(&clickhouse.Options{
-			Addr: []string{os.Getenv("CH_URL")},
-			Auth: clickhouse.Auth{
-				Database: "masa",
-				Username: "default",
-				// Password: "<password>",
-			},
-		})
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if pe := conn.Ping(ctx); pe != nil {
-		var ex *clickhouse.Exception
-		if errors.As(pe, &ex) {
-			logrus.Errorf("Exception [%d %s \n%s\n", ex.Code, ex.Message, ex.StackTrace)
-		}
-		return nil, pe
-	}
-
-	err = conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS sentiment (id UInt64, conversation_id UInt32, tweets String, prompt_id Uint32, PRIMARY KEY (id)) ENGINE = MergeTree() ORDER BY id`)
-	if err != nil {
-		return nil, err
-	}
-
-	batch, e := conn.PrepareBatch(ctx, `INSERT INTO sentiment`)
-	if e != nil {
-		return nil, e
-	}
-
-	if bae := batch.Append(uint64(1), uint32(1), "hello", uint32(1)); bae != nil {
-		return nil, bae
-	}
-
-	if be := batch.Send(); be != nil {
-		return nil, be
-	}
-
-	rows, qe := conn.Query(ctx, `SELECT conversation_id, tweet FROM sentiment`)
-	if qe != nil {
-		return nil, qe
-	}
-	for rows.Next() {
-		var (
-			conversation_id uint32
-			tweet           string
-		)
-		if se := rows.Scan(&conversation_id, &tweet); err != nil {
-			return nil, se
-		}
-		logrus.Printf("row: convesation_id=%d, tweet=%s\n", conversation_id, tweet)
-	}
-	_ = rows.Close()
-
-	return conn, rows.Err()
-
-	// return conn, nil
-}
-
-// ingestTweets tests
-func ingestTweets(wg *sync.WaitGroup, rowChan <-chan []*twitterscraper.Tweet, conn driver.Conn, batchSize int) {
-	defer wg.Done()
-
-	newBatch := func() driver.Batch {
-		ctx := context.Background()
-		batch, err := conn.PrepareBatch(ctx, `INSERT INTO sentiment (conversation_id, tweet)`)
-		if err != nil {
-			logrus.Errorf("err %v", err)
-		}
-		return batch
-	}
-	batch := newBatch()
-	tweetsProcessed := 0
-	for row := range rowChan {
-		conversationID := row[0]
-		body := row[1]
-
-		err := batch.Append(conversationID, body)
-		if err != nil {
-			logrus.Errorf("err %v", err)
-		}
-		tweetsProcessed++
-		if tweetsProcessed%tweetsProcessed == 0 {
-			if err := batch.Send(); err != nil {
-				logrus.Errorf("%v", err)
-			}
-			batch = newBatch()
-		}
-	}
-	if err := batch.Send(); err != nil {
-		logrus.Errorf("%v", err)
 	}
 }
