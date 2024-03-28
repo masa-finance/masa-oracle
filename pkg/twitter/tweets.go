@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/anthdm/hollywood/actor"
@@ -33,6 +32,9 @@ type Worker struct {
 	pid *actor.PID
 }
 
+// auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
+// If no valid session is found, it performs a login with credentials specified in the application's configuration.
+// On successful login, it saves the session cookies for future use. If the login fails, it returns nil.
 func auth() *twitterscraper.Scraper {
 	scraper := twitterscraper.New()
 	appConfig := config.GetInstance()
@@ -74,6 +76,9 @@ func auth() *twitterscraper.Scraper {
 	return scraper
 }
 
+// NewManager creates and returns a new actor.Producer function.
+// This function, when invoked, will produce an instance of a Manager actor receiver.
+// The Manager is responsible for managing a pool of worker actors that process tweet requests.
 func NewManager() actor.Producer {
 	return func() actor.Receiver {
 		return &Manager{
@@ -82,6 +87,10 @@ func NewManager() actor.Producer {
 	}
 }
 
+// Receive processes messages sent to the Manager actor. It handles different types of messages
+// such as TweetRequest, actor.Started, and actor.Stopped by switching over the type of the message.
+// For TweetRequest messages, it delegates the handling to the handleTweetRequest method.
+// For actor.Started and actor.Stopped messages, it logs the state of the actor engine.
 func (m *Manager) Receive(c *actor.Context) {
 	switch msg := c.Message().(type) {
 	case TweetRequest:
@@ -93,6 +102,14 @@ func (m *Manager) Receive(c *actor.Context) {
 	}
 }
 
+// handleTweetRequest processes a TweetRequest message by iterating over each tweet query within the message.
+// For each tweet query, if the worker actor for the current PID does not exist, it spawns a new child actor
+// as a TweetWorker to handle the tweet scraping and analysis. It then marks the worker as active in the manager's worker map.
+// Parameters:
+// - c: The actor context, providing access to actor system functionalities.
+// - msg: The TweetRequest containing the details of the tweet queries to process.
+// Returns:
+// - An error if any issues occur during the handling of the tweet request. Currently, it always returns nil.
 func (m *Manager) handleTweetRequest(c *actor.Context, msg TweetRequest) error {
 	for i, tweet := range msg.Query {
 		if _, ok := m.workers[c.PID()]; !ok {
@@ -104,6 +121,13 @@ func (m *Manager) handleTweetRequest(c *actor.Context, msg TweetRequest) error {
 	return nil
 }
 
+// NewTweetWorker creates and returns a new actor.Producer function specific for tweet workers.
+// This function, when invoked, will produce an instance of a Worker actor receiver, initialized with the provided TweetRequest and PID.
+// Parameters:
+// - t: A pointer to a TweetRequest struct containing the details of the tweet queries to process.
+// - pid: A pointer to an actor.PID representing the process identifier for the actor system.
+// Returns:
+// - An actor.Producer function that produces Worker actor receivers.
 func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
 	return func() actor.Receiver {
 		return &Worker{TweetRequest{
@@ -114,6 +138,11 @@ func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
 	}
 }
 
+// Receive processes messages sent to the Worker actor. It handles different types of messages
+// such as actor.Started and actor.Stopped by switching over the type of the message.
+// For actor.Started messages, it initiates the process of scraping tweets based on the query and count specified in the Worker,
+// analyzes the sentiment of the scraped tweets, and then stops the worker actor.
+// For actor.Stopped messages, it simply logs that the worker has stopped.
 func (w *Worker) Receive(c *actor.Context) {
 	switch c.Message().(type) {
 	case actor.Started:
@@ -134,6 +163,24 @@ func (w *Worker) Receive(c *actor.Context) {
 	}
 }
 
+// ScrapeTweetsUsingActors initiates the process of scraping tweets based on a given query, count, and model.
+// It leverages actor-based concurrency to manage the scraping and analysis tasks.
+// The function spawns a new actor engine and sends a TweetRequest message to the Manager actor.
+// It then waits for a sentiment analysis result to be sent back through a channel.
+// Parameters:
+//   - query: The search query for fetching tweets.
+//   - count: The number of tweets to fetch and analyze.
+//   - model: The sentiment analysis model to use.
+//     -- claude-3-opus-20240229
+//     -- claude-3-sonnet-20240229
+//     -- claude-3-haiku-20240307
+//     -- gpt-4
+//     -- gpt-4-turbo-preview
+//     -- gpt-3.5-turbo
+//
+// Returns:
+// - A string containing the sentiment analysis summary.
+// - An error if the process fails at any point.
 func ScrapeTweetsUsingActors(query string, count int, model string) (string, error) {
 
 	done := make(chan bool)
@@ -166,7 +213,15 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 
 }
 
-// @todo @obsolete below
+// ScrapeTweetsByQuery performs a search on Twitter for tweets matching the specified query.
+// It fetches up to the specified count of tweets and returns a slice of Tweet pointers.
+// Parameters:
+//   - query: The search query string to find matching tweets.
+//   - count: The maximum number of tweets to retrieve.
+//
+// Returns:
+//   - A slice of pointers to twitterscraper.Tweet objects that match the search query.
+//   - An error if the scraping process encounters any issues.
 func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, error) {
 	scraper := auth()
 	var tweets []*twitterscraper.Tweet
@@ -187,49 +242,4 @@ func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, erro
 		tweets = append(tweets, &tweetResult.Tweet)
 	}
 	return tweets, nil
-}
-
-func ScrapeTweetsByQueryWaitGroups(query string, count int) ([]*twitterscraper.Tweet, error) {
-	rowChan := make(chan []*twitterscraper.Tweet)
-	scraper := auth()
-	go scrapeTweetsToChannel(scraper, query, count, rowChan)
-
-	var wg sync.WaitGroup
-	var numWorkers = 5
-
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go processTweets(&wg, rowChan)
-	}
-	wg.Wait()
-	// @todo pass results to topic
-	return nil, nil
-}
-
-func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet) {
-	defer wg.Done()
-
-	for rows := range rowChan {
-		if rows != nil {
-			logrus.Println("rows", rows)
-			for _, row := range rows {
-				// @todo do we want to process each tweet or all tweets
-				logrus.Printf("row ===> %v\n", row)
-			}
-			deserializedTweets, err := serializeTweets(rows)
-			if err != nil {
-				logrus.WithError(err).Error("Failed to deserialize tweets data")
-				return
-			}
-			// also getting sentiment request to save to datastore
-			sentimentRequest, sentimentSummary, e := llmbridge.AnalyzeSentiment(deserializedTweets, "claude-3-opus-20240229")
-			if e != nil {
-				logrus.WithError(e).Error("Failed to analyze sentiment")
-				return
-			}
-
-			logrus.Println("sentimentRequest", sentimentRequest)
-			logrus.Println("sentimentSummary", sentimentSummary)
-		}
-	}
 }

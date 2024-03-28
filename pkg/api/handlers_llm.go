@@ -14,12 +14,14 @@ type SearchTweetsRequest struct {
 }
 
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
-// Models:
+// Models Supported:
 //
 //	"claude-3-opus-20240229"
 //	"claude-3-sonnet-20240229"
 //	"claude-3-haiku-20240307"
-//	"gpt4"
+//	"gpt-4"
+//	"gpt-4-turbo-preview"
+//	"gpt-3.5-turbo"
 func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
@@ -40,7 +42,7 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			reqBody.Count = 50 // Default count
 		}
 		if reqBody.Model == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing. Available models are claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307, gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo"})
 			return
 		}
 
