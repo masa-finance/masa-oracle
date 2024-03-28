@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
 	"os"
 	"os/signal"
 	"strconv"
@@ -70,13 +69,13 @@ func main() {
 	go db.InitResolverCache(node, keyManager)
 
 	// WIP testing scraper using actor engine
-	go func() {
-		sentiment, err := twitter.ScrapeTweetsUsingActors("$MASA", 5, "gpt-4")
-		if err != nil {
-			logrus.Errorf(err.Error())
-		}
-		logrus.Printf("returned sentiment %v", sentiment)
-	}()
+	//go func() {
+	//	sentiment, err := twitter.ScrapeTweetsUsingActors("$MASA", 5, "gpt-4")
+	//	if err != nil {
+	//		logrus.Errorf(err.Error())
+	//	}
+	//	logrus.Printf("returned sentiment %v", sentiment)
+	//}()
 	// WIP testing scraper
 
 	// WIP testing db
