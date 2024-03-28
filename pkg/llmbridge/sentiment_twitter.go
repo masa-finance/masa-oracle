@@ -45,26 +45,6 @@ func AnalyzeSentiment(tweets []*twitterscraper.Tweet, model string) (string, str
 	} else {
 		return "", "", nil
 	}
-
-	// client := NewClaudeClient() // Adjusted to call without arguments
-	// tweetsContent := ConcatenateTweets(tweets)
-	// payloadBytes, err := CreatePayload(tweetsContent, model)
-	// if err != nil {
-	// 	logrus.Errorf("Error creating payload: %v", err)
-	// 	return "", "", err
-	// }
-	// resp, err := client.SendRequest(payloadBytes)
-	// if err != nil {
-	// 	logrus.Errorf("Error sending request to Claude API: %v", err)
-	// 	return "", "", err
-	// }
-	// defer resp.Body.Close()
-	// sentimentSummary, err := ParseResponse(resp)
-	// if err != nil {
-	// 	logrus.Errorf("Error parsing response from Claude: %v", err)
-	// 	return "", "", err
-	// }
-	// return tweetsContent, sentimentSummary, nil
 }
 
 // ConcatenateTweets concatenates the text of the provided tweets into a single string,
