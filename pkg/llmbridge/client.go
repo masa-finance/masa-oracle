@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/sashabaranov/go-openai"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/sashabaranov/go-openai"
 )
 
 type ClaudeClient struct {
@@ -56,7 +57,7 @@ func (c *GPTClient) SendRequest(tweetsContent string, model string) (string, err
 	case "gpt-4":
 		openAiModel = openai.GPT4
 	case "gpt-4-turbo-preview":
-		openAiModel = openai.GPT432K0613
+		openAiModel = openai.GPT40613
 	case "gpt-3.5-turbo":
 		openAiModel = openai.GPT3Dot5Turbo
 	default:
