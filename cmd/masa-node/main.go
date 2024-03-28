@@ -35,7 +35,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	var isStaked bool
+	// var isStaked bool
 	// Verify the staking event
 	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
 	if err != nil {
@@ -82,7 +82,7 @@ func main() {
 	// // IMPORTANT migrations true will drop all
 	// database, err := db.ConnectToPostgres(false)
 	// if err != nil {
-	// 	logrus.Println(err)
+	// 	logrus.Errorf(err)
 	// }
 	// defer database.Close()
 

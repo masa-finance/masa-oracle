@@ -12,6 +12,10 @@ func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool
 	// ANSI escape code to reset color
 	reset := "\033[0m"
 
+	// red := "\033[31m"
+
+	// green := "\033[32m"
+
 	borderLine := "#######################################"
 
 	fmt.Println(yellow + borderLine + reset)

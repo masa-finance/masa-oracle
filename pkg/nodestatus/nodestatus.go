@@ -10,15 +10,18 @@ import (
 )
 
 type NodeStatus struct {
-	PeerID            string        `json:"peerId"`
-	IsActive          bool          `json:"isActive"`
-	IsStaked          bool          `json:"isStaked"`
-	IsWriterNode      bool          `json:"isWriterNode"`
-	AccumulatedUptime time.Duration `json:"accumulatedUptime"`
-	CurrentUptime     time.Duration `json:"currentUptime"`
-	//AccumulatedUptimeStr string        `json:"readableAccumulatedUptime"`
-	FirstJoined time.Time `json:"firstJoined"`
-	LastJoined  time.Time `json:"lastJoined"`
+	PeerID                    string        `json:"peerId"`
+	FirstJoined               time.Time     `json:"firstJoined"`
+	LastJoined                time.Time     `json:"lastJoined"`
+	LastLeft                  time.Time     `json:"lastLeft"`
+	LastUpdated               time.Time     `json:"lastUpdated"`
+	CurrentUptime             time.Duration `json:"currentUptime"`
+	ReadableCurrentUptime     string        `json:"readableCurrentUptime"`
+	AccumulatedUptime         time.Duration `json:"accumulatedUptime"`
+	ReadableAccumulatedUptime string        `json:"readableAccumulatedUptime"`
+	IsActive                  bool          `json:"isActive"`
+	IsStaked                  bool          `json:"isStaked"`
+	IsWriterNode              bool          `json:"isWriterNode"`
 }
 
 // SubscriptionHandler handles storing node status updates and publishing

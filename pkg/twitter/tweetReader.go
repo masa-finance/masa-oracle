@@ -24,7 +24,7 @@ func scrapeTweetsToChannel(scraper *twitterscraper.Scraper, query string, count 
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
 		if tweetResult.Error != nil {
-			logrus.Printf("Error fetching tweet: %v", tweetResult.Error)
+			logrus.Errorf("Error fetching tweet: %v", tweetResult.Error)
 			continue
 		}
 		tweets = append(tweets, &tweetResult.Tweet)

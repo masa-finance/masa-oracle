@@ -84,19 +84,19 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	if !exists {
 		return
 	} else {
-		if nodeData.IsStaked { // IsStaked
-			if nodeData.IsActive {
-				// Node appears already connected, buffer this connect event
-				net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
-			} else {
-				nodeData.Joined()
-				err := net.AddOrUpdateNodeData(nodeData, true)
-				if err != nil {
-					logrus.Error(err)
-					return
-				}
+		// if nodeData.IsStaked { // IsStaked
+		if nodeData.IsActive {
+			// Node appears already connected, buffer this connect event
+			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
+		} else {
+			nodeData.Joined()
+			err := net.AddOrUpdateNodeData(nodeData, true)
+			if err != nil {
+				logrus.Error(err)
+				return
 			}
 		}
+		// }
 	}
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
@@ -120,9 +120,11 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		// this should never happen
 		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
 		return
-	} else if !nodeData.IsStaked {
-		return
 	}
+	// IsStaked
+	// else if !nodeData.IsStaked {
+	// 	return
+	// }
 	buffered := net.ConnectBuffer[peerID]
 	if buffered.NodeData != nil {
 		buffered.NodeData.Left()
@@ -219,7 +221,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	if data.IsStaked && !existingData.IsStaked {
 		existingData.IsStaked = data.IsStaked
 	} else if !data.IsStaked && existingData.IsStaked {
-		logrus.Warnf("Received unstaked status for node: %s", data.PeerId)
+		logrus.Debugf("Received unstaked status for node: %s", data.PeerId)
 	}
 	err := net.AddOrUpdateNodeData(existingData, true)
 	if err != nil {
@@ -358,13 +360,14 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.SelfIdentified = true
 		}
-		if !nd.IsStaked && nodeData.IsStaked { // IsStaked
-			dataChanged = true
-			nd.IsStaked = nodeData.IsStaked
-			logrus.WithFields(logrus.Fields{
-				"Peer": nd.PeerId.String(),
-			}).Info("Connected")
-		}
+		// IsStaked
+		// if !nd.IsStaked && nodeData.IsStaked {
+		dataChanged = true
+		nd.IsStaked = nodeData.IsStaked
+		logrus.WithFields(logrus.Fields{
+			"Peer": nd.PeerId.String(),
+		}).Info("Connected")
+		// }
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress

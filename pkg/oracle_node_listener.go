@@ -3,10 +3,13 @@ package masa
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"math"
 	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -27,27 +30,37 @@ func (node *OracleNode) ListenToNodeTracker() {
 		select {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
 			time.Sleep(1 * time.Second)
-			if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) { // IsStaked
-				// Marshal the nodeData into JSON
-				jsonData, err := json.Marshal(nodeData)
+			// IsStaked
+			// if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) {
+			// Marshal the nodeData into JSON
+			jsonData, err := json.Marshal(nodeData)
+			if node.IsWriter {
+				var ns nodestatus.NodeStatus
+				_ = json.Unmarshal(jsonData, &ns)
+				err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
 				if err != nil {
-					logrus.Errorf("Error marshaling node data: %v", err)
-					continue
-				}
-				// Publish the JSON data on the node.topic
-				err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
-				if err != nil {
-					logrus.Errorf("Error publishing node data: %v", err)
-				}
-				// If the nodeData represents a join event and
-				// the node is a boot node or (we don't want boot nodes to wait)
-				// the node start time is greater than 5 minutes ago,
-				// call SendNodeData in a separate goroutine
-				if nodeData.Activity == pubsub2.ActivityJoined &&
-					(!config.GetInstance().HasBootnodes() || time.Now().Sub(node.StartTime) > time.Minute*5) {
-					go node.SendNodeData(nodeData.PeerId)
+					logrus.Errorf("%v", err)
 				}
 			}
+
+			if err != nil {
+				logrus.Errorf("Error marshaling node data: %v", err)
+				continue
+			}
+			// Publish the JSON data on the node.topic
+			err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
+			if err != nil {
+				logrus.Errorf("Error publishing node data: %v", err)
+			}
+			// If the nodeData represents a join event and
+			// the node is a boot node or (we don't want boot nodes to wait)
+			// the node start time is greater than 5 minutes ago,
+			// call SendNodeData in a separate goroutine
+			if nodeData.Activity == pubsub2.ActivityJoined &&
+				(!config.GetInstance().HasBootnodes() || time.Since(node.StartTime) > time.Minute*5) {
+				go node.SendNodeData(nodeData.PeerId)
+			}
+			// }
 		case <-node.Context.Done():
 			return
 		}
@@ -117,10 +130,10 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		return
 	}
 	// IsStaked
-	if !node.NodeTracker.IsStaked(peerID.String()) {
-		logrus.Debugf("Node %s is not staked. Aborting SendNodeData.", peerID)
-		return
-	}
+	// if !node.NodeTracker.IsStaked(peerID.String()) {
+	// 	logrus.Debugf("Node %s is not staked. Aborting SendNodeData.", peerID)
+	// 	return
+	// }
 
 	recipientNodeData := node.NodeTracker.GetNodeData(peerID.String())
 	var nodeData []pubsub2.NodeData
@@ -167,6 +180,19 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		}
 
 		for _, nd := range page.Data {
+
+			if node.IsWriter {
+				for _, p := range page.Data {
+					jsonData, _ := json.Marshal(p)
+					var ns nodestatus.NodeStatus
+					_ = json.Unmarshal(jsonData, &ns)
+					err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+					if err != nil {
+						logrus.Errorf("%v", err)
+					}
+				}
+			}
+
 			node.NodeTracker.RefreshFromBoot(nd)
 		}
 	}
@@ -233,7 +259,8 @@ func (node *OracleNode) handleStreamData(stream network.Stream) (peer.ID, pubsub
 		logrus.Errorf("%s", buffer.String())
 		return "", pubsub2.NodeData{}, err
 	}
-	// if !nodeData.IsStaked { // IsStaked
+	// IsStaked
+	// if !nodeData.IsStaked {
 	// 	return "", pubsub2.NodeData{}, errors.New(fmt.Sprintf("un-staked node is ignored: %s", nodeData.PeerId))
 	// }
 	return remotePeerID, nodeData, nil

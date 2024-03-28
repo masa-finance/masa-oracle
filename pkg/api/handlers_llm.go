@@ -1,10 +1,11 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
-	"net/http"
 )
 
 // SearchTweetsRequest remains unchanged
@@ -33,19 +34,19 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			reqBody.Count = 50 // Default count
 		}
 
-		tweets, err := twitter.Scrape(reqBody.Query, reqBody.Count)
+		tweets, err := twitter.ScrapeTweetsByQuery(reqBody.Query, reqBody.Count)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets"})
 			return
 		}
 
-		sentimentRequest, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets)
+		_, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to analyze tweets"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"sentimentRequest": sentimentRequest, "sentiment": sentimentSummary})
+		c.JSON(http.StatusOK, gin.H{"sentiment": sentimentSummary})
 	}
 }

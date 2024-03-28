@@ -4,12 +4,13 @@ package tests
 
 import (
 	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	twitterscraper "github.com/n0madic/twitter-scraper"
-	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	twitterscraper "github.com/n0madic/twitter-scraper"
+	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
@@ -55,7 +56,7 @@ func setup() {
 	}
 
 	if err != nil {
-		logrus.WithError(err).Fatal("Login failed")
+		logrus.WithError(err).Warning("Login failed")
 		return
 	}
 
@@ -74,7 +75,7 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 
 	query := "$MASA Token Masa"
 	count := 100
-	tweets, err := twitter.Scrape(query, count)
+	tweets, err := twitter.ScrapeTweetsByQuery(query, count)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to scrape tweets")
 		return

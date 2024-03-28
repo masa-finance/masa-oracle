@@ -36,5 +36,4 @@ func TestGetPriorityAddress(t *testing.T) {
 
 	// Assert that the selected IP is the private IP since no public IP was available.
 	assert.Equal(t, "192.168.1.1", netAddr, "Expected the private IP to be selected when no public IP is available.")
-	return
 }
