@@ -10,11 +10,11 @@ import (
 // AnalyzeSentiment analyzes the sentiment of the provided tweets by sending them to the Claude API.
 // It concatenates the tweets, creates a payload, sends a request to Claude, parses the response,
 // and returns the concatenated tweets content, a sentiment summary, and any error.
-func AnalyzeSentiment(tweets []*twitterscraper.Tweet) (string, string, error) {
+func AnalyzeSentiment(tweets []*twitterscraper.Tweet, model string) (string, string, error) {
 	client := NewClaudeClient() // Adjusted to call without arguments
 
 	tweetsContent := ConcatenateTweets(tweets)
-	payloadBytes, err := CreatePayload(tweetsContent)
+	payloadBytes, err := CreatePayload(tweetsContent, model)
 	if err != nil {
 		logrus.Errorf("Error creating payload: %v", err)
 		return "", "", err

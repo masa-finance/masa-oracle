@@ -21,6 +21,7 @@ var sentimentCh = make(chan string)
 type TweetRequest struct {
 	Count int
 	Query []string
+	Model string
 }
 
 type Manager struct {
@@ -108,6 +109,7 @@ func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
 		return &Worker{TweetRequest{
 			Count: t.Count,
 			Query: t.Query,
+			Model: t.Model,
 		}, pid}
 	}
 }
@@ -121,7 +123,7 @@ func (w *Worker) Receive(c *actor.Context) {
 		if err != nil {
 			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
 		}
-		_, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets)
+		_, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets, w.Model)
 		if err != nil {
 			sentimentCh <- err.Error()
 		}
@@ -132,20 +134,21 @@ func (w *Worker) Receive(c *actor.Context) {
 	}
 }
 
-func ScrapeTweetsUsingActors(query string, count int) (string, error) {
+func ScrapeTweetsUsingActors(query string, count int, model string) (string, error) {
 
 	done := make(chan bool)
 
 	go func() {
-		// Concurrent Actor Framework ref: https://en.wikipedia.org/wiki/Actor_model
-		e, err := actor.NewEngine(actor.NewEngineConfig())
+		// @todo WIP use clustering for all staked nodes to participate
+		// remoter := remote.New("127.0.0.1:4000", remote.NewConfig())
+		e, err := actor.NewEngine(actor.NewEngineConfig()) // .WithRemote(remoter))
 		if err != nil {
 			logrus.Errorf("%v", err)
 		} else {
 			pid := e.Spawn(NewManager(), "Manager")
 			time.Sleep(time.Millisecond * 200)
 			logrus.Printf("Started new actor engine with pid %v \n", pid)
-			e.Send(pid, TweetRequest{Count: count, Query: []string{query}})
+			e.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
 		}
 
 	}()
@@ -157,12 +160,13 @@ func ScrapeTweetsUsingActors(query string, count int) (string, error) {
 				return sentiment, nil
 			}
 		case <-done:
-			break
+			// break
 		}
 	}
 
 }
 
+// @todo @obsolete below
 func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, error) {
 	scraper := auth()
 	var tweets []*twitterscraper.Tweet
@@ -218,7 +222,7 @@ func processTweets(wg *sync.WaitGroup, rowChan chan []*twitterscraper.Tweet) {
 				return
 			}
 			// also getting sentiment request to save to datastore
-			sentimentRequest, sentimentSummary, e := llmbridge.AnalyzeSentiment(deserializedTweets)
+			sentimentRequest, sentimentSummary, e := llmbridge.AnalyzeSentiment(deserializedTweets, "claude-3-opus-20240229")
 			if e != nil {
 				logrus.WithError(e).Error("Failed to analyze sentiment")
 				return

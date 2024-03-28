@@ -293,7 +293,8 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(modalFlex, true).SetFocus(form)
 	case "2":
-		radioButtons := NewRadioButtons([]string{"Claude", "GPT4"}, func(option string) {
+		// @todo add more models here then pass that to the sentiment analyzer
+		radioButtons := NewRadioButtons([]string{"claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "GPT4"}, func(option string) {
 			appConfig.Model = option
 			output.SetText(fmt.Sprintf("Selected model: %s", option)).SetTextAlign(tview.AlignLeft)
 			app.SetRoot(mainFlex, true) // Return to main view after selection
@@ -301,7 +302,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		radioButtons.SetBorder(true).
 			SetTitle(" Choose LLM Model ").
-			SetRect(85, 20, 30, 5) // centering on screen
+			SetRect(85, 20, 30, 10) // centering on screen
 
 		app.SetRoot(radioButtons, false)
 	case "3":
