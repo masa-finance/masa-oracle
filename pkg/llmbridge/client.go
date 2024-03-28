@@ -2,9 +2,14 @@ package llmbridge
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/sashabaranov/go-openai"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -13,10 +18,20 @@ type ClaudeClient struct {
 	config *ClaudeAPIConfig
 }
 
+type GPTClient struct {
+	config *GPTAPIConfig
+}
+
 // NewClaudeClient creates a new ClaudeClient instance with default configuration.
 func NewClaudeClient() *ClaudeClient {
-	config := NewClaudeAPIConfig()
-	return &ClaudeClient{config: config}
+	cnf := NewClaudeAPIConfig()
+	return &ClaudeClient{config: cnf}
+}
+
+// NewGPTClient creates a new GPTClient instance with default configuration.
+func NewGPTClient() *GPTClient {
+	cnf := NewGPTConfig()
+	return &GPTClient{config: cnf}
 }
 
 // SendRequest sends an HTTP request to the Claude API with the given payload.
@@ -33,6 +48,48 @@ func (c *ClaudeClient) SendRequest(payloadBytes []byte) (*http.Response, error) 
 
 	client := &http.Client{}
 	return client.Do(req)
+}
+
+func (c *GPTClient) SendRequest(tweetsContent string, model string) (string, error) {
+	var openAiModel string
+	switch model {
+	case "gpt-4":
+		openAiModel = openai.GPT4
+	case "gpt-4-turbo-preview":
+		openAiModel = openai.GPT432K0613
+	case "gpt-3.5-turbo":
+		openAiModel = openai.GPT3Dot5Turbo
+	default:
+		break
+	}
+
+	cfg := config.GetInstance()
+	key := cfg.GPTApiKey
+	if key == "" {
+		return "", errors.New("OPENAI_API_KEY is not set")
+	}
+	client := openai.NewClient(key)
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openAiModel,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "Please analyze the sentiment of the following tweets without bias and summarize the overall sentiment:",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: tweetsContent,
+				},
+			},
+		},
+	)
+	if err != nil {
+		log.Print(err)
+		return "", err
+	}
+	return resp.Choices[0].Message.Content, nil
 }
 
 type Response struct {
@@ -56,6 +113,7 @@ type ResponseError struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 }
+
 type Usage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`

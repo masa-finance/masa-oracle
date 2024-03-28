@@ -1,6 +1,8 @@
 package llmbridge
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Payload struct {
 	Model       string    `json:"model"`

@@ -293,8 +293,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(modalFlex, true).SetFocus(form)
 	case "2":
-		// @todo add more models here then pass that to the sentiment analyzer
-		radioButtons := NewRadioButtons([]string{"claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "GPT4"}, func(option string) {
+		radioButtons := NewRadioButtons([]string{"claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"}, func(option string) {
 			appConfig.Model = option
 			output.SetText(fmt.Sprintf("Selected model: %s", option)).SetTextAlign(tview.AlignLeft)
 			app.SetRoot(mainFlex, true) // Return to main view after selection
