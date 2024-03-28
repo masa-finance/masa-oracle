@@ -3,6 +3,7 @@ package llmbridge
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -98,8 +99,20 @@ func ParseResponse(resp *http.Response) (string, error) {
 		return "", err
 	}
 	var summary = ""
-	for _, t := range response.Content {
-		summary = sanitizeResponse(t.Text)
+	if response.Content != nil {
+		for _, t := range response.Content {
+			summary = sanitizeResponse(t.Text)
+		}
+	} else {
+		var responseError map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &responseError); err == nil {
+			if errVal, ok := responseError["error"].(map[string]interface{}); ok {
+				if message, ok := errVal["message"].(string); ok {
+					summary = fmt.Sprintf("error from llm: Service %v", message)
+				}
+			}
+		}
+		return summary, nil
 	}
 	return summary, nil
 }

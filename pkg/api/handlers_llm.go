@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 )
 
@@ -15,11 +14,20 @@ type SearchTweetsRequest struct {
 }
 
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
+// Models Supported:
+//
+//	"claude-3-opus-20240229"
+//	"claude-3-sonnet-20240229"
+//	"claude-3-haiku-20240307"
+//	"gpt-4"
+//	"gpt-4-turbo-preview"
+//	"gpt-3.5-turbo"
 func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
 			Query string `json:"query"`
 			Count int    `json:"count"`
+			Model string `json:"model"`
 		}
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
@@ -33,17 +41,15 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 		if reqBody.Count <= 0 {
 			reqBody.Count = 50 // Default count
 		}
-
-		tweets, err := twitter.ScrapeTweetsByQuery(reqBody.Query, reqBody.Count)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets"})
+		if reqBody.Model == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing. Available models are claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307, gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo"})
 			return
 		}
 
-		_, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets)
-
+		// Testing scrape using actor engine
+		sentimentSummary, err := twitter.ScrapeTweetsUsingActors(reqBody.Query, reqBody.Count, reqBody.Model)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to analyze tweets"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment"})
 			return
 		}
 
