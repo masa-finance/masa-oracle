@@ -157,7 +157,7 @@ func (w *Worker) Receive(c *actor.Context) {
 			sentimentCh <- err.Error()
 		}
 		sentimentCh <- sentimentSummary
-		c.Engine().Poison(c.PID()) // stop this worker by pid
+		c.Engine().Poison(c.PID()).Wait() // stop this worker by pid when job is complete
 	case actor.Stopped:
 		logrus.Info("Worker stopped")
 	}
@@ -182,7 +182,6 @@ func (w *Worker) Receive(c *actor.Context) {
 // - A string containing the sentiment analysis summary.
 // - An error if the process fails at any point.
 func ScrapeTweetsUsingActors(query string, count int, model string) (string, error) {
-
 	done := make(chan bool)
 
 	go func() {
@@ -210,7 +209,6 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 			// break
 		}
 	}
-
 }
 
 // ScrapeTweetsByQuery performs a search on Twitter for tweets matching the specified query.
