@@ -31,7 +31,7 @@ func CreatePayload(tweetsContent string, model string) ([]byte, error) {
 		Model:       model,
 		MaxTokens:   4000,
 		Temperature: 0,
-		System:      "Please analyze the sentiment of the following tweets without bias and summarize the overall sentiment:",
+		System:      "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.",
 		Messages: []Message{
 			{
 				Role: "user",
