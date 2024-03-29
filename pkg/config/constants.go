@@ -44,6 +44,7 @@ const (
 	ClaudeApiKey     = "CLAUDE_API_KEY"
 	ClaudeApiURL     = "CLAUDE_API_URL"
 	ClaudeApiVersion = "CLAUDE_API_VERSION"
+	GPTApiKey        = "OPENAI_API_KEY"
 )
 
 // ProtocolWithVersion returns a libp2p protocol ID string

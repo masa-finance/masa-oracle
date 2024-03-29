@@ -1,6 +1,8 @@
 package llmbridge
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Payload struct {
 	Model       string    `json:"model"`
@@ -24,9 +26,9 @@ type Content struct {
 // tweetsContent string. This payload configures the model, max tokens,
 // temperature and prompt to analyze the sentiment of the tweets without
 // bias and summarize the overall sentiment.
-func CreatePayload(tweetsContent string) ([]byte, error) {
+func CreatePayload(tweetsContent string, model string) ([]byte, error) {
 	payload := Payload{
-		Model:       "claude-3-opus-20240229",
+		Model:       model,
 		MaxTokens:   4000,
 		Temperature: 0,
 		System:      "Please analyze the sentiment of the following tweets without bias and summarize the overall sentiment:",
