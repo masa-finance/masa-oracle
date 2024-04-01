@@ -408,17 +408,14 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(mainFlex, true).SetFocus(flex)
 	case "5":
-		// @todo use gossip topic instead of api to allow all staked nodes to participate in this analysis
-
+		// @todo move to gossip topic
 		// node := &masa.OracleNode{}
-
 		// gossipStatusHandler := &SubscriptionHandler{}
 		// err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), gossipStatusHandler)
 		// if err != nil {
 		// 	fmt.Println("Failed to subscribe to Sentiment Topic:", err)
 		// 	return
 		// }
-
 		// err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), []byte(message))
 		// if err != nil {
 		// 	fmt.Println("Failed to publish message:", err)
@@ -491,7 +488,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			}
 			for _, r := range result {
 				// Display the response in the text view.
-				fmt.Fprintf(textView, "\n%s\n", r)
+				_, _ = fmt.Fprintf(textView, "\n%s\n", r)
 			}
 
 		})
