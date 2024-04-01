@@ -150,4 +150,4 @@ For more detailed documentation, please refer to the [CLI.md](docs/CLI.md) file.
 
 ## Masa Node Twitter Sentiment Analysis
 
-For more detailed documentation, please refer to the [LLM.md](docs/LLM.md) file.
+For more detailed documentation, please refer to the [LLM.md](docs/git LLM.md) file.
