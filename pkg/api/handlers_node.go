@@ -360,9 +360,11 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 // an HTML page displaying the node's status and uptime info.
 func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		peers := api.Node.Host.Network().Peers()
 		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())
 		if nodeData == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
+				"TotalPeers":    0,
 				"Name":          "Masa Status Page",
 				"PeerID":        api.Node.Host.ID().String(),
 				"IsStaked":      false,
@@ -377,6 +379,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
 		c.HTML(http.StatusOK, "index.html", gin.H{
+			"TotalPeers":    len(peers),
 			"Name":          "Masa Status Page",
 			"PeerID":        nodeData.PeerId.String(),
 			"IsStaked":      nodeData.IsStaked,

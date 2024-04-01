@@ -185,7 +185,7 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 	done := make(chan bool)
 
 	go func() {
-		// @todo WIP use clustering for all staked nodes to participate
+		// @todo WIP use remoter for all staked nodes to participate
 		// remoter := remote.New("127.0.0.1:4000", remote.NewConfig())
 		e, err := actor.NewEngine(actor.NewEngineConfig()) // .WithRemote(remoter))
 		if err != nil {
