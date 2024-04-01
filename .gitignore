@@ -33,7 +33,7 @@ masa-oracle
 tools/tools
 tools/*.json
 tools/*.bin
-bin/masa-node
+bin/
 
 # smart contracts
 node_modules
@@ -52,3 +52,15 @@ node_modules
 
 # masa-keys generated and used with Docker
 .masa-keys
+yarn.lock
+/pkg/masacrypto/cert.pem
+/pkg/masacrypto/key.pem
+/pkg/masacrypto/testCert.pem
+/pkg/masacrypto/testKey.pem
+CACHE/
+
+cmd/masa-node-cli/key.txt
+cmd/masa-node-cli/elabkey.txt
+cmd/masa-node-cli/output.mp3
+cmd/masa-node-cli/log.txt
+output.mp3

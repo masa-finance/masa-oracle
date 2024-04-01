@@ -1,14 +1,18 @@
 version: '3.8'
 services:
   masa-node:
+    network_mode: "host"
     build: .
-    ports:
-      - "4001:4001"
-      - "8080:8080"
+    # ports:
+    #   - "4001:4001"
+    #   - "8080:8080"
     environment:
       BOOTNODES: "${BOOTNODES}"
       ENV: "${ENV}"
       RPC_URL: "${RPC_URL}"
+      FILE_PATH: "${FILE_PATH}"
+      WRITER_NODE: "${WRITER_NODE}"
+      CACHE_PATH: "${CACHE_PATH}"
     volumes:
       - .:/app
       - .masa-keys:/home/masa/.masa

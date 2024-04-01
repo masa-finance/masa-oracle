@@ -40,10 +40,13 @@ RUN chmod +x /usr/bin/masa-node
 USER masa
 WORKDIR /home/masa
 
+# Copy the .env file into the container
+COPY --chown=masa:masa .env .
+
 # Expose necessary ports
 EXPOSE 4001
 EXPOSE 8080
 
 # Set default command to start the Go application
 
-CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV"
+CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --writerNode="$WRITER_NODE" --cachePath="$CACHE_PATH"

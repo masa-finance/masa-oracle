@@ -32,7 +32,8 @@ BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1USt
 RPC_URL=https://ethereum-sepolia.publicnode.com
 ENV=test
 ```
-* be sure to use ENV=test to join the masa oracle testnet
+
+*be sure to use ENV=test to join the masa oracle testnet
 
 ### 3. Building the Docker Image
 
@@ -77,6 +78,7 @@ the logs:
 ```bash
 docker-compose logs -f masa-node
 ```
+
 Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
 
 When the transactions have settled, you can stake

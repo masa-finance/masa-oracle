@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
@@ -24,11 +23,17 @@ const (
 	PeerRemoved = "PeerRemoved"
 )
 
-func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Multiaddr,
+type dbValidator struct{}
+
+func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
+func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
+
+func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr,
 	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
+	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
 
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {
@@ -37,7 +42,8 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("Peer added to DHT: %s", p)
+		logrus.Infof("Peer added to DHT: %s", p.String())
+
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerAdded,
@@ -63,42 +69,42 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 	var wg sync.WaitGroup
 	peerConnectionCount := 0
 
-	for _, peerAddr := range bootstrapPeers {
-		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
+	for _, peerAddr := range bootstrapNodes {
+		peerInfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil {
 			logrus.Errorf("kdht: %s", err.Error())
 		}
-		if peerinfo.ID == host.ID() {
+		if peerInfo.ID == host.ID() {
 			logrus.Info("DHT Skipping connect to self")
 			continue
 		}
 		// Add the bootstrap node to the DHT
-		added, err := kademliaDHT.RoutingTable().TryAddPeer(peerinfo.ID, true, false)
+		added, err := kademliaDHT.RoutingTable().TryAddPeer(peerInfo.ID, true, false)
 		if err != nil {
-			logrus.Warningf("Failed to add bootstrap peer %s to DHT: %v", peerinfo.ID, err)
+			logrus.Warningf("Failed to add bootstrap peer %s to DHT: %v", peerInfo.ID, err)
 		} else if !added {
-			logrus.Warningf("Bootstrap peer %s was not added to DHT", peerinfo.ID)
+			logrus.Warningf("Bootstrap peer %s was not added to DHT", peerInfo.ID)
 		} else {
-			logrus.Infof("Successfully added bootstrap peer %s to DHT", peerinfo.ID)
+			logrus.Infof("Successfully added bootstrap peer %s to DHT", peerInfo.ID)
 		}
 
 		wg.Add(1)
 		counter := 0
 		go func() {
-			ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
+			ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*30)
 			defer cancel() // Cancel the context when done to release resources
 
 			defer wg.Done()
-			if err := host.Connect(ctxWithTimeout, *peerinfo); err != nil {
-				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerinfo.ID, err)
+			if err := host.Connect(ctxWithTimeout, *peerInfo); err != nil {
+				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerInfo.ID, err)
 				counter++
 				if counter >= maxRetries {
 					return
 				}
 				time.Sleep(retryDelay)
 			} else {
-				logrus.Info("Connection established with node:", *peerinfo)
-				stream, err := host.NewStream(ctxWithTimeout, peerinfo.ID, protocolId)
+				logrus.Info("Connection established with node:", *peerInfo)
+				stream, err := host.NewStream(ctxWithTimeout, peerInfo.ID, protocolId)
 				if err != nil {
 					logrus.Error("Error opening stream:", err)
 					return
@@ -110,19 +116,20 @@ func WithDht(ctx context.Context, host host.Host, bootstrapPeers []multiaddr.Mul
 						logrus.Error("Error closing stream:", err)
 					}
 				}(stream) // Close the stream when done
-				if isStaked {
-					_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
-					if err != nil {
-						logrus.Error("Error writing to stream:", err)
-						return
-					}
+				// IsStaked
+				// if isStaked {
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+				if err != nil {
+					logrus.Error("Error writing to stream:", err)
+					return
 				}
+				// }
 			}
 		}()
 	}
 	wg.Wait()
-	if len(bootstrapPeers) > 0 && peerConnectionCount == 0 {
-		log.Fatal("Unable to connect to a boot node at this time. Please try again later.")
+	if len(bootstrapNodes) > 0 && peerConnectionCount == 0 {
+		logrus.Println("Unable to connect to a boot node at this time. Waiting...")
 	}
 	return kademliaDHT, nil
 }

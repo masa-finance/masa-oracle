@@ -3,14 +3,17 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
+
+	"github.com/spf13/viper"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
 const (
@@ -22,6 +25,8 @@ type JSONMultiaddr struct {
 	multiaddr.Multiaddr
 }
 
+// UnmarshalJSON implements json.Unmarshaler. It parses the JSON
+// representation of a multiaddress and stores the result in m.
 func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 	// Unmarshal the JSON as a string
 	var multiaddrStr string
@@ -42,6 +47,7 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 type NodeData struct {
 	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
 	PeerId               peer.ID         `json:"peerId"`
+	FirstJoined          time.Time       `json:"firstJoined,omitempty"`
 	LastJoined           time.Time       `json:"lastJoined,omitempty"`
 	LastLeft             time.Time       `json:"lastLeft,omitempty"`
 	LastUpdated          time.Time       `json:"lastUpdated,omitempty"`
@@ -54,11 +60,15 @@ type NodeData struct {
 	IsActive             bool            `json:"isActive"`
 	IsStaked             bool            `json:"isStaked"`
 	SelfIdentified       bool            `json:"-"`
+	IsWriterNode         bool            `json:"isWriterNode"`
 }
 
+// NewNodeData creates a new NodeData struct initialized with the given
+// parameters. It is used to represent data about a node in the network.
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
+	wn, _ := strconv.ParseBool(viper.GetString("WRITER_NODE"))
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -69,34 +79,36 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
+		IsWriterNode:      wn,
 	}
 }
 
+// Address returns a string representation of the NodeData's multiaddress
+// and peer ID in the format "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC".
+// This can be used by other nodes to connect to this node.
 func (n *NodeData) Address() string {
 	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
 }
 
+// Joined updates the NodeData when the node joins the network.
+// It sets the join times, activity, active status, and logs based on stake status.
 func (n *NodeData) Joined() {
-	// if n.Activity == ActivityJoined && n.IsActive {
-	// 	if n.IsStaked {
-	// 		logrus.Warnf("Node %s is already marked as joined", n.Address())
-	// 	} else {
-	// 		logrus.Debugf("Node %s is already marked as joined", n.Address())
-	// 	}
-	// 	return
-	// }
 	now := time.Now()
+	n.FirstJoined = now.Add(-n.AccumulatedUptime)
 	n.LastJoined = now
 	n.LastUpdated = now
 	n.Activity = ActivityJoined
 	n.IsActive = true
 	if n.IsStaked {
-		logrus.Info("Node joined: ", n.Address())
+		logrus.Info("Staked node joined: ", n.Address())
 	} else {
-		logrus.Debug("Node joined: ", n.Address())
+		logrus.Debug("Unstaked node joined: ", n.Address())
 	}
 }
 
+// Left updates the NodeData when the node leaves the network.
+// It sets the leave time, stops uptime, sets activity to left,
+// sets node as inactive, and logs based on stake status.
 func (n *NodeData) Left() {
 	if n.Activity == ActivityLeft {
 		if n.IsStaked {
@@ -120,6 +132,9 @@ func (n *NodeData) Left() {
 	}
 }
 
+// GetCurrentUptime returns the node's current uptime duration.
+// If the node is active, it calculates the time elapsed since the last joined time.
+// If the node is marked as left, it returns 0.
 func (n *NodeData) GetCurrentUptime() time.Duration {
 	var dur time.Duration
 	// If the node is currently active, return the time since the last joined time
@@ -131,12 +146,16 @@ func (n *NodeData) GetCurrentUptime() time.Duration {
 	return dur
 }
 
+// GetAccumulatedUptime returns the total accumulated uptime for the node.
+// It calculates this by adding the current uptime to the stored accumulated uptime.
 func (n *NodeData) GetAccumulatedUptime() time.Duration {
 	return n.AccumulatedUptime + n.GetCurrentUptime()
 }
 
-// UpdateAccumulatedUptime updates the accumulated uptime of the node in the cases where there is a discrepancy between
-// the last left and last joined times that came in from the gossip sub events
+// UpdateAccumulatedUptime updates the accumulated uptime of the node to account for any
+// discrepancy between the last left and last joined times from gossipsub events.
+// It calculates the duration between last left and joined if the node is marked as left.
+// Otherwise it uses the time since the last joined event.
 func (n *NodeData) UpdateAccumulatedUptime() {
 	if n.Activity == ActivityLeft {
 		n.AccumulatedUptime += n.LastLeft.Sub(n.LastJoined)
@@ -145,14 +164,16 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 	}
 }
 
+// GetSelfNodeDataJson converts the local node's data into a JSON byte array.
+// It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
+// The NodeData struct is then marshalled into a JSON byte array.
+// Returns nil if there is an error marshalling to JSON.
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
-	publicKeyHex, _ := crypto.GetPublicKeyForHost(host)
-
 	// Create and populate NodeData
 	nodeData := NodeData{
 		PeerId:     host.ID(),
 		IsStaked:   isStaked,
-		EthAddress: publicKeyHex,
+		EthAddress: masacrypto.KeyManagerInstance().EthAddress,
 	}
 
 	// Convert NodeData to JSON

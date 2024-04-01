@@ -8,6 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
+// Stake stakes the given amount of tokens from the client's account.
+// It retrieves the network ID, creates a transactor, binds the staking
+// contract instance, sends the stake transaction, waits for it to be mined,
+// and returns the transaction hash if successful. Returns any errors.
 func (sc *Client) Stake(amount *big.Int) (string, error) {
 	chainID, err := sc.EthClient.NetworkID(context.Background())
 	if err != nil {

@@ -27,6 +27,8 @@ type ContractAddresses struct {
 	} `json:"sepolia"`
 }
 
+// GetABI parses the ABI from the given JSON file path.
+// It returns the parsed ABI, or an error if reading or parsing fails.
 func GetABI(jsonPath string) (abi.ABI, error) {
 	jsonFile, err := ioutil.ReadFile(jsonPath)
 	if err != nil {

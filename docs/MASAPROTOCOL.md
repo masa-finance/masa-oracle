@@ -38,7 +38,7 @@ The Masa Protocol, encompassing the Masa Oracle and other components, offers a r
   
 - **Opt-In Data Movement**: While the default stance is privacy, users have the autonomy to opt into moving their data on-chain. This movement isn't just a mere transfer; it's executed in a privacy-preserving manner using Masa's zkSBT (Zero-Knowledge Soulbound Token). This ensures that even on-chain, the user's data remains private, visible only to entities the user explicitly trusts.
 
-- **Data Monetization**: Through opting in to sharing privacy preserved data the Masa protocol enables a decentratlized behaviroral and identity marketplace that rewards uses whenever their data is used by a third party. For example, training a AI agent model for serving customer support documentation at critical steps in a user journey through an app.
+- **Data Monetization**: Through opting in to sharing privacy preserved data the Masa protocol enables a decentralized behavioral and identity marketplace that rewards uses whenever their data is used by a third party. For example, training a AI agent model for serving customer support documentation at critical steps in a user journey through an app.
 
 ## The Masa Oracle: Bridging Gaps
 

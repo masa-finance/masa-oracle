@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -21,30 +21,38 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
-	crypto2 "github.com/masa-finance/masa-oracle/pkg/crypto"
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
+	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
-	Host          host.Host
-	PrivKey       *ecdsa.PrivateKey
-	Protocol      protocol.ID
-	priorityAddrs multiaddr.Multiaddr
-	multiAddrs    []multiaddr.Multiaddr
-	DHT           *dht.IpfsDHT
-	Context       context.Context
-	PeerChan      chan myNetwork.PeerEvent
-	NodeTracker   *pubsub2.NodeEventTracker
-	PubSubManager *pubsub2.Manager
-	Signature     string
-	IsStaked      bool
-	StartTime     time.Time
+	Host                           host.Host
+	PrivKey                        *ecdsa.PrivateKey
+	Protocol                       protocol.ID
+	priorityAddrs                  multiaddr.Multiaddr
+	multiAddrs                     []multiaddr.Multiaddr
+	DHT                            *dht.IpfsDHT
+	Context                        context.Context
+	PeerChan                       chan myNetwork.PeerEvent
+	NodeTracker                    *pubsub2.NodeEventTracker
+	PubSubManager                  *pubsub2.Manager
+	Signature                      string
+	IsStaked                       bool
+	IsWriter                       bool
+	StartTime                      time.Time
+	AdSubscriptionHandler          *ad.SubscriptionHandler
+	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
 }
 
+// GetMultiAddrs returns the priority multiaddr for this node.
+// It first checks if the priority address is already set, and returns it if so.
+// If not, it determines the priority address from the available multiaddrs using
+// the GetPriorityAddress utility function, sets it, and returns it.
 func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	if node.priorityAddrs == nil {
 		pAddr := myNetwork.GetPriorityAddress(node.multiAddrs)
@@ -53,8 +61,12 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.priorityAddrs
 }
 
-func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, useUdp, useTcp bool, isStaked bool) (*OracleNode, error) {
+// NewOracleNode creates a new OracleNode instance with the provided context and
+// staking status. It initializes the libp2p host, DHT, pubsub manager, and other
+// components needed for an Oracle node to join the network and participate.
+func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
+	cfg := config.GetInstance()
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
@@ -66,7 +78,7 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 
 	var addrStr []string
 	libp2pOptions := []libp2p.Option{
-		libp2p.Identity(privKey),
+		libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey),
 		libp2p.ResourceManager(resourceManager),
 		libp2p.Ping(false), // disable built-in ping
 		libp2p.EnableNATService(),
@@ -77,13 +89,14 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 	securityOptions := []libp2p.Option{
 		libp2p.Security(noise.ID, noise.New),
 	}
-	if useUdp {
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", portNbr))
+	// @todo failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 2048 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+	if cfg.UDP {
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))
 	}
-	if useTcp {
+	if cfg.TCP {
 		securityOptions = append(securityOptions, libp2p.Security(libp2ptls.ID, libp2ptls.New))
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", portNbr))
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", cfg.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(tcp.NewTCPTransport))
 		libp2pOptions = append(libp2pOptions, libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport))
 	}
@@ -100,77 +113,81 @@ func NewOracleNode(ctx context.Context, privKey crypto.PrivKey, portNbr int, use
 		return nil, err
 	}
 
-	ecdsaPrivKey, err := crypto2.Libp2pPrivateKeyToEcdsa(privKey)
-	if err != nil {
-		return nil, err
-	}
+	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
+
 	return &OracleNode{
 		Host:          hst,
-		PrivKey:       ecdsaPrivKey,
-		Protocol:      ProtocolWithVersion(oracleProtocol),
+		PrivKey:       masacrypto.KeyManagerInstance().EcdsaPrivKey,
+		Protocol:      config.ProtocolWithVersion(config.OracleProtocol),
 		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:       ctx,
 		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(Version, viper.GetString(Environment)),
+		NodeTracker:   pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
+		IsWriter:      isWriter,
 	}, nil
 }
 
+// Start initializes the OracleNode by setting up libp2p stream handlers,
+// connecting to the DHT and bootnodes, and subscribing to topics. It launches
+// goroutines to handle discovered peers, listen to the node tracker, and
+// discover peers. If this is a bootnode, it adds itself to the node tracker.
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(viper.GetString(BootNodes))
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
 	if err != nil {
 		return err
 	}
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(ProtocolWithVersion(NodeDataSyncProtocol), node.ReceiveNodeData)
-	// if node.IsStaked then allow them to be added to the NodeData -- move to node tracker
+	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeStatusTopic), node.ReceiveNodeData)
+	// IsStaked
 	if node.IsStaked {
-		node.Host.SetStreamHandler(ProtocolWithVersion(NodeGossipTopic), node.GossipNodeData)
+		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
 	}
 	node.Host.Network().Notify(node.NodeTracker)
 
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, masaPrefix, node.PeerChan, node.IsStaked)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked)
 	if err != nil {
 		return err
 	}
-	err = myNetwork.WithMDNS(node.Host, rendezvous, node.PeerChan)
+	err = myNetwork.WithMDNS(node.Host, config.Rendezvous, node.PeerChan)
 	if err != nil {
 		return err
 	}
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
-	// if this is the original boot node then add it to the node tracker
-	if viper.GetString(BootNodes) == "" {
-		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-		if nodeData == nil {
-			publicKeyHex, _ := crypto2.GetPublicKeyForHost(node.Host)
-			nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
-			nodeData.IsStaked = node.IsStaked
-			nodeData.SelfIdentified = true
-		}
-		nodeData.Joined()
-		node.NodeTracker.HandleNodeData(*nodeData)
+
+	// if config.GetInstance().HasBootnodes() {
+	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	if nodeData == nil {
+		publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
+		nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+		nodeData.IsStaked = node.IsStaked
+		nodeData.SelfIdentified = true
 	}
-	// Subscribe to a topics
-	err = node.PubSubManager.AddSubscription(TopicWithVersion(NodeGossipTopic), node.NodeTracker)
-	if err != nil {
-		return err
-	}
-	err = node.PubSubManager.AddSubscription(TopicWithVersion(AdTopic), &ad.SubscriptionHandler{})
-	if err != nil {
+	nodeData.Joined()
+	node.NodeTracker.HandleNodeData(*nodeData)
+	// }
+	// call SubscribeToTopics on startup
+	if err := SubscribeToTopics(node); err != nil {
 		return err
 	}
 	node.StartTime = time.Now()
+
 	return nil
 }
 
+// handleDiscoveredPeers listens on the PeerChan for discovered peers from the
+// network discovery routines. It handles connecting to new peers and closing
+// connections to peers that disconnect. This runs continuously to handle
+// discovered peers.
 func (node *OracleNode) handleDiscoveredPeers() {
 	for {
 		select {
@@ -194,6 +211,9 @@ func (node *OracleNode) handleDiscoveredPeers() {
 	}
 }
 
+// handleStream handles an incoming libp2p stream from a remote peer.
+// It reads the stream data, validates the remote peer ID, updates the node tracker
+// with the remote peer's information, and logs the event.
 func (node *OracleNode) handleStream(stream network.Stream) {
 	remotePeer, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
@@ -219,11 +239,27 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	logrus.Info("handleStream -> Received data from:", remotePeer.String())
 }
 
+// IsPublisher returns true if this node is a publisher node.
+// A publisher node is one that has a non-empty signature.
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
 }
 
+// Version returns the current version string of the oracle node software.
 func (node *OracleNode) Version() string {
-	return Version
+	return config.Version
+}
+
+// LogActiveTopics logs the currently active topic names to the
+// default logger. It gets the list of active topics from the
+// PubSubManager and logs them if there are any, otherwise it logs
+// that there are no active topics.
+func (node *OracleNode) LogActiveTopics() {
+	topicNames := node.PubSubManager.GetTopicNames()
+	if len(topicNames) > 0 {
+		logrus.Infof("Active topics: %v", topicNames)
+	} else {
+		logrus.Info("No active topics.")
+	}
 }
