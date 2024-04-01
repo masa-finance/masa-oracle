@@ -183,20 +183,19 @@ func (w *Worker) Receive(c *actor.Context) {
 // - An error if the process fails at any point.
 func ScrapeTweetsUsingActors(query string, count int, model string) (string, error) {
 	done := make(chan bool)
+	var err error
+	var engine *actor.Engine
 
 	go func() {
-		// @todo WIP use remoter for all staked nodes to participate
-		// remoter := remote.New("127.0.0.1:4000", remote.NewConfig())
-		e, err := actor.NewEngine(actor.NewEngineConfig()) // .WithRemote(remoter))
+		engine, err = actor.NewEngine(actor.NewEngineConfig())
 		if err != nil {
-			logrus.Errorf("%v", err)
+			logrus.Errorf("new actor engine error %v", err)
 		} else {
-			pid := e.Spawn(NewManager(), "Manager")
+			pid := engine.Spawn(NewManager(), "Manager")
 			time.Sleep(time.Millisecond * 200)
 			logrus.Printf("Started new actor engine with pid %v \n", pid)
-			e.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
+			engine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
 		}
-
 	}()
 
 	for {
@@ -206,7 +205,7 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 				return sentiment, nil
 			}
 		case <-done:
-			// break
+			engine = nil
 		}
 	}
 }

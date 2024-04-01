@@ -68,16 +68,6 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// WIP testing scraper using actor engine
-	//go func() {
-	//	sentiment, err := twitter.ScrapeTweetsUsingActors("$MASA", 5, "gpt-4")
-	//	if err != nil {
-	//		logrus.Errorf(err.Error())
-	//	}
-	//	logrus.Printf("returned sentiment %v", sentiment)
-	//}()
-	// WIP testing scraper
-
 	// WIP testing db
 	// type Sentiment struct {
 	// 	ConversationId int64

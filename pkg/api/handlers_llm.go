@@ -24,6 +24,11 @@ type SearchTweetsRequest struct {
 //	"gpt-3.5-turbo"
 func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if !api.Node.IsStaked {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
+			return
+		}
 		var reqBody struct {
 			Query string `json:"query"`
 			Count int    `json:"count"`
