@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/masa-finance/masa-oracle/pkg/db"
+	"github.com/masa-finance/masa-oracle/pkg/scraper"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -67,6 +68,17 @@ func main() {
 	}
 
 	go db.InitResolverCache(node, keyManager)
+
+	// WIP web
+	go func() {
+		res, err := scraper.Collect("hackerspaces.org")
+		if err != nil {
+			logrus.Errorf("Error collecting data: %s", err.Error())
+			return
+		}
+		logrus.Info(res)
+	}()
+	// WIP web
 
 	// WIP testing db
 	// type Sentiment struct {
