@@ -10,7 +10,34 @@ The Twitter sentiment analysis feature is part of the broader capabilities of th
 
 The sentiment analysis process involves fetching tweets based on specific queries, and then analyzing these tweets using selected language models. The system supports various models, including Claude and GPT variants, allowing for flexible and powerful sentiment analysis.
 
+### Models
+
+```go
+const (
+  ClaudeOpus20240229   ModelType = "claude-3-opus-20240229"
+  ClaudeSonnet20240229 ModelType = "claude-3-sonnet-20240229"
+  ClaudeHaiku20240307  ModelType = "claude-3-haiku-20240307"
+  GPT4                 ModelType = "gpt-4"
+  GPT4TurboPreview     ModelType = "gpt-4-turbo-preview"
+  GPT35Turbo           ModelType = "gpt-3.5-turbo"
+)
+```
+
 ### Fetching Tweets
+
+#### Masa API
+
+> POST to the endpoint /analyzeSentiment
+
+```json
+{
+  "query": "$MASA Token Launch",
+  "count": 5,
+  "model": "all" // or replace with a single model type
+}
+```
+
+#### Masa cli or code integration
 
 Tweets are fetched using the Twitter Scraper library, as seen in the [llmbridge](file:///Users/john/Projects/masa/masa-oracle/pkg/llmbridge/sentiment_twitter.go#1%2C9-1%2C9) package. This process does not require Twitter API keys, making it accessible and straightforward.
 
