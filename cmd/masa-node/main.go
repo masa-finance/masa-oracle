@@ -76,7 +76,7 @@ func main() {
 			logrus.Errorf("Error collecting data: %s", err.Error())
 			return
 		}
-		logrus.Info(res)
+		logrus.Infof("%+v", res)
 	}()
 	// WIP web
 
