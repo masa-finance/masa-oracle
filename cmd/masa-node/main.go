@@ -71,7 +71,7 @@ func main() {
 
 	// WIP web
 	go func() {
-		res, err := scraper.Collect("hackerspaces.org")
+		res, err := scraper.Collect([]string{"https://masa.finance"})
 		if err != nil {
 			logrus.Errorf("Error collecting data: %s", err.Error())
 			return

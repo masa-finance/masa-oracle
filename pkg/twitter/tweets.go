@@ -163,6 +163,9 @@ func (w *Worker) Receive(c *actor.Context) {
 	}
 }
 
+// @todo do an all models return as an array and and add a benchmarks time.Since
+// @todo add gh action for a release and release notes template
+
 // ScrapeTweetsUsingActors initiates the process of scraping tweets based on a given query, count, and model.
 // It leverages actor-based concurrency to manage the scraping and analysis tasks.
 // The function spawns a new actor engine and sends a TweetRequest message to the Manager actor.
@@ -193,7 +196,7 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 		} else {
 			pid := engine.Spawn(NewManager(), "Manager")
 			time.Sleep(time.Millisecond * 200)
-			logrus.Printf("Started new actor engine with pid %v \n", pid)
+			logrus.Infof("Started new actor engine with pid %v \n", pid)
 			engine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
 		}
 	}()

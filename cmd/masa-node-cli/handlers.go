@@ -305,7 +305,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(radioButtons, false)
 	case "3":
-		// @todo used session stored twitter creds, right now pulling from .env
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 		modalFlex.SetBorderPadding(1, 1, 1, 1)
 
@@ -386,7 +385,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			}
 
 			// Display the response in the text view.
-			fmt.Fprintf(textView, "%s\n", resp)
+			_, _ = fmt.Fprintf(textView, "%s\n", resp)
 
 		})
 

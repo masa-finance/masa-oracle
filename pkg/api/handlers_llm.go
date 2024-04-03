@@ -2,8 +2,11 @@ package api
 
 import (
 	"net/http"
+	"reflect"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 )
 
@@ -16,6 +19,7 @@ type SearchTweetsRequest struct {
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
 // Models Supported:
 //
+//	"all"
 //	"claude-3-opus-20240229"
 //	"claude-3-sonnet-20240229"
 //	"claude-3-haiku-20240307"
@@ -51,11 +55,48 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 
-		// Testing scrape using actor engine
-		sentimentSummary, err := twitter.ScrapeTweetsUsingActors(reqBody.Query, reqBody.Count, reqBody.Model)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment"})
+		var sentimentSummary string
+		var err error
+
+		if reqBody.Model == "all" {
+			models := config.Models
+			val := reflect.ValueOf(models)
+
+			type ModelResult struct {
+				Model     string `json:"model"`
+				Sentiment string `json:"sentiment"`
+				Duration  string `json:"duration"`
+			}
+			var results []ModelResult
+
+			for i := 0; i < val.NumField(); i++ {
+				model := val.Field(i).Interface().(config.ModelType)
+				startTime := time.Now() // Start time measurement
+
+				sentimentSummary, err := twitter.ScrapeTweetsUsingActors(reqBody.Query, reqBody.Count, string(model))
+				duration := time.Since(startTime) // Calculate duration
+
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment for model " + string(model)})
+					return
+				}
+
+				results = append(results, ModelResult{
+					Model:     string(model),
+					Sentiment: sentimentSummary,
+					Duration:  duration.String(),
+				})
+			}
+
+			// Return the results as JSON
+			c.JSON(http.StatusOK, gin.H{"results": results})
 			return
+		} else {
+			sentimentSummary, err = twitter.ScrapeTweetsUsingActors(reqBody.Query, reqBody.Count, reqBody.Model)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment"})
+				return
+			}
 		}
 
 		c.JSON(http.StatusOK, gin.H{"sentiment": sentimentSummary})

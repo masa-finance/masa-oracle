@@ -7,6 +7,31 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ModelType defines a type for model strings.
+type ModelType string
+
+// Define model constants.
+const (
+	ClaudeOpus20240229   ModelType = "claude-3-opus-20240229"
+	ClaudeSonnet20240229 ModelType = "claude-3-sonnet-20240229"
+	ClaudeHaiku20240307  ModelType = "claude-3-haiku-20240307"
+	GPT4                 ModelType = "gpt-4"
+	GPT4TurboPreview     ModelType = "gpt-4-turbo-preview"
+	GPT35Turbo           ModelType = "gpt-3.5-turbo"
+)
+
+// Models holds the available models for easy access and iteration.
+var Models = struct {
+	ClaudeOpus, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo ModelType
+}{
+	ClaudeOpus:   ClaudeOpus20240229,
+	ClaudeSonnet: ClaudeSonnet20240229,
+	ClaudeHaiku:  ClaudeHaiku20240307,
+	GPT4:         GPT4,
+	GPT4Turbo:    GPT4TurboPreview,
+	GPT35Turbo:   GPT35Turbo,
+}
+
 const (
 	PrivKeyFile = "MASA_PRIV_KEY_FILE"
 	BootNodes   = "BOOTNODES"
