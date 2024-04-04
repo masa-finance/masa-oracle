@@ -42,7 +42,7 @@ const (
 Tweets are fetched using the Twitter Scraper library, as seen in the [llmbridge](file:///Users/john/Projects/masa/masa-oracle/pkg/llmbridge/sentiment_twitter.go#1%2C9-1%2C9) package. This process does not require Twitter API keys, making it accessible and straightforward.
 
 ```go
-func AnalyzeSentiment(tweets []*twitterscraper.Tweet, model string) (string, string, error) { ... }
+func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string) (string, string, error) { ... }
 ```
 
 ### Analyzing Sentiment
@@ -74,6 +74,9 @@ inputCountField := tview.NewInputField().
 }
 ```
 
+```go
+func AnalyzeSentimentWeb(data string, depth int, model string) (string, error) { ... }
+```
 
 ### Example Usage
 

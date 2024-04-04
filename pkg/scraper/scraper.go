@@ -1,8 +1,14 @@
 package scraper
 
 import (
+	"encoding/json"
+
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+
 	"github.com/gocolly/colly/v2"
 )
+
+var sentimentPrompt = "Please perform a sentiment analysis on the following text, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in this text, including the proportion of positive, negative, and neutral sentiments if applicable."
 
 // Section represents a distinct part of a scraped webpage, typically defined by a heading.
 // It contains a Title, representing the heading of the section, and Paragraphs, a slice of strings
@@ -10,6 +16,7 @@ import (
 type Section struct {
 	Title      string   // Title is the heading text of the section.
 	Paragraphs []string // Paragraphs contains all the text content of the section.
+	Images     []string // Images storing base64 - maybe!!?
 }
 
 // CollectedData represents the aggregated result of the scraping process.
@@ -21,7 +28,7 @@ type CollectedData struct {
 // Collect initiates the scraping process for the given list of URIs.
 // It returns a CollectedData struct containing the scraped sections from each URI,
 // and an error if any occurred during the scraping process.
-func Collect(uri []string, depth int) (CollectedData, error) {
+func Collect(uri []string, depth int, model string) (string, string, error) {
 	var collectedData CollectedData
 
 	c := colly.NewCollector(
@@ -48,22 +55,58 @@ func Collect(uri []string, depth int) (CollectedData, error) {
 					break
 				}
 			}
+			// Handle dupes
 			if !isDuplicate {
 				lastSection.Paragraphs = append(lastSection.Paragraphs, e.Text)
 			}
 		}
 	})
 
+	c.OnHTML("img", func(e *colly.HTMLElement) {
+		imageURL := e.Request.AbsoluteURL(e.Attr("src"))
+		if len(collectedData.Sections) > 0 {
+			lastSection := &collectedData.Sections[len(collectedData.Sections)-1]
+			lastSection.Images = append(lastSection.Images, imageURL)
+		}
+		return
+		// // Fetch the image content
+		// resp, err := http.Get(imageURL)
+		// if err != nil {
+		// 	// Handle error
+		// 	return
+		// }
+		// defer resp.Body.Close()
+		// imgBytes, err := io.ReadAll(resp.Body)
+		// if err != nil {
+		// 	// Handle error
+		// 	return
+		// }
+		// // Convert image content to base64
+		// base64Image := base64.StdEncoding.EncodeToString(imgBytes)
+		// // Append this base64Image to your structured data
+		// if len(collectedData.Sections) > 0 {
+		// 	lastSection := &collectedData.Sections[len(collectedData.Sections)-1]
+		// 	// Assuming Section struct has an Images field which is a slice of strings
+		// 	lastSection.Images = append(lastSection.Images, base64Image)
+		// }
+	})
+
 	// Visit each URL
 	for _, u := range uri {
 		err := c.Visit(u)
 		if err != nil {
-			return CollectedData{}, err
+			return "", "", err
 		}
 	}
 
 	// Wait for all requests to finish
 	c.Wait()
 
-	return collectedData, nil
+	j, _ := json.Marshal(collectedData)
+
+	sentimentRequest, sentimentSummary, err := llmbridge.AnalyzeSentimentWeb(string(j), model, sentimentPrompt)
+	if err != nil {
+		return "", "", err
+	}
+	return sentimentRequest, sentimentSummary, nil
 }

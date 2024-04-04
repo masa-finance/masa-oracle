@@ -15,6 +15,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var sentimentPrompt = "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
+
 var sentimentCh = make(chan string)
 
 // TweetRequest represents the parameters for a request to fetch and analyze tweets.
@@ -160,7 +162,7 @@ func (w *Worker) Receive(c *actor.Context) {
 		if err != nil {
 			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
 		}
-		_, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets, w.Model)
+		_, sentimentSummary, err := llmbridge.AnalyzeSentimentTweets(tweets, w.Model, sentimentPrompt)
 		if err != nil {
 			sentimentCh <- err.Error()
 		}

@@ -2,11 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"net/http"
 	"reflect"
 	"time"
-
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
@@ -137,7 +136,8 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 
-		var sentimentSummary string
+		var sentimentRequest, sentimentSummary string
+		var err error
 
 		if reqBody.Model == "all" {
 			models := config.Models
@@ -154,8 +154,8 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				collectedData, err := scraper.Collect([]string{reqBody.Url}, reqBody.Depth)
-				j, _ := json.Marshal(collectedData)
+				sentimentRequest, sentimentSummary, err = scraper.Collect([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+				j, _ := json.Marshal(sentimentSummary)
 				sentimentSummary = string(j)
 
 				duration := time.Since(startTime) // Calculate duration
@@ -173,13 +173,13 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			}
 
 			// Return the results as JSON
-			c.JSON(http.StatusOK, gin.H{"results": results})
+			c.JSON(http.StatusOK, gin.H{"data": sentimentRequest, "sentiment": results})
 			return
 		} else {
 
-			collectedData, err := scraper.Collect([]string{reqBody.Url}, reqBody.Depth)
-			j, _ := json.Marshal(collectedData)
-			sentimentSummary = string(j)
+			sentimentRequest, sentimentSummary, err = scraper.Collect([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+			j, _ := json.Marshal(sentimentSummary)
+			sentimentSummary = llmbridge.SanitizeResponse(string(j))
 
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch web data and analyze sentiment"})
@@ -187,6 +187,6 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			}
 		}
 
-		c.JSON(http.StatusOK, gin.H{"sentiment": llmbridge.SanitizeResponse(sentimentSummary)})
+		c.JSON(http.StatusOK, gin.H{"data": sentimentRequest, "sentiment": sentimentSummary})
 	}
 }

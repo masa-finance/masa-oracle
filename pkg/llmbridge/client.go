@@ -51,7 +51,7 @@ func (c *ClaudeClient) SendRequest(payloadBytes []byte) (*http.Response, error) 
 	return client.Do(req)
 }
 
-func (c *GPTClient) SendRequest(tweetsContent string, model string) (string, error) {
+func (c *GPTClient) SendRequest(tweetsContent string, model string, prompt string) (string, error) {
 	var openAiModel string
 	switch model {
 	case "gpt-4":

@@ -26,12 +26,12 @@ type Content struct {
 // tweetsContent string. This payload configures the model, max tokens,
 // temperature and prompt to analyze the sentiment of the tweets without
 // bias and summarize the overall sentiment.
-func CreatePayload(tweetsContent string, model string) ([]byte, error) {
+func CreatePayload(tweetsContent string, model string, prompt string) ([]byte, error) {
 	payload := Payload{
 		Model:       model,
 		MaxTokens:   4000,
 		Temperature: 0,
-		System:      "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.",
+		System:      prompt,
 		Messages: []Message{
 			{
 				Role: "user",

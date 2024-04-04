@@ -70,7 +70,7 @@ func main() {
 
 	// WIP web
 	//go func() {
-	//	res, err := scraper.Collect([]string{"https://masa.finance"}, 5)
+	//	res, err := scraper.Collect([]string{"https://en.wikipedia.org/wiki/Badger"}, 5)
 	//	if err != nil {
 	//		logrus.Errorf("Error collecting data: %s", err.Error())
 	//		return
