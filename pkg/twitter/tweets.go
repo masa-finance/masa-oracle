@@ -17,19 +17,27 @@ import (
 
 var sentimentCh = make(chan string)
 
+// TweetRequest represents the parameters for a request to fetch and analyze tweets.
+// Count specifies the number of tweets to fetch.
+// Query is a list of keywords or phrases to search for within tweets.
+// Model indicates the language model to use for analyzing the sentiment of the tweets.
 type TweetRequest struct {
-	Count int
-	Query []string
-	Model string
+	Count int      // Number of tweets to fetch
+	Query []string // Keywords or phrases to search for
+	Model string   // Language model for sentiment analysis
 }
 
+// Manager is a struct that maintains a map of worker actors.
+// The map keys are pointers to actor.PID (Process Identifiers) and the values are booleans indicating the worker's availability.
 type Manager struct {
-	workers map[*actor.PID]bool
+	workers map[*actor.PID]bool // Map of worker actors to their availability status
 }
 
+// Worker represents a worker entity capable of processing TweetRequests.
+// It embeds TweetRequest to inherit its fields and adds a pid field to hold the worker's process identifier.
 type Worker struct {
-	TweetRequest
-	pid *actor.PID
+	TweetRequest            // Embedding TweetRequest to inherit its fields
+	pid          *actor.PID // pid is the process identifier for the worker
 }
 
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
@@ -162,9 +170,6 @@ func (w *Worker) Receive(c *actor.Context) {
 		logrus.Info("Worker stopped")
 	}
 }
-
-// @todo do an all models return as an array and and add a benchmarks time.Since
-// @todo add gh action for a release and release notes template
 
 // ScrapeTweetsUsingActors initiates the process of scraping tweets based on a given query, count, and model.
 // It leverages actor-based concurrency to manage the scraping and analysis tasks.
