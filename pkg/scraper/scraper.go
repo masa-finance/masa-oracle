@@ -4,16 +4,23 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
+// Section represents a distinct part of a scraped webpage, typically defined by a heading.
+// It contains a Title, representing the heading of the section, and Paragraphs, a slice of strings
+// containing the text content found within that section.
 type Section struct {
-	Title      string
-	Paragraphs []string
+	Title      string   // Title is the heading text of the section.
+	Paragraphs []string // Paragraphs contains all the text content of the section.
 }
 
+// CollectedData represents the aggregated result of the scraping process.
+// It contains a slice of Section structs, each representing a distinct part of a scraped webpage.
 type CollectedData struct {
-	Sections []Section
+	Sections []Section // Sections is a collection of webpage sections that have been scraped.
 }
 
-// Collect a basic test
+// Collect initiates the scraping process for the given list of URIs.
+// It returns a CollectedData struct containing the scraped sections from each URI,
+// and an error if any occurred during the scraping process.
 func Collect(uri []string) (CollectedData, error) {
 	var collectedData CollectedData
 
@@ -47,8 +54,6 @@ func Collect(uri []string) (CollectedData, error) {
 		}
 	})
 
-	// OnRequest and OnError handlers remain the same
-
 	// Visit each URL
 	for _, u := range uri {
 		err := c.Visit(u)
@@ -61,5 +66,4 @@ func Collect(uri []string) (CollectedData, error) {
 	c.Wait()
 
 	return collectedData, nil
-
 }
