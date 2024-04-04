@@ -155,7 +155,7 @@ func (w *Worker) Receive(c *actor.Context) {
 	switch c.Message().(type) {
 	case actor.Started:
 
-		logrus.Infof("Worker started with pid %+v", c.PID())
+		logrus.Infof("Worker started with pid %+v", c.PID().ID)
 		tweets, err := ScrapeTweetsByQuery(w.Query[0], w.Count)
 		if err != nil {
 			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
@@ -201,7 +201,7 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 		} else {
 			pid := engine.Spawn(NewManager(), "Manager")
 			time.Sleep(time.Millisecond * 200)
-			logrus.Infof("Started new actor engine with pid %v \n", pid)
+			logrus.Infof("Started new actor engine with pid %v \n", pid.ID)
 			engine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
 		}
 	}()

@@ -10,7 +10,7 @@ jobs:
     container: pandoc/latex
     steps:
       - uses: actions/checkout@v4
-      - name: Copy Readme and Changelog
+      - name: Copy Readme
         run: |
           cp README.md docs/README.md
       - name: Pushes to another repository

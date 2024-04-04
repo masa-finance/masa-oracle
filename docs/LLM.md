@@ -27,7 +27,7 @@ const (
 
 #### Masa API
 
-> POST to the endpoint /analyzeSentiment
+> POST to the endpoint /sentiment/twitter
 
 ```json
 {
@@ -61,6 +61,19 @@ inputCountField := tview.NewInputField().
   SetLabel("# of Tweets to analyze ").
   SetFieldWidth(10)
 ```
+
+### Fetching Web Data
+
+> POST to the endpoint /sentiment/web
+
+```json
+{
+  "url": "https://masa.finance",
+  "depth": 10,
+  "model": "all" // or replace with a single model type
+}
+```
+
 
 ### Example Usage
 

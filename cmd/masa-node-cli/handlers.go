@@ -474,7 +474,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			count, _ := strconv.Atoi(countMessage)
 			queryData := fmt.Sprintf(`{"query":"%s","count":%d, "model":"%s"}`, userMessage, count, appConfig.Model)
 
-			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/analyzeSentiment"
+			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/sentiment/twitter"
 			resp, err := http.Post(uri, "application/json", strings.NewReader(queryData))
 			if err != nil {
 				output.SetText(fmt.Sprintf("%v", err))
