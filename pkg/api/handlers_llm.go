@@ -154,7 +154,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				collectedData, err := scraper.Collect([]string{reqBody.Url})
+				collectedData, err := scraper.Collect([]string{reqBody.Url}, reqBody.Depth)
 				j, _ := json.Marshal(collectedData)
 				sentimentSummary = string(j)
 
@@ -177,7 +177,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		} else {
 
-			collectedData, err := scraper.Collect([]string{reqBody.Url})
+			collectedData, err := scraper.Collect([]string{reqBody.Url}, reqBody.Depth)
 			j, _ := json.Marshal(collectedData)
 			sentimentSummary = string(j)
 

@@ -21,12 +21,12 @@ type CollectedData struct {
 // Collect initiates the scraping process for the given list of URIs.
 // It returns a CollectedData struct containing the scraped sections from each URI,
 // and an error if any occurred during the scraping process.
-func Collect(uri []string) (CollectedData, error) {
+func Collect(uri []string, depth int) (CollectedData, error) {
 	var collectedData CollectedData
 
 	c := colly.NewCollector(
 		colly.AllowURLRevisit(),
-		colly.MaxDepth(100),
+		colly.MaxDepth(depth),
 	)
 
 	c.OnHTML("h1, h2", func(e *colly.HTMLElement) {
