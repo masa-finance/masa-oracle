@@ -83,37 +83,41 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.GET("/peers", API.GetPeersHandler())
 
-	router.GET("/peerAddresses", API.GetPeerAddresses())
+	router.GET("/peer/addresses", API.GetPeerAddresses())
 
 	router.POST("/ads", API.PostAd())
 
 	router.GET("/ads", API.GetAds())
 
-	router.POST("/subscribeToAds", API.SubscribeToAds())
+	router.POST("/ads/subscribe", API.SubscribeToAds())
 
-	router.GET("/nodeData", API.GetNodeDataHandler())
+	// @todo
+	// data/tweets
+	// data/web
 
-	router.GET("/nodeData/:peerID", API.GetNodeHandler())
+	router.POST("/data/tweets", nil)
 
-	router.GET("/publicKeys", API.GetPublicKeysHandler())
-
-	router.POST("/publishPublicKey", API.PublishPublicKeyHandler())
-
-	router.POST("/createTopic", API.CreateNewTopicHandler())
-
-	router.POST("/postToTopic", API.PostToTopicHandler())
+	router.POST("/data/web", nil)
 
 	router.GET("/dht", API.GetFromDHT())
 
 	router.POST("/dht", API.PostToDHT())
 
-	router.POST("/nodestatus", API.PostNodeStatusHandler())
+	router.GET("/node/data", API.GetNodeDataHandler())
+
+	router.GET("/node/data/:peerID", API.GetNodeHandler())
+
+	router.POST("/node/status", API.PostNodeStatusHandler())
+
+	router.GET("/publickeys", API.GetPublicKeysHandler())
+
+	router.POST("/publickey/publish", API.PublishPublicKeyHandler())
 
 	// @todo
-	// search/tweets - X
 	// search/tweets/recent
 	// search/tweets/popular
 	// search/tweets/profile/:username
+	// search/tweets/trends
 
 	router.POST("/search/tweets", API.SearchTweets())
 
@@ -121,13 +125,19 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.POST("/search/tweets/popular", nil)
 
-	router.GET("/search/tweets/profile/{username}", nil)
+	router.GET("/search/tweets/profile/:username", nil)
+
+	router.POST("/search/tweets/trends", nil)
 
 	router.POST("/sentiment/tweets", API.SearchTweetsAndAnalyzeSentiment())
 
 	router.POST("/sentiment/web", API.SearchWebAndAnalyzeSentiment())
 
 	router.GET("/status", API.NodeStatusPageHandler())
+
+	router.POST("/topic/create", API.CreateNewTopicHandler())
+
+	router.POST("/topic/post", API.PostToTopicHandler())
 
 	return router
 }
