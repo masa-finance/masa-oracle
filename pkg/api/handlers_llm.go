@@ -135,6 +135,19 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	}
 }
 
+// SearchWebAndAnalyzeSentiment returns a gin.HandlerFunc that processes web search requests and performs sentiment analysis.
+// It first validates the request body for required fields such as URL, Depth, and Model. If the Model is set to "all",
+// it iterates through all available models to perform sentiment analysis on the web content fetched from the specified URL.
+// The function responds with the sentiment analysis results in JSON format.
+// Models Supported:
+//
+//	"all"
+//	"claude-3-opus-20240229"
+//	"claude-3-sonnet-20240229"
+//	"claude-3-haiku-20240307"
+//	"gpt-4"
+//	"gpt-4-turbo-preview"
+//	"gpt-3.5-turbo"
 func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
