@@ -27,6 +27,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
+	API := NewAPI(node)
+
 	// Initialize CORS middleware with a configuration that allows all origins and specifies
 	// the HTTP methods and headers that can be used in requests.
 	router.Use(cors.New(cors.Config{
@@ -42,6 +44,12 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	// Middleware to enforce API token authentication, excluding ignored routes.
 	router.Use(func(c *gin.Context) {
+
+		if API.Node.IsStaked {
+			c.Next() // Proceed to the next middleware or handler as a staked node.
+			return
+		}
+
 		// Iterate over the ignored routes to determine if the current request should bypass authentication.
 		for _, route := range ignoredRoutes {
 			if c.Request.URL.Path == route {
@@ -68,8 +76,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		}
 		c.Next() // Proceed to the next middleware or handler since authentication is successful.
 	})
-
-	API := NewAPI(node)
 
 	// Serving html
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
