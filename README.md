@@ -34,19 +34,19 @@ For complete instructions on building, staking, and running a node with Docker, 
 
 #### Local Setup
 
-1. Clone the repository
+##### 1. Clone the repository
 
 ```shell
 git clone https://github.com/masa-finance/masa-oracle.git
 ```
 
-2. Build the go code into the masa-node binary:
+##### 2. Build the go code into the masa-node binary
 
 ```shell
 go build -v -o masa-node ./cmd/masa-node
 ```
 
-3. Go into the contracts directory and build the contract npm modules that the go binary uses:
+##### 3. Go into the contracts directory and build the contract npm modules that the go binary uses
 
 ```shell
 cd contracts/ 
@@ -54,17 +54,17 @@ npm install
 cd ../
 ```
 
-4. Set env vars
+##### 4. Set env vars
 
 Ensure your environment has the required env var, ENV, exported. It should be set to test to join the testnet.
-Optionally, you can set RPC_URL to change it from the default (https://ethereum-sepolia.publicnode.com)
+Optionally, you can set RPC_URL to change it from the default (<https://ethereum-sepolia.publicnode.com>)
 
 ```shell
 export ENV=test
-export RPC_URL=https://1rpc.io/sepolia	# This is optional and will be set to the default https://ethereum-sepolia.publicnode.com without it.
+export RPC_URL=https://1rpc.io/sepolia # This is optional and will be set to the default https://ethereum-sepolia.publicnode.com without it.
 ```
 
-5. Start up masa-node. Be sure to include your bootnodes list with the --bootnodes flag.
+##### 5. Start up masa-node. Be sure to include your bootnodes list with the --bootnodes flag
 
 ```shell
 /ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
@@ -100,7 +100,7 @@ The test command runs all the tests in the project using the go test command. It
 
 The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_oracle_node.log file, which may contain log output from previous runs.
 
-To execute any of these commands, simply run make <command> in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
+To execute any of these commands, simply run make in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
 
 ## Funding the Node (in order to Stake)
 

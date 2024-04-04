@@ -9,6 +9,7 @@ require (
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/fatih/color v1.16.0
 	github.com/gdamore/tcell/v2 v2.7.1
+	github.com/gin-contrib/cors v1.7.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/ipfs/go-datastore v0.6.0
@@ -61,7 +62,6 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
-	github.com/gin-contrib/cors v1.7.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

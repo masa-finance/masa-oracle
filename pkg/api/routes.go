@@ -105,7 +105,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.GET("/node/data", API.GetNodeDataHandler())
 
-	router.GET("/node/data/:peerID", API.GetNodeHandler())
+	router.GET("/node/data/:peerid", API.GetNodeHandler())
 
 	router.POST("/node/status", API.PostNodeStatusHandler())
 
@@ -113,13 +113,13 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.POST("/publickey/publish", API.PublishPublicKeyHandler())
 
+	router.POST("/search/tweets", API.SearchTweets())
+
 	// @todo
 	// search/tweets/recent
 	// search/tweets/popular
 	// search/tweets/profile/:username
 	// search/tweets/trends
-
-	router.POST("/search/tweets", API.SearchTweets())
 
 	router.POST("/search/tweets/recent", nil)
 
