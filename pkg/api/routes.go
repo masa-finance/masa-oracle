@@ -52,6 +52,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.GET("/dht", API.GetFromDHT())
 	router.POST("/dht", API.PostToDHT())
 
+	router.POST("/search/twitter", API.SearchTweets())
+
 	router.POST("/sentiment/twitter", API.SearchTweetsAndAnalyzeSentiment())
 
 	router.POST("/sentiment/web", API.SearchWebAndAnalyzeSentiment())

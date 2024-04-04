@@ -2,10 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
@@ -18,6 +19,33 @@ import (
 type SearchTweetsRequest struct {
 	Query string `json:"query"`
 	Count int    `json:"count"`
+}
+
+// SearchTweets returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
+// It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
+// The handler validates the request body, ensuring the query is not empty and the count is positive.
+// If the request is valid, it attempts to scrape tweets using the specified query and count.
+// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) SearchTweets() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody SearchTweetsRequest
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Query == "" || reqBody.Count <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query and count must be provided and valid"})
+			return
+		}
+
+		tweets, err := twitter.ScrapeTweetsByQuery(reqBody.Query, reqBody.Count)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scrape tweets", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"tweets": tweets})
+	}
 }
 
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
