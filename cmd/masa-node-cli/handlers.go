@@ -318,7 +318,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			AddButton("OK", func() {
 				inputValue := form.GetFormItemByLabel("Username").(*tview.InputField).GetText()
 				passValue := form.GetFormItemByLabel("Password").(*tview.InputField).GetText()
-				TwofaValue := form.GetFormItemByLabel("2FA").(*tview.InputField).GetText()
+				TwofaValue := form.GetFormItemByLabel("2FA (optional)").(*tview.InputField).GetText()
 				appConfig.TwitterUser = inputValue
 				appConfig.TwitterPassword = passValue
 				appConfig.Twitter2FA = TwofaValue
@@ -477,7 +477,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			count, _ := strconv.Atoi(countMessage)
 			queryData := fmt.Sprintf(`{"query":"%s","count":%d, "model":"%s"}`, userMessage, count, appConfig.Model)
 
-			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/sentiment/twitter"
+			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/sentiment/tweets"
 			resp, err := http.Post(uri, "application/json", strings.NewReader(queryData))
 			if err != nil {
 				output.SetText(fmt.Sprintf("%v", err))
