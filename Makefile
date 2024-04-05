@@ -17,3 +17,4 @@ test:
 clean:
 	@rm -rf bin
 	@rm masa_oracle_node.log
+	@rm transcription.txt

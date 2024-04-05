@@ -388,6 +388,5 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"CurrentUptime": nodeData.AccumulatedUptimeStr,
 			"Rewards":       "Coming Soon!",
 		})
-		return
 	}
 }

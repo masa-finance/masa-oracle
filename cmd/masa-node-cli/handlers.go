@@ -314,11 +314,14 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		form = tview.NewForm().
 			AddInputField("Username", "", 60, nil, nil).
 			AddPasswordField("Password", "", 60, '*', nil).
+			AddInputField("2FA (optional)", "", 60, nil, nil).
 			AddButton("OK", func() {
 				inputValue := form.GetFormItemByLabel("Username").(*tview.InputField).GetText()
 				passValue := form.GetFormItemByLabel("Password").(*tview.InputField).GetText()
+				TwofaValue := form.GetFormItemByLabel("2FA").(*tview.InputField).GetText()
 				appConfig.TwitterUser = inputValue
 				appConfig.TwitterPassword = passValue
+				appConfig.Twitter2FA = TwofaValue
 
 				if appConfig.TwitterUser == "" {
 					output.SetText("A Twitter username was not entered. Please enter your username and try again.")

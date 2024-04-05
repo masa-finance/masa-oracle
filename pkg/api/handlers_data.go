@@ -15,12 +15,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 )
 
-// SearchTweetsRequest remains unchanged
-type SearchTweetsRequest struct {
-	Query string `json:"query"`
-	Count int    `json:"count"`
-}
-
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
 // Models Supported:
 //
@@ -242,7 +236,12 @@ func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 // On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) TweetsData() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody SearchTweetsRequest
+		var reqBody struct {
+			Query string `json:"query"`
+			Count int    `json:"count"`
+			Model string `json:"model"`
+		}
+
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
