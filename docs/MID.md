@@ -10,7 +10,7 @@ Ensure you have the following installed on your machine:
 2. `geth` (Go Ethereum): You can download it from the [official Go Ethereum GitHub repository](https://github.com/ethereum/go-ethereum/wiki/geth).
 3. `solc` (Solidity Compiler): You can download it from the [official Solidity GitHub repository](https://github.com/ethereum/solidity).
 
-## Setup 
+## Setup
 
 First, clone the repository:
 

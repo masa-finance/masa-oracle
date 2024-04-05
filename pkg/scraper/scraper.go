@@ -69,6 +69,8 @@ func Collect(uri []string, depth int, model string) (string, string, error) {
 			lastSection.Images = append(lastSection.Images, imageURL)
 		}
 		return
+		// @todo implement get image search for text and retrieve and add to data struct
+
 		// // Fetch the image content
 		// resp, err := http.Get(imageURL)
 		// if err != nil {
