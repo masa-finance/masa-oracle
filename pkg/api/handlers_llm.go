@@ -21,33 +21,6 @@ type SearchTweetsRequest struct {
 	Count int    `json:"count"`
 }
 
-// SearchTweets returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
-// It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
-// The handler validates the request body, ensuring the query is not empty and the count is positive.
-// If the request is valid, it attempts to scrape tweets using the specified query and count.
-// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) SearchTweets() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody SearchTweetsRequest
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.Query == "" || reqBody.Count <= 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Query and count must be provided and valid"})
-			return
-		}
-
-		tweets, err := twitter.ScrapeTweetsByQuery(reqBody.Query, reqBody.Count)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scrape tweets", "details": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"tweets": tweets})
-	}
-}
-
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
 // Models Supported:
 //
@@ -195,7 +168,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				sentimentRequest, sentimentSummary, err = scraper.Collect([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+				sentimentRequest, sentimentSummary, err = scraper.ScrapeWebDataUsingActors([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 				j, _ := json.Marshal(sentimentSummary)
 				sentimentSummary = string(j)
 
@@ -218,7 +191,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		} else {
 
-			sentimentRequest, sentimentSummary, err = scraper.Collect([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+			sentimentRequest, sentimentSummary, err = scraper.ScrapeWebDataUsingActors([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 			j, _ := json.Marshal(sentimentSummary)
 			sentimentSummary = llmbridge.SanitizeResponse(string(j))
 
@@ -229,5 +202,100 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"data": sentimentRequest, "sentiment": sentimentSummary})
+	}
+}
+
+// @todo
+// search/tweets/popular
+// search/tweets/profile/:username
+// search/tweets/recent
+// search/tweets/trends
+
+func (api *API) SearchTweetsPopular() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
+	}
+}
+
+func (api *API) SearchTweetsProfile() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
+	}
+}
+
+func (api *API) SearchTweetsRecent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
+	}
+}
+
+func (api *API) SearchTweetsTrends() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
+	}
+}
+
+// TweetsData returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
+// It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
+// The handler validates the request body, ensuring the query is not empty and the count is positive.
+// If the request is valid, it attempts to scrape tweets using the specified query and count.
+// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) TweetsData() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody SearchTweetsRequest
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Query == "" || reqBody.Count <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query and count must be provided and valid"})
+			return
+		}
+
+		tweets, err := twitter.ScrapeTweetsByQuery(reqBody.Query, reqBody.Count)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scrape tweets", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"tweets": tweets})
+	}
+}
+
+// WebData returns a gin.HandlerFunc that processes web scraping requests.
+// It expects a JSON body with fields "url" (string) and "depth" (int), representing the URL to scrape and the depth of the scrape, respectively.
+// The handler validates the request body, ensuring the URL is not empty and the depth is positive.
+// If the node has not staked, it returns an error indicating the node cannot participate.
+// On a valid request, it attempts to scrape web data using the specified URL and depth.
+// On success, it returns the scraped data in a sanitized JSON response. On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) WebData() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !api.Node.IsStaked {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
+			return
+		}
+		var reqBody struct {
+			Url   string `json:"url"`
+			Depth int    `json:"depth"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Url == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "URL parameter is missing"})
+			return
+		}
+		if reqBody.Depth <= 0 {
+			reqBody.Depth = 10 // Default count
+		}
+
+		collectedData, err := scraper.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": llmbridge.SanitizeResponse(collectedData)})
 	}
 }

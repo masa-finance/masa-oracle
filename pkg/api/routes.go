@@ -92,12 +92,12 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.POST("/ads/subscribe", API.SubscribeToAds())
 
 	// @todo
-	// data/tweets
-	// data/web
+	// whitepaper on the oracle and its capabilities
+	// swagger
 
-	router.POST("/data/tweets", nil)
+	router.POST("/data/tweets", API.TweetsData())
 
-	router.POST("/data/web", nil)
+	router.POST("/data/web", API.WebData())
 
 	router.GET("/dht", API.GetFromDHT())
 
@@ -113,21 +113,13 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	router.POST("/publickey/publish", API.PublishPublicKeyHandler())
 
-	router.POST("/search/tweets", API.SearchTweets())
+	router.POST("/search/tweets/popular", API.SearchTweetsPopular())
 
-	// @todo
-	// search/tweets/recent
-	// search/tweets/popular
-	// search/tweets/profile/:username
-	// search/tweets/trends
+	router.GET("/search/tweets/profile/:username", API.SearchTweetsProfile())
 
-	router.POST("/search/tweets/recent", nil)
+	router.POST("/search/tweets/recent", API.SearchTweetsRecent())
 
-	router.POST("/search/tweets/popular", nil)
-
-	router.GET("/search/tweets/profile/:username", nil)
-
-	router.POST("/search/tweets/trends", nil)
+	router.POST("/search/tweets/trends", API.SearchTweetsTrends())
 
 	router.POST("/sentiment/tweets", API.SearchTweetsAndAnalyzeSentiment())
 
