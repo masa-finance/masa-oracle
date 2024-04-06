@@ -71,7 +71,7 @@ export RPC_URL=https://1rpc.io/sepolia # This is optional and will be set to the
 ```
 
 ```shell
-./masa-node --start --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
+./masa-node --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
 ```
 
 ## Makefile Commands
