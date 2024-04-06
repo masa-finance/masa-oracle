@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
+	"github.com/anthdm/hollywood/actor"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/sirupsen/logrus"
 
@@ -16,6 +18,26 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
+
+type message struct {
+	data string
+}
+type foo struct{}
+
+func newFoo() actor.Receiver {
+	return &foo{}
+}
+
+func (f *foo) Receive(ctx *actor.Context) {
+	switch msg := ctx.Message().(type) {
+	case actor.Started:
+		fmt.Println("actor started")
+	case actor.Stopped:
+		fmt.Println("actor stopped")
+	case *message:
+		fmt.Println("actor has received", msg.data)
+	}
+}
 
 func main() {
 	cfg := config.GetInstance()
@@ -68,7 +90,17 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// WIP web
+	// WIP use actor engine from global level node object
+	go func() {
+		pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor")
+		for i := 0; i < 3; i++ {
+			node.ActorEngine.Send(pid, &message{data: "hello world!"})
+		}
+		node.ActorEngine.Poison(pid).Wait()
+	}()
+	// WIP use actor engine on node
+
+	// WIP web scrape
 	//go func() {
 	//	res, err := scraper.ScrapeWebDataUsingActors([]string{"https://en.wikipedia.org/wiki/Badger"}, 5)
 	//	if err != nil {

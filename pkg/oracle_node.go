@@ -4,10 +4,12 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/anthdm/hollywood/remote"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/anthdm/hollywood/actor"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -47,6 +49,7 @@ type OracleNode struct {
 	StartTime                      time.Time
 	AdSubscriptionHandler          *ad.SubscriptionHandler
 	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
+	ActorEngine                    *actor.Engine
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -115,6 +118,13 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 
 	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
 
+	var engine *actor.Engine
+	r := remote.New("0.0.0.0:4001", remote.NewConfig())
+	engine, err = actor.NewEngine(actor.NewEngineConfig().WithRemote(r))
+	if err != nil {
+		logrus.Errorf("start actor engine error %v", err)
+	}
+
 	return &OracleNode{
 		Host:          hst,
 		PrivKey:       masacrypto.KeyManagerInstance().EcdsaPrivKey,
@@ -126,6 +136,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		PubSubManager: subscriptionManager,
 		IsStaked:      isStaked,
 		IsWriter:      isWriter,
+		ActorEngine:   engine,
 	}, nil
 }
 

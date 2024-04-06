@@ -3,6 +3,7 @@ package twitter
 import (
 	"context"
 	"fmt"
+	masa "github.com/masa-finance/masa-oracle/pkg"
 	"os"
 	"path/filepath"
 	"time"
@@ -100,15 +101,15 @@ func NewManager() actor.Producer {
 // Receive processes messages sent to the Manager actor. It handles different types of messages
 // such as TweetRequest, actor.Started, and actor.Stopped by switching over the type of the message.
 // For TweetRequest messages, it delegates the handling to the handleTweetRequest method.
-// For actor.Started and actor.Stopped messages, it logs the state of the actor engine.
+// For actor.Started and actor.Stopped messages, it logs the state of the actor worker.
 func (m *Manager) Receive(c *actor.Context) {
 	switch msg := c.Message().(type) {
 	case TweetRequest:
 		_ = m.handleTweetRequest(c, msg)
 	case actor.Started:
-		logrus.Info("Actor engine initialized")
+		logrus.Info("Actor worker initialized")
 	case actor.Stopped:
-		logrus.Info("Actor engine stopped")
+		logrus.Info("Actor worker stopped")
 	}
 }
 
@@ -175,7 +176,7 @@ func (w *Worker) Receive(c *actor.Context) {
 
 // ScrapeTweetsUsingActors initiates the process of scraping tweets based on a given query, count, and model.
 // It leverages actor-based concurrency to manage the scraping and analysis tasks.
-// The function spawns a new actor engine and sends a TweetRequest message to the Manager actor.
+// The function spawns a new actor worker and sends a TweetRequest message to the Manager actor.
 // It then waits for a sentiment analysis result to be sent back through a channel.
 // Parameters:
 //   - query: The search query for fetching tweets.
@@ -191,20 +192,18 @@ func (w *Worker) Receive(c *actor.Context) {
 // Returns:
 // - A string containing the sentiment analysis summary.
 // - An error if the process fails at any point.
-func ScrapeTweetsUsingActors(query string, count int, model string) (string, error) {
+func ScrapeTweetsUsingActors(node *masa.OracleNode, query string, count int, model string) (string, error) {
 	done := make(chan bool)
 	var err error
-	var engine *actor.Engine
 
 	go func() {
-		engine, err = actor.NewEngine(actor.NewEngineConfig())
 		if err != nil {
-			logrus.Errorf("new actor engine error %v", err)
+			logrus.Errorf("new actor worker error %v", err)
 		} else {
-			pid := engine.Spawn(NewManager(), "Manager")
+			pid := node.ActorEngine.Spawn(NewManager(), "Manager")
 			time.Sleep(time.Millisecond * 200)
-			logrus.Infof("Started new actor engine with pid %v \n", pid.ID)
-			engine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
+			logrus.Infof("Started new actor worker spawned with pid %v \n", pid.ID)
+			node.ActorEngine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
 		}
 	}()
 
@@ -215,7 +214,6 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 				return sentiment, nil
 			}
 		case <-done:
-			engine = nil
 		}
 	}
 }

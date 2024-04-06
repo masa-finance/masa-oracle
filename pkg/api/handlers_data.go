@@ -72,7 +72,7 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				sentimentSummary, err := twitter.ScrapeTweetsUsingActors(reqBody.Query, reqBody.Count, string(model))
+				sentimentSummary, err := twitter.ScrapeTweetsUsingActors(api.Node, reqBody.Query, reqBody.Count, string(model))
 				duration := time.Since(startTime) // Calculate duration
 
 				if err != nil {
@@ -91,7 +91,7 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			c.JSON(http.StatusOK, gin.H{"results": results})
 			return
 		} else {
-			sentimentSummary, err = twitter.ScrapeTweetsUsingActors(reqBody.Query, reqBody.Count, reqBody.Model)
+			sentimentSummary, err = twitter.ScrapeTweetsUsingActors(api.Node, reqBody.Query, reqBody.Count, reqBody.Model)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment"})
 				return

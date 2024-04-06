@@ -65,3 +65,4 @@ cmd/masa-node-cli/output.mp3
 cmd/masa-node-cli/log.txt
 output.mp3
 docs/api-reference.md
+./masa-node
