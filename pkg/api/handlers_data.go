@@ -217,29 +217,16 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 	}
 }
 
-func (api *API) SearchTweetsRecent() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
-	}
-}
-
-func (api *API) SearchTweetsTrends() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
-	}
-}
-
-// TweetsData returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
+// SearchTweetsRecent returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
 // It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
 // The handler validates the request body, ensuring the query is not empty and the count is positive.
 // If the request is valid, it attempts to scrape tweets using the specified query and count.
 // On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) TweetsData() gin.HandlerFunc {
+func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
 			Query string `json:"query"`
 			Count int    `json:"count"`
-			Model string `json:"model"`
 		}
 
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
@@ -258,6 +245,12 @@ func (api *API) TweetsData() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"tweets": tweets})
+	}
+}
+
+func (api *API) SearchTweetsTrends() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
 	}
 }
 
