@@ -3,7 +3,7 @@ id: staking-guide
 title: Staking Guide for Masa Oracle Node
 ---
 
-This section of the developer documentation provides a comprehensive guide on how to stake tokens on the Masa Oracle Node. Staking is a crucial process for participating in the network and securing it. Follow the steps below to stake your tokens successfully.
+This guide provides a comprehensive guide on how to stake tokens on the Masa Oracle Node. Staking is a crucial process for participating in the network and securing it. Follow the steps below to stake your tokens successfully.
 
 ## Prerequisites
 
