@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/anthdm/hollywood/actor"
+	"github.com/anthdm/hollywood/examples/remote/msg"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/sirupsen/logrus"
 
@@ -36,6 +37,8 @@ func (f *foo) Receive(ctx *actor.Context) {
 		fmt.Println("actor stopped")
 	case *message:
 		fmt.Println("actor has received", msg.data)
+	case *msg.Message:
+		fmt.Println("actor has received", msg)
 	}
 }
 
@@ -95,6 +98,8 @@ func main() {
 		pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor")
 		for i := 0; i < 3; i++ {
 			node.ActorEngine.Send(pid, &message{data: "hello world!"})
+			serverPID := actor.NewPID("192.168.4.164:4001", "my_foo_actor/peer")
+			node.ActorEngine.Send(serverPID, &msg.Message{Data: "hello 165!"})
 		}
 		node.ActorEngine.Poison(pid).Wait()
 	}()
