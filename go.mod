@@ -29,6 +29,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
+	github.com/swaggo/swag v1.16.3
 )
 
 require (
@@ -178,7 +179,6 @@ require (
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/supranational/blst v0.3.11 // indirect
-	github.com/swaggo/swag v1.16.3 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/temoto/robotstxt v1.1.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

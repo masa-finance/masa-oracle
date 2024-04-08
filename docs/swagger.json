@@ -1,7 +1,16 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "contact": {
+            "name": "Masa API Support",
+            "url": "https://api.masa.ai",
+            "email": "support@masa.ai"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/license/mit"
+        }
     },
+    "basePath": "/api/v1",
     "paths": {}
 }
