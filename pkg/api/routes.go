@@ -2,12 +2,13 @@ package api
 
 import (
 	"embed"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
 	"net/http"
 	"os"
 	"strings"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -89,13 +90,14 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
 	router.SetHTMLTemplate(templ)
 
-	//	@BasePath		/api/v1
 	//	@contact.name	Masa API Support
 	//	@contact.url	https://api.masa.ai
 	//	@contact.email	support@masa.ai
 
 	//	@license.name	MIT
 	//	@license.url	https://opensource.org/license/mit
+
+	//	@BasePath		/api/v1
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Title = "Masa Oracle"

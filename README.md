@@ -151,3 +151,12 @@ For more detailed documentation, please refer to the [CLI.md](md/CLI.md) file.
 ## Masa Node Twitter Sentiment Analysis
 
 For more detailed documentation, please refer to the [LLM.md](md/LLM.md) file.
+
+## Swagger
+
+> @todo fix: paths are not being updated in the swagger.json file
+
+```shell
+swag init -g pkg/api/routes.go
+swag init -d ./pkg/api/ -g routes.go
+```
