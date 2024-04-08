@@ -146,8 +146,8 @@ Stay tuned to the Masa Oracle repository for updates and additional details on e
 
 ## Masa Node CLI
 
-For more detailed documentation, please refer to the [CLI.md](docs/CLI.md) file.
+For more detailed documentation, please refer to the [CLI.md](md/CLI.md) file.
 
 ## Masa Node Twitter Sentiment Analysis
 
-For more detailed documentation, please refer to the [LLM.md](docs/LLM.md) file.
+For more detailed documentation, please refer to the [LLM.md](md/LLM.md) file.

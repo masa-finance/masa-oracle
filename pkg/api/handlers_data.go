@@ -199,21 +199,26 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 	}
 }
 
-// @todo
-// search/tweets/popular
-// search/tweets/profile/:username
-// search/tweets/recent
-// search/tweets/trends
-
-func (api *API) SearchTweetsPopular() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
-	}
-}
-
+// SearchTweetsProfile returns a gin.HandlerFunc that processes a request to search for tweets from a specific user profile.
+// It expects a URL parameter "username" representing the Twitter username to search for.
+// The handler validates the username, ensuring it is provided.
+// If the request is valid, it attempts to scrape the user's profile and tweets.
+// On success, it returns the scraped profile information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
+		username := c.Param("username")
+
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username must be provided and valid"})
+			return
+		}
+
+		profile, err := twitter.ScrapeTweetsProfile(username)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get twitter profile", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"tweets": profile})
 	}
 }
 
@@ -248,9 +253,19 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 	}
 }
 
+// SearchTweetsTrends returns a gin.HandlerFunc that processes a request to search for trending tweets.
+// It does not expect any request parameters.
+// The handler attempts to scrape trending tweets using the ScrapeTweetsByTrends function.
+// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"mocked": "success"})
+
+		tweets, err := twitter.ScrapeTweetsByTrends()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scrape tweets", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"tweets": tweets})
 	}
 }
 

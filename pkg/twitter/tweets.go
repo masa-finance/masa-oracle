@@ -3,10 +3,11 @@ package twitter
 import (
 	"context"
 	"fmt"
-	masa "github.com/masa-finance/masa-oracle/pkg"
 	"os"
 	"path/filepath"
 	"time"
+
+	masa "github.com/masa-finance/masa-oracle/pkg"
 
 	"github.com/anthdm/hollywood/actor"
 	_ "github.com/lib/pq"
@@ -247,4 +248,50 @@ func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, erro
 		tweets = append(tweets, &tweetResult.Tweet)
 	}
 	return tweets, nil
+}
+
+// ScrapeTweetsByTrends scrapes the current trending topics on Twitter.
+// It returns a slice of strings representing the trending topics.
+// If an error occurs during the scraping process, it returns an error.
+func ScrapeTweetsByTrends() ([]string, error) {
+	scraper := auth()
+	var tweets []string
+
+	if scraper == nil {
+		return nil, fmt.Errorf("scraper instance is nil")
+	}
+
+	// Set search mode
+	scraper.SetSearchMode(twitterscraper.SearchLatest)
+
+	trends, err := scraper.GetTrends()
+	if err != nil {
+		logrus.Printf("Error fetching tweet: %v", err)
+		return nil, err
+	}
+
+	tweets = append(tweets, trends...)
+
+	return tweets, nil
+}
+
+// ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
+// It takes the username as a parameter and returns the scraped profile information and an error if any.
+func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
+	scraper := auth()
+
+	if scraper == nil {
+		return twitterscraper.Profile{}, fmt.Errorf("scraper instance is nil")
+	}
+
+	// Set search mode
+	scraper.SetSearchMode(twitterscraper.SearchLatest)
+
+	profile, err := scraper.GetProfile(username)
+	if err != nil {
+		logrus.Printf("Error fetching profile: %v", err)
+		return twitterscraper.Profile{}, err
+	}
+
+	return profile, nil
 }

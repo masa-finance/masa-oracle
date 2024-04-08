@@ -38,7 +38,7 @@ func (f *foo) Receive(ctx *actor.Context) {
 	case *message:
 		fmt.Println("actor has received", msg.data)
 	case *msg.Message:
-		fmt.Println("actor has received", msg)
+		fmt.Println("actor has received", msg.Data)
 	}
 }
 
@@ -95,13 +95,15 @@ func main() {
 
 	// WIP use actor engine from global level node object
 	go func() {
-		pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor")
+		pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor", actor.WithID(node.Host.ID().String()))
 		for i := 0; i < 3; i++ {
 			node.ActorEngine.Send(pid, &message{data: "hello world!"})
-			serverPID := actor.NewPID("192.168.4.164:4001", "my_foo_actor/peer")
-			node.ActorEngine.Send(serverPID, &msg.Message{Data: "hello 165!"})
+			getpid := node.ActorEngine.Registry.GetPID("my_foo_actor", node.Host.ID().String())
+			fmt.Println(getpid)
+			peerPID := actor.NewPID("192.168.4.164:4001", "my_foo_actor/peer")
+			node.ActorEngine.Send(peerPID, &msg.Message{Data: "hello 164!"})
 		}
-		node.ActorEngine.Poison(pid).Wait()
+		// node.ActorEngine.Poison(pid).Wait() // use this where we want to stop a actor listener
 	}()
 	// WIP use actor engine on node
 
