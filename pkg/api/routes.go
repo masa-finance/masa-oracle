@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -42,8 +43,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	// Define a list of routes that should not require authentication.
 	ignoredRoutes := []string{
-		"/status",
-		"/swagger/*any",
+		"/api/v1/status",
 	}
 
 	// Middleware to enforce API token authentication, excluding ignored routes.
@@ -57,6 +57,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// Iterate over the ignored routes to determine if the current request should bypass authentication.
 		for _, route := range ignoredRoutes {
 			if c.Request.URL.Path == route {
+				c.Next() // Proceed to the next middleware or handler without authentication.
+				return
+			}
+			if strings.HasPrefix(c.Request.URL.Path, "/swagger") {
 				c.Next() // Proceed to the next middleware or handler without authentication.
 				return
 			}
