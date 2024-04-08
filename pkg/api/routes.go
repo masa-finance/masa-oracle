@@ -90,10 +90,20 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	router.SetHTMLTemplate(templ)
 
 	// @BasePath /api/v1
+	// @contact.name   Masa API Support
+	// @contact.url    https://api.masa.ai
+	// @contact.email  support@masa.ai
+
+	// @license.name  Apache 2.0
+	// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	docs.SwaggerInfo.Host = "https://api.masa.ai"
 	docs.SwaggerInfo.Title = "Masa Oracle"
+	docs.SwaggerInfo.Host = "https://api.masa.ai"
+	docs.SwaggerInfo.Description = "The World's Personal Data Network Masa Oracle Node API."
+	docs.SwaggerInfo.Version = "0.0.10-alpha"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+
 	v1 := router.Group("/api/v1")
 	{
 		// @Summary Get peers
