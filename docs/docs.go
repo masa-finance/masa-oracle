@@ -241,6 +241,13 @@ const docTemplate = `{
 							"name": "query",
 							"in": "query",
 							"required": true
+						},
+						{
+							"type": "integer",
+							"description": "Number of tweets to return",
+							"name": "count",
+							"in": "query",
+							"required": false
 						}
 					],
 					"responses": {
@@ -467,7 +474,124 @@ const docTemplate = `{
 						}
 					}
 				}
-			}
+			},
+			"/sentiment/tweets": {
+				"post": {
+					"description": "Searches for tweets and analyzes their sentiment",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Sentiment"
+					],
+					"summary": "Analyze Sentiment of Tweets",
+					"parameters": [
+						{
+							"description": "Search Query",
+							"name": "query",
+							"in": "body",
+							"required": true,
+							"schema": {
+								"type": "string"
+							}
+						},
+						{
+							"description": "Number of tweets to analyze",
+							"name": "count",
+							"in": "body",
+							"required": false,
+							"schema": {
+								"type": "integer"
+							}
+						},
+						{
+							"description": "Sentiment analysis model to use",
+							"name": "model",
+							"in": "body",
+							"required": false,
+							"schema": {
+								"type": "string"
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully analyzed sentiment of tweets",
+							"schema": {
+								"$ref": "#/definitions/SentimentAnalysisResponse"
+							}
+						},
+						"400": {
+							"description": "Error analyzing sentiment of tweets",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/sentiment/web": {
+				"post": {
+					"description": "Searches for web content and analyzes its sentiment",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Sentiment"
+					],
+					"summary": "Analyze Sentiment of Web Content",
+					"parameters": [
+						{
+							"description": "Search Query",
+							"name": "query",
+							"in": "body",
+							"required": true,
+							"schema": {
+								"type": "string"
+							}
+						},
+						{
+							"description": "Number of tweets to analyze",
+							"name": "count",
+							"in": "body",
+							"required": false,
+							"schema": {
+								"type": "integer"
+							}
+						},
+						{
+							"description": "Sentiment analysis model to use",
+							"name": "model",
+							"in": "body",
+							"required": false,
+							"schema": {
+								"type": "string"
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully analyzed sentiment of web content",
+							"schema": {
+								"$ref": "#/definitions/SentimentAnalysisResponse"
+							}
+						},
+						"400": {
+							"description": "Error analyzing sentiment of web content",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+
 		},
 		"definitions": {
 			"ErrorResponse": {
@@ -520,7 +644,17 @@ const docTemplate = `{
 					}
 				}
 			},
-
+			"SentimentAnalysisResponse": {
+				"type": "object",
+				"properties": {
+					"sentiment": {
+						"type": "string"
+					},
+					"score": {
+						"type": "number"
+					}
+				}
+			},
 			"WebDataResponse": {
 				"type": "object",
 				"properties": {
@@ -549,7 +683,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Masa API",
+	Title:            "Masa Oracle API",
 	Description:      "The Worlds Personal Data Network Masa Oracle Node API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

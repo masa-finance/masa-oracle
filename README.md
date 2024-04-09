@@ -152,8 +152,8 @@ For more detailed documentation, please refer to the [CLI.md](md/CLI.md) file.
 
 For more detailed documentation, please refer to the [LLM.md](md/LLM.md) file.
 
-## Swagger
+## API Swagger Docs
 
 ```shell
-https://api.masa.ai/swagger/index.html
+http://<masa-node>:8080/swagger/index.html
 ```

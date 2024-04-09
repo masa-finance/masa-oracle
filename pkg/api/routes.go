@@ -167,7 +167,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Tags Twitter
 		// @Accept  json
 		// @Produce  json
-		// @Param   query   query    string  true  "Search Query"
+		// @Param   query	string  true  "Search Query"
 		// @Success 200 {array} Tweet "List of recent tweets"
 		// @Failure 400 {object} ErrorResponse "Invalid query or error fetching tweets"
 		// @Router /data/twitter/tweets/recent [post]
