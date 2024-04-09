@@ -7,19 +7,15 @@ import (
 	"os"
 	"strings"
 
+	docs "github.com/masa-finance/masa-oracle/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/masa-finance/masa-oracle/docs"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
-// Before:
-// //go:embed pkg/api/templates/*.html
-// After, assuming the Go file is directly inside pkg/api:
-//
 //go:embed templates/*.html
 var htmlTemplates embed.FS
 
@@ -90,263 +86,243 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
 	router.SetHTMLTemplate(templ)
 
-	//	@contact.name	Masa API Support
-	//	@contact.url	https://api.masa.ai
-	//	@contact.email	support@masa.ai
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
+	//	@BasePath		/api/v1
+	//	@Title			Masa API
+	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
+	//	@Host			https://api.masa.ai
+	//	@Version		0.0.10-alpha
+	//	@contact.name	Masa API Support
+	//	@contact.url	https://masa.ai
+	//	@contact.email	support@masa.ai
 	//	@license.name	MIT
 	//	@license.url	https://opensource.org/license/mit
 
-	//	@BasePath		/api/v1
-
-	docs.SwaggerInfo.BasePath = "/api/v1"
-	docs.SwaggerInfo.Title = "Masa Oracle"
-	docs.SwaggerInfo.Host = "https://api.masa.ai"
-	docs.SwaggerInfo.Description = "The World's Personal Data Network Masa Oracle Node API."
-	docs.SwaggerInfo.Version = "0.0.10-alpha"
-	docs.SwaggerInfo.Schemes = []string{"http", "https"}
-
 	v1 := router.Group("/api/v1")
 	{
-		//	@Summary		Get peers
-		//	@Description	Retrieves a list of peers
-		//	@Tags			peers
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{array}	api.Peer
-		//	@Router			/peers [get]
+
+		// @Summary Get list of peers
+		// @Description Retrieves a list of peers connected to the node
+		// @Tags Peers
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {array} string "List of peer IDs"
+		// @Router /peers [get]
 		v1.GET("/peers", API.GetPeersHandler())
 
-		//	@Summary		Get peer addresses
-		//	@Description	Retrieves the addresses of connected peers
-		//	@Tags			peers
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{array}	string
-		//	@Router			/peer/addresses [get]
+		// @Summary Get peer addresses
+		// @Description Retrieves a list of peer addresses connected to the node
+		// @Tags Peers
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {array} string "List of peer addresses"
+		// @Router /peer/addresses [get]
 		v1.GET("/peer/addresses", API.GetPeerAddresses())
 
-		//	@Summary		Post an ad
-		//	@Description	Creates a new ad
-		//	@Tags			ads
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			ad	body		api.Ad	true	"Ad object"
-		//	@Success		200	{object}	api.Ad
-		//	@Router			/ads [post]
+		// @Summary Post an ad
+		// @Description Adds a new ad to the network
+		// @Tags Ads
+		// @Accept  json
+		// @Produce  json
+		// @Param   ad   body    Ad   true  "Ad Content"
+		// @Success 200 {object} AdResponse "Ad successfully posted"
+		// @Failure 400 {object} ErrorResponse "Invalid ad data"
+		// @Router /ads [post]
 		v1.POST("/ads", API.PostAd())
 
-		//	@Summary		Get ads
-		//	@Description	Retrieves a list of ads
-		//	@Tags			ads
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{array}	api.Ad
-		//	@Router			/ads [get]
+		// @Summary Get ads
+		// @Description Retrieves a list of ads from the network
+		// @Tags Ads
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {array} Ad "List of ads"
+		// @Router /ads [get]
 		v1.GET("/ads", API.GetAds())
 
-		//	@Summary		Subscribe to ads
-		//	@Description	Subscribes the node to receive ads
-		//	@Tags			ads
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{object}	api.SubscriptionResponse
-		//	@Router			/ads/subscribe [post]
+		// @Summary Subscribe to ads
+		// @Description Subscribes the user to receive ad notifications
+		// @Tags Ads
+		// @Accept  json
+		// @Produce  json
+		// @Param   subscription body    Subscription   true  "Subscription details"
+		// @Success 200 {object} SubscriptionResponse "Successfully subscribed to ads"
+		// @Failure 400 {object} ErrorResponse "Invalid subscription data"
+		// @Router /ads/subscribe [post]
 		v1.POST("/ads/subscribe", API.SubscribeToAds())
 
-		//	@Summary		Search tweets by profile
-		//	@Description	Retrieves tweets from a specific user profile
-		//	@Tags			twitter
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			username	path		string	true	"Twitter username"
-		//	@Success		200			{object}	gin.H
-		//	@Failure		400			{object}	gin.H
-		//	@Failure		500			{object}	gin.H
-		//	@Router			/data/twitter/profile/{username} [get]
+		// @Summary Search Twitter Profile
+		// @Description Retrieves tweets from a specific Twitter profile
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Param   username   path    string  true  "Twitter Username"
+		// @Success 200 {array} Tweet "List of tweets from the profile"
+		// @Failure 400 {object} ErrorResponse "Invalid username or error fetching tweets"
+		// @Router /data/twitter/profile/{username} [get]
 		v1.GET("/data/twitter/profile/:username", API.SearchTweetsProfile())
 
-		//	@Summary		Search recent tweets
-		//	@Description	Searches for recent tweets based on a query and count
-		//	@Tags			twitter
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.SearchTweetsRecentRequest	true	"Search request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/data/twitter/tweets/recent [post]
+		// @Summary Search recent tweets
+		// @Description Retrieves recent tweets based on query parameters
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   query    string  true  "Search Query"
+		// @Success 200 {array} Tweet "List of recent tweets"
+		// @Failure 400 {object} ErrorResponse "Invalid query or error fetching tweets"
+		// @Router /data/twitter/tweets/recent [post]
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
-		//	@Summary		Search trending tweets
-		//	@Description	Retrieves trending tweets from Twitter
-		//	@Tags			twitter
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{array}		string
-		//	@Failure		500	{object}	gin.H
-		//	@Router			/data/twitter/tweets/trends [get]
+		// @Summary Twitter Trends
+		// @Description Retrieves the latest Twitter trending topics
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {array} Trend "List of trending topics"
+		// @Failure 400 {object} ErrorResponse "Error fetching Twitter trends"
+		// @Router /data/twitter/tweets/trends [get]
 		v1.GET("/data/twitter/tweets/trends", API.SearchTweetsTrends())
 
-		//	@Summary		Scrape web data
-		//	@Description	Scrapes web data from a given URL up to a specified depth
-		//	@Tags			web
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.WebDataRequest	true	"Web data request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/data/web [post]
+		// @Summary Web Data
+		// @Description Retrieves data from the web
+		// @Tags Web
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   body    string  true  "Search Query"
+		// @Success 200 {object} WebDataResponse "Successfully retrieved web data"
+		// @Failure 400 {object} ErrorResponse "Invalid query or error fetching web data"
+		// @Router /data/web [post]
 		v1.POST("/data/web", API.WebData())
 
-		//	@Summary		Get data from DHT
-		//	@Description	Retrieves data from the Distributed Hash Table (DHT)
-		//	@Tags			DHT
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{object}	gin.H
-		//	@Failure		400	{object}	gin.H
-		//	@Failure		500	{object}	gin.H
-		//	@Router			/dht [get]
+		// @Summary Get DHT Data
+		// @Description Retrieves data from the DHT (Distributed Hash Table)
+		// @Tags DHT
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} DHTResponse "Successfully retrieved data from DHT"
+		// @Failure 400 {object} ErrorResponse "Error retrieving data from DHT"
+		// @Router /dht [get]
 		v1.GET("/dht", API.GetFromDHT())
 
-		//	@Summary		Post data to DHT
-		//	@Description	Posts data to the Distributed Hash Table (DHT)
-		//	@Tags			DHT
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.PostToDHTRequest	true	"Post request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/dht [post]
+		// @Summary Post to DHT
+		// @Description Adds data to the DHT (Distributed Hash Table)
+		// @Tags DHT
+		// @Accept  json
+		// @Produce  json
+		// @Param   data   body    string  true  "Data to store in DHT"
+		// @Success 200 {object} SuccessResponse "Successfully added data to DHT"
+		// @Failure 400 {object} ErrorResponse "Error adding data to DHT"
+		// @Router /dht [post]
 		v1.POST("/dht", API.PostToDHT())
 
-		//	@Summary		Get node data
-		//	@Description	Retrieves data from the node
-		//	@Tags			node
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{object}	gin.H
-		//	@Failure		400	{object}	gin.H
-		//	@Failure		500	{object}	gin.H
-		//	@Router			/node/data [get]
+		// @Summary Node Data
+		// @Description Retrieves data from the node
+		// @Tags Node
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} NodeDataResponse "Successfully retrieved node data"
+		// @Failure 400 {object} ErrorResponse "Error retrieving node data"
+		// @Router /node/data [get]
 		v1.GET("/node/data", API.GetNodeDataHandler())
 
-		//	@Summary		Get node data by peer ID
-		//	@Description	Retrieves data from the node by peer ID
-		//	@Tags			node
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			peerid	path		string	true	"Peer ID"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/node/data/{peerid} [get]
+		// @Summary Get Node Data by Peer ID
+		// @Description Retrieves data for a specific node identified by peer ID
+		// @Tags Node
+		// @Accept  json
+		// @Produce  json
+		// @Param   peerid   path    string  true  "Peer ID"
+		// @Success 200 {object} NodeDataResponse "Successfully retrieved node data by peer ID"
+		// @Failure 400 {object} ErrorResponse "Error retrieving node data by peer ID"
+		// @Router /node/data/{peerid} [get]
 		v1.GET("/node/data/:peerid", API.GetNodeHandler())
 
-		//	@Summary		Update node status
-		//	@Description	Updates the status of the node
-		//	@Tags			node
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.PostNodeStatusRequest	true	"Post request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/node/status [post]
+		// @Summary Update Node Status
+		// @Description Updates the status of the node
+		// @Tags Node
+		// @Accept  json
+		// @Produce  json
+		// @Param   status   body    string  true  "Status to update"
+		// @Success 200 {object} SuccessResponse "Successfully updated node status"
+		// @Failure 400 {object} ErrorResponse "Error updating node status"
+		// @Router /node/status [post]
 		v1.POST("/node/status", API.PostNodeStatusHandler())
 
-		//	@Summary		Get public keys
-		//	@Description	Retrieves the public keys
-		//	@Tags			keys
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{object}	gin.H
-		//	@Failure		400	{object}	gin.H
-		//	@Failure		500	{object}	gin.H
-		//	@Router			/publickeys [get]
+		// @Summary Get Public Keys
+		// @Description Retrieves a list of public keys from the node
+		// @Tags PublicKeys
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {array} string "Successfully retrieved public keys"
+		// @Failure 400 {object} ErrorResponse "Error retrieving public keys"
+		// @Router /publickeys [get]
 		v1.GET("/publickeys", API.GetPublicKeysHandler())
 
-		//	@Summary		Publish public key
-		//	@Description	Publishes the public key to the network
-		//	@Tags			keys
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.PublishPublicKeyRequest	true	"Publish request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/publickey/publish [post]
+		// @Summary Publish Public Key
+		// @Description Publishes a new public key to the node
+		// @Tags PublicKeys
+		// @Accept  json
+		// @Produce  json
+		// @Param   publickey   body    string  true  "Public Key to publish"
+		// @Success 200 {object} SuccessResponse "Successfully published public key"
+		// @Failure 400 {object} ErrorResponse "Error publishing public key"
+		// @Router /publickey/publish [post]
 		v1.POST("/publickey/publish", API.PublishPublicKeyHandler())
 
-		//	@Summary		Analyze sentiment of tweets
-		//	@Description	Searches for tweets and analyzes their sentiment
-		//	@Tags			sentiment
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.SearchTweetsAndAnalyzeSentimentRequest	true	"Search and Analyze request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/sentiment/tweets [post]
+		// @Summary Analyze Sentiment of Tweets
+		// @Description Searches for tweets and analyzes their sentiment
+		// @Tags Sentiment
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   body    string  true  "Search Query"
+		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of tweets"
+		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of tweets"
+		// @Router /sentiment/tweets [post]
 		v1.POST("/sentiment/tweets", API.SearchTweetsAndAnalyzeSentiment())
 
-		//	@Summary		Analyze sentiment of web data
-		//	@Description	Searches for web data and analyzes their sentiment
-		//	@Tags			sentiment
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.SearchWebAndAnalyzeSentimentRequest	true	"Search and Analyze request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/sentiment/web [post]
+		// @Summary Analyze Sentiment of Web Content
+		// @Description Searches for web content and analyzes its sentiment
+		// @Tags Sentiment
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   body    string  true  "Search Query"
+		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of web content"
+		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of web content"
+		// @Router /sentiment/web [post]
 		v1.POST("/sentiment/web", API.SearchWebAndAnalyzeSentiment())
 
-		//	@Summary		Get node status
-		//	@Description	Retrieves the status of the node
-		//	@Tags			status
-		//	@Accept			json
-		//	@Produce		json
-		//	@Success		200	{object}	api.NodeStatus
-		//	@Router			/status [get]
+		// @Summary Node Status Page
+		// @Description Retrieves the status page of the node
+		// @Tags Status
+		// @Accept  html
+		// @Produce  html
+		// @Success 200 {object} string "Successfully retrieved node status page"
+		// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
+		// @Router /status [get]
 		v1.GET("/status", API.NodeStatusPageHandler())
 
-		//	@Summary		Create a new topic
-		//	@Description	Creates a new topic in the network
-		//	@Tags			topics
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.CreateNewTopicRequest	true	"Create new topic request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/topic/create [post]
+		// @Summary Create New Topic
+		// @Description Creates a new discussion topic
+		// @Tags Topics
+		// @Accept  json
+		// @Produce  json
+		// @Param   topic   body    Topic  true  "Topic to create"
+		// @Success 201 {object} TopicResponse "Successfully created new topic"
+		// @Failure 400 {object} ErrorResponse "Error creating new topic"
+		// @Router /topic/create [post]
 		v1.POST("/topic/create", API.CreateNewTopicHandler())
 
-		//	@Summary		Post to a topic
-		//	@Description	Posts a message to a specific topic
-		//	@Tags			topics
-		//	@Accept			json
-		//	@Produce		json
-		//	@Param			request	body		api.PostToTopicRequest	true	"Post to topic request"
-		//	@Success		200		{object}	gin.H
-		//	@Failure		400		{object}	gin.H
-		//	@Failure		500		{object}	gin.H
-		//	@Router			/topic/post [post]
+		// @Summary Post to a Topic
+		// @Description Adds a post to an existing discussion topic
+		// @Tags Topics
+		// @Accept  json
+		// @Produce  json
+		// @Param   post   body    Post  true  "Post content"
+		// @Success 200 {object} PostResponse "Successfully added post to topic"
+		// @Failure 400 {object} ErrorResponse "Error adding post to topic"
+		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
 	}
 
-	//	@Summary		Swagger UI
-	//	@Description	Serves the Swagger UI for API documentation
-	//	@Tags			swagger
-	//	@Accept			json
-	//	@Produce		json
-	//	@Success		200	{object}	swagger.WrapHandler
-	//	@Router			/swagger/{any} [get]
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.DefaultModelsExpandDepth(-1)))
 	return router
 }

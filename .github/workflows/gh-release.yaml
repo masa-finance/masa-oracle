@@ -35,12 +35,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-#      - name: Get release notes
-#        id: release_notes
-#        run: |
-#          RELEASE_NOTES=v0.0.10-alpha
-#          #$(cat ./RELEASE_NOTES.md)
-#          echo "::set-output name=notes::$RELEASE_NOTES"
+      - name: Get release notes
+        id: release_notes
+        run: |
+          RELEASE_NOTES=v0.0.10-alpha
+          #$(cat ./RELEASE_NOTES.md)
+          echo "::set-output name=notes::$RELEASE_NOTES"
 
       - name: Create Release
         uses: actions/create-release@v1
@@ -49,8 +49,7 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.version }}
           release_name: Release ${{ needs.prepare.outputs.version }}
-#          body: ${{ steps.release_notes.outputs.notes }}
-          body: "Release Notes Test"
+          body: ${{ steps.release_notes.outputs.notes }}
           draft: false
           prerelease: false
 

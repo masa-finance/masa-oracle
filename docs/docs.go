@@ -3,6 +3,7 @@ package docs
 
 import "github.com/swaggo/swag"
 
+
 const docTemplate = `{
     "schemes": {{ marshal .Schemes }},
     "swagger": "2.0",
@@ -11,7 +12,7 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "contact": {
             "name": "Masa API Support",
-            "url": "https://api.masa.ai",
+            "url": "https://masa.ai",
             "email": "support@masa.ai"
         },
         "license": {
@@ -22,17 +23,534 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {}
+    "paths": {
+			"/peers": {
+				"get": {
+					"description": "Retrieves a list of peers connected to the node",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Peers"
+					],
+					"summary": "Get list of peers",
+					"responses": {
+						"200": {
+							"description": "List of peer IDs",
+							"schema": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"/peer/addresses": {
+				"get": {
+					"description": "Retrieves a list of peer addresses connected to the node",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Peers"
+					],
+					"summary": "Get peer addresses",
+					"responses": {
+						"200": {
+							"description": "List of peer addresses",
+							"schema": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"/ads": {
+				"get": {
+					"description": "Retrieves a list of ads from the network",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Ads"
+					],
+					"summary": "Get ads",
+					"responses": {
+						"200": {
+							"description": "List of ads",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Ad"
+								}
+							}
+						}
+					}
+				},
+				"post": {
+					"description": "Adds a new ad to the network",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Ads"
+					],
+					"summary": "Post an ad",
+					"parameters": [
+						{
+							"description": "Ad Content",
+							"name": "ad",
+							"in": "body",
+							"required": true,
+							"schema": {
+								"$ref": "#/definitions/Ad"
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Ad successfully posted",
+							"schema": {
+								"$ref": "#/definitions/AdResponse"
+							}
+						},
+						"400": {
+							"description": "Invalid ad data",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/ads/subscribe": {
+				"post": {
+					"description": "Subscribes the user to receive ad notifications",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Ads"
+					],
+					"summary": "Subscribe to ads",
+					"parameters": [
+						{
+							"description": "Subscription details",
+							"name": "subscription",
+							"in": "body",
+							"required": true,
+							"schema": {
+								"$ref": "#/definitions/Subscription"
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully subscribed to ads",
+							"schema": {
+								"$ref": "#/definitions/SubscriptionResponse"
+							}
+						},
+						"400": {
+							"description": "Invalid subscription data",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/data/twitter/profile/{username}": {
+				"get": {
+					"description": "Retrieves tweets from a specific Twitter profile",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Twitter"
+					],
+					"summary": "Search Twitter Profile",
+					"parameters": [
+						{
+							"type": "string",
+							"description": "Twitter Username",
+							"name": "username",
+							"in": "path",
+							"required": true
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "List of tweets from the profile",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Tweet"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid username or error fetching tweets",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/data/twitter/tweets/recent": {
+				"post": {
+					"description": "Retrieves recent tweets based on query parameters",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Twitter"
+					],
+					"summary": "Search recent tweets",
+					"parameters": [
+						{
+							"type": "string",
+							"description": "Search Query",
+							"name": "query",
+							"in": "query",
+							"required": true
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "List of recent tweets",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Tweet"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid query or error fetching tweets",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/data/twitter/tweets/trends": {
+				"get": {
+					"description": "Retrieves the latest Twitter trending topics",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Twitter"
+					],
+					"summary": "Twitter Trends",
+					"responses": {
+						"200": {
+							"description": "List of trending topics",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Trend"
+								}
+							}
+						},
+						"400": {
+							"description": "Error fetching Twitter trends",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/data/web": {
+				"post": {
+					"description": "Retrieves data from the web",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Web"
+					],
+					"summary": "Web Data",
+					"parameters": [
+						{
+							"description": "Search Query",
+							"name": "query",
+							"in": "body",
+							"required": true,
+							"schema": {
+								"type": "string"
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved web data",
+							"schema": {
+								"$ref": "#/definitions/WebDataResponse"
+							}
+						},
+						"400": {
+							"description": "Invalid query or error fetching web data",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/dht": {
+				"get": {
+					"description": "Retrieves data from the DHT (Distributed Hash Table)",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"DHT"
+					],
+					"summary": "Get DHT Data",
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved data from DHT",
+							"schema": {
+								"$ref": "#/definitions/DHTResponse"
+							}
+						},
+						"400": {
+							"description": "Error retrieving data from DHT",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				},
+				"post": {
+					"description": "Adds data to the DHT (Distributed Hash Table)",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"DHT"
+					],
+					"summary": "Post to DHT",
+					"parameters": [
+						{
+							"description": "Data to store in DHT",
+							"name": "data",
+							"in": "body",
+							"required": true,
+							"schema": {
+								"type": "string"
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully added data to DHT",
+							"schema": {
+								"$ref": "#/definitions/SuccessResponse"
+							}
+						},
+						"400": {
+							"description": "Error adding data to DHT",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/node/data": {
+				"get": {
+					"description": "Retrieves data from the node",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Node"
+					],
+					"summary": "Node Data",
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved node data",
+							"schema": {
+								"$ref": "#/definitions/NodeDataResponse"
+							}
+						},
+						"400": {
+							"description": "Error retrieving node data",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/node/data/{peerid}": {
+				"get": {
+					"description": "Retrieves data for a specific node identified by peer ID",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Node"
+					],
+					"summary": "Get Node Data by Peer ID",
+					"parameters": [
+						{
+							"type": "string",
+							"description": "Peer ID",
+							"name": "peerid",
+							"in": "path",
+							"required": true
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved node data by peer ID",
+							"schema": {
+								"$ref": "#/definitions/NodeDataResponse"
+							}
+						},
+						"400": {
+							"description": "Error retrieving node data by peer ID",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			}
+		},
+		"definitions": {
+			"ErrorResponse": {
+				"type": "object",
+				"properties": {
+					"error": {
+						"type": "string"
+					}
+				}
+			},				
+			"Tweet": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"text": {
+						"type": "string"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"user": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"screen_name": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			},
+			"Trend": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					},
+					"tweet_volume": {
+						"type": "integer"
+					}
+				}
+			},
+
+			"WebDataResponse": {
+				"type": "object",
+				"properties": {
+					"data": {
+						"type": "string"
+					}
+				}
+			},
+			"NodeDataResponse": {
+				"type": "object",
+				"properties": {
+					"peer_id": {
+						"type": "string"
+					},
+					"data": {
+						"type": "string"
+					}
+				}
+			}
+		}
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
+	Version:          "0.0.10-alpha",
+	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Masa API",
+	Description:      "The Worlds Personal Data Network Masa Oracle Node API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -94,17 +94,17 @@ func main() {
 	go db.InitResolverCache(node, keyManager)
 
 	// WIP use actor engine from global level node object
-	//go func() {
-	//	pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor", actor.WithID(node.Host.ID().String()))
-	//	for i := 0; i < 3; i++ {
-	//		node.ActorEngine.Send(pid, &message{data: "hello world!"})
-	//		getpid := node.ActorEngine.Registry.GetPID("my_foo_actor", node.Host.ID().String())
-	//		fmt.Println(getpid)
-	//		peerPID := actor.NewPID("192.168.4.164:4001", "my_foo_actor/peer")
-	//		node.ActorEngine.Send(peerPID, &msg.Message{Data: "hello 164!"})
-	//	}
-	//	// node.ActorEngine.Poison(pid).Wait() // use this where we want to stop a actor listener
-	//}()
+	go func() {
+		pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor", actor.WithID(node.Host.ID().String()))
+		for i := 0; i < 3; i++ {
+			node.ActorEngine.Send(pid, &message{data: "hello world!"})
+			getpid := node.ActorEngine.Registry.GetPID("my_foo_actor", node.Host.ID().String())
+			fmt.Println(getpid)
+			peerPID := actor.NewPID("192.168.4.164:4001", "my_foo_actor/peer")
+			node.ActorEngine.Send(peerPID, &msg.Message{Data: "hello 164!"})
+		}
+		// node.ActorEngine.Poison(pid).Wait() // use this where we want to stop a actor listener
+	}()
 	// WIP use actor engine on node
 
 	// WIP web scrape
