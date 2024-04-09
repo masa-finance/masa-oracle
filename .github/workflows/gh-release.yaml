@@ -10,7 +10,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   prepare:
@@ -62,4 +62,3 @@ jobs:
           asset_path: ./bin/masa-node
           asset_name: masa-node
           asset_content_type: application/octet
-  
