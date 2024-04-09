@@ -6,7 +6,6 @@ on:
       - main
       - test
       - dev
-      - Issue-187
 
 permissions:
   id-token: write
