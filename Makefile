@@ -20,3 +20,8 @@ clean:
 
 wp:
 	@pdflatex whitepaper.tex
+
+proto:
+	protoc --go_out=. --go_opt=paths=source_relative --proto_path=. pkg/proto/msg/message.proto
+
+.PHONY: proto

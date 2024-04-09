@@ -12,12 +12,15 @@ This gide serves as a comprehensive guide to utilizing the Twitter data endpoint
 The Masa Oracle Node employs an actor-based model to efficiently process Twitter data requests, enabling real-time access to Twitter data that is sourced through a decentralized network of workers. Each worker is able to fullfill a request and provide data to the network. This section outlines the workflow from receiving a request to delivering data back to the API.
 
 ### Step 1: Initialization
+
 A Manager actor is initialized to oversee the processing of Twitter data requests. This actor acts as a coordinator, managing a pool of Worker actors dedicated to handling individual tasks.
 
 ### Step 2: Receiving Requests
+
 When a Twitter data request is received, it is directed to the Manager actor. The request includes details such as the search query and the number of tweets to retrieve.
 
 ### Step 3: Task Delegation
+
 The Manager assesses the request and delegates the task to an available Worker actor. If no Worker is available, a new one is spawned. Each Worker is responsible for a specific aspect of the request, in this case fetching tweets from Twitter by workers using the `/data/tweets` endpoint.
 
 ## Prerequisites
@@ -42,12 +45,15 @@ The `/data/tweets` endpoint searches for recent tweets based on a query, you can
   - `count`: The number of tweets to return.
 
 Example request:
+
 ```bash
 curl -X POST http://localhost:8080/data/tweets \
 -H "Content-Type: application/json" \
 -d '{"query": "Brendan Playford", "count": 1}'
 ```
+
 Example response:
+
 ```json
 {
 "tweets": [
@@ -76,6 +82,7 @@ Example response:
 ]
 }
 ```
+
 ## Use Case: Decentralized AI Agent
 
 Imagine a decentralized AI agent designed to monitor and analyze public sentiment on social media platforms, specifically Twitter, regarding various cryptocurrencies. This agent, let's call it "CryptoSentimentAI," uses the Masa Oracle Node's Twitter data endpoints to gather real-time data on what people are saying about different cryptocurrencies.
@@ -93,11 +100,13 @@ Imagine a decentralized AI agent designed to monitor and analyze public sentimen
 ### Example Implementation
 
 To implement such a feature, you would start by setting up queries to the `/data/tweets` endpoint. Here's an example request to search for tweets about Bitcoin:
+
 ```bash
 curl -X POST http://localhost:8080/data/tweets \
 -H "Content-Type: application/json" \
 -d '{"query": "#Bitcoin", "count": 100}'
 ```
+
 Upon collecting the tweets, CryptoSentimentAI processes and analyzes the text content of each tweet using large language models (LLMs) to evaluate sentiment. This approach leverages the advanced capabilities of LLMs to understand context and nuance, providing a more accurate sentiment analysis than traditional methods.
 
 ### Conclusion

@@ -9,20 +9,16 @@ import (
 	"syscall"
 
 	"github.com/anthdm/hollywood/actor"
-	"github.com/anthdm/hollywood/examples/remote/msg"
-	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/sirupsen/logrus"
-
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
+	"github.com/masa-finance/masa-oracle/pkg/proto/msg"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
+	"github.com/sirupsen/logrus"
 )
 
-type message struct {
-	data string
-}
 type foo struct{}
 
 func newFoo() actor.Receiver {
@@ -35,8 +31,6 @@ func (f *foo) Receive(ctx *actor.Context) {
 		fmt.Println("actor started")
 	case actor.Stopped:
 		fmt.Println("actor stopped")
-	case *message:
-		fmt.Println("actor has received", msg.data)
 	case *msg.Message:
 		fmt.Println("actor has received", msg.Data)
 	}
@@ -97,7 +91,7 @@ func main() {
 	go func() {
 		pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor", actor.WithID(node.Host.ID().String()))
 		for i := 0; i < 3; i++ {
-			node.ActorEngine.Send(pid, &message{data: "hello world!"})
+			node.ActorEngine.Send(pid, &msg.Message{Data: "hello world!"})
 			getpid := node.ActorEngine.Registry.GetPID("my_foo_actor", node.Host.ID().String())
 			fmt.Println(getpid)
 			peerPID := actor.NewPID("192.168.4.164:4001", "my_foo_actor/peer")

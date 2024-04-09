@@ -1,6 +1,8 @@
 module github.com/masa-finance/masa-oracle
 
-go 1.21
+go 1.22
+
+toolchain go1.22.1
 
 require (
 	github.com/anthdm/hollywood v0.0.0-20240115210651-dd34702ee21f
@@ -21,6 +23,7 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.10.0
 	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/n0madic/twitter-scraper v0.0.0-20231104223941-296710769dd8
+	github.com/ollama/ollama v0.1.31
 	github.com/rivo/tview v0.0.0-20240307173318-e804876934a1
 	github.com/sashabaranov/go-openai v1.14.0
 	github.com/sirupsen/logrus v1.9.3
@@ -30,6 +33,7 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.1
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
@@ -214,7 +218,6 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect

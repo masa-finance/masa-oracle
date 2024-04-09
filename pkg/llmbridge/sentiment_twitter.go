@@ -1,9 +1,16 @@
 package llmbridge
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"os"
 	"strings"
 
 	twitterscraper "github.com/n0madic/twitter-scraper"
+	"github.com/ollama/ollama/api"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,8 +50,52 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt
 		}
 		return tweetsContent, sentimentSummary, nil
 	} else {
-		return "", "", nil
+		// @todo uses models for ollama and localai
+		stream := false
+		tweetsContent := ConcatenateTweets(tweets)
+
+		genReq := api.ChatRequest{
+			Model: model,
+			Messages: []api.Message{
+				{Role: "user", Content: tweetsContent},
+				{Role: "assistant", Content: prompt},
+			},
+			Stream: &stream,
+			Options: map[string]interface{}{
+				"temperature": 0.0,
+				"seed":        42,
+				"num_ctx":     4096,
+			},
+		}
+
+		requestJSON, err := json.Marshal(genReq)
+		if err != nil {
+			return "", "", err
+		}
+		uri := os.Getenv("OLLAMA_API_URL")
+		if uri == "" {
+			return "", "", errors.New("ollama api url not set")
+		}
+		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))
+		if err != nil {
+			return "", "", err
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", "", err
+		}
+
+		var payload api.ChatResponse
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			return "", "", err
+		}
+
+		sentimentSummary := payload.Message.Content
+		return tweetsContent, SanitizeResponse(sentimentSummary), nil
 	}
+
 }
 
 // ConcatenateTweets concatenates the text of the provided tweets into a single string,
