@@ -33,10 +33,10 @@ func SendWorkToPeers(node *masa.OracleNode, data string) {
 
 		peerPIDLocal := actor.NewPID("0.0.0.0:4001", fmt.Sprintf("%s/%s", "peer_worker", "peer"))
 		node.ActorEngine.Subscribe(peerPIDLocal)
-		// test on my local lan
+		// test on my local lan this will be removed
 		peerPID2 := actor.NewPID(fmt.Sprintf("%s:4001", "192.168.4.164"), fmt.Sprintf("%s/%s", "peer_worker", "peer"))
 		node.ActorEngine.Subscribe(peerPID2)
-
+		// test on my local lan this will be removed
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
