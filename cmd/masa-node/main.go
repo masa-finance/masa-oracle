@@ -2,20 +2,20 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+
 	"github.com/anthdm/hollywood/actor"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	msg "github.com/masa-finance/masa-oracle/pkg/proto/msg"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/sirupsen/logrus"
-	"os"
-	"os/signal"
-	"strconv"
-	"syscall"
 )
 
 func main() {
@@ -69,12 +69,15 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	go func() {
-		// start actor worker listener
-		pid := node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
-		node.ActorEngine.Send(pid, &msg.Message{Data: "hello local!"})
-		// workers.SendWorkToPeers(node, "hello")
-	}()
+	// start actor worker listener
+	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
+
+	// tests send message to self
+	// pid := node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
+	// node.ActorEngine.Send(pid, &msg.Message{Data: "hello local!"})
+
+	// tests SendWorkToPeers
+	// go workers.SendWorkToPeers(node, "hello")
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

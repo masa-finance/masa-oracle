@@ -5,4 +5,8 @@ option go_package = "github.com/masa-finance/masa-oracle/pkg/proto/msg";
 
 message Message {
 	string data = 1;
+  string query = 2;
+  int64 count = 3;
+  string model = 4;
+  string type = 5;
 }
