@@ -21,6 +21,8 @@ func (f *Worker) Receive(ctx *actor.Context) {
 		fmt.Println("actor started")
 	case actor.Stopped:
 		fmt.Println("actor stopped")
+	case actor.RemoteUnreachableEvent:
+		fmt.Println("actor remote unreachable do nothing")
 	case *msg.Message:
 		fmt.Println("actor received work", m.Data)
 	}

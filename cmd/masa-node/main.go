@@ -77,7 +77,7 @@ func main() {
 	// node.ActorEngine.Send(pid, &msg.Message{Data: "hello local!"})
 
 	// tests SendWorkToPeers
-	// go workers.SendWorkToPeers(node, "hello")
+	go workers.SendWorkToPeers(node, "twits work")
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
