@@ -2,39 +2,21 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"os/signal"
-	"strconv"
-	"syscall"
-
 	"github.com/anthdm/hollywood/actor"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	"github.com/masa-finance/masa-oracle/pkg/proto/msg"
+	msg "github.com/masa-finance/masa-oracle/pkg/proto/msg"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/sirupsen/logrus"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 )
-
-type foo struct{}
-
-func newFoo() actor.Receiver {
-	return &foo{}
-}
-
-func (f *foo) Receive(ctx *actor.Context) {
-	switch msg := ctx.Message().(type) {
-	case actor.Started:
-		fmt.Println("actor started")
-	case actor.Stopped:
-		fmt.Println("actor stopped")
-	case *msg.Message:
-		fmt.Println("actor has received", msg.Data)
-	}
-}
 
 func main() {
 	cfg := config.GetInstance()
@@ -87,67 +69,12 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// WIP use actor engine from global level node object
 	go func() {
-		pid := node.ActorEngine.Spawn(newFoo, "my_foo_actor", actor.WithID(node.Host.ID().String()))
-		for i := 0; i < 3; i++ {
-			node.ActorEngine.Send(pid, &msg.Message{Data: "hello world!"})
-			getpid := node.ActorEngine.Registry.GetPID("my_foo_actor", node.Host.ID().String())
-			fmt.Println(getpid)
-			peerPID := actor.NewPID("192.168.4.164:4001", "my_foo_actor/peer")
-			node.ActorEngine.Send(peerPID, &msg.Message{Data: "hello 164!"})
-		}
-		// node.ActorEngine.Poison(pid).Wait() // use this where we want to stop a actor listener
+		// start actor worker listener
+		pid := node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
+		node.ActorEngine.Send(pid, &msg.Message{Data: "hello local!"})
+		// workers.SendWorkToPeers(node, "hello")
 	}()
-	// WIP use actor engine on node
-
-	// WIP web scrape
-	//go func() {
-	//	res, err := scraper.ScrapeWebDataUsingActors([]string{"https://en.wikipedia.org/wiki/Badger"}, 5)
-	//	if err != nil {
-	//		logrus.Errorf("Error collecting data: %s", err.Error())
-	//		return
-	//	}
-	//	logrus.Infof("%+v", res)
-	//}()
-	// WIP web
-
-	// WIP testing db
-	// type Sentiment struct {
-	// 	ConversationId int64
-	// 	Tweet          string
-	// 	PromptId       int64
-	// }
-
-	// // IMPORTANT migrations true will drop all
-	// database, err := db.ConnectToPostgres(false)
-	// if err != nil {
-	// 	logrus.Errorf(err)
-	// }
-	// defer database.Close()
-
-	// data := []Sentiment{}
-	// query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
-	// rows, err := database.Query(query)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer rows.Close()
-
-	// var (
-	// 	conversationId int64
-	// 	tweet          string
-	// 	promptId       int64
-	// )
-
-	// for rows.Next() {
-	// 	if err = rows.Scan(&conversationId, &tweet, &promptId); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	data = append(data, Sentiment{conversationId, tweet, promptId})
-	// }
-	// fmt.Println(data)
-	// WIP testing
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

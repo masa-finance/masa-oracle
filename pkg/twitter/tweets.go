@@ -37,9 +37,9 @@ type Manager struct {
 	workers map[*actor.PID]bool // Map of worker actors to their availability status
 }
 
-// Worker represents a worker entity capable of processing TweetRequests.
+// TweetWorker represents a worker entity capable of processing TweetRequests.
 // It embeds TweetRequest to inherit its fields and adds a pid field to hold the worker's process identifier.
-type Worker struct {
+type TweetWorker struct {
 	TweetRequest            // Embedding TweetRequest to inherit its fields
 	pid          *actor.PID // pid is the process identifier for the worker
 }
@@ -134,15 +134,15 @@ func (m *Manager) handleTweetRequest(c *actor.Context, msg TweetRequest) error {
 }
 
 // NewTweetWorker creates and returns a new actor.Producer function specific for tweet workers.
-// This function, when invoked, will produce an instance of a Worker actor receiver, initialized with the provided TweetRequest and PID.
+// This function, when invoked, will produce an instance of a TweetWorker actor receiver, initialized with the provided TweetRequest and PID.
 // Parameters:
 // - t: A pointer to a TweetRequest struct containing the details of the tweet queries to process.
 // - pid: A pointer to an actor.PID representing the process identifier for the actor system.
 // Returns:
-// - An actor.Producer function that produces Worker actor receivers.
+// - An actor.Producer function that produces TweetWorker actor receivers.
 func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
 	return func() actor.Receiver {
-		return &Worker{TweetRequest{
+		return &TweetWorker{TweetRequest{
 			Count: t.Count,
 			Query: t.Query,
 			Model: t.Model,
@@ -150,16 +150,16 @@ func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
 	}
 }
 
-// Receive processes messages sent to the Worker actor. It handles different types of messages
+// Receive processes messages sent to the TweetWorker actor. It handles different types of messages
 // such as actor.Started and actor.Stopped by switching over the type of the message.
-// For actor.Started messages, it initiates the process of scraping tweets based on the query and count specified in the Worker,
+// For actor.Started messages, it initiates the process of scraping tweets based on the query and count specified in the TweetWorker,
 // analyzes the sentiment of the scraped tweets, and then stops the worker actor.
 // For actor.Stopped messages, it simply logs that the worker has stopped.
-func (w *Worker) Receive(c *actor.Context) {
+func (w *TweetWorker) Receive(c *actor.Context) {
 	switch c.Message().(type) {
 	case actor.Started:
 
-		logrus.Infof("Worker started with pid %+v", c.PID().ID)
+		logrus.Infof("TweetWorker started with pid %+v", c.PID().ID)
 		tweets, err := ScrapeTweetsByQuery(w.Query[0], w.Count)
 		if err != nil {
 			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
@@ -171,7 +171,7 @@ func (w *Worker) Receive(c *actor.Context) {
 		sentimentCh <- sentimentSummary
 		c.Engine().Poison(c.PID()).Wait() // stop this worker by pid when job is complete
 	case actor.Stopped:
-		logrus.Info("Worker stopped")
+		logrus.Info("TweetWorker stopped")
 	}
 }
 
