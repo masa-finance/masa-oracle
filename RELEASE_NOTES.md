@@ -1,22 +1,24 @@
 # Masa Oracle Release Notes
 
-## [0.0.10-alpha](https://github.com/andreasonny83/twilio-remote-cli/compare/v0.0.1...v0.0.2) (2024)
+## [0.0.11-alpha](https://github.com/masa-finance/masa-oracle/releases) (2024)
 
 > Masa Oracle Node Release
 
 ### Breaking Changes
 
 * API endpoints refactored
-* Review the routes.go file
 
 ### New Features
 
-* Twitter LLM Sentiment
-* Web LLM Sentiment
+* Global Actor Engine
+* Actor Model Workers
+* Added Ollama LLM Support
+* Added LocalAI LLM Support
+* Adding Protobuf for node<->node communications
 
 ### Bug Fixes
 
-* Handled Peer Reconnect on network failure
+* Handled Panic bug on Actor Receivers
 
 ### Performance Improvements
 
@@ -24,5 +26,6 @@
 
 ### ChangeLog
 
-* Normalized api endpoints
-* Added LLM Sentiment for Twitter and Websites
+* Added Global Actor Worker Model
+* Upgraded to go 1.22
+* Upgraded /contracts to @latest

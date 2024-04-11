@@ -72,12 +72,8 @@ func main() {
 	// start actor worker listener
 	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
 
-	// tests send message to self
-	// pid := node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
-	// node.ActorEngine.Send(pid, &msg.Message{Data: "hello local!"})
-
 	// tests SendWorkToPeers
-	go workers.SendWorkToPeers(node, "twits work")
+	// go workers.SendWorkToPeers(node, "twits")
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
