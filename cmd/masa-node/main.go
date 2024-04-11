@@ -7,14 +7,15 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/sirupsen/logrus"
-
+	"github.com/anthdm/hollywood/actor"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -68,42 +69,11 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// WIP testing db
-	// type Sentiment struct {
-	// 	ConversationId int64
-	// 	Tweet          string
-	// 	PromptId       int64
-	// }
+	// start actor worker listener
+	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
 
-	// // IMPORTANT migrations true will drop all
-	// database, err := db.ConnectToPostgres(false)
-	// if err != nil {
-	// 	logrus.Errorf(err)
-	// }
-	// defer database.Close()
-
-	// data := []Sentiment{}
-	// query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
-	// rows, err := database.Query(query)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer rows.Close()
-
-	// var (
-	// 	conversationId int64
-	// 	tweet          string
-	// 	promptId       int64
-	// )
-
-	// for rows.Next() {
-	// 	if err = rows.Scan(&conversationId, &tweet, &promptId); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	data = append(data, Sentiment{conversationId, tweet, promptId})
-	// }
-	// fmt.Println(data)
-	// WIP testing
+	// tests SendWorkToPeers
+	// go workers.SendWorkToPeers(node, "twits")
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

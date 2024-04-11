@@ -35,7 +35,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 	logrus.Infof("Attempting to advertise protocol: %s", protocolString)
 	_, err := routingDiscovery.Advertise(ctx, protocolString)
 	if err != nil {
-		logrus.Warnf("Failed to advertise protocol: %v", err)
+		logrus.Debugf("Failed to advertise protocol: %v", err)
 	} else {
 		logrus.Infof("Successfully advertised protocol %s", protocolString)
 	}
@@ -62,7 +62,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 			logrus.Debugf("Attempting to advertise protocol: %s", protocolString)
 			_, err := routingDiscovery.Advertise(ctx, protocolString)
 			if err != nil {
-				logrus.Warningf("Failed to advertise protocol with error %v", err)
+				logrus.Debugf("Failed to advertise protocol with error %v", err)
 
 				// Network retry when connectivity is temporarily lost using NewExponentialBackOff
 				expBackOff := backoff.NewExponentialBackOff()

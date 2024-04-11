@@ -89,3 +89,41 @@ CREATE TABLE IF NOT EXISTS "public"."prompt" (
 );
 ALTER TABLE "public"."prompt" ADD CONSTRAINT "prompt_pkey" PRIMARY KEY ("id");
 ```
+Postgres DB Example
+
+```go
+type Sentiment struct {
+  ConversationId int64
+  Tweet          string
+  PromptId       int64
+}
+
+// IMPORTANT migrations true will drop all
+database, err := db.ConnectToPostgres(false)
+if err != nil {
+  logrus.Errorf(err)
+}
+defer database.Close()
+
+data := []Sentiment{}
+query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
+rows, err := database.Query(query)
+if err != nil {
+  log.Fatal(err)
+}
+defer rows.Close()
+
+var (
+  conversationId int64
+  tweet          string
+  promptId       int64
+)
+
+for rows.Next() {
+  if err = rows.Scan(&conversationId, &tweet, &promptId); err != nil {
+    log.Fatal(err)
+  }
+  data = append(data, Sentiment{conversationId, tweet, promptId})
+}
+fmt.Println(data)
+```

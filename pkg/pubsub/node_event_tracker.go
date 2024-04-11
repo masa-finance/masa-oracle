@@ -118,7 +118,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	nodeData, exists := net.nodeData.Get(peerID)
 	if !exists {
 		// this should never happen
-		logrus.Warnf("Node data does not exist for disconnected node: %s", peerID)
+		logrus.Debugf("Node data does not exist for disconnected node: %s", peerID)
 		return
 	}
 	// IsStaked

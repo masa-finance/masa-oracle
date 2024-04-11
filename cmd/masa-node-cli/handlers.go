@@ -305,7 +305,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 		app.SetRoot(radioButtons, false)
 	case "3":
-		// @todo used session stored twitter creds, right now pulling from .env
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 		modalFlex.SetBorderPadding(1, 1, 1, 1)
 
@@ -315,11 +314,14 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		form = tview.NewForm().
 			AddInputField("Username", "", 60, nil, nil).
 			AddPasswordField("Password", "", 60, '*', nil).
+			AddInputField("2FA (optional)", "", 60, nil, nil).
 			AddButton("OK", func() {
 				inputValue := form.GetFormItemByLabel("Username").(*tview.InputField).GetText()
 				passValue := form.GetFormItemByLabel("Password").(*tview.InputField).GetText()
+				TwofaValue := form.GetFormItemByLabel("2FA (optional)").(*tview.InputField).GetText()
 				appConfig.TwitterUser = inputValue
 				appConfig.TwitterPassword = passValue
+				appConfig.Twitter2FA = TwofaValue
 
 				if appConfig.TwitterUser == "" {
 					output.SetText("A Twitter username was not entered. Please enter your username and try again.")
@@ -386,7 +388,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			}
 
 			// Display the response in the text view.
-			fmt.Fprintf(textView, "%s\n", resp)
+			_, _ = fmt.Fprintf(textView, "%s\n", resp)
 
 		})
 
@@ -475,7 +477,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			count, _ := strconv.Atoi(countMessage)
 			queryData := fmt.Sprintf(`{"query":"%s","count":%d, "model":"%s"}`, userMessage, count, appConfig.Model)
 
-			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/analyzeSentiment"
+			uri := "http://" + handleIPAddress(appConfig.Address) + ":8080/sentiment/tweets"
 			resp, err := http.Post(uri, "application/json", strings.NewReader(queryData))
 			if err != nil {
 				output.SetText(fmt.Sprintf("%v", err))

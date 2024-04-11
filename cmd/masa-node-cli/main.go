@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -37,6 +38,6 @@ func main() {
 	app.SetFocus(handleMenu(app, output))
 
 	if err := app.SetRoot(mainFlex, true).EnableMouse(true).Run(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
