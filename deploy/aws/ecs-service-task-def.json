@@ -1,23 +1,23 @@
 {
-  "family": "masa-analytics-api-service-task",
+  "family": "masa-oracle-service-task",
   "executionRoleArn": "arn:aws:iam::<AWS_ACCOUNT_ID>:role/ecs-task-execution-role",
   "containerDefinitions": [
     {
-      "name": "masa-analytics-api-service-container",
+      "name": "masa-oracle-service-container",
       "image": "<IMAGE_URI>",
       "cpu": 256,
       "memory": 512,
       "essential": true,
       "portMappings": [
         {
-          "containerPort": 3008,
+          "containerPort": 4001,
           "hostPort": 0
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/masa-analytics-api-service",
+          "awslogs-group": "/ecs/masa-oracle-service",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
         }
