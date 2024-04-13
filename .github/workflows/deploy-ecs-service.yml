@@ -1,0 +1,91 @@
+name: Build and Deploy API service to ECS
+
+on:
+  push:
+    branches:
+      - main
+      - test
+      - dev-aws
+    paths:
+      - 'src/**'
+      - 'Dockerfile.ecs'
+      - 'package.json'
+      - 'deploy/aws/ecs-service-task-def.json'
+      - '.github/workflows/deploy-ecs-service.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: masa-oracle
+  ECS_CLUSTER: masa-oracle-cluster
+  ECS_SERVICE: masa-oracle-service
+
+jobs:
+  build-container:
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'dev-aws') && 'dev' || github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_NUMBER }}:role/oracle-deploy
+          role-session-name: GitHubActions
+          web-identity-token-file: ${{ github.token_path }}
+          
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: true
+          
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          IMAGE_TAG: masa-oracle-${{ github.sha }}
+          ENVIRONMENT: ${{ github.ref_name == 'dev-aws' && 'dev' || github.ref_name }}
+        run: |
+          docker buildx create --use
+          docker buildx build --file Dockerfile.ecs --build-arg DB_CONNECTION_NAME=${{ vars.DB_CONNECTION_NAME }} --tag ${{ vars.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG --tag ${{ vars.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:masa-oracle-latest --push .
+
+  deploy-app:
+    needs: build-container
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'dev-aws') && 'dev' || github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_NUMBER }}:role/oracle-deploy
+          role-session-name: GitHubActions
+          web-identity-token-file: ${{ github.token_path }}
+          
+      - name: Install jq
+        run: sudo apt-get install -y jq
+        
+      - name: Update ECS App Task Definition
+        id: register-app-task-definition
+        env:
+          IMAGE_URI: ${{ vars.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:masa-oracle-latest
+          AWS_ACCOUNT_NUMBER: ${{ vars.AWS_ACCOUNT_NUMBER }}
+        run: |
+          APP_TASK_DEFINITION=$(sed -e "s|<IMAGE_URI>|${IMAGE_URI}|g" -e "s|<AWS_ACCOUNT_NUMBER>|${AWS_ACCOUNT_NUMBER}|g" deploy/aws/ecs-service-task-def.json)
+          echo "$APP_TASK_DEFINITION" | jq '.' > temp_ecs-task-def.json
+          APP_TASK_DEFINITION_ARN=$(aws ecs register-task-definition --cli-input-json file://temp_ecs-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text | cut -d ':' -f 7)
+          echo "::set-output name=app_task_definition_arn::$APP_TASK_DEFINITION_ARN"
+        working-directory: ${{ github.workspace }}
+        
+      - name: Deploy App to ECS
+        run: |
+          APP_TASK_DEFINITION_ARN=${{ steps.register-app-task-definition.outputs.app_task_definition_arn }}
+          APP_TASK_DEFINITION_REVISION=$(echo $APP_TASK_DEFINITION_ARN | cut -d ':' -f 7)
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --task-definition masa-oracle-task:${APP_TASK_DEFINITION_REVISION} --force-new-deployment
+

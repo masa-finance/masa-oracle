@@ -1,0 +1,126 @@
+{
+  "family": "masa-analytics-api-service-task",
+  "executionRoleArn": "arn:aws:iam::<AWS_ACCOUNT_NUMBER>:role/ecs-task-execution-role",
+  "containerDefinitions": [
+    {
+      "name": "masa-analytics-api-service-container",
+      "image": "<IMAGE_URI>",
+      "cpu": 256,
+      "memory": 512,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3008,
+          "hostPort": 0
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/masa-analytics-api-service",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "secrets": [
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DB_HOST"
+        },
+        {
+          "name": "DB_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DB_NAME"
+        },
+        {
+          "name": "DB_PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DB_PORT"
+        },
+        {
+          "name": "DB_USER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DB_USER"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DB_PASSWORD"
+        },
+        {
+          "name": "DB_SSL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DB_SSL"
+        },
+        {
+          "name": "PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:PORT"
+        },
+        {
+          "name": "CLIENT_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:CLIENT_ID"
+        },
+        {
+          "name": "CLIENT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:CLIENT_SECRET"
+        },
+        {
+          "name": "CALLBACK_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:CALLBACK_URL"
+        },
+        {
+          "name": "REDIRECT_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:REDIRECT_URL"
+        },
+        {
+          "name": "SESSION_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:SESSION_SECRET"
+        },
+        {
+          "name": "BNB_TOKEN_ADDRESS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:BNB_TOKEN_ADDRESS"
+        },
+        {
+          "name": "MASA_IDENTITY_CONTRACT_ADDRESS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:MASA_IDENTITY_CONTRACT_ADDRESS"
+        },
+        {
+          "name": "DATAFI_EVENT_CONTRACT_ADDRESS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DATAFI_EVENT_CONTRACT_ADDRESS"
+        },
+        {
+          "name": "BNB_RPC_PROVIDER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:BNB_RPC_PROVIDER"
+        },
+        {
+          "name": "IP_API_BASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:IP_API_BASE_URL"
+        },
+        {
+          "name": "IP_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:IP_API_KEY"
+        },
+        {
+          "name": "PRIVATE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:PRIVATE_KEY"
+        },
+        {
+          "name": "REPUTATION_CONTRACT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:REPUTATION_CONTRACT"
+        },
+        {
+          "name": "SUBNET_PRIVATE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:SUBNET_PRIVATE_KEY"
+        },
+        {
+          "name": "SUBNET_RPC_PROVIDER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:SUBNET_RPC_PROVIDER"
+        },
+        {
+          "name": "DB_CONNECTION_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:DB_CONNECTION_NAME"
+        },
+        {
+          "name": "SQL_PROXY_CREDENTIALS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_NUMBER>:secret:SQL_PROXY_CREDENTIALS"
+        }
+      ]
+    }
+  ]
+}
+
