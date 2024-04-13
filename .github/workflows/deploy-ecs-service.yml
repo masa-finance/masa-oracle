@@ -35,7 +35,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_NUMBER }}:role/oracle-deploy
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/oracle-deploy
           role-session-name: GitHubActions
           web-identity-token-file: ${{ github.token_path }}
           
@@ -50,7 +50,7 @@ jobs:
           ENVIRONMENT: ${{ github.ref_name == 'dev-aws' && 'dev' || github.ref_name }}
         run: |
           docker buildx create --use
-          docker buildx build --file Dockerfile.ecs --build-arg DB_CONNECTION_NAME=${{ vars.DB_CONNECTION_NAME }} --tag ${{ vars.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG --tag ${{ vars.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:masa-oracle-latest --push .
+          docker buildx build --file Dockerfile.ecs --build-arg DB_CONNECTION_NAME=${{ vars.DB_CONNECTION_NAME }} --tag ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG --tag ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:masa-oracle-latest --push .
 
   deploy-app:
     needs: build-container
@@ -64,7 +64,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_NUMBER }}:role/oracle-deploy
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/oracle-deploy
           role-session-name: GitHubActions
           web-identity-token-file: ${{ github.token_path }}
           
@@ -74,10 +74,10 @@ jobs:
       - name: Update ECS App Task Definition
         id: register-app-task-definition
         env:
-          IMAGE_URI: ${{ vars.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:masa-oracle-latest
-          AWS_ACCOUNT_NUMBER: ${{ vars.AWS_ACCOUNT_NUMBER }}
+          IMAGE_URI: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:masa-oracle-latest
+          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
         run: |
-          APP_TASK_DEFINITION=$(sed -e "s|<IMAGE_URI>|${IMAGE_URI}|g" -e "s|<AWS_ACCOUNT_NUMBER>|${AWS_ACCOUNT_NUMBER}|g" deploy/aws/ecs-service-task-def.json)
+          APP_TASK_DEFINITION=$(sed -e "s|<IMAGE_URI>|${IMAGE_URI}|g" -e "s|<AWS_ACCOUNT_ID>|${AWS_ACCOUNT_ID}|g" deploy/aws/ecs-service-task-def.json)
           echo "$APP_TASK_DEFINITION" | jq '.' > temp_ecs-task-def.json
           APP_TASK_DEFINITION_ARN=$(aws ecs register-task-definition --cli-input-json file://temp_ecs-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text | cut -d ':' -f 7)
           echo "::set-output name=app_task_definition_arn::$APP_TASK_DEFINITION_ARN"
