@@ -18,11 +18,17 @@ const (
 	GPT4                 ModelType = "gpt-4"
 	GPT4TurboPreview     ModelType = "gpt-4-turbo-preview"
 	GPT35Turbo           ModelType = "gpt-3.5-turbo"
+	LLama2               ModelType = "llama2"
+	Mistral              ModelType = "mistral"
+	Gemma                ModelType = "gemma"
+	Mixtral              ModelType = "mixtral"
+	OpenChat             ModelType = "openchat"
+	NeuralChat           ModelType = "neural-chat"
 )
 
 // Models holds the available models for easy access and iteration.
 var Models = struct {
-	ClaudeOpus, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo ModelType
+	ClaudeOpus, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, Mistral, Gemma, Mixtral, OpenChat, NeuralChat ModelType
 }{
 	ClaudeOpus:   ClaudeOpus20240229,
 	ClaudeSonnet: ClaudeSonnet20240229,
@@ -30,6 +36,12 @@ var Models = struct {
 	GPT4:         GPT4,
 	GPT4Turbo:    GPT4TurboPreview,
 	GPT35Turbo:   GPT35Turbo,
+	LLama2:       LLama2,
+	Mistral:      Mistral,
+	Gemma:        Gemma,
+	Mixtral:      Mixtral,
+	OpenChat:     OpenChat,
+	NeuralChat:   NeuralChat,
 }
 
 const (

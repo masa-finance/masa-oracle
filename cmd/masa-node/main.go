@@ -72,8 +72,10 @@ func main() {
 	// start actor worker listener
 	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
 
-	// tests SendWorkToPeers
-	// go workers.SendWorkToPeers(node, "twits")
+	// tests SendWorkToPeers i.e. twitter, web
+	//d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "2"})
+	//d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "5", "model": "gpt-4"})
+	//go workers.SendWorkToPeers(node, d)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
