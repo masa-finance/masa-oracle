@@ -72,6 +72,7 @@ const (
 	AdTopic              = "ad"
 	NodeStatusTopic      = "nodeStatus"
 	PublicKeyTopic       = "bootNodePublicKey"
+	CompletedWorkTopic   = "completedWork"
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
 

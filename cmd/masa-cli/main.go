@@ -1,6 +1,7 @@
 package main
 
-// masa cli v2 WIP
+// masa cli v2
+// do not use this code, it's a WIP
 
 import (
 	"log"

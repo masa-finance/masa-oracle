@@ -274,7 +274,7 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			return
 		}
 		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, "/db/"+keyStr)
+		nodeVal := db.ReadData(api.Node, keyStr)
 		_ = json.Unmarshal(nodeVal, &sharedData)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -311,7 +311,7 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			})
 			return
 		}
-		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData)
+		success, err := db.WriteData(api.Node, keyStr, jsonData)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": success,

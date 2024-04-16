@@ -147,10 +147,12 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
-	viper.SetDefault(AllowedPeer, true) // TESTING TRUE FOR Issue-148 default => false
+	viper.SetDefault(AllowedPeer, true)
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
+	viper.SetDefault(TwitterScraper, false)
+	viper.SetDefault(WebScraper, false)
 }
 
 func (c *AppConfig) setFileConfig(path string) {
