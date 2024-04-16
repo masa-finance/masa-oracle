@@ -407,6 +407,35 @@ const docTemplate = `{
 					}
 				}
 			},
+			"/llm/models": {
+				"get": {
+					"description": "Retrieves the available LLM models",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"LLM"
+					],
+					"summary": "Get LLM Models",
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved LLM models",
+							"schema": {
+								"$ref": "#/definitions/LLMModelsResponse"
+							}
+						},
+						"400": {
+							"description": "Error retrieving LLM models",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
 			"/node/data": {
 				"get": {
 					"description": "Retrieves data from the node",
@@ -659,6 +688,17 @@ const docTemplate = `{
 				"properties": {
 					"data": {
 						"type": "string"
+					}
+				}
+			},
+			"LLMModelsResponse": {
+				"type": "object",
+				"properties": {
+					"models": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
 					}
 				}
 			},

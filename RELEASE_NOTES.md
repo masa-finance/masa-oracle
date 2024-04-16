@@ -6,26 +6,25 @@
 
 ### Breaking Changes
 
-* API endpoints refactored
+* None
 
 ### New Features
 
-* Global Actor Engine
-* Actor Model Workers
-* Added Ollama LLM Support
-* Added LocalAI LLM Support
+* Global Workers for Scraping
+* Ollama LLM API Support
 * Adding Protobuf for node<->node communications
 
 ### Bug Fixes
 
-* Handled Panic bug on Actor Receivers
+* None
 
 ### Performance Improvements
 
-* Added Actor Methodology framework with workers
+* Protobuffers for message and scraper worker communication
 
 ### ChangeLog
 
-* Added Global Actor Worker Model
-* Upgraded to go 1.22
+* Flags added
+  * --twitterScraper=true
+  * --webScraper=true
 * Upgraded /contracts to @latest

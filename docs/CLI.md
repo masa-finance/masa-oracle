@@ -4,21 +4,20 @@ The Masa Node CLI is a command-line interface tool designed to interact with the
 
 ![CLI Tool Screenshot](images/cli.png)
 
-
 ## Getting Started
 
 Before using the Masa Node CLI, ensure you have the necessary prerequisites installed on your system. These include Go, Docker (for Docker setups), and Git for cloning the repository.
 
 ### Installation
 
-1. Clone the Masa Oracle repository:
+1 . Clone the Masa Oracle repository:
 
 ```shell
 git clone https://github.com/masa-finance/masa-oracle.git
 cd masa-oracle
 ```
 
-2. Build the CLI tool:
+2 . Build the CLI tool:
 
 ```shell
 go build -v -o ./bin/masa-node-cli ./cmd/masa-node-cli

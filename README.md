@@ -158,16 +158,33 @@ For more detailed documentation, please refer to the [LLM.md](md/LLM.md) file.
 http://<masa-node>:8080/swagger/index.html
 ```
 
-## LLM Endpoints examples
-
-local ai
-
-```shell
-curl https://localai.masa.finance/v1/chat/completions -H "Content-Type: application/json" -d '{ "model": "gpt-4", "messages": [{"role": "user", "content": "why is the sky blue?", "temperature": 0.1}] }'
-```
+## LLM Endpoint examples
 
 ollama
 
 ```shell
-curl https://ollama.masa.finance/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
+curl https://llm-dev.masa.finance/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
 ```
+
+## Consensus
+
+*options WIP*
+
+- node must be staked ✓
+- un-staked / staked participate and infer the quality of their requests
+- node uptime ie epoch/period
+- staked / un-staked
+- how much staked
+- participation rate
+- let staked nodes rate each other
+- let un-staked nodes rate each other
+- totalBytes scraped
+
+## Rewards
+
+*assumptions WIP*
+
+- node must be staked ✓
+- node must have n number of staked tokens / n = ?
+- do we want to offer scaled rewards based on how many tokens were staked?
+- how are the rewards distributed - offchain for now MVP

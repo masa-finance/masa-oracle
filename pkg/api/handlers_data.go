@@ -15,6 +15,30 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 )
 
+// GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.
+// It does not expect any request parameters.
+// The handler returns a JSON response containing an array of supported LLM model names.
+func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		models := []string{
+			string(config.Models.ClaudeOpus),
+			string(config.Models.ClaudeSonnet),
+			string(config.Models.ClaudeHaiku),
+			string(config.Models.GPT4),
+			string(config.Models.GPT4Turbo),
+			string(config.Models.GPT35Turbo),
+			string(config.Models.LLama2),
+			string(config.Models.Mistral),
+			string(config.Models.Gemma),
+			string(config.Models.Mixtral),
+			string(config.Models.OpenChat),
+			string(config.Models.NeuralChat),
+		}
+		c.JSON(http.StatusOK, gin.H{"models": models})
+
+	}
+}
+
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
 // Models Supported:
 //

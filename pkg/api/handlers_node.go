@@ -274,7 +274,7 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			return
 		}
 		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, "/db/"+keyStr)
+		nodeVal := db.ReadData(api.Node, keyStr)
 		_ = json.Unmarshal(nodeVal, &sharedData)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -311,7 +311,7 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			})
 			return
 		}
-		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData)
+		success, err := db.WriteData(api.Node, keyStr, jsonData)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": success,
@@ -364,14 +364,16 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())
 		if nodeData == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
-				"TotalPeers":    0,
-				"Name":          "Masa Status Page",
-				"PeerID":        api.Node.Host.ID().String(),
-				"IsStaked":      false,
-				"FirstJoined":   time.Now().Format("2006-01-02 15:04:05"),
-				"LastJoined":    time.Now().Format("2006-01-02 15:04:05"),
-				"CurrentUptime": "0",
-				"Rewards":       "Coming Soon!",
+				"TotalPeers":       0,
+				"Name":             "Masa Status Page",
+				"PeerID":           api.Node.Host.ID().String(),
+				"IsStaked":         false,
+				"IsTwitterScraper": false,
+				"IsWebScraper":     false,
+				"FirstJoined":      time.Now().Format("2006-01-02 15:04:05"),
+				"LastJoined":       time.Now().Format("2006-01-02 15:04:05"),
+				"CurrentUptime":    "0",
+				"Rewards":          "Coming Soon!",
 			})
 			return
 		}
@@ -379,14 +381,16 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
 		c.HTML(http.StatusOK, "index.html", gin.H{
-			"TotalPeers":    len(peers),
-			"Name":          "Masa Status Page",
-			"PeerID":        nodeData.PeerId.String(),
-			"IsStaked":      nodeData.IsStaked,
-			"FirstJoined":   nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
-			"LastJoined":    nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-			"CurrentUptime": nodeData.AccumulatedUptimeStr,
-			"Rewards":       "Coming Soon!",
+			"TotalPeers":       len(peers),
+			"Name":             "Masa Status Page",
+			"PeerID":           nodeData.PeerId.String(),
+			"IsStaked":         nodeData.IsStaked,
+			"IsTwitterScraper": nodeData.IsTwitterScraper,
+			"IsWebScraper":     nodeData.IsWebScraper,
+			"FirstJoined":      nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
+			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
+			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
+			"Rewards":          "Coming Soon!",
 		})
 	}
 }

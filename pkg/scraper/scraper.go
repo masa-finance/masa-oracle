@@ -28,6 +28,20 @@ type CollectedData struct {
 // ScrapeWebDataUsingActors initiates the scraping process for the given list of URIs.
 // It returns a CollectedData struct containing the scraped sections from each URI,
 // and an error if any occurred during the scraping process.
+// Usage:
+// @param uri: string - url to scrape
+// @param depth: int - depth of how many subpages to scrape
+// @param model: string - model to use for sentiment analysis
+// Example:
+//
+//	go func() {
+//		res, err := scraper.ScrapeWebDataUsingActors([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
+//		if err != nil {
+//			logrus.Errorf("Error collecting data: %s", err.Error())
+//		return
+//	  }
+//	logrus.Infof("%+v", res)
+//	}()
 func ScrapeWebDataUsingActors(uri []string, depth int, model string) (string, string, error) {
 	var collectedData CollectedData
 
@@ -68,7 +82,7 @@ func ScrapeWebDataUsingActors(uri []string, depth int, model string) (string, st
 			lastSection := &collectedData.Sections[len(collectedData.Sections)-1]
 			lastSection.Images = append(lastSection.Images, imageURL)
 		}
-		return
+
 		// @todo implement get image search for text and retrieve and add to data struct
 		// // Fetch the image content
 		// resp, err := http.Get(imageURL)
@@ -115,6 +129,19 @@ func ScrapeWebDataUsingActors(uri []string, depth int, model string) (string, st
 // ScrapeWebData initiates the scraping process for the given list of URIs.
 // It returns a CollectedData struct containing the scraped sections from each URI,
 // and an error if any occurred during the scraping process.
+// Usage:
+// @param uri: string - url to scrape
+// @param depth: int - depth of how many subpages to scrape
+// Example:
+//
+//	go func() {
+//		res, err := scraper.ScrapeWebDataUsingActors([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
+//		if err != nil {
+//			logrus.Errorf("Error collecting data: %s", err.Error())
+//		return
+//	  }
+//	logrus.Infof("%+v", res)
+//	}()
 func ScrapeWebData(uri []string, depth int) (string, error) {
 	var collectedData CollectedData
 
@@ -155,7 +182,6 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 			lastSection := &collectedData.Sections[len(collectedData.Sections)-1]
 			lastSection.Images = append(lastSection.Images, imageURL)
 		}
-		return
 	})
 
 	// Visit each URL

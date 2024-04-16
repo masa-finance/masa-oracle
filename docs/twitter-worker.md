@@ -33,13 +33,15 @@ To become a worker focused on Twitter data requests, you need to:
 
 1. Locate your `.env` file in your Masa Oracle Node's directory.
 2. Add the following entries, replacing `YOUR_TWITTER_API_KEY` and `YOUR_TWITTER_API_SECRET` with your actual Twitter API credentials. If you have 2FA enabled set your 2FA code in `YOUR_TWITTER_2FA_CODE`. When you start your node a session is saved locally with cookies to prevent repeated logins:
-```bash
+
+```shell
 #env
 TWITTER_API_KEY=YOUR_TWITTER_API_KEY
 TWITTER_API_SECRET=YOUR_TWITTER_API_SECRET
 TWITTER_2FA_CODE="YOUR_TWITTER_2FA_CODE"
 ```
-3. Save the `.env` file and restart your node to apply the changes.
+
+3.Save the `.env` file and restart your node to apply the changes.
 
 ### Verifying Node Configuration
 

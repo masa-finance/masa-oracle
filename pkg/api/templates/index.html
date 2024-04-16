@@ -17,6 +17,16 @@
                     <h5 class="card-title">Node Information</h5>
                     <p class="card-text"><strong>Node ID:</strong> <span id="nodeId">{{.PeerID}}</span></p>
                     <p class="card-text"><strong>Status:</strong> <span class="badge badge-success">Online</span></p>
+                    {{if .IsTwitterScraper}}
+                        <p class="card-text"><strong>Twitter Scraper:</strong> <span class="badge badge-success">{{.IsTwitterScraper}}</span></p>
+                    {{else}}
+                        <p class="card-text"><strong>Twitter Scraper:</strong> <span class="badge badge-danger">{{.IsTwitterScraper}}</span></p>
+                    {{end}}
+                    {{if .IsWebScraper}}
+                        <p class="card-text"><strong>Web Scraper:</strong> <span class="badge badge-success">{{.IsWebScraper}}</span></p>
+                    {{else}}
+                    <p class="card-text"><strong>Web Scraper:</strong> <span class="badge badge-danger">{{.IsWebScraper}}</span></p>
+                    {{end}}
                     <p class="card-text"><strong>Total Peers:</strong> <span id="totalPeers">{{.TotalPeers}}</span></p>
                 </div>
             </div>

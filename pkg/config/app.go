@@ -78,6 +78,8 @@ type AppConfig struct {
 	ClaudeApiURL       string `mapstructure:"ClaudeApiURL"`
 	ClaudeApiVersion   string `mapstructure:"ClaudeApiVersion"`
 	GPTApiKey          string `mapstructure:"GPTApiKey"`
+	TwitterScraper     bool   `mapstructure:"twitterScraper"`
+	WebScraper         bool   `mapstructure:"webScraper"`
 }
 
 func GetInstance() *AppConfig {
@@ -133,6 +135,8 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 		viper.SetDefault(WriterNode, "false")
+		viper.SetDefault(TwitterScraper, "false")
+		viper.SetDefault(WebScraper, "false")
 		viper.SetDefault(CachePath, "CACHE")
 		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
 		viper.SetDefault(ClaudeApiVersion, "2023-06-01")
@@ -143,10 +147,12 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
-	viper.SetDefault(AllowedPeer, true) // TESTING TRUE FOR Issue-148 default => false
+	viper.SetDefault(AllowedPeer, true)
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
+	viper.SetDefault(TwitterScraper, false)
+	viper.SetDefault(WebScraper, false)
 }
 
 func (c *AppConfig) setFileConfig(path string) {
@@ -194,6 +200,8 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API Url")
 	pflag.StringVar(&c.ClaudeApiVersion, "claudeApiVersion", viper.GetString(ClaudeApiVersion), "Claude API Version")
 	pflag.StringVar(&c.GPTApiKey, "gptApiKey", viper.GetString(GPTApiKey), "OpenAI API Key")
+	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
+	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

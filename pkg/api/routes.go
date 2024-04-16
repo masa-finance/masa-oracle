@@ -215,6 +215,16 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /dht [post]
 		v1.POST("/dht", API.PostToDHT())
 
+		// @Summary Get LLM Models
+		// @Description Retrieves the available LLM models
+		// @Tags LLM
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} LLMModelsResponse "Successfully retrieved LLM models"
+		// @Failure 400 {object} ErrorResponse "Error retrieving LLM models"
+		// @Router /llm/models [get]
+		v1.GET("/llm/models", API.GetLLMModelsHandler())
+
 		// @Summary Node Data
 		// @Description Retrieves data from the node
 		// @Tags Node
