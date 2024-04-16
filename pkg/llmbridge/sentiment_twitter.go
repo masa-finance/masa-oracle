@@ -72,7 +72,7 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt
 		if err != nil {
 			return "", "", err
 		}
-		uri := os.Getenv("OLLAMA_API_URL")
+		uri := os.Getenv("LLM_API_URL")
 		if uri == "" {
 			return "", "", errors.New("ollama api url not set")
 		}

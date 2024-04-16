@@ -103,10 +103,11 @@ func (m *model) Next() {
 
 func main() {
 	questions := []Questions{
-		NewQuestion("Connect to a node"),
-		NewQuestion("Select a LLM Model"),
-		NewQuestion("Set your twitter credentials"),
-		NewQuestion("Analyze sentiment from tweets"),
+		NewQuestion("Connect to Oracle Node"),
+		NewQuestion("Select LLM Model"),
+		NewQuestion("Set Twitter Credentials"),
+		NewQuestion("Analyze Sentiment from Tweets"),
+		NewQuestion("Analyze Sentiment from Website"),
 		NewQuestion("Oracle Nodes"),
 	}
 	m := New(questions)

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/spf13/viper"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -61,6 +61,8 @@ type NodeData struct {
 	IsStaked             bool            `json:"isStaked"`
 	SelfIdentified       bool            `json:"-"`
 	IsWriterNode         bool            `json:"isWriterNode"`
+	IsTwitterScraper     bool            `json:"isTwitterScraper"`
+	IsWebScraper         bool            `json:"isWebScraper"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
@@ -68,7 +70,8 @@ type NodeData struct {
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
-	wn, _ := strconv.ParseBool(viper.GetString("WRITER_NODE"))
+	cfg := config.GetInstance()
+	wn, _ := strconv.ParseBool(cfg.WriterNode)
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -80,6 +83,8 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		Activity:          activity,
 		SelfIdentified:    false,
 		IsWriterNode:      wn,
+		IsTwitterScraper:  cfg.TwitterScraper,
+		IsWebScraper:      cfg.WebScraper,
 	}
 }
 

@@ -158,16 +158,10 @@ For more detailed documentation, please refer to the [LLM.md](md/LLM.md) file.
 http://<masa-node>:8080/swagger/index.html
 ```
 
-## LLM Endpoints examples
-
-local ai
-
-```shell
-curl https://localai.masa.finance/v1/chat/completions -H "Content-Type: application/json" -d '{ "model": "gpt-4", "messages": [{"role": "user", "content": "why is the sky blue?", "temperature": 0.1}] }'
-```
+## LLM Endpoint examples
 
 ollama
 
 ```shell
-curl https://ollama.masa.finance/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
+curl https://llm-dev.masa.finance/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
 ```

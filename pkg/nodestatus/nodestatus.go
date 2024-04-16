@@ -22,6 +22,8 @@ type NodeStatus struct {
 	IsActive                  bool          `json:"isActive"`
 	IsStaked                  bool          `json:"isStaked"`
 	IsWriterNode              bool          `json:"isWriterNode"`
+	IsTwitterScraper          bool          `json:"isTwitterScraper"`
+	IsWebScraper              bool          `json:"isWebScraper"`
 }
 
 // SubscriptionHandler handles storing node status updates and publishing

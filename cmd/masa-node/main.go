@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -71,6 +72,9 @@ func main() {
 
 	// start actor worker listener
 	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
+	if cfg.TwitterScraper || cfg.WebScraper {
+		node.ActorEngine.Subscribe(actor.NewPID("0.0.0.0:4001", fmt.Sprintf("%s/%s", "peer_worker", "peer")))
+	}
 
 	// tests SendWorkToPeers i.e. twitter, web
 	//d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "2"})
