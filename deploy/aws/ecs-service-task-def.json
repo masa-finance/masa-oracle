@@ -24,28 +24,28 @@
       },
       "secrets": [
         {
-          "name": "DB_HOST",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:DB_HOST"
+          "name": "BOOTNODES",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:BOOTNODES"
         },
         {
-          "name": "DB_NAME",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:DB_NAME"
+          "name": "RPC_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:RPC_URL"
         },
         {
-          "name": "DB_PORT",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:DB_PORT"
+          "name": "ENV",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:ENV"
         },
         {
-          "name": "DB_USER",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:DB_USER"
+          "name": "FILE_PATH",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:FILE_PATH"
         },
         {
-          "name": "DB_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:DB_PASSWORD"
+          "name": "WRITER_NODE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:WRITER_NODE"
         },
         {
-          "name": "DB_SSL",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:DB_SSL"
+          "name": "CACHE_PATH",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<AWS_ACCOUNT_ID>:secret:CACHE_PATH"
         },
         {
           "name": "PORT",
