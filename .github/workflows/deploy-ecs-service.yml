@@ -87,5 +87,5 @@ jobs:
         run: |
           APP_TASK_DEFINITION_ARN=${{ steps.register-app-task-definition.outputs.app_task_definition_arn }}
           APP_TASK_DEFINITION_REVISION=$(echo $APP_TASK_DEFINITION_ARN | cut -d ':' -f 7)
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --task-definition masa-oracle-task:${APP_TASK_DEFINITION_REVISION} --force-new-deployment
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --task-definition masa-oracle-service-task:${APP_TASK_DEFINITION_REVISION} --force-new-deployment
 
