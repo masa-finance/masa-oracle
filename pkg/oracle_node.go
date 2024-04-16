@@ -31,26 +31,28 @@ import (
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/workerstatus"
 )
 
 type OracleNode struct {
-	Host                           host.Host
-	PrivKey                        *ecdsa.PrivateKey
-	Protocol                       protocol.ID
-	priorityAddrs                  multiaddr.Multiaddr
-	multiAddrs                     []multiaddr.Multiaddr
-	DHT                            *dht.IpfsDHT
-	Context                        context.Context
-	PeerChan                       chan myNetwork.PeerEvent
-	NodeTracker                    *pubsub2.NodeEventTracker
-	PubSubManager                  *pubsub2.Manager
-	Signature                      string
-	IsStaked                       bool
-	IsWriter                       bool
-	StartTime                      time.Time
-	AdSubscriptionHandler          *ad.SubscriptionHandler
-	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
-	ActorEngine                    *actor.Engine
+	Host                              host.Host
+	PrivKey                           *ecdsa.PrivateKey
+	Protocol                          protocol.ID
+	priorityAddrs                     multiaddr.Multiaddr
+	multiAddrs                        []multiaddr.Multiaddr
+	DHT                               *dht.IpfsDHT
+	Context                           context.Context
+	PeerChan                          chan myNetwork.PeerEvent
+	NodeTracker                       *pubsub2.NodeEventTracker
+	PubSubManager                     *pubsub2.Manager
+	Signature                         string
+	IsStaked                          bool
+	IsWriter                          bool
+	StartTime                         time.Time
+	AdSubscriptionHandler             *ad.SubscriptionHandler
+	NodeStatusSubscriptionsHandler    *nodestatus.SubscriptionHandler
+	CompletedWorkSubscriptionsHandler *workerstatus.SubscriptionHandler
+	ActorEngine                       *actor.Engine
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.

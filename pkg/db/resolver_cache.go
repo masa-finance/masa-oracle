@@ -130,7 +130,7 @@ func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, err
 	}
 
 	if !res {
-		return false, fmt.Errorf("key does not exist, adding new key-value pair, %+v", err.Error())
+		return false, fmt.Errorf("key does not exist, adding new key-value pair, %+v", err)
 	}
 
 	// Put the new value for the key in the datastore
@@ -224,7 +224,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			nodes := nodeStatusHandler.NodeStatus
 			for _, n := range nodes {
 				jsonData, _ := json.Marshal(n)
-				_, _ = WriteData(node, "/db/"+n.PeerID, jsonData)
+				_, _ = WriteData(node, n.PeerID, jsonData)
 			}
 		case <-ctx.Done():
 			return

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -36,7 +38,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// var isStaked bool
 	// Verify the staking event
 	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
 	if err != nil {
@@ -69,11 +70,18 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// start actor worker listener
+	// start actor worker listener and subscribe if scraper and isStaked
 	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
+	if cfg.TwitterScraper || cfg.WebScraper {
+		if isStaked {
+			node.ActorEngine.Subscribe(actor.NewPID("0.0.0.0:4001", fmt.Sprintf("%s/%s", "peer_worker", "peer")))
+		}
+	}
 
-	// tests SendWorkToPeers
-	// go workers.SendWorkToPeers(node, "twits")
+	// tests SendWorkToPeers i.e. twitter, web
+	d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "2"})
+	// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA Masa Token Price", "count": "5"})
+	go workers.SendWorkToPeers(node, d)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
@@ -102,7 +110,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode, cfg.TwitterScraper, cfg.WebScraper)
 
 	<-ctx.Done()
 }

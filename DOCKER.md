@@ -8,7 +8,7 @@ Before you begin, ensure you have the following installed on your system:
 
 - **Docker**: You'll need Docker to build and run containers. Download and install Docker for your operating system from [Docker's official website](https://www.docker.com/products/docker-desktop).
 - **Docker Compose**: This project uses Docker Compose to manage multi-container Docker applications. Docker Desktop for Windows and Mac includes Docker Compose. On Linux, you may need to install it separately following the instructions [here](https://docs.docker.com/compose/install/).
-- **Git** 
+- **Git**
 
 ## Getting Started
 
