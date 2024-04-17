@@ -3,7 +3,7 @@ FROM ubuntu:22.04 as base
 
 # Install necessary packages for the final image
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    curl sudo gpg lsb-release software-properties-common \
+    curl sudo gpg lsb-release software-properties-common awscli \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g npm@latest
@@ -36,6 +36,10 @@ FROM base
 COPY --from=builder /app/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
+# Script to handle private key logic
+COPY deploy/aws/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Switch to 'masa' to run the application
 USER masa
 WORKDIR /home/masa
@@ -44,6 +48,6 @@ WORKDIR /home/masa
 EXPOSE 4001
 EXPOSE 8080
 
-# Set default command to start the Go application
+# Set default command to start the Go application with the script
+CMD ["entrypoint.sh"]
 
-CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --writerNode="$WRITER_NODE" --cachePath="$CACHE_PATH"
