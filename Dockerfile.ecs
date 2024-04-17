@@ -37,7 +37,7 @@ COPY --from=builder /app/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
 # Script to handle private key logic
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY deploy/aws/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Switch to 'masa' to run the application
