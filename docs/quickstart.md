@@ -83,9 +83,11 @@ Is Staked:              false
 Is Writer:              false
 Is TwitterScraper:      false
 Is WebScraper:          false
+INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
+INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.11-alpha-dev
 ```
 
-### 6. Stake the node
+### 6. Stake the node with 1000 Sepolia MASA minimum
 Grab your Public Key and get some Sepolia MASA from Discord. Then use the following command to initiate staking. Make sure you restart your node once you have staked:
 
    ```bash
@@ -97,5 +99,45 @@ Grab your Public Key and get some Sepolia MASA from Discord. Then use the follow
    ```bash
    ./masa-node --stake 1000
    ```
+Your tokens will approve and stake:
+```bash
+Approving staking contract to spend tokens.....
+0x8de79f5111b185fe67090f904b72f3dda7814a8aa81494cd177241549c213ba3
+Approve transaction hash: 0x8de79f5111b185fe67090f904b72f3dda7814a8aa81494cd177241549c213ba3
+Staking tokens.....
+0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
+Stake transaction hash: 0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
+```
+### 7. Start the staked node
+```bash
+./masa-node
+```
+The Is staked flag will change to `true`
+```bash
+#######################################
+#     __  __    _    ____    _        #
+#    |  \/  |  / \  / ___|  / \       #
+#    | |\/| | / _ \ \___ \ / _ \      #
+#    | |  | |/ ___ \ ___) / ___ \     #
+#    |_|  |_/_/   \_\____/_/   \_\    #
+#                                     #
+#######################################
+Multiaddress:           /ip4/192.168.1.25/udp/4001/quic-v1/p2p/16Uiu2HAm28dTN2WVWD2y2bjzwPdym59XASDfQsSktCtejtNR9Vox
+IP Address:             /ip4/127.0.0.1/udp/4001/quic-v1
+Public Key:             0x065728510468A2ef48e6E8a860ff42D68Ca612ee
+Is Staked:              true
+Is Writer:              false
+Is TwitterScraper:      false
+Is WebScraper:          false
+INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
+INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.11-alpha-dev 
+```
+### 7. Node Rewards Calculation
+Node rewards are determined by:
+1. Uptime: Rewards increase with node availability.
+2. Data Served: More rewards for serving more data via TwitterScraper and WebScraper.
+3. Stake Size: Larger stakes result in higher reward weight and base rewards.
 
-
+:::important
+Rewards are not currently live on the testnet and are expected to go live in April 2024. This means that while you can stake your node and participate in the network, the rewards system will be activated at a later date. Please stay tuned for updates regarding the rewards launch.
+:::
