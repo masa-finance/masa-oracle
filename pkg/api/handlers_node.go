@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -275,8 +276,24 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 		}
 		sharedData := db.SharedData{}
 		nodeVal := db.ReadData(api.Node, keyStr)
-		_ = json.Unmarshal(nodeVal, &sharedData)
-
+		err := json.Unmarshal(nodeVal, &sharedData)
+		if err != nil {
+			// Check if nodeVal is base64 encoded
+			if _, err := base64.StdEncoding.DecodeString(string(nodeVal)); err != nil {
+				// If not base64, return the raw nodeVal
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": string(nodeVal),
+				})
+				return
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": nodeVal,
+				})
+				return
+			}
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": sharedData,

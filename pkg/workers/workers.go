@@ -46,7 +46,7 @@ func (w *Worker) Receive(ctx *actor.Context) {
 		var workData map[string]string
 		err := json.Unmarshal([]byte(m.Data), &workData)
 		if err != nil {
-			fmt.Println("Error parsing work data:", err)
+			logrus.Errorf("Error parsing work data: %v", err)
 			return
 		}
 		switch workData["request"] {
@@ -171,7 +171,6 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
 			logrus.Infof("worker cid: %v", key) // @todo gen records all get
-			// jsonData, _ := json.Marshal(data)
 			_, _ = db.WriteData(node, key, data)
 		case <-ctx.Done():
 			return
