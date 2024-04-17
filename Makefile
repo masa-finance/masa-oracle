@@ -1,4 +1,5 @@
 build:
+	@go mod tidy
 	@go build -v -o ./bin/masa-node ./cmd/masa-node
 	@go build -v -o ./bin/masa-node-cli ./cmd/masa-node-cli
 	@go build -v -o ./bin/masa-cli ./cmd/masa-cli
@@ -17,6 +18,7 @@ test:
 
 clean:
 	@rm -rf bin
+	@rm -rf CACHE
 	@rm masa_oracle_node.log
 
 wp:

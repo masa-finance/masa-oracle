@@ -24,6 +24,7 @@ type NodeStatus struct {
 	IsWriterNode              bool          `json:"isWriterNode"`
 	IsTwitterScraper          bool          `json:"isTwitterScraper"`
 	IsWebScraper              bool          `json:"isWebScraper"`
+	BytesScraped              int64         `json:"bytesScraped"`
 }
 
 // SubscriptionHandler handles storing node status updates and publishing

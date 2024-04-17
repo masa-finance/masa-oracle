@@ -178,7 +178,7 @@ curl https://llm-dev.masa.finance/api/chat -d '{"model": "llama2","messages": [{
 - participation rate
 - let staked nodes rate each other
 - let un-staked nodes rate each other
-- totalBytes scraped
+- totalBytes scraped - add so we can reward based on aggregate of totalBytes
 
 ## Rewards
 

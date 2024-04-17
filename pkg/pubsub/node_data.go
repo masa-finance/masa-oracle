@@ -63,6 +63,7 @@ type NodeData struct {
 	IsWriterNode         bool            `json:"isWriterNode"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
+	BytesScraped         int64           `json:"bytesScraped"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
@@ -85,6 +86,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		IsWriterNode:      wn,
 		IsTwitterScraper:  cfg.TwitterScraper,
 		IsWebScraper:      cfg.WebScraper,
+		BytesScraped:      0,
 	}
 }
 

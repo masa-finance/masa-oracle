@@ -278,9 +278,9 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 		nodeVal := db.ReadData(api.Node, keyStr)
 		err := json.Unmarshal(nodeVal, &sharedData)
 		if err != nil {
-			// Check if nodeVal is base64 encoded
+			// Check if base64 encoded
 			if _, err := base64.StdEncoding.DecodeString(string(nodeVal)); err != nil {
-				// If not base64, return the raw nodeVal
+				// If not base64, return the raw val
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
 					"message": string(nodeVal),
@@ -391,6 +391,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"LastJoined":       time.Now().Format("2006-01-02 15:04:05"),
 				"CurrentUptime":    "0",
 				"Rewards":          "Coming Soon!",
+				"BytesScraped":     0,
 			})
 			return
 		}
@@ -408,6 +409,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
 			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
 			"Rewards":          "Coming Soon!",
+			"BytesScraped":     nodeData.BytesScraped,
 		})
 	}
 }

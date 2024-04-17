@@ -72,7 +72,6 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 		syncInterval := time.Second * 60 // Change as needed
 		go sync(context.Background(), node, syncInterval)
 	}
-
 }
 
 // PutCache puts a key-value pair into the resolver cache.
