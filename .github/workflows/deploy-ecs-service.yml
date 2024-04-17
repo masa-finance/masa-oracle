@@ -6,6 +6,7 @@ on:
       - main
       - test
       - dev-aws
+
     paths:
       - 'src/**'
       - 'Dockerfile.ecs'
