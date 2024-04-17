@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -79,9 +78,9 @@ func main() {
 	}
 
 	// tests SendWorkToPeers i.e. twitter, web
-	d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "2"})
-	// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA Masa Token Price", "count": "5"})
-	go workers.SendWorkToPeers(node, d)
+	// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "2"})
+	//d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "10"})
+	//go workers.SendWorkToPeers(node, d)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
