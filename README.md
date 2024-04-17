@@ -1,190 +1,107 @@
-# Masa Oracle: Decentralized Data Protocol 🌐
+<!-- Title -->
+<h1 align="center">
+  <img src="https://emojicdn.elk.sh/🌐" width="30" /> Masa Oracle: Decentralized AI Data and LLM Network
+</h1>
 
-The Masa Oracle governs the access, sharing, and rewarding of private behavioral and identity data in a decentralized and private manner. The Masa Oracle Network ensures transparency and security of data sharing, while  enabling equitable compensation for nodes that participate in the Masa zk-Data Network and Marketplace.
+<!-- Description -->
+<p align="center">The Masa Oracle provides infrastructure for AI developers to access decentralized data sets and decentralized LLMs. Oracle node workers can provide compute to the network by offering Twitter data, public web data, and LLM services.</p>
 
-## Contents
+<!-- Table of Contents -->
+<h2 align="center">
+  Table of Contents
+</h2>
 
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Docker Setup](#docker-setup)
-- [Staking Tokens](#staking-tokens)
-- [Running the Node](#running-the-node)
-- [Updates & Additional Information](#updates--additional-information)
+<p align="center">
+  <a href="#getting-started">Getting Started</a> •
+  <a href="#staking-tokens">Staking Tokens</a> •
+  <a href="#running-the-node">Running the Node</a> •
+  <a href="#updates-additional-information">Updates & Additional Information</a>
+</p>
 
-## Getting Started
+<!-- Getting Started -->
+<h2 align="center" id="getting-started">
+  Getting Started
+</h2>
 
-### Prerequisites
+<p align="center">Initiate your participation in the Masa Oracle by setting up and running your own node. Follow the steps below to integrate seamlessly into the decentralized data protocol.</p>
 
-Ensure these prerequisites are installed for a local setup:
+<h3 align="center">Prerequisites</h3>
 
-- **Go**: Grab it from [Go's official site](https://golang.org/dl/).
+<p align="center">Ensure these tools are installed:</p>
 
-- **Yarn**: Install it via [Yarn's official site](https://classic.yarnpkg.com/en/docs/install/).
+<ul align="center">
+  <li><strong>Go</strong>: Download from <a href="https://golang.org/dl/">Go's official site</a>.</li>
+  <li><strong>Yarn</strong>: Install via <a href="https://classic.yarnpkg.com/en/docs/install/">Yarn's official site</a>.</li>
+  <li><strong>Git</strong>: Essential for cloning the repository.</li>
+</ul>
 
-- **Git**: Required for cloning the repository.
+<p align="center">For comprehensive instructions on building, staking, and running a node with Docker, see <a href="./DOCKER.md">DOCKER.md</a></p>
 
-- For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md)
+<h3 align="center">Installation</h3>
 
-### Installation
+<p align="center">Choose your setup:</p>
 
-#### Docker Setup
+<h4 align="center">Local Setup</h4>
 
-For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md)
+<ol align="center">
+  <li>Clone the repository:
+    <pre><code>git clone https://github.com/masa-finance/masa-oracle.git</code></pre>
+  </li>
+  <li>Build the Go code into the masa-node binary:
+    <pre><code>go build -v -o masa-node ./cmd/masa-node</code></pre>
+  </li>
+  <li>Set environment variables to join the testnet and optionally set the RPC URL:
+    <pre><code>export ENV=test
+export RPC_URL=https://1rpc.io/sepolia</code></pre>
+  </li>
+  <li>Start the masa-node with the necessary bootnodes:
+    <pre><code>./masa-node --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa</code></pre>
+  </li>
+</ol>
 
-#### Local Setup
+<h3 align="center">Docker Setup</h3>
 
-##### 1. Clone the repository
+<p align="center">Refer to <a href="./DOCKER.md">DOCKER.md</a> for Docker-specific installation and operation.</p>
 
-```shell
-git clone https://github.com/masa-finance/masa-oracle.git
-```
+<!-- Staking Tokens -->
+<h2 align="center" id="staking-tokens">
+  Staking Tokens
+</h2>
 
-##### 2. Build the go code into the masa-node binary
+<p align="center">Secure your participation and potential rewards in the network by staking tokens. Detailed steps for both local and Docker setups are available.</p>
 
-```shell
-go build -v -o masa-node ./cmd/masa-node
-```
+<!-- Running the Node -->
+<h2 align="center" id="running-the-node">
+  Running the Node
+</h2>
 
-##### 3. Go into the contracts directory and build the contract npm modules that the go binary uses
+<p align="center">Instructions for initiating your node and connecting it to the Masa network. Verify the correct functioning of your setup via the logs and ensure your node's continuous operation.</p>
 
-```shell
-cd contracts/ 
-npm install
-cd ../
-```
+<!-- Updates & Additional Information -->
+<h2 align="center" id="updates-additional-information">
+  Updates & Additional Information
+</h2>
 
-##### 4. Set env vars
+<p align="center">Keep your node and knowledge up-to-date by following the latest developments and updates. Regularly check back for new features and community insights.</p>
 
-Ensure your environment has the required env var, ENV, exported. It should be set to test to join the testnet.
-Optionally, you can set RPC_URL to change it from the default (<https://ethereum-sepolia.publicnode.com>)
+<p align="center">For more details, refer to the Masa Node <a href="CLI.md">CLI Documentation</a> and <a href="LLM.md">Twitter Sentiment Analysis Documentation</a>.</p>
 
-```shell
-export ENV=test
-export RPC_URL=https://1rpc.io/sepolia # This is optional and will be set to the default https://ethereum-sepolia.publicnode.com without it.
-```
+<!-- API Swagger Docs -->
+<h2 align="center">
+  API Swagger Docs
+</h2>
 
-##### 5. Start up masa-node. Be sure to include your bootnodes list with the --bootnodes flag
+<p align="center">
+  Access the Masa node's API documentation here:
+  <pre><code>http://<masa-node>:8080/swagger/index.html</code></pre>
+</p>
 
-```shell
-/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
-```
+<!-- Consensus and Rewards -->
+<h2 align="center">
+  Consensus & Rewards
+</h2>
 
-```shell
-./masa-node --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
-```
+<p align="center">Discover how consensus is maintained and how rewards are structured and distributed within the Masa network. These mechanisms ensure fairness and encourage active participation.</p>
 
-## Makefile Commands
-
-The Makefile provides several commands to build, install, run, test, and clean the Masa Node project. Here's a description of each command:
-
-### make build
-
-The build command compiles the Masa Node binary and places it in the ./bin directory. It uses the go build command with the following flags:
-
--v: Enables verbose output to show the packages being compiled.
--o ./bin/masa-node: Specifies the output binary name and location.
-./cmd/masa-node: Specifies the package to build (the main package).
-make install
-The install command runs the node_install.sh script to install any necessary dependencies or perform additional setup steps required by the Masa Node.
-
-### make run
-
-The run command first builds the Masa Node binary using the build command and then executes the binary located at ./bin/masa-node. This command allows you to compile and run the Masa Node in a single step.
-
-### make test
-
-The test command runs all the tests in the project using the go test command. It recursively searches for test files in all subdirectories and runs them.
-
-### make clean
-
-The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_oracle_node.log file, which may contain log output from previous runs.
-
-To execute any of these commands, simply run make in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
-
-## Funding the Node (in order to Stake)
-
-Find the public key of your node in the logs.
-
-Send 1000 MASA and .01 sepoliaETH to the node's public key / wallet address.
-
-When the transactions have settled, you can stake
-
-### Staking Tokens
-
-- For local setup, stake tokens with:
-
-  ```shell
-  ./masa-node --stake 1000
-  ```
-
-- For Docker setup, stake tokens with:
-  
-  ```shell
-  docker-compose run --rm masa-node /usr/bin/masa-node --stake 1000
-  ```
-
-### Running the Node
-
-- **Local Setup**: Connect your node to the Masa network:
-  
-  ```shell
-  ./masa-node --bootnodes=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa --port=4001 --udp=true --tcp=false --start=true --env=test
-  ```
-
-- **Docker Setup**: Your node will start automatically with `docker-compose up -d`. Verify it's running correctly:
-  
-  ```shell
-  docker-compose logs -f masa-node
-  ```
-
-After setting up your node, its address will be displayed, indicating it's ready to connect with other Masa nodes. Follow any additional configuration steps and best practices as per your use case or network requirements.
-
-## Updates & Additional Information
-
-Stay tuned to the Masa Oracle repository for updates and additional details on effectively using the protocol. For Docker users, update your node by pulling the latest changes from the Git repository, then rebuild and restart your Docker containers.
-
-## Masa Node CLI
-
-For more detailed documentation, please refer to the [CLI.md](md/CLI.md) file.
-
-## Masa Node Twitter Sentiment Analysis
-
-For more detailed documentation, please refer to the [LLM.md](md/LLM.md) file.
-
-## API Swagger Docs
-
-```shell
-http://<masa-node>:8080/swagger/index.html
-```
-
-## LLM Endpoint examples
-
-ollama
-
-```shell
-curl https://llm-dev.masa.finance/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
-```
-
-## Consensus
-
-*options WIP*
-
-- node must be staked ✓
-- un-staked / staked participate and infer the quality of their requests
-- node uptime ie epoch/period
-- staked / un-staked
-- how much staked
-- participation rate
-- let staked nodes rate each other
-- let un-staked nodes rate each other
-- totalBytes scraped
-
-## Rewards
-
-*assumptions WIP*
-
-- node must be staked ✓
-- node must have n number of staked tokens / n = ?
-- do we want to offer scaled rewards based on how many tokens were staked?
-- how are the rewards distributed - offchain for now MVP
+<!-- Footer -->
+<p align="center">Join the Masa community for support and networking. Visit our <a href="https://discord.gg/masafinance">Discord</a> for real-time interaction with fellow developers and the Masa team.</p>
