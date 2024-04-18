@@ -1,0 +1,23 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - test
+      - stage
+      - prod
+
+jobs:
+  build-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Build Binary
+        run: go build -v -o masa-node ./cmd/masa-node
