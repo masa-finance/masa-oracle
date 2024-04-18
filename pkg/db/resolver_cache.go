@@ -191,11 +191,11 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		logrus.Errorf("%+v", err)
 	}
 	for _, record := range records {
-		logrus.Printf("syncing record %s", record.Key)
 		key := record.Key
 		if len(key) > 0 && key[0] == '/' {
 			key = key[1:]
 		}
+		logrus.Printf("syncing record %s", key)
 		_, _ = WriteData(node, key, record.Value)
 	}
 }
