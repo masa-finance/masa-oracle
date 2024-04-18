@@ -8,17 +8,9 @@ on:
       - stage
       - prod
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
-  build:
+  build-pr:
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'main' || github.ref == 'refs/heads/test' && 'test' || 'dev' }}
-    outputs:
-      environment: ${{ steps.set-env.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
