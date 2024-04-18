@@ -45,6 +45,12 @@ func (w *Worker) Receive(ctx *actor.Context) {
 		logrus.Info("Actor worker initialized")
 		var workData map[string]string
 		err := json.Unmarshal([]byte(m.Data), &workData)
+		// @todo calc bytes from workData this worker processed
+		// save to nodedata for this peer
+		// validate for dupes and dont add to bytes
+		// do docs for .env and flags usage and add to website docs project
+		// Calculate total bytes in length from m.Data and add it to node status BytesScraped
+
 		if err != nil {
 			logrus.Errorf("Error parsing work data: %v", err)
 			return
@@ -123,9 +129,6 @@ func computeCid(str string) (string, error) {
 //	d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "5"})
 //	go workers.SendWorkToPeers(node, d)
 func SendWorkToPeers(node *masa.OracleNode, data []byte) {
-	// testing another peer on my local lan this will be removed
-	// node.ActorEngine.Subscribe(actor.NewPID(fmt.Sprintf("%s:4001", "192.168.4.164"), fmt.Sprintf("%s/%s", "peer_worker", "peer")))
-	//
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)
@@ -138,7 +141,6 @@ func SendWorkToPeers(node *masa.OracleNode, data []byte) {
 	}
 	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
 	// ctx.Send(ctx.PID(), &msg.Message{Data: string(jsonData)})
-
 	go monitorWorkerData(context.Background(), node)
 }
 
@@ -170,8 +172,21 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 			logrus.Debug("tick")
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
-			logrus.Infof("worker cid: %v", key) // @todo gen records all get
-			_, _ = db.WriteData(node, key, data)
+			val := db.ReadData(node, key)
+			// doublespend check
+			if val == nil {
+				go db.WriteData(node, key, data)
+				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+				nodeData.BytesScraped += int64(len(data))
+				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+				if err != nil {
+					logrus.Error(err)
+				}
+				jsonData, _ := json.Marshal(nodeData)
+				go db.WriteData(node, node.Host.ID().String(), jsonData)
+			}
+
+			// @todo add list of keys to nodeData ie Records: []string ?
 		case <-ctx.Done():
 			return
 		}
