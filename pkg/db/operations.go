@@ -88,15 +88,15 @@ func WriteData(node *masa.OracleNode, key string, value []byte) (bool, error) {
 	var err error
 	node.DHT.ForceRefresh()
 	if key != node.Host.ID().String() {
-		err = node.DHT.PutValue(ctx, key, value) // any key value so the data is public
-		// err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
+		err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
+
 		_, er := PutCache(ctx, key, value)
 		if er != nil {
 			logrus.Errorf("%v", er)
 		}
 	} else {
-		err = node.DHT.PutValue(ctx, node.Host.ID().String(), value) // nodes private data based on node id
-		// err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
+		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
+
 		_, er := PutCache(ctx, node.Host.ID().String(), value)
 		if er != nil {
 			logrus.Errorf("%v", er)
@@ -129,11 +129,9 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 	var val []byte
 
 	if key != node.Host.ID().String() {
-		// val, err = node.DHT.GetValue(ctx, "/db/"+key)
-		val, err = node.DHT.GetValue(ctx, key)
+		val, err = node.DHT.GetValue(ctx, "/db/"+key)
 	} else {
-		// val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
-		val, err = node.DHT.GetValue(ctx, node.Host.ID().String())
+		val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
 	}
 
 	if err != nil {

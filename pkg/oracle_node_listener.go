@@ -37,8 +37,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 			if node.IsWriter {
 				var ns nodestatus.NodeStatus
 				_ = json.Unmarshal(jsonData, &ns)
-				err = node.DHT.PutValue(context.Background(), ns.PeerID, jsonData)
-				// err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+				err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
 				if err != nil {
 					logrus.Errorf("%v", err)
 				}
@@ -187,8 +186,7 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 					jsonData, _ := json.Marshal(p)
 					var ns nodestatus.NodeStatus
 					_ = json.Unmarshal(jsonData, &ns)
-					err := node.DHT.PutValue(context.Background(), ns.PeerID, jsonData)
-					// err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+					err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
 					if err != nil {
 						logrus.Errorf("%v", err)
 					}
