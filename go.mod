@@ -11,7 +11,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
-	github.com/ethereum/go-ethereum v1.13.14
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/fatih/color v1.16.0
 	github.com/gdamore/tcell/v2 v2.7.1
 	github.com/gin-contrib/cors v1.7.1
