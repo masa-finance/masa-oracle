@@ -82,7 +82,6 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 //
 // It returns the original key string and a possible error.
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
-	fmt.Println("PutCache keyStr", ds.NewKey(keyStr))
 	err := cache.Put(ctx, ds.NewKey(keyStr), value)
 	if err != nil {
 		return nil, err
@@ -193,7 +192,11 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	}
 	for _, record := range records {
 		logrus.Printf("syncing record %s", record.Key)
-		_, _ = WriteData(node, record.Key, record.Value)
+		key := record.Key
+		if len(key) > 0 && key[0] == '/' {
+			key = key[1:]
+		}
+		_, _ = WriteData(node, key, record.Value)
 	}
 }
 
