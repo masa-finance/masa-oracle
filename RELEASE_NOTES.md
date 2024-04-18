@@ -10,13 +10,13 @@
 
 ### New Features
 
-* Global Workers for Scraping
-* Ollama LLM API Support
-* Adding Protobuf for node<->node communications
+* Added Bytes Scraped to NodeData
+* Protobuf for node<->node communications
 
 ### Bug Fixes
 
-* None
+* Moved /status to top level vs api/v1
+* Swagger bugs
 
 ### Performance Improvements
 
@@ -25,6 +25,6 @@
 ### ChangeLog
 
 * Flags added
-  * --twitterScraper=true
-  * --webScraper=true
+  * --twitterScraper
+  * --webScraper
 * Upgraded /contracts to @latest
