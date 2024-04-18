@@ -172,17 +172,19 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 			logrus.Debug("tick")
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
-			logrus.Infof("worker cid: %v", key)
-			go db.WriteData(node, key, data)
-
-			nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-			nodeData.BytesScraped += int64(len(data))
-			err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
-			if err != nil {
-				logrus.Error(err)
+			val := db.ReadData(node, key)
+			// doublespend check
+			if val == nil {
+				go db.WriteData(node, key, data)
+				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+				nodeData.BytesScraped += int64(len(data))
+				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+				if err != nil {
+					logrus.Error(err)
+				}
+				jsonData, _ := json.Marshal(nodeData)
+				go db.WriteData(node, node.Host.ID().String(), jsonData)
 			}
-			jsonData, _ := json.Marshal(nodeData)
-			go db.WriteData(node, node.Host.ID().String(), jsonData)
 
 			// @todo add list of keys to nodeData ie Records: []string ?
 		case <-ctx.Done():
