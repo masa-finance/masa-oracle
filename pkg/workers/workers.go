@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
 	"github.com/ipfs/go-cid"
@@ -174,14 +173,18 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
 			logrus.Infof("worker cid: %v", key)
+			go db.WriteData(node, key, data)
 
-			bytesScraped := len(data)
-			nodeStatus := &nodestatus.NodeStatus{
-				BytesScraped: int64(bytesScraped),
+			nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+			nodeData.BytesScraped += int64(len(data))
+			err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+			if err != nil {
+				logrus.Error(err)
 			}
-			nodeStatus.BytesScraped += int64(bytesScraped)
-			// @todo create record for peerid with keys and values
-			_, _ = db.WriteData(node, key, data)
+			jsonData, _ := json.Marshal(nodeData)
+			go db.WriteData(node, node.Host.ID().String(), jsonData)
+
+			// @todo add list of keys to nodeData ie Records: []string ?
 		case <-ctx.Done():
 			return
 		}

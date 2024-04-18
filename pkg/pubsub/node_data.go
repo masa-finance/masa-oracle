@@ -73,6 +73,8 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
 	cfg := config.GetInstance()
 	wn, _ := strconv.ParseBool(cfg.WriterNode)
+	ts := cfg.TwitterScraper
+	ws := cfg.WebScraper
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -84,8 +86,8 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		Activity:          activity,
 		SelfIdentified:    false,
 		IsWriterNode:      wn,
-		IsTwitterScraper:  cfg.TwitterScraper,
-		IsWebScraper:      cfg.WebScraper,
+		IsTwitterScraper:  ts,
+		IsWebScraper:      ws,
 		BytesScraped:      0,
 	}
 }
@@ -95,6 +97,16 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 // This can be used by other nodes to connect to this node.
 func (n *NodeData) Address() string {
 	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
+}
+
+func (n *NodeData) TwitterScraper() bool {
+	cfg := config.GetInstance()
+	return cfg.TwitterScraper
+}
+
+func (n *NodeData) WebScraper() bool {
+	cfg := config.GetInstance()
+	return cfg.WebScraper
 }
 
 // Joined updates the NodeData when the node joins the network.
@@ -162,7 +174,7 @@ func (n *NodeData) GetAccumulatedUptime() time.Duration {
 // UpdateAccumulatedUptime updates the accumulated uptime of the node to account for any
 // discrepancy between the last left and last joined times from gossipsub events.
 // It calculates the duration between last left and joined if the node is marked as left.
-// Otherwise it uses the time since the last joined event.
+// Otherwise, it uses the time since the last joined event.
 func (n *NodeData) UpdateAccumulatedUptime() {
 	if n.Activity == ActivityLeft {
 		n.AccumulatedUptime += n.LastLeft.Sub(n.LastJoined)
