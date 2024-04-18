@@ -82,7 +82,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 //
 // It returns the original key string and a possible error.
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
-	// key, _ := stringToCid(keyStr)
+	fmt.Println("PutCache keyStr", ds.NewKey(keyStr))
 	err := cache.Put(ctx, ds.NewKey(keyStr), value)
 	if err != nil {
 		return nil, err

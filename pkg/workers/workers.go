@@ -45,12 +45,6 @@ func (w *Worker) Receive(ctx *actor.Context) {
 		logrus.Info("Actor worker initialized")
 		var workData map[string]string
 		err := json.Unmarshal([]byte(m.Data), &workData)
-		// @todo calc bytes from workData this worker processed
-		// save to nodedata for this peer
-		// validate for dupes and dont add to bytes
-		// do docs for .env and flags usage and add to website docs project
-		// Calculate total bytes in length from m.Data and add it to node status BytesScraped
-
 		if err != nil {
 			logrus.Errorf("Error parsing work data: %v", err)
 			return
@@ -173,7 +167,7 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
 			val := db.ReadData(node, key)
-			// doublespend check
+			// double spend check
 			if val == nil {
 				go db.WriteData(node, key, data)
 				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
@@ -184,6 +178,10 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 				}
 				jsonData, _ := json.Marshal(nodeData)
 				go db.WriteData(node, node.Host.ID().String(), jsonData)
+				err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
+				if err != nil {
+					logrus.Errorf("Error publishing node data: %v", err)
+				}
 			}
 
 			// @todo add list of keys to nodeData ie Records: []string ?

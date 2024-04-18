@@ -115,7 +115,7 @@ When the transactions have settled, you can stake
 - For local setup, stake tokens with:
 
   ```shell
-  ./masa-node --stake 1000
+  ./bin/masa-node --stake 1000
   ```
 
 - For Docker setup, stake tokens with:
