@@ -132,7 +132,12 @@ Is WebScraper:          false
 INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
 INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.11-alpha-dev 
 ```
-### 7. Node Rewards Calculation
+
+### 7. View swagger API 
+```bash
+http://localhost:8080/swagger/index.html
+```
+### 8. Node Rewards Calculation
 Node rewards are determined by:
 1. Uptime: Rewards increase with node availability.
 2. Data Served: More rewards for serving more data via TwitterScraper and WebScraper.
