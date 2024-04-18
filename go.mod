@@ -13,7 +13,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/fatih/color v1.16.0
-	github.com/gdamore/tcell/v2 v2.7.1
+	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/gin-contrib/cors v1.7.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gocolly/colly/v2 v2.1.0
