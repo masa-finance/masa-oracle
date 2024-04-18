@@ -409,7 +409,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
 			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
 			"Rewards":          "Coming Soon!",
-			"BytesScraped":     nodeData.BytesScraped,
+			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(nodeData.BytesScraped/1024/1024)),
 		})
 	}
 }
