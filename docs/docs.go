@@ -235,18 +235,23 @@ const docTemplate = `{
 					"summary": "Search recent tweets",
 					"parameters": [
 						{
-							"type": "string",
-							"description": "Search Query",
-							"name": "query",
-							"in": "query",
-							"required": true
-						},
-						{
-							"type": "integer",
-							"description": "Number of tweets to return",
-							"name": "count",
-							"in": "query",
-							"required": false
+							"in": "body",
+							"name": "body",
+							"description": "Search parameters",
+							"required": true,
+							"schema": {
+								"type": "object",
+								"properties": {
+									"query": {
+										"type": "string",
+										"description": "Search Query"
+									},
+									"count": {
+										"type": "integer",
+										"description": "Number of tweets to return"
+									}
+								}
+							}
 						}
 					],
 					"responses": {
@@ -315,12 +320,22 @@ const docTemplate = `{
 					"summary": "Web Data",
 					"parameters": [
 						{
-							"description": "Search Query",
-							"name": "query",
 							"in": "body",
+							"name": "body",
+							"description": "Search parameters",
 							"required": true,
 							"schema": {
-								"type": "string"
+								"type": "object",
+								"properties": {
+									"url": {
+										"type": "string",
+										"description": "Url"
+									},
+									"depth": {
+										"type": "integer",
+										"description": "Number of pages to scrape"
+									}
+								}
 							}
 						}
 					],
@@ -353,6 +368,15 @@ const docTemplate = `{
 						"DHT"
 					],
 					"summary": "Get DHT Data",
+					"parameters": [
+						{
+							"in": "query",
+							"name": "key",
+							"description": "Key to retrieve data for",
+							"required": true,
+							"type": "string"
+						}
+					],
 					"responses": {
 						"200": {
 							"description": "Successfully retrieved data from DHT",
@@ -387,7 +411,15 @@ const docTemplate = `{
 							"in": "body",
 							"required": true,
 							"schema": {
-								"type": "string"
+								"type": "object",
+								"properties": {
+									"key": {
+										"type": "string"
+									},
+									"value": {
+										"type": "string"
+									}
+								}
 							}
 						}
 					],
@@ -518,30 +550,26 @@ const docTemplate = `{
 					"summary": "Analyze Sentiment of Tweets",
 					"parameters": [
 						{
-							"description": "Search Query",
-							"name": "query",
 							"in": "body",
+							"name": "body",
+							"description": "Sentiment analysis request body",
 							"required": true,
 							"schema": {
-								"type": "string"
-							}
-						},
-						{
-							"description": "Number of tweets to analyze",
-							"name": "count",
-							"in": "body",
-							"required": false,
-							"schema": {
-								"type": "integer"
-							}
-						},
-						{
-							"description": "Sentiment analysis model to use",
-							"name": "model",
-							"in": "body",
-							"required": false,
-							"schema": {
-								"type": "string"
+								"type": "object",
+								"properties": {
+									"query": {
+										"type": "string",
+										"description": "Search Query"
+									},
+									"count": {
+										"type": "integer",
+										"description": "Number of tweets to analyze"
+									},
+									"model": {
+										"type": "string",
+										"description": "Sentiment analysis model to use"
+									}
+								}
 							}
 						}
 					],
@@ -576,30 +604,26 @@ const docTemplate = `{
 					"summary": "Analyze Sentiment of Web Content",
 					"parameters": [
 						{
-							"description": "Search Query",
-							"name": "query",
 							"in": "body",
+							"name": "body",
+							"description": "Sentiment analysis request body",
 							"required": true,
 							"schema": {
-								"type": "string"
-							}
-						},
-						{
-							"description": "Number of tweets to analyze",
-							"name": "count",
-							"in": "body",
-							"required": false,
-							"schema": {
-								"type": "integer"
-							}
-						},
-						{
-							"description": "Sentiment analysis model to use",
-							"name": "model",
-							"in": "body",
-							"required": false,
-							"schema": {
-								"type": "string"
+								"type": "object",
+								"properties": {
+									"url": {
+										"type": "string",
+										"description": "URL of the web content"
+									},
+									"depth": {
+										"type": "integer",
+										"description": "Depth of web crawling"
+									},
+									"model": {
+										"type": "string",
+										"description": "Sentiment analysis model to use"
+									}
+								}
 							}
 						}
 					],
@@ -619,7 +643,58 @@ const docTemplate = `{
 					}
 				}
 			},
-
+		},
+		"DHTResponse": {
+			"type": "object",
+			"properties": {
+				"key": {
+					"type": "string"
+				},
+				"value": {
+					"type": "string"
+				}
+			}
+		},
+		"SuccessResponse": {
+			"type": "object",
+			"properties": {
+				"message": {
+					"type": "string"
+				}
+			}
+		},
+		"WebDataRequest": {
+			"type": "object",
+			"properties": {
+				"query": {
+					"type": "string"
+				},
+				"url": {
+					"type": "string"
+				},
+				"depth": {
+					"type": "integer"
+				}
+			}
+		},
+		"WebDataResponse": {
+			"type": "object",
+			"properties": {
+				"data": {
+					"type": "string"
+				}
+			}
+		},
+		"SentimentAnalysisResponse": {
+			"type": "object",
+			"properties": {
+				"sentiment": {
+					"type": "string"
+				},
+				"data": {
+					"type": "string"
+				}
+			}
 		},
 		"definitions": {
 			"ErrorResponse": {
@@ -678,8 +753,8 @@ const docTemplate = `{
 					"sentiment": {
 						"type": "string"
 					},
-					"score": {
-						"type": "number"
+					"data": {
+						"type": "string"
 					}
 				}
 			},
@@ -733,3 +808,5 @@ var SwaggerInfo = &swag.Spec{
 func init() {
 	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
 }
+
+
