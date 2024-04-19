@@ -89,12 +89,14 @@ func WriteData(node *masa.OracleNode, key string, value []byte) (bool, error) {
 	node.DHT.ForceRefresh()
 	if key != node.Host.ID().String() {
 		err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
+
 		_, er := PutCache(ctx, key, value)
 		if er != nil {
 			logrus.Errorf("%v", er)
 		}
 	} else {
 		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
+
 		_, er := PutCache(ctx, node.Host.ID().String(), value)
 		if er != nil {
 			logrus.Errorf("%v", er)
@@ -135,7 +137,7 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Error("Failed to read from the database")
+		}).Debug("Failed to read from the database")
 		return nil
 	}
 
