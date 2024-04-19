@@ -29,7 +29,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if cfg.StakeAmount != "" {
-		// Exit after staking, do not proceed to start the node
 		err := handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Warningf("%v", err)
