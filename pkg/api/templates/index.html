@@ -26,7 +26,8 @@
                         <p class="card-text"><strong>Web Scraper:</strong> <span class="badge badge-success">{{.IsWebScraper}}</span></p>
                     {{else}}
                     <p class="card-text"><strong>Web Scraper:</strong> <span class="badge badge-danger">{{.IsWebScraper}}</span></p>
-                    {{end}}
+                    {{end}}                    
+                    <p class="card-text"><strong>Bytes Scraped:</strong> <span id="bytesScraped">{{.BytesScraped}}</span></p>
                     <p class="card-text"><strong>Total Peers:</strong> <span id="totalPeers">{{.TotalPeers}}</span></p>
                 </div>
             </div>

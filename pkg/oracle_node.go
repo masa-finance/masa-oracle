@@ -48,6 +48,8 @@ type OracleNode struct {
 	Signature                         string
 	IsStaked                          bool
 	IsWriter                          bool
+	IsTwitterScraper                  bool
+	IsWebScraper                      bool
 	StartTime                         time.Time
 	AdSubscriptionHandler             *ad.SubscriptionHandler
 	NodeStatusSubscriptionsHandler    *nodestatus.SubscriptionHandler
@@ -120,6 +122,8 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	}
 
 	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
+	isTwitterScraper := cfg.TwitterScraper
+	isWebScraper := cfg.WebScraper
 
 	var engine *actor.Engine
 	r := remote.New(fmt.Sprintf("0.0.0.0:%d", cfg.PortNbr), remote.NewConfig())
@@ -129,17 +133,19 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	}
 
 	return &OracleNode{
-		Host:          hst,
-		PrivKey:       masacrypto.KeyManagerInstance().EcdsaPrivKey,
-		Protocol:      config.ProtocolWithVersion(config.OracleProtocol),
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
-		Context:       ctx,
-		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
-		PubSubManager: subscriptionManager,
-		IsStaked:      isStaked,
-		IsWriter:      isWriter,
-		ActorEngine:   engine,
+		Host:             hst,
+		PrivKey:          masacrypto.KeyManagerInstance().EcdsaPrivKey,
+		Protocol:         config.ProtocolWithVersion(config.OracleProtocol),
+		multiAddrs:       myNetwork.GetMultiAddressesForHostQuiet(hst),
+		Context:          ctx,
+		PeerChan:         make(chan myNetwork.PeerEvent),
+		NodeTracker:      pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
+		PubSubManager:    subscriptionManager,
+		IsStaked:         isStaked,
+		IsWriter:         isWriter,
+		IsTwitterScraper: isTwitterScraper,
+		IsWebScraper:     isWebScraper,
+		ActorEngine:      engine,
 	}, nil
 }
 

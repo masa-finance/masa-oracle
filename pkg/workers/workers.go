@@ -123,9 +123,6 @@ func computeCid(str string) (string, error) {
 //	d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "5"})
 //	go workers.SendWorkToPeers(node, d)
 func SendWorkToPeers(node *masa.OracleNode, data []byte) {
-	// testing another peer on my local lan this will be removed
-	// node.ActorEngine.Subscribe(actor.NewPID(fmt.Sprintf("%s:4001", "192.168.4.164"), fmt.Sprintf("%s/%s", "peer_worker", "peer")))
-	//
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)
@@ -138,7 +135,6 @@ func SendWorkToPeers(node *masa.OracleNode, data []byte) {
 	}
 	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
 	// ctx.Send(ctx.PID(), &msg.Message{Data: string(jsonData)})
-
 	go monitorWorkerData(context.Background(), node)
 }
 
@@ -170,8 +166,25 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 			logrus.Debug("tick")
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
-			logrus.Infof("worker cid: %v", key) // @todo gen records all get
-			_, _ = db.WriteData(node, key, data)
+			val := db.ReadData(node, key)
+			// double spend check
+			if val == nil {
+				go db.WriteData(node, key, data)
+				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+				nodeData.BytesScraped += int64(len(data))
+				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+				if err != nil {
+					logrus.Error(err)
+				}
+				jsonData, _ := json.Marshal(nodeData)
+				go db.WriteData(node, node.Host.ID().String(), jsonData)
+				err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
+				if err != nil {
+					logrus.Errorf("Error publishing node data: %v", err)
+				}
+			}
+
+			// @todo add list of keys to nodeData ie Records: []string ?
 		case <-ctx.Done():
 			return
 		}

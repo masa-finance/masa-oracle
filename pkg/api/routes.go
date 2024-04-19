@@ -40,7 +40,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 	// Define a list of routes that should not require authentication.
 	ignoredRoutes := []string{
-		"/api/v1/status",
+		"/status",
 	}
 
 	// Middleware to enforce API token authentication, excluding ignored routes.
@@ -300,16 +300,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /sentiment/web [post]
 		v1.POST("/sentiment/web", API.SearchWebAndAnalyzeSentiment())
 
-		// @Summary Node Status Page
-		// @Description Retrieves the status page of the node
-		// @Tags Status
-		// @Accept  html
-		// @Produce  html
-		// @Success 200 {object} string "Successfully retrieved node status page"
-		// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
-		// @Router /status [get]
-		v1.GET("/status", API.NodeStatusPageHandler())
-
 		// @Summary Create New Topic
 		// @Description Creates a new discussion topic
 		// @Tags Topics
@@ -332,6 +322,16 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
 	}
+
+	// @Summary Node Status Page
+	// @Description Retrieves the status page of the node
+	// @Tags Status
+	// @Accept  html
+	// @Produce  html
+	// @Success 200 {object} string "Successfully retrieved node status page"
+	// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
+	// @Router /status [get]
+	router.GET("/status", API.NodeStatusPageHandler())
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.DefaultModelsExpandDepth(-1)))
 	return router
