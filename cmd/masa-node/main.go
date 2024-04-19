@@ -32,9 +32,8 @@ func main() {
 		// Exit after staking, do not proceed to start the node
 		err := handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
-			logrus.Fatal(err)
+			logrus.Warningf("%v", err)
 		}
-		os.Exit(0)
 	}
 
 	// Verify the staking event
