@@ -6,7 +6,7 @@ toolchain go1.22.1
 
 require (
 	github.com/anthdm/hollywood v0.0.0-20240115210651-dd34702ee21f
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.10.0
