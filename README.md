@@ -1,6 +1,4 @@
-# Masa Oracle: Decentralized Data Protocol 🌐
-
-The Masa Oracle governs the access, sharing, and rewarding of private behavioral and identity data in a decentralized and private manner. The Masa Oracle Network ensures transparency and security of data sharing, while  enabling equitable compensation for nodes that participate in the Masa zk-Data Network and Marketplace.
+# Masa Oracle: Decentralized Data and LLM Network 🌐
 
 ## Contents
 
@@ -54,14 +52,39 @@ npm install
 cd ../
 ```
 
-##### 4. Set env vars
+##### 4. Set env vars using the following template
+```plaintext
+# Default .env configuration
+BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
 
-Ensure your environment has the required env var, ENV, exported. It should be set to test to join the testnet.
-Optionally, you can set RPC_URL to change it from the default (<https://ethereum-sepolia.publicnode.com>)
+API_KEY=
+RPC_URL=https://ethereum-sepolia.publicnode.com
+ENV=test
+FILE_PATH=.
+WRITER_NODE=false
+CACHE_PATH=CACHE
+PORT=8080
 
-```shell
-export ENV=test
-export RPC_URL=https://1rpc.io/sepolia # This is optional and will be set to the default https://ethereum-sepolia.publicnode.com without it.
+# AI LLM
+CLAUDE_API_KEY=
+CLAUDE_API_URL=https://api.anthropic.com/v1/messages
+CLAUDE_API_VERSION=2023-06-01
+ELAB_URL=https://api.elevenlabs.io/v1/text-to-speech/ErXwobaYiN019PkySvjV/stream
+ELAB_KEY=
+OPENAI_API_KEY=
+PROMPT="You are a helpful assistant."
+
+# X
+TWITTER_USER="yourusername"
+TWITTER_PASS="yourpassword"
+TWITTER_2FA_CODE="your2fa"
+
+# Worker node config; default = false
+TWITTER_SCRAPER=true
+WEB_SCRAPER=true
+
+# PG
+PG_URL=
 ```
 
 ##### 5. Start up masa-node. Be sure to include your bootnodes list with the --bootnodes flag

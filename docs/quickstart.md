@@ -36,7 +36,7 @@ BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1USt
 
 API_KEY=
 RPC_URL=https://ethereum-sepolia.publicnode.com
-ENV=dev
+ENV=test
 FILE_PATH=.
 WRITER_NODE=false
 CACHE_PATH=CACHE
@@ -55,6 +55,10 @@ PROMPT="You are a helpful assistant."
 TWITTER_USER="yourusername"
 TWITTER_PASS="yourpassword"
 TWITTER_2FA_CODE="your2fa"
+
+# Worker node config; default = false
+TWITTER_SCRAPER=true
+WEB_SCRAPER=true
 
 # PG
 PG_URL=
@@ -138,10 +142,11 @@ INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.11-alpha-
 http://localhost:8080/swagger/index.html
 ```
 ### 8. Node Rewards Calculation
+
 Node rewards are determined by:
-1. Uptime: Rewards increase with node availability.
-2. Data Served: More rewards for serving more data via TwitterScraper and WebScraper.
-3. Stake Size: Larger stakes result in higher reward weight and base rewards.
+**1. Uptime:** Rewards increase with node availability.
+**2. Data Served:** More rewards for serving more data via TwitterScraper and WebScraper.
+**3. Stake Size:** Larger stakes result in higher reward weight and base rewards.
 
 :::important
 Rewards are not currently live on the testnet and are expected to go live in April 2024. This means that while you can stake your node and participate in the network, the rewards system will be activated at a later date. Please stay tuned for updates regarding the rewards launch.
