@@ -188,9 +188,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Tags Web
 		// @Accept  json
 		// @Produce  json
-		// @Param   query   body    string  true  "Search Query"
+		// @Param   url   body    object  true  "Web Data Request"  example({"url": "https://hedgey.finance/"})
 		// @Success 200 {object} WebDataResponse "Successfully retrieved web data"
-		// @Failure 400 {object} ErrorResponse "Invalid query or error fetching web data"
+		// @Failure 400 {object} ErrorResponse "Invalid URL or error fetching web data"
 		// @Router /data/web [post]
 		v1.POST("/data/web", API.WebData())
 
