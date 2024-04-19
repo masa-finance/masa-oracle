@@ -12,6 +12,7 @@ type AppConfig struct {
 	Model           string
 	TwitterUser     string
 	TwitterPassword string
+	Twitter2FA      string
 }
 
 var appConfig = AppConfig{}

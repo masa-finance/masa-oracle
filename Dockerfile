@@ -5,6 +5,7 @@ FROM ubuntu:22.04 as base
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl sudo gpg lsb-release software-properties-common \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y apt-utils \
     && apt-get install -y nodejs \
     && npm install -g npm@latest
 
@@ -24,7 +25,7 @@ RUN cd contracts && npm install
 USER root
 
 # Build the Go binary in a separate stage
-FROM golang:1.21 as builder
+FROM golang:1.22 as builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download

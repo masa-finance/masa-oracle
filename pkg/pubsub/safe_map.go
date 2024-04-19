@@ -57,6 +57,9 @@ func (sm *SafeMap) GetStakedNodesSlice() []NodeData {
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
 		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
+		nd.IsTwitterScraper = nodeData.IsTwitterScraper
+		nd.IsWebScraper = nodeData.IsWebScraper
+		nd.BytesScraped = nodeData.BytesScraped
 		result = append(result, nd)
 		// }
 	}

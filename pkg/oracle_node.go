@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anthdm/hollywood/remote"
+
+	"github.com/anthdm/hollywood/actor"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -28,25 +31,30 @@ import (
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/workerstatus"
 )
 
 type OracleNode struct {
-	Host                           host.Host
-	PrivKey                        *ecdsa.PrivateKey
-	Protocol                       protocol.ID
-	priorityAddrs                  multiaddr.Multiaddr
-	multiAddrs                     []multiaddr.Multiaddr
-	DHT                            *dht.IpfsDHT
-	Context                        context.Context
-	PeerChan                       chan myNetwork.PeerEvent
-	NodeTracker                    *pubsub2.NodeEventTracker
-	PubSubManager                  *pubsub2.Manager
-	Signature                      string
-	IsStaked                       bool
-	IsWriter                       bool
-	StartTime                      time.Time
-	AdSubscriptionHandler          *ad.SubscriptionHandler
-	NodeStatusSubscriptionsHandler *nodestatus.SubscriptionHandler
+	Host                              host.Host
+	PrivKey                           *ecdsa.PrivateKey
+	Protocol                          protocol.ID
+	priorityAddrs                     multiaddr.Multiaddr
+	multiAddrs                        []multiaddr.Multiaddr
+	DHT                               *dht.IpfsDHT
+	Context                           context.Context
+	PeerChan                          chan myNetwork.PeerEvent
+	NodeTracker                       *pubsub2.NodeEventTracker
+	PubSubManager                     *pubsub2.Manager
+	Signature                         string
+	IsStaked                          bool
+	IsWriter                          bool
+	IsTwitterScraper                  bool
+	IsWebScraper                      bool
+	StartTime                         time.Time
+	AdSubscriptionHandler             *ad.SubscriptionHandler
+	NodeStatusSubscriptionsHandler    *nodestatus.SubscriptionHandler
+	CompletedWorkSubscriptionsHandler *workerstatus.SubscriptionHandler
+	ActorEngine                       *actor.Engine
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -89,7 +97,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	securityOptions := []libp2p.Option{
 		libp2p.Security(noise.ID, noise.New),
 	}
-	// @todo failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 2048 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+	// @todo buffer size (was: 208 kiB, wanted: 2048 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
 	if cfg.UDP {
 		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))
@@ -114,18 +122,30 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	}
 
 	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
+	isTwitterScraper := cfg.TwitterScraper
+	isWebScraper := cfg.WebScraper
+
+	var engine *actor.Engine
+	r := remote.New(fmt.Sprintf("0.0.0.0:%d", cfg.PortNbr), remote.NewConfig())
+	engine, err = actor.NewEngine(actor.NewEngineConfig().WithRemote(r))
+	if err != nil {
+		logrus.Errorf("start actor engine error %v", err)
+	}
 
 	return &OracleNode{
-		Host:          hst,
-		PrivKey:       masacrypto.KeyManagerInstance().EcdsaPrivKey,
-		Protocol:      config.ProtocolWithVersion(config.OracleProtocol),
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
-		Context:       ctx,
-		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
-		PubSubManager: subscriptionManager,
-		IsStaked:      isStaked,
-		IsWriter:      isWriter,
+		Host:             hst,
+		PrivKey:          masacrypto.KeyManagerInstance().EcdsaPrivKey,
+		Protocol:         config.ProtocolWithVersion(config.OracleProtocol),
+		multiAddrs:       myNetwork.GetMultiAddressesForHostQuiet(hst),
+		Context:          ctx,
+		PeerChan:         make(chan myNetwork.PeerEvent),
+		NodeTracker:      pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
+		PubSubManager:    subscriptionManager,
+		IsStaked:         isStaked,
+		IsWriter:         isWriter,
+		IsTwitterScraper: isTwitterScraper,
+		IsWebScraper:     isWebScraper,
+		ActorEngine:      engine,
 	}, nil
 }
 

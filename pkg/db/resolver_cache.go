@@ -72,7 +72,6 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 		syncInterval := time.Second * 60 // Change as needed
 		go sync(context.Background(), node, syncInterval)
 	}
-
 }
 
 // PutCache puts a key-value pair into the resolver cache.
@@ -83,7 +82,6 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 //
 // It returns the original key string and a possible error.
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
-	// key, _ := stringToCid(keyStr)
 	err := cache.Put(ctx, ds.NewKey(keyStr), value)
 	if err != nil {
 		return nil, err
@@ -130,7 +128,7 @@ func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, err
 	}
 
 	if !res {
-		return false, fmt.Errorf("key does not exist, adding new key-value pair, %+v", err.Error())
+		return false, fmt.Errorf("key does not exist, adding new key-value pair, %+v", err)
 	}
 
 	// Put the new value for the key in the datastore
@@ -193,8 +191,12 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		logrus.Errorf("%+v", err)
 	}
 	for _, record := range records {
-		logrus.Printf("syncing record %s", record.Key)
-		_, _ = WriteData(node, record.Key, record.Value)
+		key := record.Key
+		if len(key) > 0 && key[0] == '/' {
+			key = key[1:]
+		}
+		logrus.Printf("syncing record %s", key)
+		_, _ = WriteData(node, key, record.Value)
 	}
 }
 
@@ -224,7 +226,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			nodes := nodeStatusHandler.NodeStatus
 			for _, n := range nodes {
 				jsonData, _ := json.Marshal(n)
-				_, _ = WriteData(node, "/db/"+n.PeerID, jsonData)
+				_, _ = WriteData(node, n.PeerID, jsonData)
 			}
 		case <-ctx.Done():
 			return

@@ -3,6 +3,7 @@ services:
   masa-node:
     network_mode: "host"
     build: .
+    # optional if network_mode: "host" mode is not used
     # ports:
     #   - "4001:4001"
     #   - "8080:8080"

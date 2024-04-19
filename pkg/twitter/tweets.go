@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	masa "github.com/masa-finance/masa-oracle/pkg"
+
 	"github.com/anthdm/hollywood/actor"
 	_ "github.com/lib/pq"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -15,21 +17,31 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var sentimentPrompt = "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
+
 var sentimentCh = make(chan string)
 
+// TweetRequest represents the parameters for a request to fetch and analyze tweets.
+// Count specifies the number of tweets to fetch.
+// Query is a list of keywords or phrases to search for within tweets.
+// Model indicates the language model to use for analyzing the sentiment of the tweets.
 type TweetRequest struct {
-	Count int
-	Query []string
-	Model string
+	Count int      // Number of tweets to fetch
+	Query []string // Keywords or phrases to search for
+	Model string   // Language model for sentiment analysis
 }
 
+// Manager is a struct that maintains a map of worker actors.
+// The map keys are pointers to actor.PID (Process Identifiers) and the values are booleans indicating the worker's availability.
 type Manager struct {
-	workers map[*actor.PID]bool
+	workers map[*actor.PID]bool // Map of worker actors to their availability status
 }
 
-type Worker struct {
-	TweetRequest
-	pid *actor.PID
+// TweetWorker represents a worker entity capable of processing TweetRequests.
+// It embeds TweetRequest to inherit its fields and adds a pid field to hold the worker's process identifier.
+type TweetWorker struct {
+	TweetRequest            // Embedding TweetRequest to inherit its fields
+	pid          *actor.PID // pid is the process identifier for the worker
 }
 
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
@@ -90,15 +102,15 @@ func NewManager() actor.Producer {
 // Receive processes messages sent to the Manager actor. It handles different types of messages
 // such as TweetRequest, actor.Started, and actor.Stopped by switching over the type of the message.
 // For TweetRequest messages, it delegates the handling to the handleTweetRequest method.
-// For actor.Started and actor.Stopped messages, it logs the state of the actor engine.
+// For actor.Started and actor.Stopped messages, it logs the state of the actor worker.
 func (m *Manager) Receive(c *actor.Context) {
 	switch msg := c.Message().(type) {
 	case TweetRequest:
 		_ = m.handleTweetRequest(c, msg)
 	case actor.Started:
-		logrus.Info("Actor engine initialized")
+		logrus.Info("Actor worker initialized")
 	case actor.Stopped:
-		logrus.Info("Actor engine stopped")
+		logrus.Info("Actor worker stopped")
 	}
 }
 
@@ -122,15 +134,15 @@ func (m *Manager) handleTweetRequest(c *actor.Context, msg TweetRequest) error {
 }
 
 // NewTweetWorker creates and returns a new actor.Producer function specific for tweet workers.
-// This function, when invoked, will produce an instance of a Worker actor receiver, initialized with the provided TweetRequest and PID.
+// This function, when invoked, will produce an instance of a TweetWorker actor receiver, initialized with the provided TweetRequest and PID.
 // Parameters:
 // - t: A pointer to a TweetRequest struct containing the details of the tweet queries to process.
 // - pid: A pointer to an actor.PID representing the process identifier for the actor system.
 // Returns:
-// - An actor.Producer function that produces Worker actor receivers.
+// - An actor.Producer function that produces TweetWorker actor receivers.
 func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
 	return func() actor.Receiver {
-		return &Worker{TweetRequest{
+		return &TweetWorker{TweetRequest{
 			Count: t.Count,
 			Query: t.Query,
 			Model: t.Model,
@@ -138,34 +150,34 @@ func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
 	}
 }
 
-// Receive processes messages sent to the Worker actor. It handles different types of messages
+// Receive processes messages sent to the TweetWorker actor. It handles different types of messages
 // such as actor.Started and actor.Stopped by switching over the type of the message.
-// For actor.Started messages, it initiates the process of scraping tweets based on the query and count specified in the Worker,
+// For actor.Started messages, it initiates the process of scraping tweets based on the query and count specified in the TweetWorker,
 // analyzes the sentiment of the scraped tweets, and then stops the worker actor.
 // For actor.Stopped messages, it simply logs that the worker has stopped.
-func (w *Worker) Receive(c *actor.Context) {
+func (w *TweetWorker) Receive(c *actor.Context) {
 	switch c.Message().(type) {
 	case actor.Started:
 
-		logrus.Infof("Worker started with pid %+v", c.PID())
+		logrus.Infof("TweetWorker started with pid %+v", c.PID().ID)
 		tweets, err := ScrapeTweetsByQuery(w.Query[0], w.Count)
 		if err != nil {
 			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
 		}
-		_, sentimentSummary, err := llmbridge.AnalyzeSentiment(tweets, w.Model)
+		_, sentimentSummary, err := llmbridge.AnalyzeSentimentTweets(tweets, w.Model, sentimentPrompt)
 		if err != nil {
 			sentimentCh <- err.Error()
 		}
 		sentimentCh <- sentimentSummary
 		c.Engine().Poison(c.PID()).Wait() // stop this worker by pid when job is complete
 	case actor.Stopped:
-		logrus.Info("Worker stopped")
+		logrus.Info("TweetWorker stopped")
 	}
 }
 
 // ScrapeTweetsUsingActors initiates the process of scraping tweets based on a given query, count, and model.
 // It leverages actor-based concurrency to manage the scraping and analysis tasks.
-// The function spawns a new actor engine and sends a TweetRequest message to the Manager actor.
+// The function spawns a new actor worker and sends a TweetRequest message to the Manager actor.
 // It then waits for a sentiment analysis result to be sent back through a channel.
 // Parameters:
 //   - query: The search query for fetching tweets.
@@ -181,22 +193,19 @@ func (w *Worker) Receive(c *actor.Context) {
 // Returns:
 // - A string containing the sentiment analysis summary.
 // - An error if the process fails at any point.
-func ScrapeTweetsUsingActors(query string, count int, model string) (string, error) {
+func ScrapeTweetsUsingActors(node *masa.OracleNode, query string, count int, model string) (string, error) {
 	done := make(chan bool)
+	var err error
 
 	go func() {
-		// @todo WIP use clustering for all staked nodes to participate
-		// remoter := remote.New("127.0.0.1:4000", remote.NewConfig())
-		e, err := actor.NewEngine(actor.NewEngineConfig()) // .WithRemote(remoter))
 		if err != nil {
-			logrus.Errorf("%v", err)
+			logrus.Errorf("new actor worker error %v", err)
 		} else {
-			pid := e.Spawn(NewManager(), "Manager")
+			pid := node.ActorEngine.Spawn(NewManager(), "Manager")
 			time.Sleep(time.Millisecond * 200)
-			logrus.Printf("Started new actor engine with pid %v \n", pid)
-			e.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
+			logrus.Infof("Started new actor worker spawned with pid %v \n", pid.ID)
+			node.ActorEngine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
 		}
-
 	}()
 
 	for {
@@ -206,7 +215,6 @@ func ScrapeTweetsUsingActors(query string, count int, model string) (string, err
 				return sentiment, nil
 			}
 		case <-done:
-			// break
 		}
 	}
 }
@@ -240,4 +248,50 @@ func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, erro
 		tweets = append(tweets, &tweetResult.Tweet)
 	}
 	return tweets, nil
+}
+
+// ScrapeTweetsByTrends scrapes the current trending topics on Twitter.
+// It returns a slice of strings representing the trending topics.
+// If an error occurs during the scraping process, it returns an error.
+func ScrapeTweetsByTrends() ([]string, error) {
+	scraper := auth()
+	var tweets []string
+
+	if scraper == nil {
+		return nil, fmt.Errorf("scraper instance is nil")
+	}
+
+	// Set search mode
+	scraper.SetSearchMode(twitterscraper.SearchLatest)
+
+	trends, err := scraper.GetTrends()
+	if err != nil {
+		logrus.Printf("Error fetching tweet: %v", err)
+		return nil, err
+	}
+
+	tweets = append(tweets, trends...)
+
+	return tweets, nil
+}
+
+// ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
+// It takes the username as a parameter and returns the scraped profile information and an error if any.
+func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
+	scraper := auth()
+
+	if scraper == nil {
+		return twitterscraper.Profile{}, fmt.Errorf("scraper instance is nil")
+	}
+
+	// Set search mode
+	scraper.SetSearchMode(twitterscraper.SearchLatest)
+
+	profile, err := scraper.GetProfile(username)
+	if err != nil {
+		logrus.Printf("Error fetching profile: %v", err)
+		return twitterscraper.Profile{}, err
+	}
+
+	return profile, nil
 }

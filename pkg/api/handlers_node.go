@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -274,9 +275,25 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			return
 		}
 		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, "/db/"+keyStr)
-		_ = json.Unmarshal(nodeVal, &sharedData)
-
+		nodeVal := db.ReadData(api.Node, keyStr)
+		err := json.Unmarshal(nodeVal, &sharedData)
+		if err != nil {
+			// Check if base64 encoded
+			if _, err := base64.StdEncoding.DecodeString(string(nodeVal)); err != nil {
+				// If not base64, return the raw val
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": string(nodeVal),
+				})
+				return
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": nodeVal,
+				})
+				return
+			}
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": sharedData,
@@ -311,7 +328,7 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			})
 			return
 		}
-		success, err := db.WriteData(api.Node, "/db/"+keyStr, jsonData)
+		success, err := db.WriteData(api.Node, keyStr, jsonData)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": success,
@@ -360,16 +377,21 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 // an HTML page displaying the node's status and uptime info.
 func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		peers := api.Node.Host.Network().Peers()
 		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())
 		if nodeData == nil {
 			c.HTML(http.StatusOK, "index.html", gin.H{
-				"Name":          "Masa Status Page",
-				"PeerID":        api.Node.Host.ID().String(),
-				"IsStaked":      false,
-				"FirstJoined":   time.Now().Format("2006-01-02 15:04:05"),
-				"LastJoined":    time.Now().Format("2006-01-02 15:04:05"),
-				"CurrentUptime": "0",
-				"Rewards":       "Coming Soon!",
+				"TotalPeers":       0,
+				"Name":             "Masa Status Page",
+				"PeerID":           api.Node.Host.ID().String(),
+				"IsStaked":         false,
+				"IsTwitterScraper": false,
+				"IsWebScraper":     false,
+				"FirstJoined":      time.Now().Format("2006-01-02 15:04:05"),
+				"LastJoined":       time.Now().Format("2006-01-02 15:04:05"),
+				"CurrentUptime":    "0",
+				"Rewards":          "Coming Soon!",
+				"BytesScraped":     0,
 			})
 			return
 		}
@@ -377,14 +399,17 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
 		c.HTML(http.StatusOK, "index.html", gin.H{
-			"Name":          "Masa Status Page",
-			"PeerID":        nodeData.PeerId.String(),
-			"IsStaked":      nodeData.IsStaked,
-			"FirstJoined":   nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
-			"LastJoined":    nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-			"CurrentUptime": nodeData.AccumulatedUptimeStr,
-			"Rewards":       "Coming Soon!",
+			"TotalPeers":       len(peers),
+			"Name":             "Masa Status Page",
+			"PeerID":           nodeData.PeerId.String(),
+			"IsStaked":         nodeData.IsStaked,
+			"IsTwitterScraper": nodeData.TwitterScraper(),
+			"IsWebScraper":     nodeData.WebScraper(),
+			"FirstJoined":      nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
+			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
+			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
+			"Rewards":          "Coming Soon!",
+			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(nodeData.BytesScraped/1024/1024)),
 		})
-		return
 	}
 }

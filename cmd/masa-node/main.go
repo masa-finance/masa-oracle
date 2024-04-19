@@ -2,19 +2,21 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
-	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/sirupsen/logrus"
-
+	"github.com/anthdm/hollywood/actor"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -27,15 +29,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if cfg.StakeAmount != "" {
-		// Exit after staking, do not proceed to start the node
 		err := handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
-			logrus.Fatal(err)
+			logrus.Warningf("%v", err)
 		}
-		os.Exit(0)
 	}
 
-	// var isStaked bool
 	// Verify the staking event
 	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
 	if err != nil {
@@ -68,52 +67,18 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// WIP testing scraper using actor engine
-	//go func() {
-	//	sentiment, err := twitter.ScrapeTweetsUsingActors("$MASA", 5, "gpt-4")
-	//	if err != nil {
-	//		logrus.Errorf(err.Error())
-	//	}
-	//	logrus.Printf("returned sentiment %v", sentiment)
-	//}()
-	// WIP testing scraper
+	// start actor worker listener and subscribe if scraper and isStaked
+	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
+	if cfg.TwitterScraper || cfg.WebScraper {
+		if isStaked {
+			node.ActorEngine.Subscribe(actor.NewPID("0.0.0.0:4001", fmt.Sprintf("%s/%s", "peer_worker", "peer")))
+		}
+	}
 
-	// WIP testing db
-	// type Sentiment struct {
-	// 	ConversationId int64
-	// 	Tweet          string
-	// 	PromptId       int64
-	// }
-
-	// // IMPORTANT migrations true will drop all
-	// database, err := db.ConnectToPostgres(false)
-	// if err != nil {
-	// 	logrus.Errorf(err)
-	// }
-	// defer database.Close()
-
-	// data := []Sentiment{}
-	// query := `SELECT "conversation_id", "tweet", "prompt_id" FROM sentiment`
-	// rows, err := database.Query(query)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer rows.Close()
-
-	// var (
-	// 	conversationId int64
-	// 	tweet          string
-	// 	promptId       int64
-	// )
-
-	// for rows.Next() {
-	// 	if err = rows.Scan(&conversationId, &tweet, &promptId); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	data = append(data, Sentiment{conversationId, tweet, promptId})
-	// }
-	// fmt.Println(data)
-	// WIP testing
+	// tests SendWorkToPeers i.e. twitter, web
+	// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "2"})
+	// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "7"})
+	// go workers.SendWorkToPeers(node, d)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
@@ -142,7 +107,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode, cfg.TwitterScraper, cfg.WebScraper)
 
 	<-ctx.Done()
 }

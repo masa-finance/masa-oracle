@@ -7,6 +7,43 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ModelType defines a type for model strings.
+type ModelType string
+
+// Define model constants.
+const (
+	ClaudeOpus20240229   ModelType = "claude-3-opus-20240229"
+	ClaudeSonnet20240229 ModelType = "claude-3-sonnet-20240229"
+	ClaudeHaiku20240307  ModelType = "claude-3-haiku-20240307"
+	GPT4                 ModelType = "gpt-4"
+	GPT4TurboPreview     ModelType = "gpt-4-turbo-preview"
+	GPT35Turbo           ModelType = "gpt-3.5-turbo"
+	LLama2               ModelType = "llama2"
+	Mistral              ModelType = "mistral"
+	Gemma                ModelType = "gemma"
+	Mixtral              ModelType = "mixtral"
+	OpenChat             ModelType = "openchat"
+	NeuralChat           ModelType = "neural-chat"
+)
+
+// Models holds the available models for easy access and iteration.
+var Models = struct {
+	ClaudeOpus, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, Mistral, Gemma, Mixtral, OpenChat, NeuralChat ModelType
+}{
+	ClaudeOpus:   ClaudeOpus20240229,
+	ClaudeSonnet: ClaudeSonnet20240229,
+	ClaudeHaiku:  ClaudeHaiku20240307,
+	GPT4:         GPT4,
+	GPT4Turbo:    GPT4TurboPreview,
+	GPT35Turbo:   GPT35Turbo,
+	LLama2:       LLama2,
+	Mistral:      Mistral,
+	Gemma:        Gemma,
+	Mixtral:      Mixtral,
+	OpenChat:     OpenChat,
+	NeuralChat:   NeuralChat,
+}
+
 const (
 	PrivKeyFile = "MASA_PRIV_KEY_FILE"
 	BootNodes   = "BOOTNODES"
@@ -23,7 +60,7 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.10-alpha"
+	Version     = "v0.0.11-alpha"
 	FilePath    = "FILE_PATH"
 	WriterNode  = "WRITER_NODE"
 	CachePath   = "CACHE_PATH"
@@ -35,6 +72,7 @@ const (
 	AdTopic              = "ad"
 	NodeStatusTopic      = "nodeStatus"
 	PublicKeyTopic       = "bootNodePublicKey"
+	CompletedWorkTopic   = "completedWork"
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
 
@@ -45,6 +83,8 @@ const (
 	ClaudeApiURL     = "CLAUDE_API_URL"
 	ClaudeApiVersion = "CLAUDE_API_VERSION"
 	GPTApiKey        = "OPENAI_API_KEY"
+	TwitterScraper   = "TWITTER_SCRAPER"
+	WebScraper       = "WEB_SCRAPER"
 )
 
 // ProtocolWithVersion returns a libp2p protocol ID string

@@ -51,7 +51,7 @@ func (c *ClaudeClient) SendRequest(payloadBytes []byte) (*http.Response, error) 
 	return client.Do(req)
 }
 
-func (c *GPTClient) SendRequest(tweetsContent string, model string) (string, error) {
+func (c *GPTClient) SendRequest(tweetsContent string, model string, prompt string) (string, error) {
 	var openAiModel string
 	switch model {
 	case "gpt-4":
@@ -120,12 +120,12 @@ type Usage struct {
 	OutputTokens int `json:"output_tokens"`
 }
 
-// sanitizeResponse removes non-ASCII characters and unnecessary whitespace from a string.
+// SanitizeResponse removes non-ASCII characters and unnecessary whitespace from a string.
 // It also strips away double quotes for cleaner presentation.
 // Parameters:
 // - str: The input string to be sanitized.
 // Returns: A sanitized string with only ASCII characters, reduced whitespace, and no double quotes.
-func sanitizeResponse(str string) string {
+func SanitizeResponse(str string) string {
 	var result []rune
 	for _, r := range str {
 		if r >= 0 && r <= 127 {
@@ -160,7 +160,7 @@ func ParseResponse(resp *http.Response) (string, error) {
 	var summary = ""
 	if response.Content != nil {
 		for _, t := range response.Content {
-			summary = sanitizeResponse(t.Text)
+			summary = SanitizeResponse(t.Text)
 		}
 	} else {
 		var responseError map[string]interface{}
