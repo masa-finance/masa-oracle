@@ -28,7 +28,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/n0madic/twitter-scraper v0.0.0-20231104223941-296710769dd8
-	github.com/ollama/ollama v0.1.31
+	github.com/ollama/ollama v0.1.32
 	github.com/rivo/tview v0.0.0-20240307173318-e804876934a1
 	github.com/sashabaranov/go-openai v1.14.0
 	github.com/sirupsen/logrus v1.9.3
