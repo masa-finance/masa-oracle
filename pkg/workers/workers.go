@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -41,11 +42,15 @@ func NewWorker() actor.Receiver {
 // It receives messages through the actor context and processes them based on their type.
 func (w *Worker) Receive(ctx *actor.Context) {
 	switch m := ctx.Message().(type) {
-	case actor.RemoteUnreachableEvent:
-		logrus.Warningf("Received remote unreachable event: %v", m)
-		ctx.Engine().Poison(ctx.PID()).Wait()
-	case *msg.Message:
+	case *actor.ActorInitializedEvent:
+		logrus.Info("ActorInitializedEvent")
+	case *actor.Initialized:
 		logrus.Info("Actor worker initialized")
+	case *actor.Started:
+		logrus.Info("Actor worker started")
+	case *actor.Stopped:
+		logrus.Info("Actor worker stopped")
+	case *msg.Message:
 		var workData map[string]string
 		err := json.Unmarshal([]byte(m.Data), &workData)
 		if err != nil {
@@ -85,7 +90,7 @@ func (w *Worker) Receive(ctx *actor.Context) {
 			workerStatusCh <- jsonData
 		}
 	default:
-		break
+		logrus.Warn("actor received unknown message", "msg ", m, " type ", reflect.TypeOf(m).String())
 	}
 }
 
@@ -136,6 +141,20 @@ func SendWorkToPeers(node *masa.OracleNode, data []byte) {
 			node.ActorEngine.Subscribe(peerPID)
 		}
 	}
+
+	// wg := &sync.WaitGroup{}
+	// wg.Add(1)
+
+	// node.ActorEngine.SpawnFunc(func(c *actor.Context) {
+	// 	switch m := c.Message().(type) {
+	// 	case actor.Started:
+	// 		c.Engine().Subscribe(c.PID())
+	// 	case *msg.Message:
+	// 		fmt.Println("actor (b) received event", m.Data)
+	// 		wg.Done()
+	// 	}
+	// }, "peer_worker")
+
 	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
 	// ctx.Send(ctx.PID(), &msg.Message{Data: string(jsonData)})
 	go monitorWorkerData(context.Background(), node)
