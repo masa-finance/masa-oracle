@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
@@ -396,6 +397,10 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData.CurrentUptime = nodeData.GetCurrentUptime()
 		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
+		sharedData := db.SharedData{}
+		nodeVal := db.ReadData(api.Node, nodeData.PeerId.String())
+		_ = json.Unmarshal(nodeVal, &sharedData)
+		bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"TotalPeers":       len(peers),
 			"Name":             "Masa Status Page",
@@ -407,7 +412,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
 			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
 			"Rewards":          "Coming Soon!",
-			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(nodeData.BytesScraped/1024/1024)),
+			"BytesScraped":     fmt.Sprintf("%.6f MB", float64(bytesScraped/1024/1024)),
 		})
 	}
 }

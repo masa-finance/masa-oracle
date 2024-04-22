@@ -223,10 +223,8 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 				logrus.Errorf("%v", e)
 			}
 		case nodeData := <-nodeDataChan:
-			// for _, n := range nodeData {
 			jsonData, _ := json.Marshal(nodeData)
 			_, _ = WriteData(node, nodeData.PeerId.String(), jsonData)
-			// }
 		case <-ctx.Done():
 			return
 		}

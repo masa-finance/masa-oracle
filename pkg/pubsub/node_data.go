@@ -109,6 +109,10 @@ func (n *NodeData) WebScraper() bool {
 	return cfg.WebScraper
 }
 
+func (n *NodeData) TotalBytesScraped() int {
+	return n.BytesScraped
+}
+
 // Joined updates the NodeData when the node joins the network.
 // It sets the join times, activity, active status, and logs based on stake status.
 func (n *NodeData) Joined() {
