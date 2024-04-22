@@ -233,7 +233,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, erro
 	var tweets []*twitterscraper.Tweet
 
 	if scraper == nil {
-		return nil, fmt.Errorf("scraper instance is nil")
+		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")
 	}
 
 	// Set search mode
@@ -258,7 +258,7 @@ func ScrapeTweetsByTrends() ([]string, error) {
 	var tweets []string
 
 	if scraper == nil {
-		return nil, fmt.Errorf("scraper instance is nil")
+		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")
 	}
 
 	// Set search mode
@@ -281,7 +281,7 @@ func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
 	scraper := auth()
 
 	if scraper == nil {
-		return twitterscraper.Profile{}, fmt.Errorf("scraper instance is nil")
+		return twitterscraper.Profile{}, fmt.Errorf("there was an error authenticating with your Twitter credentials")
 	}
 
 	// Set search mode

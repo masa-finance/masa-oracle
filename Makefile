@@ -1,6 +1,4 @@
 build:
-	@cd contracts/ && npm update
-	@cd ..
 	@go mod tidy
 	@go build -v -o ./bin/masa-node ./cmd/masa-node
 	@go build -v -o ./bin/masa-node-cli ./cmd/masa-node-cli

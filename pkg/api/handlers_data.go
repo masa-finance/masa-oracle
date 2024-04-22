@@ -28,6 +28,7 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 			string(config.Models.GPT4Turbo),
 			string(config.Models.GPT35Turbo),
 			string(config.Models.LLama2),
+			string(config.Models.LLama3),
 			string(config.Models.Mistral),
 			string(config.Models.Gemma),
 			string(config.Models.Mixtral),

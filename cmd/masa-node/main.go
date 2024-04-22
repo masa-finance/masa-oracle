@@ -29,12 +29,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if cfg.StakeAmount != "" {
-		// Exit after staking, do not proceed to start the node
 		err := handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
-			logrus.Fatal(err)
+			logrus.Warningf("%v", err)
 		}
-		os.Exit(0)
 	}
 
 	// Verify the staking event
@@ -79,7 +77,7 @@ func main() {
 
 	// tests SendWorkToPeers i.e. twitter, web
 	// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "2"})
-	//d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "10"})
+	//d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token price", "count": "5"})
 	//go workers.SendWorkToPeers(node, d)
 
 	// Listen for SIGINT (CTRL+C)

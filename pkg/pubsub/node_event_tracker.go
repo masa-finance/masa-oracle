@@ -171,9 +171,6 @@ func (net *NodeEventTracker) RefreshFromBoot(data NodeData) {
 // topology based on pubsub messages.
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	logrus.Debugf("Handling node data for: %s", data.PeerId)
-	// if !data.IsStaked { // IsStaked
-	// 	return
-	// }
 	// we want nodeData for status even if staked is false
 	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {

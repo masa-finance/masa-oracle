@@ -9,7 +9,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
@@ -21,7 +21,7 @@ import (
 )
 
 var cache ds.Datastore
-var nodeStatusCh = make(chan []byte)
+var nodeDataChan = make(chan *pubsub.NodeData)
 
 type Record struct {
 	Key   string
@@ -82,7 +82,6 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 //
 // It returns the original key string and a possible error.
 func PutCache(ctx context.Context, keyStr string, value []byte) (any, error) {
-	// key, _ := stringToCid(keyStr)
 	err := cache.Put(ctx, ds.NewKey(keyStr), value)
 	if err != nil {
 		return nil, err
@@ -192,8 +191,12 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		logrus.Errorf("%+v", err)
 	}
 	for _, record := range records {
-		logrus.Printf("syncing record %s", record.Key)
-		_, _ = WriteData(node, record.Key, record.Value)
+		key := record.Key
+		if len(key) > 0 && key[0] == '/' {
+			key = key[1:]
+		}
+		logrus.Printf("syncing record %s", key)
+		_, _ = WriteData(node, key, record.Value)
 	}
 }
 
@@ -202,8 +205,8 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 // It runs a ticker to call iterateAndPublish on the provided interval.
 func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
-	nodeStatusHandler := &nodestatus.SubscriptionHandler{NodeStatusCh: nodeStatusCh}
-	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeStatusTopic), nodeStatusHandler)
+	// nodeStatusHandler := &pubsub.NodeEventTracker{NodeDataChan: nodeDataChan}
+	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker)
 	if err != nil {
 		logrus.Errorf("%v", err)
 	}
@@ -215,16 +218,13 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 		case <-ticker.C:
 			nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 			jsonData, _ := json.Marshal(nodeData)
-			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData)
+			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
 			if e != nil {
 				logrus.Errorf("%v", e)
 			}
-		case <-nodeStatusCh:
-			nodes := nodeStatusHandler.NodeStatus
-			for _, n := range nodes {
-				jsonData, _ := json.Marshal(n)
-				_, _ = WriteData(node, n.PeerID, jsonData)
-			}
+		case nodeData := <-nodeDataChan:
+			jsonData, _ := json.Marshal(nodeData)
+			_, _ = WriteData(node, nodeData.PeerId.String(), jsonData)
 		case <-ctx.Done():
 			return
 		}

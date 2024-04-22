@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@masa-finance/masa-contracts-oracle": "^0.2.1"
+    "@masa-finance/masa-contracts-oracle": "latest",
+    "@masa-finance/masa-token": "^2.7.1"
   }
 }

@@ -9,8 +9,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
-
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -30,14 +28,10 @@ func (node *OracleNode) ListenToNodeTracker() {
 		select {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
 			time.Sleep(1 * time.Second)
-			// IsStaked
-			// if node.IsStaked && node.NodeTracker.IsStaked(node.Host.ID().String()) {
-			// Marshal the nodeData into JSON
 			jsonData, err := json.Marshal(nodeData)
 			if node.IsWriter {
-				var ns nodestatus.NodeStatus
-				_ = json.Unmarshal(jsonData, &ns)
-				err = node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+				_ = json.Unmarshal(jsonData, &nodeData)
+				err = node.DHT.PutValue(context.Background(), "/db/"+nodeData.PeerId.String(), jsonData)
 				if err != nil {
 					logrus.Errorf("%v", err)
 				}
@@ -60,7 +54,6 @@ func (node *OracleNode) ListenToNodeTracker() {
 				(!config.GetInstance().HasBootnodes() || time.Since(node.StartTime) > time.Minute*5) {
 				go node.SendNodeData(nodeData.PeerId)
 			}
-			// }
 		case <-node.Context.Done():
 			return
 		}
@@ -175,7 +168,6 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 		var page NodeDataPage
 		if err := json.Unmarshal(data, &page); err != nil {
 			logrus.Errorf("Failed to unmarshal NodeData page: %v", err)
-			logrus.Errorf("%s", string(data))
 			continue
 		}
 
@@ -184,9 +176,8 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 			if node.IsWriter {
 				for _, p := range page.Data {
 					jsonData, _ := json.Marshal(p)
-					var ns nodestatus.NodeStatus
-					_ = json.Unmarshal(jsonData, &ns)
-					err := node.DHT.PutValue(context.Background(), "/db/"+ns.PeerID, jsonData)
+					_ = json.Unmarshal(jsonData, &nd)
+					err := node.DHT.PutValue(context.Background(), "/db/"+nd.PeerId.String(), jsonData)
 					if err != nil {
 						logrus.Errorf("%v", err)
 					}

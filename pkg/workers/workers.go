@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
 	"github.com/ipfs/go-cid"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	"github.com/masa-finance/masa-oracle/pkg/workerstatus"
 
 	"github.com/anthdm/hollywood/actor"
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -41,16 +41,13 @@ func NewWorker() actor.Receiver {
 // It receives messages through the actor context and processes them based on their type.
 func (w *Worker) Receive(ctx *actor.Context) {
 	switch m := ctx.Message().(type) {
+	case actor.RemoteUnreachableEvent:
+		logrus.Warningf("Received remote unreachable event: %v", m)
+		ctx.Engine().Poison(ctx.PID()).Wait()
 	case *msg.Message:
 		logrus.Info("Actor worker initialized")
 		var workData map[string]string
 		err := json.Unmarshal([]byte(m.Data), &workData)
-		// @todo calc bytes from workData this worker processed
-		// save to nodedata for this peer
-		// validate for dupes and dont add to bytes
-		// do docs for .env and flags usage and add to website docs project
-		// Calculate total bytes in length from m.Data and add it to node status BytesScraped
-
 		if err != nil {
 			logrus.Errorf("Error parsing work data: %v", err)
 			return
@@ -158,7 +155,7 @@ func SendWorkToPeers(node *masa.OracleNode, data []byte) {
 // The monitoring continues until the context is done.
 func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
-	workerStatusHandler := &workerstatus.SubscriptionHandler{WorkerStatusCh: workerStatusCh}
+	workerStatusHandler := &pubsub.WorkerStatusHandler{WorkerStatusCh: workerStatusCh}
 	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.CompletedWorkTopic), workerStatusHandler)
 	if err != nil {
 		logrus.Errorf("%v", err)
@@ -173,11 +170,16 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
 			val := db.ReadData(node, key)
-			// doublespend check
+			// double spend check
 			if val == nil {
 				go db.WriteData(node, key, data)
 				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-				nodeData.BytesScraped += int64(len(data))
+				sharedData := db.SharedData{}
+				nodeVal := db.ReadData(node, nodeData.PeerId.String())
+				_ = json.Unmarshal(nodeVal, &sharedData)
+				bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+				nodeData.BytesScraped += bytesScraped
+				nodeData.BytesScraped += len(data)
 				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
 				if err != nil {
 					logrus.Error(err)
