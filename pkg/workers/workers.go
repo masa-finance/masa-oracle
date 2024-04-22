@@ -4,95 +4,94 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
+	"sync"
 	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
+	"github.com/masa-finance/masa-oracle/pkg/twitter"
 
 	"github.com/ipfs/go-cid"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 
 	"github.com/anthdm/hollywood/actor"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	msg "github.com/masa-finance/masa-oracle/pkg/proto/msg"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
-	"github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
 
 var workerStatusCh = make(chan []byte)
 
-type Worker struct{}
+// type Worker struct{}
 
-// NewWorker creates a new instance of the Worker actor.
-// It implements the actor.Receiver interface, allowing it to receive and handle messages.
-//
-// Returns:
-//   - An instance of the Worker struct that implements the actor.Receiver interface.
-func NewWorker() actor.Receiver {
-	return &Worker{}
-}
+// // NewWorker creates a new instance of the Worker actor.
+// // It implements the actor.Receiver interface, allowing it to receive and handle messages.
+// //
+// // Returns:
+// //   - An instance of the Worker struct that implements the actor.Receiver interface.
+// func NewWorker() actor.Receiver {
+// 	return &Worker{}
+// }
 
-// Receive is the message handling method for the Worker actor.
-// It receives messages through the actor context and processes them based on their type.
-func (w *Worker) Receive(ctx *actor.Context) {
-	switch m := ctx.Message().(type) {
-	case *actor.ActorInitializedEvent:
-		logrus.Info("ActorInitializedEvent")
-	case *actor.Initialized:
-		logrus.Info("Actor worker initialized")
-	case *actor.Started:
-		logrus.Info("Actor worker started")
-	case *actor.Stopped:
-		logrus.Info("Actor worker stopped")
-	case *msg.Message:
-		var workData map[string]string
-		err := json.Unmarshal([]byte(m.Data), &workData)
-		if err != nil {
-			logrus.Errorf("Error parsing work data: %v", err)
-			return
-		}
-		switch workData["request"] {
-		case "web":
-			depth, err := strconv.Atoi(workData["depth"])
-			if err != nil {
-				logrus.Errorf("Error converting depth to int: %v", err)
-				return
-			}
-			webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
-			if err != nil {
-				logrus.Errorf("%v", err)
-				return
-			}
-			collectedData := llmbridge.SanitizeResponse(webData)
-			jsonData, _ := json.Marshal(collectedData)
-			workerStatusCh <- jsonData
-		case "twitter":
-			count, err := strconv.Atoi(workData["count"])
-			if err != nil {
-				logrus.Errorf("Error converting count to int: %v", err)
-				return
-			}
-			tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
-			if err != nil {
-				logrus.Errorf("%v", err)
-				return
-			}
-			collectedData := llmbridge.ConcatenateTweets(tweets)
-			logrus.Info("Actor worker stopped")
+// // Receive is the message handling method for the Worker actor.
+// // It receives messages through the actor context and processes them based on their type.
+// func (w *Worker) Receive(ctx *actor.Context) {
+// 	switch m := ctx.Message().(type) {
+// 	case *actor.ActorInitializedEvent:
+// 		logrus.Info("ActorInitializedEvent")
+// 	case *actor.Initialized:
+// 		logrus.Info("Actor worker initialized")
+// 	case *actor.Started:
+// 		logrus.Info("Actor worker started")
+// 	case *actor.Stopped:
+// 		logrus.Info("Actor worker stopped")
+// 	case *msg.Message:
+// 		var workData map[string]string
+// 		err := json.Unmarshal([]byte(m.Data), &workData)
+// 		if err != nil {
+// 			logrus.Errorf("Error parsing work data: %v", err)
+// 			return
+// 		}
+// 		switch workData["request"] {
+// 		case "web":
+// 			depth, err := strconv.Atoi(workData["depth"])
+// 			if err != nil {
+// 				logrus.Errorf("Error converting depth to int: %v", err)
+// 				return
+// 			}
+// 			webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
+// 			if err != nil {
+// 				logrus.Errorf("%v", err)
+// 				return
+// 			}
+// 			collectedData := llmbridge.SanitizeResponse(webData)
+// 			jsonData, _ := json.Marshal(collectedData)
+// 			workerStatusCh <- jsonData
+// 		case "twitter":
+// 			count, err := strconv.Atoi(workData["count"])
+// 			if err != nil {
+// 				logrus.Errorf("Error converting count to int: %v", err)
+// 				return
+// 			}
+// 			tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
+// 			if err != nil {
+// 				logrus.Errorf("%v", err)
+// 				return
+// 			}
+// 			collectedData := llmbridge.ConcatenateTweets(tweets)
+// 			logrus.Info("Actor worker stopped")
 
-			jsonData, _ := json.Marshal(collectedData)
-			workerStatusCh <- jsonData
-		}
-	default:
-		logrus.Warn("actor received unknown message", "msg ", m, " type ", reflect.TypeOf(m).String())
-	}
-}
+// 			jsonData, _ := json.Marshal(collectedData)
+// 			workerStatusCh <- jsonData
+// 		}
+// 	default:
+// 		logrus.Warn("actor received unknown message", "msg ", m, " type ", reflect.TypeOf(m).String())
+// 	}
+// }
 
 // computeCid calculates the CID (Content Identifier) for a given string.
 //
@@ -131,32 +130,74 @@ func computeCid(str string) (string, error) {
 //	d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "5"})
 //	go workers.SendWorkToPeers(node, d)
 func SendWorkToPeers(node *masa.OracleNode, data []byte) {
-	peers := node.Host.Network().Peers()
-	for _, peer := range peers {
-		conns := node.Host.Network().ConnsToPeer(peer)
-		for _, conn := range conns {
-			addr := conn.RemoteMultiaddr()
-			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			peerPID := actor.NewPID(fmt.Sprintf("%s:4001", ipAddr), fmt.Sprintf("%s/%s", "peer_worker", "peer"))
-			node.ActorEngine.Subscribe(peerPID)
-		}
-	}
-
-	// wg := &sync.WaitGroup{}
-	// wg.Add(1)
-
-	// node.ActorEngine.SpawnFunc(func(c *actor.Context) {
-	// 	switch m := c.Message().(type) {
-	// 	case actor.Started:
-	// 		c.Engine().Subscribe(c.PID())
-	// 	case *msg.Message:
-	// 		fmt.Println("actor (b) received event", m.Data)
-	// 		wg.Done()
+	// peers := node.Host.Network().Peers()
+	// for _, peer := range peers {
+	// 	conns := node.Host.Network().ConnsToPeer(peer)
+	// 	for _, conn := range conns {
+	// 		addr := conn.RemoteMultiaddr()
+	// 		ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+	// 		peerPID := actor.NewPID(fmt.Sprintf("%s:4001", ipAddr), fmt.Sprintf("%s/%s", "peer_worker", "peer"))
+	// 		fmt.Println(peerPID)
+	// 		node.ActorEngine.Subscribe(peerPID)
 	// 	}
-	// }, "peer_worker")
+	// }
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	node.ActorEngine.SpawnFunc(func(c *actor.Context) {
+		switch m := c.Message().(type) {
+		case actor.Started:
+			fmt.Println(c.PID())
+			c.Engine().Subscribe(c.PID())
+		case *msg.Message:
+			fmt.Println("actor worker received event ", m.Data)
+
+			var workData map[string]string
+			err := json.Unmarshal([]byte(m.Data), &workData)
+			if err != nil {
+				logrus.Errorf("Error parsing work data: %v", err)
+				return
+			}
+			switch workData["request"] {
+			case "web":
+				depth, err := strconv.Atoi(workData["depth"])
+				if err != nil {
+					logrus.Errorf("Error converting depth to int: %v", err)
+					return
+				}
+				webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
+				if err != nil {
+					logrus.Errorf("%v", err)
+					return
+				}
+				collectedData := llmbridge.SanitizeResponse(webData)
+				jsonData, _ := json.Marshal(collectedData)
+				workerStatusCh <- jsonData
+			case "twitter":
+				count, err := strconv.Atoi(workData["count"])
+				if err != nil {
+					logrus.Errorf("Error converting count to int: %v", err)
+					return
+				}
+				tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
+				if err != nil {
+					logrus.Errorf("%v", err)
+					return
+				}
+				collectedData := llmbridge.ConcatenateTweets(tweets)
+				logrus.Info("Actor worker stopped")
+
+				jsonData, _ := json.Marshal(collectedData)
+				workerStatusCh <- jsonData
+			}
+
+			wg.Done()
+		}
+	}, "peer_worker")
 
 	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
-	// ctx.Send(ctx.PID(), &msg.Message{Data: string(jsonData)})
+
 	go monitorWorkerData(context.Background(), node)
 }
 

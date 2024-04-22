@@ -15,7 +15,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -68,7 +67,7 @@ func main() {
 	go db.InitResolverCache(node, keyManager)
 
 	// start actor worker listener and subscribe if scraper and isStaked
-	go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
+	// go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
 	if cfg.TwitterScraper || cfg.WebScraper {
 		if isStaked {
 			node.ActorEngine.Subscribe(actor.NewPID("0.0.0.0:4001", fmt.Sprintf("%s/%s", "peer_worker", "peer")))
