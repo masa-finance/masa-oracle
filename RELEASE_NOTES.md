@@ -14,6 +14,7 @@
 
 ### Bug Fixes
 
+* Handle RemoteUnreachableEvent to workers 
 * Updated API endpoints
   * /api/v1/node/data
   * /api/v1/node/:peerid
@@ -21,8 +22,9 @@
 
 ### Performance Improvements
 
-*
+* Added node data status to pubsub
+* Added worker status to pubsub
 
 ### ChangeLog
 
-* 
+* Version update

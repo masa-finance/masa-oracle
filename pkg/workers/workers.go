@@ -41,6 +41,9 @@ func NewWorker() actor.Receiver {
 // It receives messages through the actor context and processes them based on their type.
 func (w *Worker) Receive(ctx *actor.Context) {
 	switch m := ctx.Message().(type) {
+	case actor.RemoteUnreachableEvent:
+		logrus.Warningf("Received remote unreachable event: %v", m)
+		ctx.Engine().Poison(ctx.PID()).Wait()
 	case *msg.Message:
 		logrus.Info("Actor worker initialized")
 		var workData map[string]string
