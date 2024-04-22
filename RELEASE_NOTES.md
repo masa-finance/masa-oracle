@@ -1,6 +1,6 @@
 # Masa Oracle Release Notes
 
-## [0.1.0](https://github.com/masa-finance/masa-oracle/releases) (2024)
+## [0.0.11-alpha](https://github.com/masa-finance/masa-oracle/releases) (2024)
 
 > Masa Oracle Node Release
 
