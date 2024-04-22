@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -266,6 +268,9 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
+		go workers.SendWorkToPeers(api.Node, d)
+
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -343,13 +348,12 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 	}
 }
 
-// PostNodeStatusHandler allows posting a message to the NodeStatus Topic
+// PostNodeStatusHandler allows posting a message to the Topic
 func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// WIP
-		var nodeStatus nodestatus.NodeStatus
 
-		if err := c.BindJSON(&nodeStatus); err != nil {
+		var nodeData pubsub.NodeData
+		if err := c.BindJSON(&nodeData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
@@ -359,11 +363,11 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 			return
 		}
 
-		jsonData, _ := json.Marshal(nodeStatus)
+		jsonData, _ := json.Marshal(nodeData)
 		logrus.Printf("jsonData %s", jsonData)
 
 		// Publish the message to the specified topic.
-		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData); err != nil {
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -398,6 +402,10 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 		nodeData.CurrentUptime = nodeData.GetCurrentUptime()
 		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
+		sharedData := db.SharedData{}
+		nodeVal := db.ReadData(api.Node, nodeData.PeerId.String())
+		_ = json.Unmarshal(nodeVal, &sharedData)
+		bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"TotalPeers":       len(peers),
 			"Name":             "Masa Status Page",
@@ -409,7 +417,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
 			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
 			"Rewards":          "Coming Soon!",
-			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(nodeData.BytesScraped/1024/1024)),
+			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
 		})
 	}
 }

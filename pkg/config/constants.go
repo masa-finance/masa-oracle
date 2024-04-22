@@ -19,6 +19,7 @@ const (
 	GPT4TurboPreview     ModelType = "gpt-4-turbo-preview"
 	GPT35Turbo           ModelType = "gpt-3.5-turbo"
 	LLama2               ModelType = "llama2"
+	LLama3               ModelType = "llama3"
 	Mistral              ModelType = "mistral"
 	Gemma                ModelType = "gemma"
 	Mixtral              ModelType = "mixtral"
@@ -28,7 +29,7 @@ const (
 
 // Models holds the available models for easy access and iteration.
 var Models = struct {
-	ClaudeOpus, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, Mistral, Gemma, Mixtral, OpenChat, NeuralChat ModelType
+	ClaudeOpus, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat ModelType
 }{
 	ClaudeOpus:   ClaudeOpus20240229,
 	ClaudeSonnet: ClaudeSonnet20240229,
@@ -37,6 +38,7 @@ var Models = struct {
 	GPT4Turbo:    GPT4TurboPreview,
 	GPT35Turbo:   GPT35Turbo,
 	LLama2:       LLama2,
+	LLama3:       LLama3,
 	Mistral:      Mistral,
 	Gemma:        Gemma,
 	Mixtral:      Mixtral,
@@ -70,7 +72,6 @@ const (
 	NodeDataSyncProtocol = "nodeDataSync"
 	NodeGossipTopic      = "gossip"
 	AdTopic              = "ad"
-	NodeStatusTopic      = "nodeStatus"
 	PublicKeyTopic       = "bootNodePublicKey"
 	CompletedWorkTopic   = "completedWork"
 	Rendezvous           = "masa-mdns"
