@@ -12,7 +12,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -343,13 +342,12 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 	}
 }
 
-// PostNodeStatusHandler allows posting a message to the NodeStatus Topic
+// PostNodeStatusHandler allows posting a message to the Topic
 func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// WIP
-		var nodeStatus nodestatus.NodeStatus
 
-		if err := c.BindJSON(&nodeStatus); err != nil {
+		var nodeData pubsub.NodeData
+		if err := c.BindJSON(&nodeData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
@@ -359,11 +357,11 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 			return
 		}
 
-		jsonData, _ := json.Marshal(nodeStatus)
+		jsonData, _ := json.Marshal(nodeData)
 		logrus.Printf("jsonData %s", jsonData)
 
 		// Publish the message to the specified topic.
-		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData); err != nil {
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

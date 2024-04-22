@@ -63,7 +63,7 @@ type NodeData struct {
 	IsWriterNode         bool            `json:"isWriterNode"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
-	BytesScraped         int64           `json:"bytesScraped"`
+	BytesScraped         int             `json:"bytesScraped"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given

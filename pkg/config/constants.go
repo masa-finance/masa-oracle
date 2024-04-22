@@ -62,7 +62,7 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.11-alpha"
+	Version     = "v0.0.11-alpha" // v0.1.0
 	FilePath    = "FILE_PATH"
 	WriterNode  = "WRITER_NODE"
 	CachePath   = "CACHE_PATH"
@@ -72,7 +72,6 @@ const (
 	NodeDataSyncProtocol = "nodeDataSync"
 	NodeGossipTopic      = "gossip"
 	AdTopic              = "ad"
-	NodeStatusTopic      = "nodeStatus"
 	PublicKeyTopic       = "bootNodePublicKey"
 	CompletedWorkTopic   = "completedWork"
 	Rendezvous           = "masa-mdns"

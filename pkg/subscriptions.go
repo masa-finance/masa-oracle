@@ -9,9 +9,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/ad"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
-	"github.com/masa-finance/masa-oracle/pkg/workerstatus"
 )
 
 // SubscribeToTopics handles the subscription to various topics for an OracleNode.
@@ -31,19 +29,12 @@ func SubscribeToTopics(node *OracleNode) error {
 		return err
 	}
 
-	// Initialize and subscribe to NodeStatusTopic for receiving nodeStatus messages.
-	node.NodeStatusSubscriptionsHandler = &nodestatus.SubscriptionHandler{}
-	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.NodeStatusTopic), node.NodeStatusSubscriptionsHandler); err != nil {
-		logrus.Errorf("Failed to subscribe to nodeStatus topic: %v", err)
-		return err
-	}
-
 	// Subscribe to PublicKeyTopic to manage and verify public keys within the network.
 	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}); err != nil {
 		return err
 	}
 
-	node.CompletedWorkSubscriptionsHandler = &workerstatus.SubscriptionHandler{}
+	node.CompletedWorkSubscriptionsHandler = &pubsub2.WorkerStatusHandler{}
 	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.CompletedWorkTopic), node.CompletedWorkSubscriptionsHandler); err != nil {
 		logrus.Errorf("Failed to subscribe to completed work topic: %v", err)
 		return err
