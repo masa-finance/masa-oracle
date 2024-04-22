@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/multiformats/go-multiaddr"
 	"strconv"
 	"sync"
 	"time"
@@ -130,18 +131,26 @@ func computeCid(str string) (string, error) {
 //	d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA", "count": "5"})
 //	go workers.SendWorkToPeers(node, d)
 func SendWorkToPeers(node *masa.OracleNode, data []byte) {
-	// peers := node.Host.Network().Peers()
-	// for _, peer := range peers {
-	// 	conns := node.Host.Network().ConnsToPeer(peer)
-	// 	for _, conn := range conns {
-	// 		addr := conn.RemoteMultiaddr()
-	// 		ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-	// 		peerPID := actor.NewPID(fmt.Sprintf("%s:4001", ipAddr), fmt.Sprintf("%s/%s", "peer_worker", "peer"))
-	// 		fmt.Println(peerPID)
-	// 		node.ActorEngine.Subscribe(peerPID)
-	// 	}
-	// }
+	peers := node.Host.Network().Peers()
+	for _, peer := range peers {
+		conns := node.Host.Network().ConnsToPeer(peer)
+		for _, conn := range conns {
+			addr := conn.RemoteMultiaddr()
+			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			peerPID := actor.NewPID(fmt.Sprintf("%s:4001", ipAddr), fmt.Sprintf("%s/%s", "peer_worker", "peer"))
+			fmt.Println(peerPID)
+			node.ActorEngine.Subscribe(peerPID)
+		}
+	}
+	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
+	go monitorWorkerData(context.Background(), node)
+}
 
+func SendWork(node *masa.OracleNode, data []byte) {
+	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
+}
+
+func StartWorkers(node *masa.OracleNode) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
@@ -195,9 +204,6 @@ func SendWorkToPeers(node *masa.OracleNode, data []byte) {
 			wg.Done()
 		}
 	}, "peer_worker")
-
-	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
-
 	go monitorWorkerData(context.Background(), node)
 }
 
