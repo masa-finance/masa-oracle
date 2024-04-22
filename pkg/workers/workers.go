@@ -171,6 +171,11 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 			if val == nil {
 				go db.WriteData(node, key, data)
 				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+				sharedData := db.SharedData{}
+				nodeVal := db.ReadData(node, nodeData.PeerId.String())
+				_ = json.Unmarshal(nodeVal, &sharedData)
+				bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+				nodeData.BytesScraped += bytesScraped
 				nodeData.BytesScraped += len(data)
 				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
 				if err != nil {
@@ -178,10 +183,6 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 				}
 				jsonData, _ := json.Marshal(nodeData)
 				go db.WriteData(node, node.Host.ID().String(), jsonData)
-				err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeDataSyncProtocol), jsonData)
-				if err != nil {
-					logrus.Errorf("Error publishing node data: %v", err)
-				}
 			}
 
 			// @todo add list of keys to nodeData ie Records: []string ?

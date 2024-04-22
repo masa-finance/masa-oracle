@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/workers"
+
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
@@ -266,6 +268,9 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
+		go workers.SendWorkToPeers(api.Node, d)
+
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -412,7 +417,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
 			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
 			"Rewards":          "Coming Soon!",
-			"BytesScraped":     fmt.Sprintf("%.6f MB", float64(bytesScraped/1024/1024)),
+			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
 		})
 	}
 }
