@@ -4,17 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	actor "github.com/asynkron/protoactor-go/actor"
 	messages "github.com/masa-finance/masa-oracle/pkg/workers/messages"
 
-	"github.com/masa-finance/masa-oracle/pkg/pubsub"
-
 	"github.com/ipfs/go-cid"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -44,17 +43,56 @@ func NewWorker() actor.Producer {
 // Receive is the message handling method for the Worker actor.
 // It receives messages through the actor context and processes them based on their type.
 func (a *Worker) Receive(ctx actor.Context) {
-	switch msg := ctx.Message().(type) {
+	switch m := ctx.Message().(type) {
 	case *messages.Connect:
-		log.Printf("Worker %v connected", msg.Sender)
-		clients.Add(msg.Sender)
+		fmt.Printf("Worker %v connected", m.Sender)
+		clients.Add(m.Sender)
 	case *actor.Started:
-		log.Println("actor started")
-	case *actor.Stopped:
-		log.Println("actor stopped")
+		fmt.Println("actor started")
 	case *messages.Work:
-		fmt.Printf("%v", msg.Data)
-		// broadcast(ctx, clients, &messages.Response{Value: "some value"})
+		fmt.Printf("%v", m.Data)
+
+		// 			var workData map[string]string
+		// 			err := json.Unmarshal([]byte(m.Data), &workData)
+		// 			if err != nil {
+		// 				logrus.Errorf("Error parsing work data: %v", err)
+		// 				return
+		// 			}
+		// 			switch workData["request"] {
+		// 			case "web":
+		// 				depth, err := strconv.Atoi(workData["depth"])
+		// 				if err != nil {
+		// 					logrus.Errorf("Error converting depth to int: %v", err)
+		// 					return
+		// 				}
+		// 				webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
+		// 				if err != nil {
+		// 					logrus.Errorf("%v", err)
+		// 					return
+		// 				}
+		// 				collectedData := llmbridge.SanitizeResponse(webData)
+		// 				jsonData, _ := json.Marshal(collectedData)
+		// 				workerStatusCh <- jsonData
+		// 			case "twitter":
+		// 				count, err := strconv.Atoi(workData["count"])
+		// 				if err != nil {
+		// 					logrus.Errorf("Error converting count to int: %v", err)
+		// 					return
+		// 				}
+		// 				tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
+		// 				if err != nil {
+		// 					logrus.Errorf("%v", err)
+		// 					return
+		// 				}
+		// 				collectedData := llmbridge.ConcatenateTweets(tweets)
+		// 				logrus.Info("Actor worker stopped")
+
+		// 				jsonData, _ := json.Marshal(collectedData)
+		//				fmt.Println("actor stopped")
+		// 				workerStatusCh <- jsonData
+		// 			}
+
+		workerStatusCh <- []byte(m.Data)
 	}
 }
 
@@ -81,123 +119,34 @@ func computeCid(str string) (string, error) {
 	return cidKey, nil
 }
 
-// SendWorkToPeers sends work data to peer nodes in the network.
-// It subscribes to the local actor engine and the actor engines of peer nodes.
-// The work data is then broadcast as an event to all subscribed nodes.
+// SendWork is responsible for handling work messages and processing them based on the request type.
+// It supports the following request types:
+// - "web": Scrapes web data from the specified URL with the given depth.
+// - "twitter": Scrapes tweets based on the provided query and count.
 //
-// Parameters:
-//   - node: A pointer to the OracleNode instance.
-//   - data: The work data to be sent, as a byte slice.
-// func SendWorkToPeers(node *masa.OracleNode, data []byte) {
-// peers := node.Host.Network().Peers()
-// for _, peer := range peers {
-// 	conns := node.Host.Network().ConnsToPeer(peer)
-// 	for _, conn := range conns {
-// 		addr := conn.RemoteMultiaddr()
-// 		ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-// 		peerPID := actor.NewPID(fmt.Sprintf("%s:4001", ipAddr), fmt.Sprintf("%s/%s", "peer_worker", "peer"))
-// 		fmt.Println(peerPID)
-// 		node.ActorEngine.Subscribe(peerPID)
-// 	}
-// }
-//node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
-// go MonitorWorkers(context.Background(), node)
-// }
-
-// StartWorkers starts the worker goroutines for the given OracleNode.
-// It spawns a new actor using the node's ActorEngine and sets up message handling
-// for the actor. The actor listens for Started and Message events.
-// When a Message event is received, it parses the work data and performs the
-// corresponding task (web scraping or Twitter scraping) based on the request type.
-// The collected data is then sent to the workerStatusCh channel.
-func StartWork(node *masa.OracleNode) {
-
-	// props := actor.PropsFromProducer(NewWorker())
-	// pid := node.ActorEngine.Spawn(props)
-	// message := &messages.Work{Data: "hi-1", Sender: pid}
-	// fmt.Println("debug ", message)
-
-	// spawnResponse, err := node.ActorRemote.SpawnNamed("127.0.0.1:4002", "worker", "peer", time.Second)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// } else {
-
-	// 	// get spawned PID
-	// 	spawnedPID := spawnResponse.Pid
-	// 	client := node.ActorEngine.Spawn(props)
-	// 	node.ActorEngine.Send(spawnedPID, &messages.Connect{
-	// 		Sender: client,
-	// 	})
-
-	// 	for i := 0; i < 10; i++ {
-	// 		node.ActorEngine.Send(spawnedPID, message)
-	// 	}
-	// }
+// The Worker actor receives messages through its Receive method, which is called by the actor system when a message is sent to the actor.
+// It handles the following message types:
+//   - *messages.Connect: Indicates that a client has connected to the worker. The client's sender information is added to the clients set.
+//   - *actor.Started: Indicates that the actor has started. It prints a debug message.
+//   - *messages.Work: Contains the work data to be processed. The work data is parsed based on the request type, and the corresponding scraping function is called.
+//     The scraped data is then sent to the workerStatusCh channel for further processing.
+//
+// The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.
+func SendWork(node *masa.OracleNode, props *actor.Props, workerAddr string, message *messages.Work) {
+	spawnResponse, err := node.ActorRemote.SpawnNamed(workerAddr, "worker", "peer", -1)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		spawnedPID := spawnResponse.Pid
+		client := node.ActorEngine.Spawn(props)
+		node.ActorEngine.Send(spawnedPID, &messages.Connect{
+			Sender: client,
+		})
+		for i := 0; i < 10; i++ {
+			node.ActorEngine.Send(spawnedPID, message)
+		}
+	}
 }
-
-// func StartWorkersOLD(node *masa.OracleNode) {
-// 	wg := &sync.WaitGroup{}
-// 	wg.Add(1)
-
-// 	node.ActorEngine.SpawnFunc(func(c *actor.Context) {
-// 		switch m := c.Message().(type) {
-// 		case actor.Started:
-// 			// fmt.Println(c.PID(), c.PID().Address)
-// 			// c.Engine().Subscribe(c.PID())
-// 			//peerPID := actor.NewPID(fmt.Sprintf("%s", c.PID().Address), fmt.Sprintf("%s/%s", "peer_worker", "peer"))
-// 			//fmt.Println(peerPID)
-// 			node.ActorEngine.Subscribe(c.PID())
-// 		case *msg.Message:
-// 			fmt.Println("actor worker received event ", m.Data)
-
-// 			var workData map[string]string
-// 			err := json.Unmarshal([]byte(m.Data), &workData)
-// 			if err != nil {
-// 				logrus.Errorf("Error parsing work data: %v", err)
-// 				return
-// 			}
-// 			switch workData["request"] {
-// 			case "web":
-// 				depth, err := strconv.Atoi(workData["depth"])
-// 				if err != nil {
-// 					logrus.Errorf("Error converting depth to int: %v", err)
-// 					return
-// 				}
-// 				webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
-// 				if err != nil {
-// 					logrus.Errorf("%v", err)
-// 					return
-// 				}
-// 				collectedData := llmbridge.SanitizeResponse(webData)
-// 				jsonData, _ := json.Marshal(collectedData)
-// 				workerStatusCh <- jsonData
-// 			case "twitter":
-// 				count, err := strconv.Atoi(workData["count"])
-// 				if err != nil {
-// 					logrus.Errorf("Error converting count to int: %v", err)
-// 					return
-// 				}
-// 				tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
-// 				if err != nil {
-// 					logrus.Errorf("%v", err)
-// 					return
-// 				}
-// 				collectedData := llmbridge.ConcatenateTweets(tweets)
-// 				logrus.Info("Actor worker stopped")
-
-// 				jsonData, _ := json.Marshal(collectedData)
-// 				workerStatusCh <- jsonData
-// 			}
-
-// 			wg.Done()
-// 		}
-// 	}, "peer_worker")
-// 	// go MonitorWorkers(context.Background(), node)
-// }
-
-// func SendWork(node *masa.OracleNode, data []byte) {
-// 	node.ActorEngine.BroadcastEvent(&msg.Message{Data: string(data)})
-// }
 
 // MonitorWorkers monitors worker data by subscribing to the completed work topic,
 // computing a CID for each received data, and writing the data to the database.
@@ -213,58 +162,40 @@ func StartWork(node *masa.OracleNode) {
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 
-	// new below
 	var err error
-
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
+
 	message := &messages.Work{Data: "hi-1", Sender: pid}
-	fmt.Println("debug ", message)
+	logrus.Info("[+] debug: ", message)
+	node.ActorEngine.Send(pid, message) // send to self
 
-	spawnResponse, err := node.ActorRemote.SpawnNamed("192.168.4.164:4001", "worker", "peer", time.Second)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		spawnedPID := spawnResponse.Pid
-		client := node.ActorEngine.Spawn(props)
-		node.ActorEngine.Send(spawnedPID, &messages.Connect{
-			Sender: client,
-		})
-		for i := 0; i < 10; i++ {
-			node.ActorEngine.Send(spawnedPID, message)
-		}
-	}
-
+	// sends to remotes on topic
+	//if err = node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), []byte(message.Data)); err != nil {
+	//	logrus.Errorf("%v", err)
+	//}
+	// or
+	// sends to remotes on remote actor (@todo need to research issues with NAT)
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Info(fmt.Sprintf("%s:4001", ipAddr))
-			//spawnResponse, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", time.Second)
-			//if err != nil {
-			//	logrus.Errorf("spawn error %v", err)
-			//} else {
-			//	spawnedPID := spawnResponse.Pid
-			//	client := node.ActorEngine.Spawn(props)
-			//	node.ActorEngine.Send(spawnedPID, &messages.Connect{
-			//		Sender: client,
-			//	})
-			//}
+			logrus.Info("[+] ipAddr: ", ipAddr)
+			// go SendWork(node, props, fmt.Sprintf("%s:4001", ipAddr), message)
 		}
 	}
 
-	syncInterval := time.Second * 60
-	workerStatusHandler := &pubsub.WorkerStatusHandler{WorkerStatusCh: workerStatusCh}
-	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.CompletedWorkTopic), workerStatusHandler)
+	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
+	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
 	if err != nil {
 		logrus.Errorf("%v", err)
 	}
 
-	ticker := time.NewTicker(syncInterval)
+	ticker := time.NewTicker(time.Second * 60)
 	defer ticker.Stop()
 	for {
 		select {
@@ -273,6 +204,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
 			val := db.ReadData(node, key)
+
+			// if err = node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
+			// 	logrus.Errorf("%v", err)
+			// }
+
 			// double spend check
 			if val == nil {
 				go db.WriteData(node, key, data)

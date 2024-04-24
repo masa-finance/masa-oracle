@@ -33,26 +33,26 @@ import (
 )
 
 type OracleNode struct {
-	Host                              host.Host
-	PrivKey                           *ecdsa.PrivateKey
-	Protocol                          protocol.ID
-	priorityAddrs                     multiaddr.Multiaddr
-	multiAddrs                        []multiaddr.Multiaddr
-	DHT                               *dht.IpfsDHT
-	Context                           context.Context
-	PeerChan                          chan myNetwork.PeerEvent
-	NodeTracker                       *pubsub2.NodeEventTracker
-	PubSubManager                     *pubsub2.Manager
-	Signature                         string
-	IsStaked                          bool
-	IsWriter                          bool
-	IsTwitterScraper                  bool
-	IsWebScraper                      bool
-	StartTime                         time.Time
-	AdSubscriptionHandler             *ad.SubscriptionHandler
-	CompletedWorkSubscriptionsHandler *pubsub2.WorkerStatusHandler
-	ActorEngine                       *actor.RootContext
-	ActorRemote                       *remote.Remote
+	Host                  host.Host
+	PrivKey               *ecdsa.PrivateKey
+	Protocol              protocol.ID
+	priorityAddrs         multiaddr.Multiaddr
+	multiAddrs            []multiaddr.Multiaddr
+	DHT                   *dht.IpfsDHT
+	Context               context.Context
+	PeerChan              chan myNetwork.PeerEvent
+	NodeTracker           *pubsub2.NodeEventTracker
+	PubSubManager         *pubsub2.Manager
+	Signature             string
+	IsStaked              bool
+	IsWriter              bool
+	IsTwitterScraper      bool
+	IsWebScraper          bool
+	StartTime             time.Time
+	AdSubscriptionHandler *ad.SubscriptionHandler
+	WorkerTracker         *pubsub2.WorkerEventTracker
+	ActorEngine           *actor.RootContext
+	ActorRemote           *remote.Remote
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -125,7 +125,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 
 	system := actor.NewActorSystem()
 	engine := system.Root
-	conf := remote.Configure("0.0.0.0", 4001)
+	conf := remote.Configure("192.168.4.165", 4001)
 	r := remote.NewRemote(system, conf)
 	r.Start()
 

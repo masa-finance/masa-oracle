@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"os/signal"
 	"strconv"
@@ -65,15 +66,19 @@ func main() {
 	}
 
 	go db.InitResolverCache(node, keyManager)
-	// start monitoring actor workers
+
+	// Start monitoring actor workers
 	if cfg.TwitterScraper || cfg.WebScraper {
 		if isStaked {
 			go workers.MonitorWorkers(ctx, node)
 		}
 	}
-	// test SendWork
-	// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
-	// go workers.SendWork(node, d)
+
+	// test
+	d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
+	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
+		logrus.Errorf("%v", err)
+	}
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

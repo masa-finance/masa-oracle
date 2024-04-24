@@ -266,9 +266,11 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
+		d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
 		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
-		// go workers.SendWork(api.Node, d)
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
+			logrus.Errorf("%v", err)
+		}
 
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {
