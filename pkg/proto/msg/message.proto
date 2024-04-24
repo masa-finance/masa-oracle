@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package msg;
-option go_package = "github.com/masa-finance/masa-oracle/pkg/proto/msg";
-
-message Message {
-	string data = 1;
-}

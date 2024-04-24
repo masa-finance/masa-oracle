@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
@@ -65,21 +65,15 @@ func main() {
 	}
 
 	go db.InitResolverCache(node, keyManager)
-
-	// start actor worker listener and subscribe if scraper and isStaked
-	// go node.ActorEngine.Spawn(workers.NewWorker, "peer_worker", actor.WithID("peer"))
-	go workers.StartWorkers(node)
-	//if cfg.TwitterScraper || cfg.WebScraper {
-	//	if isStaked {
-	//		node.ActorEngine.Subscribe(actor.NewPID("0.0.0.0:4001", fmt.Sprintf("%s/%s", "peer_worker", "peer")))
-	//	}
-	//}
-
-	// tests SendWorkToPeers i.e. twitter, web
-	d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "2"})
-	// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token price", "count": "5"})
-	// go workers.SendWorkToPeers(node, d)
-	go workers.SendWork(node, d)
+	// start monitoring actor workers
+	if cfg.TwitterScraper || cfg.WebScraper {
+		if isStaked {
+			go workers.MonitorWorkers(ctx, node)
+		}
+	}
+	// test SendWork
+	// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
+	// go workers.SendWork(node, d)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)

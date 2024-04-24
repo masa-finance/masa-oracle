@@ -267,8 +267,8 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
-		//d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
-		//go workers.SendWorkToPeers(api.Node, d)
+		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
+		// go workers.SendWork(api.Node, d)
 
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {

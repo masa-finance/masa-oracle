@@ -1,0 +1,21 @@
+syntax = "proto3";
+package messages;
+option go_package = "github.com/masa-finance/rw/remote-activate/messages";
+import "actor.proto";
+
+message Connect {
+  actor.PID Sender = 1;
+}
+
+message Connected {
+  string Message = 1;
+}
+
+message Work {
+  actor.PID Sender = 1;
+	string Data = 2;
+}
+
+message Response {
+  string Value = 1;
+}

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anthdm/hollywood/remote"
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/remote"
 
-	"github.com/anthdm/hollywood/actor"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -51,7 +51,8 @@ type OracleNode struct {
 	StartTime                         time.Time
 	AdSubscriptionHandler             *ad.SubscriptionHandler
 	CompletedWorkSubscriptionsHandler *pubsub2.WorkerStatusHandler
-	ActorEngine                       *actor.Engine
+	ActorEngine                       *actor.RootContext
+	ActorRemote                       *remote.Remote
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -122,12 +123,11 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	isTwitterScraper := cfg.TwitterScraper
 	isWebScraper := cfg.WebScraper
 
-	var engine *actor.Engine
-	r := remote.New(fmt.Sprintf("0.0.0.0:%d", cfg.PortNbr), remote.NewConfig())
-	engine, err = actor.NewEngine(actor.NewEngineConfig().WithRemote(r))
-	if err != nil {
-		logrus.Errorf("start actor engine error %v", err)
-	}
+	system := actor.NewActorSystem()
+	engine := system.Root
+	conf := remote.Configure("0.0.0.0", 4001)
+	r := remote.NewRemote(system, conf)
+	r.Start()
 
 	return &OracleNode{
 		Host:             hst,
@@ -143,6 +143,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsTwitterScraper: isTwitterScraper,
 		IsWebScraper:     isWebScraper,
 		ActorEngine:      engine,
+		ActorRemote:      r,
 	}, nil
 }
 

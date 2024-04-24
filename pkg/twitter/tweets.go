@@ -9,10 +9,9 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
-	"github.com/anthdm/hollywood/actor"
+	actor "github.com/asynkron/protoactor-go/actor"
 	_ "github.com/lib/pq"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
@@ -91,28 +90,28 @@ func auth() *twitterscraper.Scraper {
 // NewManager creates and returns a new actor.Producer function.
 // This function, when invoked, will produce an instance of a Manager actor receiver.
 // The Manager is responsible for managing a pool of worker actors that process tweet requests.
-func NewManager() actor.Producer {
-	return func() actor.Receiver {
-		return &Manager{
-			workers: make(map[*actor.PID]bool),
-		}
-	}
-}
+// func NewManager() actor.Producer {
+// 	return func() actor.Receiver {
+// 		return &Manager{
+// 			workers: make(map[*actor.PID]bool),
+// 		}
+// 	}
+// }
 
 // Receive processes messages sent to the Manager actor. It handles different types of messages
 // such as TweetRequest, actor.Started, and actor.Stopped by switching over the type of the message.
 // For TweetRequest messages, it delegates the handling to the handleTweetRequest method.
 // For actor.Started and actor.Stopped messages, it logs the state of the actor worker.
-func (m *Manager) Receive(c *actor.Context) {
-	switch msg := c.Message().(type) {
-	case TweetRequest:
-		_ = m.handleTweetRequest(c, msg)
-	case actor.Started:
-		logrus.Info("Actor worker initialized")
-	case actor.Stopped:
-		logrus.Info("Actor worker stopped")
-	}
-}
+// func (m *Manager) Receive(c *actor.Context) {
+// 	switch msg := c.Message().(type) {
+// 	case TweetRequest:
+// 		_ = m.handleTweetRequest(c, msg)
+// 	case actor.Started:
+// 		logrus.Info("Actor worker initialized")
+// 	case actor.Stopped:
+// 		logrus.Info("Actor worker stopped")
+// 	}
+// }
 
 // handleTweetRequest processes a TweetRequest message by iterating over each tweet query within the message.
 // For each tweet query, if the worker actor for the current PID does not exist, it spawns a new child actor
@@ -122,16 +121,7 @@ func (m *Manager) Receive(c *actor.Context) {
 // - msg: The TweetRequest containing the details of the tweet queries to process.
 // Returns:
 // - An error if any issues occur during the handling of the tweet request. Currently, it always returns nil.
-func (m *Manager) handleTweetRequest(c *actor.Context, msg TweetRequest) error {
-	for i, tweet := range msg.Query {
-		if _, ok := m.workers[c.PID()]; !ok {
-			logrus.Debugf("Tweet %+v with %v", tweet, c.PID())
-			c.SpawnChild(NewTweetWorker(&msg, c.PID()), fmt.Sprintf("worker/%d", i))
-			m.workers[c.PID()] = true
-		}
-	}
-	return nil
-}
+// s
 
 // NewTweetWorker creates and returns a new actor.Producer function specific for tweet workers.
 // This function, when invoked, will produce an instance of a TweetWorker actor receiver, initialized with the provided TweetRequest and PID.
@@ -140,40 +130,40 @@ func (m *Manager) handleTweetRequest(c *actor.Context, msg TweetRequest) error {
 // - pid: A pointer to an actor.PID representing the process identifier for the actor system.
 // Returns:
 // - An actor.Producer function that produces TweetWorker actor receivers.
-func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
-	return func() actor.Receiver {
-		return &TweetWorker{TweetRequest{
-			Count: t.Count,
-			Query: t.Query,
-			Model: t.Model,
-		}, pid}
-	}
-}
+// func NewTweetWorker(t *TweetRequest, pid *actor.PID) actor.Producer {
+// 	return func() actor.Receiver {
+// 		return &TweetWorker{TweetRequest{
+// 			Count: t.Count,
+// 			Query: t.Query,
+// 			Model: t.Model,
+// 		}, pid}
+// 	}
+// }
 
 // Receive processes messages sent to the TweetWorker actor. It handles different types of messages
 // such as actor.Started and actor.Stopped by switching over the type of the message.
 // For actor.Started messages, it initiates the process of scraping tweets based on the query and count specified in the TweetWorker,
 // analyzes the sentiment of the scraped tweets, and then stops the worker actor.
 // For actor.Stopped messages, it simply logs that the worker has stopped.
-func (w *TweetWorker) Receive(c *actor.Context) {
-	switch c.Message().(type) {
-	case actor.Started:
+// func (w *TweetWorker) Receive(ctx *actor.Context) {
+// 	switch ctx.Message().(type) {
+// 	case actor.Started:
 
-		logrus.Infof("TweetWorker started with pid %+v", c.PID().ID)
-		tweets, err := ScrapeTweetsByQuery(w.Query[0], w.Count)
-		if err != nil {
-			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
-		}
-		_, sentimentSummary, err := llmbridge.AnalyzeSentimentTweets(tweets, w.Model, sentimentPrompt)
-		if err != nil {
-			sentimentCh <- err.Error()
-		}
-		sentimentCh <- sentimentSummary
-		c.Engine().Poison(c.PID()).Wait() // stop this worker by pid when job is complete
-	case actor.Stopped:
-		logrus.Info("TweetWorker stopped")
-	}
-}
+// 		logrus.Infof("TweetWorker started with pid %+v", c.PID().ID)
+// 		tweets, err := ScrapeTweetsByQuery(w.Query[0], w.Count)
+// 		if err != nil {
+// 			logrus.Errorf("ScrapeTweetsByQuery worker error %v", err)
+// 		}
+// 		// _, sentimentSummary, err := llmbridge.AnalyzeSentimentTweets(tweets, w.Model, sentimentPrompt)
+// 		// if err != nil {
+// 		// 	sentimentCh <- err.Error()
+// 		// }
+// 		// sentimentCh <- sentimentSummary
+// 		// c.Engine().Poison(c.PID()).Wait() // stop this worker by pid when job is complete
+// 	case actor.Stopped:
+// 		logrus.Info("TweetWorker stopped")
+// 	}
+// }
 
 // ScrapeTweetsUsingActors initiates the process of scraping tweets based on a given query, count, and model.
 // It leverages actor-based concurrency to manage the scraping and analysis tasks.
@@ -201,10 +191,10 @@ func ScrapeTweetsUsingActors(node *masa.OracleNode, query string, count int, mod
 		if err != nil {
 			logrus.Errorf("new actor worker error %v", err)
 		} else {
-			pid := node.ActorEngine.Spawn(NewManager(), "Manager")
+			// pid := node.ActorEngine.Spawn(NewManager(), "Manager")
 			time.Sleep(time.Millisecond * 200)
-			logrus.Infof("Started new actor worker spawned with pid %v \n", pid.ID)
-			node.ActorEngine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
+			// logrus.Infof("Started new actor worker spawned with pid %v \n", pid.ID)
+			// node.ActorEngine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
 		}
 	}()
 
