@@ -1,6 +1,6 @@
 syntax = "proto3";
 package messages;
-option go_package = "github.com/masa-finance/rw/remote-activate/messages";
+option go_package = "github.com/masa-finance/masa-oracle/workers/messages";
 import "actor.proto";
 
 message Connect {
