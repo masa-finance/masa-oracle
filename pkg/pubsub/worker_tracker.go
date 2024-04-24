@@ -8,9 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type WorkerTracker struct {
-	PeerID string `json:"peerId"`
-	Data   []byte
+type Workers struct {
+	Data []byte
 }
 
 // WorkerEventTracker is a struct that handles subscriptions for worker status updates.
@@ -20,25 +19,26 @@ type WorkerTracker struct {
 // - mu: A sync.Mutex used for synchronizing access to the handler's fields.
 // - WorkerCh: A channel for sending worker status updates as byte slices.
 type WorkerEventTracker struct {
-	WorkerTracker  []WorkerTracker
+	Workers        []Workers
 	WorkerTopic    *pubsub.Topic
 	mu             sync.Mutex
 	WorkerStatusCh chan []byte
 }
 
 // HandleMessage implements subscription WorkerEventTracker handler
-func (h *WorkerEventTracker) HandleMessage(message *pubsub.Message) {
-	workerStatus := WorkerTracker{}
-	err := json.Unmarshal(message.Data, &workerStatus)
+func (h *WorkerEventTracker) HandleMessage(m *pubsub.Message) {
+	logrus.Info("Received a worker payload")
+	var workers Workers
+	err := json.Unmarshal(m.Data, &workers)
 	if err != nil {
 		logrus.Errorf("Failed to unmarshal message: %v", err)
 		return
 	}
 
 	h.mu.Lock()
-	h.WorkerTracker = append(h.WorkerTracker, workerStatus)
+	h.Workers = append(h.Workers, workers)
 	h.mu.Unlock()
 
-	jsonData, _ := json.Marshal(workerStatus)
-	h.WorkerStatusCh <- jsonData
+	// jsonData, _ := json.Marshal(m.Data)
+	h.WorkerStatusCh <- m.Data
 }

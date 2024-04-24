@@ -17,7 +17,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
-	"github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
@@ -165,12 +164,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	var err error
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
-	props := actor.PropsFromProducer(NewWorker())
-	pid := node.ActorEngine.Spawn(props)
-
-	message := &messages.Work{Data: "hi-1", Sender: pid}
-	logrus.Info("[+] debug: ", message)
-	node.ActorEngine.Send(pid, message) // send to self
+	//props := actor.PropsFromProducer(NewWorker())
+	//pid := node.ActorEngine.Spawn(props)
+	//message := &messages.Work{Data: "hi-1", Sender: pid}
+	//logrus.Info("[+] debug: ", message)
+	//node.ActorEngine.Send(pid, message) // send to self
 
 	// sends to remotes on topic
 	//if err = node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), []byte(message.Data)); err != nil {
@@ -178,16 +176,16 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	//}
 	// or
 	// sends to remotes on remote actor (@todo need to research issues with NAT)
-	peers := node.Host.Network().Peers()
-	for _, peer := range peers {
-		conns := node.Host.Network().ConnsToPeer(peer)
-		for _, conn := range conns {
-			addr := conn.RemoteMultiaddr()
-			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Info("[+] ipAddr: ", ipAddr)
-			// go SendWork(node, props, fmt.Sprintf("%s:4001", ipAddr), message)
-		}
-	}
+	//peers := node.Host.Network().Peers()
+	//for _, peer := range peers {
+	//	conns := node.Host.Network().ConnsToPeer(peer)
+	//	for _, conn := range conns {
+	//		addr := conn.RemoteMultiaddr()
+	//		ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+	//		logrus.Info("[+] ipAddr: ", ipAddr)
+	//		// go SendWork(node, props, fmt.Sprintf("%s:4001", ipAddr), message)
+	//	}
+	//}
 
 	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
