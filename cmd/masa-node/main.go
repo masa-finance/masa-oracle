@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
-	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -21,9 +19,6 @@ import (
 )
 
 func main() {
-	// discard protoactor logs
-	log.SetOutput(io.Discard)
-
 	cfg := config.GetInstance()
 	cfg.LogConfig()
 	cfg.SetupLogging()

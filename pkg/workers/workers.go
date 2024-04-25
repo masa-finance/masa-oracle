@@ -144,13 +144,27 @@ func SendWork(node *masa.OracleNode, data []byte) {
 
 	// sends to remotes on remote actor (@todo need to research issues with NAT)
 	message := &messages.Work{Data: string(data), Sender: pid}
-
+	// this is garbage code looking for best way to get all nodes ip
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			// fmt.Printf("%s:4001", ipAddr)
+			// if ipAddr == "192.168.4.164" {
+			// 	spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+			// 	if err != nil {
+			// 		logrus.Errorf("Spawned error %v", err)
+			// 	} else {
+			// 		spawnedPID := spawned.Pid
+			// 		client := node.ActorEngine.Spawn(props)
+			// 		node.ActorEngine.Send(spawnedPID, &messages.Connect{
+			// 			Sender: client,
+			// 		})
+			// 		node.ActorEngine.Send(spawnedPID, message)
+			// 	}
+			// }
 			for _, bn := range config.GetInstance().Bootnodes {
 				bootNodeAddr := strings.Split(bn, "/")[2]
 				if bootNodeAddr != ipAddr {

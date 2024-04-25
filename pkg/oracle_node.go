@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/chyeh/pubip"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -67,6 +69,23 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.priorityAddrs
 }
 
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		fmt.Println("Error getting outbound IP")
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().String()
+	idx := strings.LastIndex(localAddr, ":")
+	return localAddr[0:idx]
+}
+
+type NoOpLogger struct{}
+
+func (l *NoOpLogger) Info(args ...interface{}) {}
+
+func (l *NoOpLogger) Error(args ...interface{}) {}
+
 // NewOracleNode creates a new OracleNode instance with the provided context and
 // staking status. It initializes the libp2p host, DHT, pubsub manager, and other
 // components needed for an Oracle node to join the network and participate.
@@ -125,9 +144,15 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 
 	system := actor.NewActorSystem()
 	engine := system.Root
-	conf := remote.Configure("192.168.4.165", 4001)
+	// conf := remote.Configure("192.168.4.165", 4001)
+
+	ip, _ := pubip.Get()
+	conf := remote.Configure("0.0.0.0", 4001,
+		remote.WithAdvertisedHost(fmt.Sprintf("%s:4001", getOutboundIP())),
+		remote.WithAdvertisedHost(fmt.Sprintf("%s:4001", ip.String())))
+
 	r := remote.NewRemote(system, conf)
-	r.Start()
+	go r.Start()
 
 	return &OracleNode{
 		Host:             hst,
