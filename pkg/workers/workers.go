@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/multiformats/go-multiaddr"
@@ -50,6 +51,8 @@ func (a *Worker) Receive(ctx actor.Context) {
 		clients.Add(m.Sender)
 	case *actor.Started:
 		fmt.Println("actor started")
+	case *actor.Stopped:
+		fmt.Println("actor stopped")
 	case *messages.Work:
 		fmt.Printf("data: %v", m.Data)
 		// 			var workData map[string]string
@@ -91,7 +94,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		//				fmt.Println("actor stopped")
 		// 				workerStatusCh <- jsonData
 		// 			}
-		// ctx.Poison()
+		ctx.Poison(ctx.Self())
 		workerStatusCh <- []byte(m.Data)
 	}
 }
@@ -119,6 +122,20 @@ func computeCid(str string) (string, error) {
 	return cidKey, nil
 }
 
+// isBootnode checks if the given IP address belongs to a bootnode.
+// It takes an IP address as a string and returns a boolean value.
+// If the IP address is found in the list of bootnodes, it returns true.
+// Otherwise, it returns false.
+func isBootnode(ipAddr string) bool {
+	for _, bn := range config.GetInstance().Bootnodes {
+		bootNodeAddr := strings.Split(bn, "/")[2]
+		if bootNodeAddr == ipAddr {
+			return true
+		}
+	}
+	return false
+}
+
 // SendWork is responsible for handling work messages and processing them based on the request type.
 // It supports the following request types:
 // - "web": Scrapes web data from the specified URL with the given depth.
@@ -137,21 +154,20 @@ func SendWork(node *masa.OracleNode, data []byte) {
 	pid := node.ActorEngine.Spawn(props)
 	node.ActorEngine.Send(pid, data)
 
-	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
-		logrus.Errorf("%v", err)
-	}
+	// @note we can use the WorkerTopic to SendWork anywhere in the service
+	//if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
+	//	logrus.Errorf("%v", err)
+	//}
 
-	// sends to remotes on remote actor (@todo need to research issues with NAT)
 	message := &messages.Work{Data: string(data), Sender: pid}
-	// this is garbage code looking for best way to get all nodes ip
+
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			// fmt.Printf("%s:4001", ipAddr)
-			if ipAddr == "192.168.4.164" {
+			if !isBootnode(ipAddr) {
 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 				if err != nil {
 					logrus.Errorf("Spawned error %v", err)
@@ -164,25 +180,8 @@ func SendWork(node *masa.OracleNode, data []byte) {
 					node.ActorEngine.Send(spawnedPID, message)
 				}
 			}
-			//for _, bn := range config.GetInstance().Bootnodes {
-			//	bootNodeAddr := strings.Split(bn, "/")[2]
-			//	if bootNodeAddr != ipAddr {
-			//		spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
-			//		if err != nil {
-			//			logrus.Errorf("Spawned error %v", err)
-			//		} else {
-			//			spawnedPID := spawned.Pid
-			//			client := node.ActorEngine.Spawn(props)
-			//			node.ActorEngine.Send(spawnedPID, &messages.Connect{
-			//				Sender: client,
-			//			})
-			//			node.ActorEngine.Send(spawnedPID, message)
-			//		}
-			//	}
-			//}
 		}
 	}
-
 }
 
 // MonitorWorkers monitors worker data by subscribing to the completed work topic,
