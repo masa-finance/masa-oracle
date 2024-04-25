@@ -83,12 +83,6 @@ func getOutboundIP() string {
 	return localAddr[0:idx]
 }
 
-type NoOpLogger struct{}
-
-func (l *NoOpLogger) Info(args ...interface{}) {}
-
-func (l *NoOpLogger) Error(args ...interface{}) {}
-
 // NewOracleNode creates a new OracleNode instance with the provided context and
 // staking status. It initializes the libp2p host, DHT, pubsub manager, and other
 // components needed for an Oracle node to join the network and participate.
