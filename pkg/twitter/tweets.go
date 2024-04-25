@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
-	actor "github.com/asynkron/protoactor-go/actor"
 	_ "github.com/lib/pq"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
 
-var sentimentPrompt = "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
+// var sentimentPrompt = "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
 
 var sentimentCh = make(chan string)
 
@@ -24,24 +22,24 @@ var sentimentCh = make(chan string)
 // Count specifies the number of tweets to fetch.
 // Query is a list of keywords or phrases to search for within tweets.
 // Model indicates the language model to use for analyzing the sentiment of the tweets.
-type TweetRequest struct {
-	Count int      // Number of tweets to fetch
-	Query []string // Keywords or phrases to search for
-	Model string   // Language model for sentiment analysis
-}
+// type TweetRequest struct {
+// 	Count int      // Number of tweets to fetch
+// 	Query []string // Keywords or phrases to search for
+// 	Model string   // Language model for sentiment analysis
+// }
 
 // Manager is a struct that maintains a map of worker actors.
 // The map keys are pointers to actor.PID (Process Identifiers) and the values are booleans indicating the worker's availability.
-type Manager struct {
-	workers map[*actor.PID]bool // Map of worker actors to their availability status
-}
+// type Manager struct {
+// 	workers map[*actor.PID]bool // Map of worker actors to their availability status
+// }
 
 // TweetWorker represents a worker entity capable of processing TweetRequests.
 // It embeds TweetRequest to inherit its fields and adds a pid field to hold the worker's process identifier.
-type TweetWorker struct {
-	TweetRequest            // Embedding TweetRequest to inherit its fields
-	pid          *actor.PID // pid is the process identifier for the worker
-}
+// type TweetWorker struct {
+// 	TweetRequest            // Embedding TweetRequest to inherit its fields
+// 	pid          *actor.PID // pid is the process identifier for the worker
+// }
 
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
 // If no valid session is found, it performs a login with credentials specified in the application's configuration.
@@ -148,7 +146,6 @@ func auth() *twitterscraper.Scraper {
 // func (w *TweetWorker) Receive(ctx *actor.Context) {
 // 	switch ctx.Message().(type) {
 // 	case actor.Started:
-
 // 		logrus.Infof("TweetWorker started with pid %+v", c.PID().ID)
 // 		tweets, err := ScrapeTweetsByQuery(w.Query[0], w.Count)
 // 		if err != nil {
@@ -191,10 +188,11 @@ func ScrapeTweetsUsingActors(node *masa.OracleNode, query string, count int, mod
 		if err != nil {
 			logrus.Errorf("new actor worker error %v", err)
 		} else {
-			// pid := node.ActorEngine.Spawn(NewManager(), "Manager")
-			time.Sleep(time.Millisecond * 200)
-			// logrus.Infof("Started new actor worker spawned with pid %v \n", pid.ID)
-			// node.ActorEngine.Send(pid, TweetRequest{Count: count, Query: []string{query}, Model: model})
+			// props := actor.PropsFromProducer(workers.NewWorker())
+			// pid := node.ActorEngine.Spawn(props)
+			// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": query, "count": strconv.Itoa(count), "model": model})
+			// message := &messages.Work{Data: string(d), Sender: pid}
+			// node.ActorEngine.Send(pid, message)
 		}
 	}()
 

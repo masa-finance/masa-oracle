@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	"github.com/masa-finance/masa-oracle/pkg/scraper"
+	"github.com/masa-finance/masa-oracle/pkg/twitter"
+
 	"github.com/multiformats/go-multiaddr"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -47,53 +51,52 @@ func NewWorker() actor.Producer {
 func (a *Worker) Receive(ctx actor.Context) {
 	switch m := ctx.Message().(type) {
 	case *messages.Connect:
-		fmt.Printf("Worker %v connected", m.Sender)
+		logrus.Infof("Worker %v connected", m.Sender)
 		clients.Add(m.Sender)
 	case *actor.Started:
-		fmt.Println("actor started")
+		logrus.Info("actor started")
 	case *actor.Stopped:
-		fmt.Println("actor stopped")
+		logrus.Info("actor stopped")
 	case *messages.Work:
-		fmt.Printf("data: %v", m.Data)
-		// 			var workData map[string]string
-		// 			err := json.Unmarshal([]byte(m.Data), &workData)
-		// 			if err != nil {
-		// 				logrus.Errorf("Error parsing work data: %v", err)
-		// 				return
-		// 			}
-		// 			switch workData["request"] {
-		// 			case "web":
-		// 				depth, err := strconv.Atoi(workData["depth"])
-		// 				if err != nil {
-		// 					logrus.Errorf("Error converting depth to int: %v", err)
-		// 					return
-		// 				}
-		// 				webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
-		// 				if err != nil {
-		// 					logrus.Errorf("%v", err)
-		// 					return
-		// 				}
-		// 				collectedData := llmbridge.SanitizeResponse(webData)
-		// 				jsonData, _ := json.Marshal(collectedData)
-		// 				workerStatusCh <- jsonData
-		// 			case "twitter":
-		// 				count, err := strconv.Atoi(workData["count"])
-		// 				if err != nil {
-		// 					logrus.Errorf("Error converting count to int: %v", err)
-		// 					return
-		// 				}
-		// 				tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
-		// 				if err != nil {
-		// 					logrus.Errorf("%v", err)
-		// 					return
-		// 				}
-		// 				collectedData := llmbridge.ConcatenateTweets(tweets)
-		// 				logrus.Info("Actor worker stopped")
+		var workData map[string]string
+		err := json.Unmarshal([]byte(m.Data), &workData)
+		if err != nil {
+			logrus.Errorf("Error parsing work data: %v", err)
+			return
+		}
+		switch workData["request"] {
+		case "web":
+			depth, err := strconv.Atoi(workData["depth"])
+			if err != nil {
+				logrus.Errorf("Error converting depth to int: %v", err)
+				return
+			}
+			webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
+			if err != nil {
+				logrus.Errorf("%v", err)
+				return
+			}
+			collectedData := llmbridge.SanitizeResponse(webData)
+			jsonData, _ := json.Marshal(collectedData)
+			workerStatusCh <- jsonData
+		case "twitter":
+			count, err := strconv.Atoi(workData["count"])
+			if err != nil {
+				logrus.Errorf("Error converting count to int: %v", err)
+				return
+			}
+			tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
+			if err != nil {
+				logrus.Errorf("%v", err)
+				return
+			}
+			collectedData := llmbridge.ConcatenateTweets(tweets)
+			logrus.Info("Actor worker stopped")
 
-		// 				jsonData, _ := json.Marshal(collectedData)
-		//				fmt.Println("actor stopped")
-		// 				workerStatusCh <- jsonData
-		// 			}
+			jsonData, _ := json.Marshal(collectedData)
+			fmt.Println("actor stopped")
+			workerStatusCh <- jsonData
+		}
 		ctx.Poison(ctx.Self())
 		workerStatusCh <- []byte(m.Data)
 	}
@@ -170,7 +173,7 @@ func SendWork(node *masa.OracleNode, data []byte) {
 			if !isBootnode(ipAddr) {
 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 				if err != nil {
-					logrus.Errorf("Spawned error %v", err)
+					logrus.Debugf("Spawned error %v", err)
 				} else {
 					spawnedPID := spawned.Pid
 					client := node.ActorEngine.Spawn(props)
