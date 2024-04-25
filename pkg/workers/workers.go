@@ -52,8 +52,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *actor.Started:
 		fmt.Println("actor started")
 	case *messages.Work:
-		fmt.Printf("%v", m.Data)
-
+		fmt.Printf("data: %v", m.Data)
 		// 			var workData map[string]string
 		// 			err := json.Unmarshal([]byte(m.Data), &workData)
 		// 			if err != nil {
@@ -93,7 +92,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		//				fmt.Println("actor stopped")
 		// 				workerStatusCh <- jsonData
 		// 			}
-
+		// ctx.Poison()
 		workerStatusCh <- []byte(m.Data)
 	}
 }
@@ -152,13 +151,12 @@ func SendWork(node *masa.OracleNode, data []byte) {
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Info("[+] ipAddr: ", fmt.Sprintf("%s:4001", ipAddr))
 			for _, bn := range config.GetInstance().Bootnodes {
 				bootNodeAddr := strings.Split(bn, "/")[2]
 				if bootNodeAddr != ipAddr {
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
-						fmt.Println(err)
+						logrus.Errorf("Spawned error %v", err)
 					} else {
 						spawnedPID := spawned.Pid
 						client := node.ActorEngine.Spawn(props)
@@ -192,7 +190,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
 	if err != nil {
-		logrus.Errorf("%v", err)
+		logrus.Errorf("Subscribe error %v", err)
 	}
 
 	ticker := time.NewTicker(time.Second * 60)
