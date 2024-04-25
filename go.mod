@@ -29,8 +29,8 @@ require (
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/n0madic/twitter-scraper v0.0.0-20231104223941-296710769dd8
 	github.com/ollama/ollama v0.1.32
-	github.com/rivo/tview v0.0.0-20240413115534-b0d41c484b95
-	github.com/sashabaranov/go-openai v1.22.0
+	github.com/rivo/tview v0.0.0-20240424133105-0d02bb78244d
+	github.com/sashabaranov/go-openai v1.23.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
@@ -225,7 +225,7 @@ require (
 	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.20.0 // indirect
-	gonum.org/v1/gonum v0.14.0 // indirect
+	gonum.org/v1/gonum v0.15.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
 	google.golang.org/grpc v1.60.1 // indirect
