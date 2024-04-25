@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"math"
 	"net/http"
 	"strconv"
@@ -268,9 +269,10 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 
 		d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
 		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
-		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
-			logrus.Errorf("%v", err)
-		}
+		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
+		//	logrus.Errorf("%v", err)
+		//}
+		go workers.SendWork(api.Node, d)
 
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {

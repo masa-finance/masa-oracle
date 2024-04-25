@@ -196,7 +196,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 			key = key[1:]
 		}
 		logrus.Printf("syncing record %s", key)
-		_, _ = WriteData(node, key, record.Value)
+		go WriteData(node, key, record.Value)
 	}
 }
 
@@ -224,7 +224,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			}
 		case nodeData := <-nodeDataChan:
 			jsonData, _ := json.Marshal(nodeData)
-			_, _ = WriteData(node, nodeData.PeerId.String(), jsonData)
+			go WriteData(node, nodeData.PeerId.String(), jsonData)
 		case <-ctx.Done():
 			return
 		}

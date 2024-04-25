@@ -9,7 +9,6 @@ import (
 )
 
 type Workers struct {
-	Data []byte
 }
 
 // WorkerEventTracker is a struct that handles subscriptions for worker status updates.
@@ -27,18 +26,15 @@ type WorkerEventTracker struct {
 
 // HandleMessage implements subscription WorkerEventTracker handler
 func (h *WorkerEventTracker) HandleMessage(m *pubsub.Message) {
-	logrus.Info("Received a worker payload")
+	logrus.Info("Received worker data")
 	var workers Workers
 	err := json.Unmarshal(m.Data, &workers)
 	if err != nil {
 		logrus.Errorf("Failed to unmarshal message: %v", err)
 		return
 	}
-
 	h.mu.Lock()
 	h.Workers = append(h.Workers, workers)
 	h.mu.Unlock()
-
-	// jsonData, _ := json.Marshal(m.Data)
 	h.WorkerStatusCh <- m.Data
 }

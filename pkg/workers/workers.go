@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/multiformats/go-multiaddr"
+
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
@@ -131,20 +133,39 @@ func computeCid(str string) (string, error) {
 //     The scraped data is then sent to the workerStatusCh channel for further processing.
 //
 // The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.
-func SendWork(node *masa.OracleNode, props *actor.Props, workerAddr string, message *messages.Work) {
-	spawnResponse, err := node.ActorRemote.SpawnNamed(workerAddr, "worker", "peer", -1)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		spawnedPID := spawnResponse.Pid
-		client := node.ActorEngine.Spawn(props)
-		node.ActorEngine.Send(spawnedPID, &messages.Connect{
-			Sender: client,
-		})
-		for i := 0; i < 10; i++ {
-			node.ActorEngine.Send(spawnedPID, message)
+func SendWork(node *masa.OracleNode, data []byte) {
+	props := actor.PropsFromProducer(NewWorker())
+	pid := node.ActorEngine.Spawn(props)
+	node.ActorEngine.Send(pid, data)
+
+	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
+		logrus.Errorf("%v", err)
+	}
+
+	// sends to remotes on remote actor (@todo need to research issues with NAT)
+	message := &messages.Work{Data: string(data), Sender: pid}
+
+	peers := node.Host.Network().Peers()
+	for _, peer := range peers {
+		conns := node.Host.Network().ConnsToPeer(peer)
+		for _, conn := range conns {
+			addr := conn.RemoteMultiaddr()
+			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			logrus.Info("[+] ipAddr: ", fmt.Sprintf("%s:4001", ipAddr))
+			spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				spawnedPID := spawned.Pid
+				client := node.ActorEngine.Spawn(props)
+				node.ActorEngine.Send(spawnedPID, &messages.Connect{
+					Sender: client,
+				})
+				node.ActorEngine.Send(spawnedPID, message)
+			}
 		}
 	}
+
 }
 
 // MonitorWorkers monitors worker data by subscribing to the completed work topic,
@@ -160,33 +181,8 @@ func SendWork(node *masa.OracleNode, props *actor.Props, workerAddr string, mess
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
-
 	var err error
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
-
-	//props := actor.PropsFromProducer(NewWorker())
-	//pid := node.ActorEngine.Spawn(props)
-	//message := &messages.Work{Data: "hi-1", Sender: pid}
-	//logrus.Info("[+] debug: ", message)
-	//node.ActorEngine.Send(pid, message) // send to self
-
-	// sends to remotes on topic
-	//if err = node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), []byte(message.Data)); err != nil {
-	//	logrus.Errorf("%v", err)
-	//}
-	// or
-	// sends to remotes on remote actor (@todo need to research issues with NAT)
-	//peers := node.Host.Network().Peers()
-	//for _, peer := range peers {
-	//	conns := node.Host.Network().ConnsToPeer(peer)
-	//	for _, conn := range conns {
-	//		addr := conn.RemoteMultiaddr()
-	//		ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-	//		logrus.Info("[+] ipAddr: ", ipAddr)
-	//		// go SendWork(node, props, fmt.Sprintf("%s:4001", ipAddr), message)
-	//	}
-	//}
-
 	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
 	if err != nil {
@@ -202,25 +198,25 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerStatusCh:
 			key, _ := computeCid(string(data))
 			val := db.ReadData(node, key)
-
-			// if err = node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
-			// 	logrus.Errorf("%v", err)
-			// }
-
-			// double spend check
 			if val == nil {
 				go db.WriteData(node, key, data)
+
 				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 				sharedData := db.SharedData{}
 				nodeVal := db.ReadData(node, nodeData.PeerId.String())
+
 				_ = json.Unmarshal(nodeVal, &sharedData)
+
 				bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+
 				nodeData.BytesScraped += bytesScraped
 				nodeData.BytesScraped += len(data)
+
 				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
 				if err != nil {
 					logrus.Error(err)
 				}
+
 				jsonData, _ := json.Marshal(nodeData)
 				go db.WriteData(node, node.Host.ID().String(), jsonData)
 			}
