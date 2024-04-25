@@ -156,7 +156,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	engine := system.Root
 
 	var ip any
-	if os.Getenv("ENV") == "dev" {
+	if os.Getenv("ENV") == "local" {
 		ip = getOutboundIP()
 	} else {
 		ip, _ = pubip.Get()
