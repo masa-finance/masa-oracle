@@ -336,16 +336,16 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			})
 			return
 		}
-		success, err := db.WriteData(api.Node, keyStr, jsonData)
+		err = db.WriteData(api.Node, keyStr, jsonData)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"success": success,
+				"success": false,
 				"message": keyStr,
 			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"success": success,
+			"success": true,
 			"message": keyStr,
 		})
 	}

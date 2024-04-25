@@ -72,14 +72,14 @@ func applyMigrations(database *sql.DB) error {
 
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
-func WriteData(node *masa.OracleNode, key string, value []byte) (bool, error) {
+func WriteData(node *masa.OracleNode, key string, value []byte) error {
 	if !isAuthorized(node.Host.ID().String()) {
 		logrus.WithFields(logrus.Fields{
 			"nodeID":       node.Host.ID().String(),
 			"isAuthorized": false,
 			"WriteData":    true,
 		})
-		return false, fmt.Errorf("401, node is not authorized to write to the datastore")
+		return fmt.Errorf("401, node is not authorized to write to the datastore")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
@@ -107,10 +107,10 @@ func WriteData(node *masa.OracleNode, key string, value []byte) (bool, error) {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		})
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
 // ReadData reads the value for the given key from the database.

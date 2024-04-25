@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/multiformats/go-multiaddr"
@@ -152,16 +153,21 @@ func SendWork(node *masa.OracleNode, data []byte) {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			logrus.Info("[+] ipAddr: ", fmt.Sprintf("%s:4001", ipAddr))
-			spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				spawnedPID := spawned.Pid
-				client := node.ActorEngine.Spawn(props)
-				node.ActorEngine.Send(spawnedPID, &messages.Connect{
-					Sender: client,
-				})
-				node.ActorEngine.Send(spawnedPID, message)
+			for _, bn := range config.GetInstance().Bootnodes {
+				bootNodeAddr := strings.Split(bn, "/")[2]
+				if bootNodeAddr != ipAddr {
+					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+					if err != nil {
+						fmt.Println(err)
+					} else {
+						spawnedPID := spawned.Pid
+						client := node.ActorEngine.Spawn(props)
+						node.ActorEngine.Send(spawnedPID, &messages.Connect{
+							Sender: client,
+						})
+						node.ActorEngine.Send(spawnedPID, message)
+					}
+				}
 			}
 		}
 	}
