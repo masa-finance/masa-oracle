@@ -7,14 +7,14 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/chyeh/pubip"
-
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/remote"
+	"github.com/chyeh/pubip"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -157,10 +157,14 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	engine := system.Root
 	// conf := remote.Configure("192.168.4.165", 4001)
 
-	ip, _ := pubip.Get()
+	var ip any
+	if os.Getenv("ENV") == "dev" {
+		ip = getOutboundIP()
+	} else {
+		ip, _ = pubip.Get()
+	}
 	conf := remote.Configure("0.0.0.0", 4001,
-		remote.WithAdvertisedHost(fmt.Sprintf("%s:4001", getOutboundIP())),
-		remote.WithAdvertisedHost(fmt.Sprintf("%s:4001", ip.String())))
+		remote.WithAdvertisedHost(fmt.Sprintf("%s:4001", ip)))
 
 	r := remote.NewRemote(system, conf)
 	go r.Start()
