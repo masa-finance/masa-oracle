@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/multiformats/go-multiaddr"
@@ -152,35 +151,35 @@ func SendWork(node *masa.OracleNode, data []byte) {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			// fmt.Printf("%s:4001", ipAddr)
-			// if ipAddr == "192.168.4.164" {
-			// 	spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
-			// 	if err != nil {
-			// 		logrus.Errorf("Spawned error %v", err)
-			// 	} else {
-			// 		spawnedPID := spawned.Pid
-			// 		client := node.ActorEngine.Spawn(props)
-			// 		node.ActorEngine.Send(spawnedPID, &messages.Connect{
-			// 			Sender: client,
-			// 		})
-			// 		node.ActorEngine.Send(spawnedPID, message)
-			// 	}
-			// }
-			for _, bn := range config.GetInstance().Bootnodes {
-				bootNodeAddr := strings.Split(bn, "/")[2]
-				if bootNodeAddr != ipAddr {
-					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
-					if err != nil {
-						logrus.Errorf("Spawned error %v", err)
-					} else {
-						spawnedPID := spawned.Pid
-						client := node.ActorEngine.Spawn(props)
-						node.ActorEngine.Send(spawnedPID, &messages.Connect{
-							Sender: client,
-						})
-						node.ActorEngine.Send(spawnedPID, message)
-					}
+			if ipAddr == "192.168.4.164" {
+				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+				if err != nil {
+					logrus.Errorf("Spawned error %v", err)
+				} else {
+					spawnedPID := spawned.Pid
+					client := node.ActorEngine.Spawn(props)
+					node.ActorEngine.Send(spawnedPID, &messages.Connect{
+						Sender: client,
+					})
+					node.ActorEngine.Send(spawnedPID, message)
 				}
 			}
+			//for _, bn := range config.GetInstance().Bootnodes {
+			//	bootNodeAddr := strings.Split(bn, "/")[2]
+			//	if bootNodeAddr != ipAddr {
+			//		spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+			//		if err != nil {
+			//			logrus.Errorf("Spawned error %v", err)
+			//		} else {
+			//			spawnedPID := spawned.Pid
+			//			client := node.ActorEngine.Spawn(props)
+			//			node.ActorEngine.Send(spawnedPID, &messages.Connect{
+			//				Sender: client,
+			//			})
+			//			node.ActorEngine.Send(spawnedPID, message)
+			//		}
+			//	}
+			//}
 		}
 	}
 
