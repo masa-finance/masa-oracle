@@ -9,7 +9,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
@@ -21,7 +21,7 @@ import (
 )
 
 var cache ds.Datastore
-var nodeStatusCh = make(chan []byte)
+var nodeDataChan = make(chan *pubsub.NodeData)
 
 type Record struct {
 	Key   string
@@ -205,8 +205,8 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 // It runs a ticker to call iterateAndPublish on the provided interval.
 func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
-	nodeStatusHandler := &nodestatus.SubscriptionHandler{NodeStatusCh: nodeStatusCh}
-	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeStatusTopic), nodeStatusHandler)
+	// nodeStatusHandler := &pubsub.NodeEventTracker{NodeDataChan: nodeDataChan}
+	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker)
 	if err != nil {
 		logrus.Errorf("%v", err)
 	}
@@ -218,16 +218,13 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 		case <-ticker.C:
 			nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 			jsonData, _ := json.Marshal(nodeData)
-			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeStatusTopic), jsonData)
+			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
 			if e != nil {
 				logrus.Errorf("%v", e)
 			}
-		case <-nodeStatusCh:
-			nodes := nodeStatusHandler.NodeStatus
-			for _, n := range nodes {
-				jsonData, _ := json.Marshal(n)
-				_, _ = WriteData(node, n.PeerID, jsonData)
-			}
+		case nodeData := <-nodeDataChan:
+			jsonData, _ := json.Marshal(nodeData)
+			_, _ = WriteData(node, nodeData.PeerId.String(), jsonData)
 		case <-ctx.Done():
 			return
 		}

@@ -10,21 +10,21 @@
 
 ### New Features
 
-* Added Bytes Scraped to NodeData
-* Protobuf for node<->node communications
+* Added Llama3 LLM Model
 
 ### Bug Fixes
 
-* Moved /status to top level vs api/v1
-* Swagger bugs
+* Handle RemoteUnreachableEvent to workers 
+* Updated API endpoints
+  * /api/v1/node/data
+  * /api/v1/node/:peerid
+  * /api/v1/node/status
 
 ### Performance Improvements
 
-* Protobuffers for message and scraper worker communication
+* Added node data status to pubsub
+* Added worker status to pubsub
 
 ### ChangeLog
 
-* Flags added
-  * --twitterScraper
-  * --webScraper
-* Upgraded /contracts to @latest
+* Version update

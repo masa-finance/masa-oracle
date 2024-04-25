@@ -29,9 +29,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
-	"github.com/masa-finance/masa-oracle/pkg/nodestatus"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
-	"github.com/masa-finance/masa-oracle/pkg/workerstatus"
 )
 
 type OracleNode struct {
@@ -52,8 +50,7 @@ type OracleNode struct {
 	IsWebScraper                      bool
 	StartTime                         time.Time
 	AdSubscriptionHandler             *ad.SubscriptionHandler
-	NodeStatusSubscriptionsHandler    *nodestatus.SubscriptionHandler
-	CompletedWorkSubscriptionsHandler *workerstatus.SubscriptionHandler
+	CompletedWorkSubscriptionsHandler *pubsub2.WorkerStatusHandler
 	ActorEngine                       *actor.Engine
 }
 
@@ -163,7 +160,6 @@ func (node *OracleNode) Start() (err error) {
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
-	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeStatusTopic), node.ReceiveNodeData)
 	// IsStaked
 	if node.IsStaked {
 		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)

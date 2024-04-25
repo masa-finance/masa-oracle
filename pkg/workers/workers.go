@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
 	"github.com/ipfs/go-cid"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	"github.com/masa-finance/masa-oracle/pkg/workerstatus"
 
 	"github.com/anthdm/hollywood/actor"
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -41,6 +41,9 @@ func NewWorker() actor.Receiver {
 // It receives messages through the actor context and processes them based on their type.
 func (w *Worker) Receive(ctx *actor.Context) {
 	switch m := ctx.Message().(type) {
+	case actor.RemoteUnreachableEvent:
+		logrus.Warningf("Received remote unreachable event: %v", m)
+		ctx.Engine().Poison(ctx.PID()).Wait()
 	case *msg.Message:
 		logrus.Info("Actor worker initialized")
 		var workData map[string]string
@@ -152,7 +155,7 @@ func SendWorkToPeers(node *masa.OracleNode, data []byte) {
 // The monitoring continues until the context is done.
 func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
-	workerStatusHandler := &workerstatus.SubscriptionHandler{WorkerStatusCh: workerStatusCh}
+	workerStatusHandler := &pubsub.WorkerStatusHandler{WorkerStatusCh: workerStatusCh}
 	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.CompletedWorkTopic), workerStatusHandler)
 	if err != nil {
 		logrus.Errorf("%v", err)
@@ -171,17 +174,18 @@ func monitorWorkerData(ctx context.Context, node *masa.OracleNode) {
 			if val == nil {
 				go db.WriteData(node, key, data)
 				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-				nodeData.BytesScraped += int64(len(data))
+				sharedData := db.SharedData{}
+				nodeVal := db.ReadData(node, nodeData.PeerId.String())
+				_ = json.Unmarshal(nodeVal, &sharedData)
+				bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+				nodeData.BytesScraped += bytesScraped
+				nodeData.BytesScraped += len(data)
 				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
 				if err != nil {
 					logrus.Error(err)
 				}
 				jsonData, _ := json.Marshal(nodeData)
 				go db.WriteData(node, node.Host.ID().String(), jsonData)
-				err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
-				if err != nil {
-					logrus.Errorf("Error publishing node data: %v", err)
-				}
 			}
 
 			// @todo add list of keys to nodeData ie Records: []string ?
