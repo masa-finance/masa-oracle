@@ -153,9 +153,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 			}
 		}),
 	))
-
 	engine := system.Root
-	// conf := remote.Configure("192.168.4.165", 4001)
 
 	var ip any
 	if os.Getenv("ENV") == "dev" {
