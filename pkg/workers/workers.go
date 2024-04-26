@@ -55,6 +55,8 @@ func (a *Worker) Receive(ctx actor.Context) {
 		clients.Add(m.Sender)
 	case *actor.Started:
 		logrus.Info("actor started")
+	case *actor.Stopping:
+		logrus.Info("actor stopping")
 	case *actor.Stopped:
 		logrus.Info("actor stopped")
 	case *messages.Work:
@@ -91,14 +93,29 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			collectedData := llmbridge.ConcatenateTweets(tweets)
-			logrus.Info("Actor worker stopped")
-
 			jsonData, _ := json.Marshal(collectedData)
-			fmt.Println("actor stopped")
 			workerStatusCh <- jsonData
+		case "twitter-sentiment":
+			count, err := strconv.Atoi(workData["count"])
+			if err != nil {
+				logrus.Errorf("Error converting count to int: %v", err)
+				return
+			}
+			_, sentimentSummary, err := twitter.ScrapeTweetsForSentiment(workData["query"], count, workData["model"])
+			logrus.Info(sentimentSummary)
+		case "web-sentiment":
+			depth, err := strconv.Atoi(workData["depth"])
+			if err != nil {
+				logrus.Errorf("Error converting depth to int: %v", err)
+				return
+			}
+			_, sentimentSummary, err := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
+			logrus.Info(sentimentSummary)
 		}
 		ctx.Poison(ctx.Self())
 		workerStatusCh <- []byte(m.Data)
+	default:
+		logrus.Infof("Received unknown message: %T", m)
 	}
 }
 
@@ -153,16 +170,16 @@ func isBootnode(ipAddr string) bool {
 //
 // The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.
 func SendWork(node *masa.OracleNode, data []byte) {
+
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
-	node.ActorEngine.Send(pid, data)
+	message := &messages.Work{Data: string(data), Sender: pid}
+	node.ActorEngine.Send(pid, message)
 
 	// @note we can use the WorkerTopic to SendWork anywhere in the service
 	//if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
 	//	logrus.Errorf("%v", err)
 	//}
-
-	message := &messages.Work{Data: string(data), Sender: pid}
 
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {

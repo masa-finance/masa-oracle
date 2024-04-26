@@ -44,12 +44,20 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 // Models Supported:
 //
 //	"all"
-//	"claude-3-opus-20240229"
-//	"claude-3-sonnet-20240229"
-//	"claude-3-haiku-20240307"
-//	"gpt-4"
-//	"gpt-4-turbo-preview"
-//	"gpt-3.5-turbo"
+//
+// claude-3-opus-20240229
+// claude-3-sonnet-20240229
+// claude-3-haiku-20240307
+// gpt-4
+// gpt-4-turbo-preview
+// gpt-3.5-turbo
+// llama2
+// llama3
+// mistral
+// gemma
+// mixtral
+// openchat
+// neural-chat
 func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -97,7 +105,7 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				sentimentSummary, err := twitter.ScrapeTweetsUsingActors(api.Node, reqBody.Query, reqBody.Count, string(model))
+				_, sentimentSummary, err = twitter.ScrapeTweetsForSentiment(reqBody.Query, reqBody.Count, string(model))
 				duration := time.Since(startTime) // Calculate duration
 
 				if err != nil {
@@ -116,7 +124,7 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			c.JSON(http.StatusOK, gin.H{"results": results})
 			return
 		} else {
-			sentimentSummary, err = twitter.ScrapeTweetsUsingActors(api.Node, reqBody.Query, reqBody.Count, reqBody.Model)
+			_, sentimentSummary, err = twitter.ScrapeTweetsForSentiment(reqBody.Query, reqBody.Count, reqBody.Model)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment"})
 				return
@@ -169,7 +177,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 
-		var sentimentRequest, sentimentSummary string
+		var sentimentSummary string
 		var err error
 
 		if reqBody.Model == "all" {
@@ -187,7 +195,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				sentimentRequest, sentimentSummary, err = scraper.ScrapeWebDataUsingActors([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+				_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 				j, _ := json.Marshal(sentimentSummary)
 				sentimentSummary = string(j)
 
@@ -206,11 +214,11 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			}
 
 			// Return the results as JSON
-			c.JSON(http.StatusOK, gin.H{"data": sentimentRequest, "sentiment": results})
+			c.JSON(http.StatusOK, gin.H{"sentiment": results})
 			return
 		} else {
 
-			sentimentRequest, sentimentSummary, err = scraper.ScrapeWebDataUsingActors([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+			_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 			j, _ := json.Marshal(sentimentSummary)
 			sentimentSummary = llmbridge.SanitizeResponse(string(j))
 
@@ -220,7 +228,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			}
 		}
 
-		c.JSON(http.StatusOK, gin.H{"data": sentimentRequest, "sentiment": sentimentSummary})
+		c.JSON(http.StatusOK, gin.H{"sentiment": sentimentSummary})
 	}
 }
 

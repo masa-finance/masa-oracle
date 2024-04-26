@@ -51,7 +51,7 @@ func (c *ClaudeClient) SendRequest(payloadBytes []byte) (*http.Response, error) 
 	return client.Do(req)
 }
 
-func (c *GPTClient) SendRequest(tweetsContent string, model string, prompt string) (string, error) {
+func (c *GPTClient) SendRequest(payload string, model string, prompt string) (string, error) {
 	var openAiModel string
 	switch model {
 	case "gpt-4":
@@ -77,11 +77,11 @@ func (c *GPTClient) SendRequest(tweetsContent string, model string, prompt strin
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
-					Content: "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.",
+					Content: prompt,
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: tweetsContent,
+					Content: payload,
 				},
 			},
 		},

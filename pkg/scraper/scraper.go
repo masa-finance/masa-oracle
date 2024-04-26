@@ -25,7 +25,7 @@ type CollectedData struct {
 	Sections []Section // Sections is a collection of webpage sections that have been scraped.
 }
 
-// ScrapeWebDataUsingActors initiates the scraping process for the given list of URIs.
+// ScrapeWebDataForSentiment initiates the scraping process for the given list of URIs.
 // It returns a CollectedData struct containing the scraped sections from each URI,
 // and an error if any occurred during the scraping process.
 // Usage:
@@ -35,14 +35,14 @@ type CollectedData struct {
 // Example:
 //
 //	go func() {
-//		res, err := scraper.ScrapeWebDataUsingActors([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
+//		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
 //			logrus.Errorf("Error collecting data: %s", err.Error())
 //		return
 //	  }
 //	logrus.Infof("%+v", res)
 //	}()
-func ScrapeWebDataUsingActors(uri []string, depth int, model string) (string, string, error) {
+func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, string, error) {
 	var collectedData CollectedData
 
 	c := colly.NewCollector(
@@ -135,7 +135,7 @@ func ScrapeWebDataUsingActors(uri []string, depth int, model string) (string, st
 // Example:
 //
 //	go func() {
-//		res, err := scraper.ScrapeWebDataUsingActors([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
+//		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
 //			logrus.Errorf("Error collecting data: %s", err.Error())
 //		return

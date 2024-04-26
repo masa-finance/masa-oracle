@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"math"
 	"net/http"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -267,12 +267,20 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
+		/// tests
+
+		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
+		d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://www.masa.finance", "depth": "1", "model": "claude-3-opus-20240229"})
+
 		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
+		// d, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token launch", "count": "5", "model": "claude-3-opus"})
+
 		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
 		//	logrus.Errorf("%v", err)
 		//}
+
 		go workers.SendWork(api.Node, d)
+		/// tests
 
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {
