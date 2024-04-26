@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"math"
 	"net/http"
 	"strconv"
@@ -270,7 +269,7 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 		/// tests
 
 		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
-		d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://www.masa.finance", "depth": "1", "model": "claude-3-opus-20240229"})
+		// d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://www.masa.ai", "depth": "1", "model": "claude-3-opus-20240229"})
 
 		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
 		// d, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token launch", "count": "5", "model": "claude-3-opus"})
@@ -279,7 +278,7 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 		//	logrus.Errorf("%v", err)
 		//}
 
-		go workers.SendWork(api.Node, d)
+		// go workers.SendWork(api.Node, d)
 		/// tests
 
 		keyStr := c.Query("key")

@@ -102,7 +102,8 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			_, sentimentSummary, err := twitter.ScrapeTweetsForSentiment(workData["query"], count, workData["model"])
-			logrus.Info(sentimentSummary)
+			jsonData, _ := json.Marshal(sentimentSummary)
+			workerStatusCh <- jsonData
 		case "web-sentiment":
 			depth, err := strconv.Atoi(workData["depth"])
 			if err != nil {
@@ -110,7 +111,8 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			_, sentimentSummary, err := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
-			logrus.Info(sentimentSummary)
+			jsonData, _ := json.Marshal(sentimentSummary)
+			workerStatusCh <- jsonData
 		}
 		ctx.Poison(ctx.Self())
 		workerStatusCh <- []byte(m.Data)
