@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"os"
 	"strings"
 	"time"
 
@@ -126,7 +125,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 							logrus.Infof("Connected to peer %s", availPeer.ID.String())
 						}
 					} else {
-						if len(os.Getenv("BOOTNODES")) > 0 {
+						if len(config.GetInstance().Bootnodes) > 0 {
 							logrus.Info("Not connected to any bootnode. Attempting to reconnect...")
 							reconnectToBootnodes(ctx, host, config.GetInstance().Bootnodes)
 						}
