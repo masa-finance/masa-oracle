@@ -268,7 +268,7 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 
 		/// tests
 
-		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.finance", "depth": "1"})
+		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
 		// d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://www.masa.ai", "depth": "1", "model": "claude-3-opus-20240229"})
 
 		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})

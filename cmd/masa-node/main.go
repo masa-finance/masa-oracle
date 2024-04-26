@@ -68,9 +68,9 @@ func main() {
 
 	// Start monitoring actor workers
 	if cfg.TwitterScraper || cfg.WebScraper {
-		// if isStaked {
-		go workers.MonitorWorkers(ctx, node)
-		// }
+		if isStaked {
+			go workers.MonitorWorkers(ctx, node)
+		}
 	}
 
 	// Listen for SIGINT (CTRL+C)
