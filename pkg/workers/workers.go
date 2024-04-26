@@ -101,7 +101,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("Error converting count to int: %v", err)
 				return
 			}
-			_, sentimentSummary, err := twitter.ScrapeTweetsForSentiment(workData["query"], count, workData["model"])
+			_, sentimentSummary, _ := twitter.ScrapeTweetsForSentiment(workData["query"], count, workData["model"])
 			jsonData, _ := json.Marshal(sentimentSummary)
 			workerStatusCh <- jsonData
 		case "web-sentiment":
@@ -110,7 +110,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("Error converting depth to int: %v", err)
 				return
 			}
-			_, sentimentSummary, err := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
+			_, sentimentSummary, _ := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
 			jsonData, _ := json.Marshal(sentimentSummary)
 			workerStatusCh <- jsonData
 		}
