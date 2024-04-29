@@ -12,6 +12,7 @@ type ModelType string
 
 // Define model constants.
 const (
+	ClaudeOpus           ModelType = "claude-3-opus"
 	ClaudeOpus20240229   ModelType = "claude-3-opus-20240229"
 	ClaudeSonnet20240229 ModelType = "claude-3-sonnet-20240229"
 	ClaudeHaiku20240307  ModelType = "claude-3-haiku-20240307"
@@ -29,21 +30,22 @@ const (
 
 // Models holds the available models for easy access and iteration.
 var Models = struct {
-	ClaudeOpus, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat ModelType
+	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat ModelType
 }{
-	ClaudeOpus:   ClaudeOpus20240229,
-	ClaudeSonnet: ClaudeSonnet20240229,
-	ClaudeHaiku:  ClaudeHaiku20240307,
-	GPT4:         GPT4,
-	GPT4Turbo:    GPT4TurboPreview,
-	GPT35Turbo:   GPT35Turbo,
-	LLama2:       LLama2,
-	LLama3:       LLama3,
-	Mistral:      Mistral,
-	Gemma:        Gemma,
-	Mixtral:      Mixtral,
-	OpenChat:     OpenChat,
-	NeuralChat:   NeuralChat,
+	ClaudeOpus:         ClaudeOpus,
+	ClaudeOpus20240229: ClaudeOpus20240229,
+	ClaudeSonnet:       ClaudeSonnet20240229,
+	ClaudeHaiku:        ClaudeHaiku20240307,
+	GPT4:               GPT4,
+	GPT4Turbo:          GPT4TurboPreview,
+	GPT35Turbo:         GPT35Turbo,
+	LLama2:             LLama2,
+	LLama3:             LLama3,
+	Mistral:            Mistral,
+	Gemma:              Gemma,
+	Mixtral:            Mixtral,
+	OpenChat:           OpenChat,
+	NeuralChat:         NeuralChat,
 }
 
 const (
@@ -62,7 +64,7 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.11-alpha"
+	Version     = "v0.0.1-beta"
 	FilePath    = "FILE_PATH"
 	WriterNode  = "WRITER_NODE"
 	CachePath   = "CACHE_PATH"
@@ -73,7 +75,7 @@ const (
 	NodeGossipTopic      = "gossip"
 	AdTopic              = "ad"
 	PublicKeyTopic       = "bootNodePublicKey"
-	CompletedWorkTopic   = "completedWork"
+	WorkerTopic          = "workerTopic"
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
 

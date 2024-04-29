@@ -34,8 +34,8 @@ func SubscribeToTopics(node *OracleNode) error {
 		return err
 	}
 
-	node.CompletedWorkSubscriptionsHandler = &pubsub2.WorkerStatusHandler{}
-	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.CompletedWorkTopic), node.CompletedWorkSubscriptionsHandler); err != nil {
+	node.WorkerTracker = &pubsub2.WorkerEventTracker{}
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker); err != nil {
 		logrus.Errorf("Failed to subscribe to completed work topic: %v", err)
 		return err
 	}

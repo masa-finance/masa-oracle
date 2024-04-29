@@ -67,7 +67,7 @@ This command displays the logs of the MASA node container. Look for any error me
 
 ## Accessing Generated Keys
 
-The MASA node generates keys that are stored in the `.masa-keys/` directory in your project directory. 
+The MASA node generates keys that are stored in the `.masa-keys/` directory in your project directory.
 This directory is mapped from `/home/masa/.masa/` inside the Docker container, ensuring that your keys are safely stored on your host machine.
 
 ## Funding the Node (in order to Stake)

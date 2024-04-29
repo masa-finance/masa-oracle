@@ -118,7 +118,37 @@ func (c *AppConfig) setDefaultConfig() {
 	rootDir := filepath.Join(filepath.Dir(b), "../..")
 	if _, _ = os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
 		_ = godotenv.Load()
+
+		// Fetch bootnodes from s3
+		//var url string
+		//if os.Getenv("ENV") == "dev" {
+		//	url = "https://masa-oracle-init-dev.s3.amazonaws.com/node_init.json"
+		//} else if os.Getenv("ENV") == "test" {
+		//	url = "https://masa-oracle-init-test.s3.amazonaws.com/node_init.json"
+		//} else if os.Getenv("ENV") == "prod" {
+		//	url = "https://masa-oracle-init-prod.s3.amazonaws.com/node_init.json"
+		//}
+		//if url != "" {
+		//	resp, err := http.Get(url)
+		//	if err != nil {
+		//		logrus.Errorf("Failed to fetch %s: %v", url, err)
+		//	} else {
+		//		defer resp.Body.Close()
+		//		var nodeInitData struct {
+		//			Name      string   `json:"name"`
+		//			Id        string   `json:"id"`
+		//			NodeType  string   `json:"nodeType"`
+		//			BootNodes []string `json:"bootNodes"`
+		//		}
+		//		if err = json.NewDecoder(resp.Body).Decode(&nodeInitData); err != nil {
+		//			logrus.Errorf("Failed to parse: %v", err)
+		//		} else {
+		//			viper.SetDefault("Bootnodes", strings.Join(nodeInitData.BootNodes, ","))
+		//		}
+		//	}
+		//} else {
 		viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
+		// }
 		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 		viper.SetDefault(Environment, os.Getenv("ENV"))
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
