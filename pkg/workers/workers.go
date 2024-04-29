@@ -117,7 +117,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		ctx.Poison(ctx.Self())
 		workerStatusCh <- []byte(m.Data)
 	default:
-		logrus.Infof("Received unknown message: %T", m)
+		logrus.Warningf("Received unknown message: %T", m)
 	}
 }
 
