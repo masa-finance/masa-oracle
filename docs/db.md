@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS "public"."prompt" (
 );
 ALTER TABLE "public"."prompt" ADD CONSTRAINT "prompt_pkey" PRIMARY KEY ("id");
 ```
+
 Postgres DB Example
 
 ```go

@@ -53,6 +53,7 @@ cd ../
 ```
 
 ##### 4. Set env vars using the following template
+
 ```plaintext
 # Default .env configuration
 BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
@@ -125,7 +126,6 @@ The clean command performs cleanup tasks for the project. It removes the bin dir
 
 To execute any of these commands, simply run make in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
 
-
 ## Funding the Node (in order to Stake)
 
 Find the public key of your node in the logs.
@@ -192,7 +192,7 @@ curl https://llm-dev.masa.finance/api/chat -d '{"model": "llama2","messages": [{
 
 ## Consensus
 
-*options WIP*
+> options WIP
 
 - node must be staked ✓
 - un-staked / staked participate and infer the quality of their requests
@@ -202,11 +202,11 @@ curl https://llm-dev.masa.finance/api/chat -d '{"model": "llama2","messages": [{
 - participation rate
 - let staked nodes rate each other
 - let un-staked nodes rate each other
-- totalBytes scraped - add so we can reward based on aggregate of totalBytes
+- totalBytes scraped
 
 ## Rewards
 
-*assumptions WIP*
+> assumptions WIP
 
 - node must be staked ✓
 - node must have n number of staked tokens / n = ?

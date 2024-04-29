@@ -10,20 +10,20 @@ Ensure you have Go installed on your system. If not, you can download and instal
 
 ### Running the Node
 
-1. Clone the repository:
+1 . Clone the repository:
 
 ```bash
 git clone https://github.com/masa-finance/masa-oracle.git
 cd masa-oracle
 ```
 
-2. Build the node:
+2 . Build the node:
 
 ```bash
 go build -o masa-node
 ```
 
-3. Run the node:
+3 . Run the node:
 
 ```bash
 ./masa-node   
@@ -42,7 +42,7 @@ Once you have the Masa node set up, you can easily connect multiple nodes togeth
 In one terminal window, start a node in listening mode:
 
 ```bash
-$ ./masa-node
+$./masa-node
 ```
 
 You should see an output similar to:
@@ -86,7 +86,6 @@ Using our proprietary cookieless tracking, Masa provides a deeper understanding 
 3. **Governance and Community Building**: With the comprehensive view that Masa provides, platforms can foster stronger communities. They can understand user needs better, drive engagement, and even facilitate governance mechanisms that are truly representative of the community's desires.
 
 4. **Decentralized Identity Verification**: With Masa Oracle, platforms can seamlessly verify a user's identity without compromising on their privacy. From simple sign-ins to complex identity checks, Masa streamlines the process.
-
 
 ## Node Incentivization through Masa Tokens
 
@@ -135,7 +134,8 @@ Masa's Oracle ensures a robust decentralized system, with nodes processing and w
 Utility functions and common helpers are available for general operations, including rate limiting and error handling.
 
 ### Folder Structure
-```
+
+```shell
 /masa-oracle
 ├── /domain              # Core business logic and entities
 │   ├── /node

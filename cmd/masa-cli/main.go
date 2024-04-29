@@ -4,11 +4,13 @@ package main
 // do not use this code, it's a WIP
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
 type Styles struct {
@@ -103,6 +105,11 @@ func (m *model) Next() {
 }
 
 func main() {
+
+	// this needs to also be a node to use all the functionality
+	var node *masa.OracleNode
+	fmt.Println(node)
+
 	questions := []Questions{
 		NewQuestion("Connect to Oracle Node"),
 		NewQuestion("Select LLM Model"),

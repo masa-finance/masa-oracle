@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/workers"
-
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
@@ -268,8 +266,20 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
-		go workers.SendWorkToPeers(api.Node, d)
+		/// tests
+
+		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
+		// d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://consensus2024.coindesk.com/", "depth": "1", "model": "claude-3-opus-20240229"})
+
+		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
+		// d, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token launch", "count": "5", "model": "claude-3-opus"})
+
+		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
+		//	logrus.Errorf("%v", err)
+		//}
+
+		// go workers.SendWork(api.Node, d)
+		/// tests
 
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {
@@ -333,16 +343,16 @@ func (api *API) PostToDHT() gin.HandlerFunc {
 			})
 			return
 		}
-		success, err := db.WriteData(api.Node, keyStr, jsonData)
+		err = db.WriteData(api.Node, keyStr, jsonData)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"success": success,
+				"success": false,
 				"message": keyStr,
 			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"success": success,
+			"success": true,
 			"message": keyStr,
 		})
 	}

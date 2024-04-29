@@ -88,7 +88,7 @@ Is Writer:              false
 Is TwitterScraper:      false
 Is WebScraper:          false
 INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
-INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.11-alpha-dev
+INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.1-beta-dev
 ```
 
 ### 6. Stake the node with 1000 Sepolia MASA minimum
@@ -134,7 +134,7 @@ Is Writer:              false
 Is TwitterScraper:      false
 Is WebScraper:          false
 INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
-INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.11-alpha-dev
+INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.1-beta-dev
 ```
 
 ### 7. View swagger API 

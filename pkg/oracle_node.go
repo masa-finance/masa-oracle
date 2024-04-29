@@ -4,13 +4,18 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"io"
+	"log/slog"
+	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/anthdm/hollywood/remote"
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/remote"
+	"github.com/chyeh/pubip"
 
-	"github.com/anthdm/hollywood/actor"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -33,25 +38,26 @@ import (
 )
 
 type OracleNode struct {
-	Host                              host.Host
-	PrivKey                           *ecdsa.PrivateKey
-	Protocol                          protocol.ID
-	priorityAddrs                     multiaddr.Multiaddr
-	multiAddrs                        []multiaddr.Multiaddr
-	DHT                               *dht.IpfsDHT
-	Context                           context.Context
-	PeerChan                          chan myNetwork.PeerEvent
-	NodeTracker                       *pubsub2.NodeEventTracker
-	PubSubManager                     *pubsub2.Manager
-	Signature                         string
-	IsStaked                          bool
-	IsWriter                          bool
-	IsTwitterScraper                  bool
-	IsWebScraper                      bool
-	StartTime                         time.Time
-	AdSubscriptionHandler             *ad.SubscriptionHandler
-	CompletedWorkSubscriptionsHandler *pubsub2.WorkerStatusHandler
-	ActorEngine                       *actor.Engine
+	Host                  host.Host
+	PrivKey               *ecdsa.PrivateKey
+	Protocol              protocol.ID
+	priorityAddrs         multiaddr.Multiaddr
+	multiAddrs            []multiaddr.Multiaddr
+	DHT                   *dht.IpfsDHT
+	Context               context.Context
+	PeerChan              chan myNetwork.PeerEvent
+	NodeTracker           *pubsub2.NodeEventTracker
+	PubSubManager         *pubsub2.Manager
+	Signature             string
+	IsStaked              bool
+	IsWriter              bool
+	IsTwitterScraper      bool
+	IsWebScraper          bool
+	StartTime             time.Time
+	AdSubscriptionHandler *ad.SubscriptionHandler
+	WorkerTracker         *pubsub2.WorkerEventTracker
+	ActorEngine           *actor.RootContext
+	ActorRemote           *remote.Remote
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -64,6 +70,18 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 		node.priorityAddrs = pAddr
 	}
 	return node.priorityAddrs
+}
+
+// getOutboundIP is a function that returns the outbound IP address of the current machine as a string.
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		fmt.Println("Error getting outbound IP")
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().String()
+	idx := strings.LastIndex(localAddr, ":")
+	return localAddr[0:idx]
 }
 
 // NewOracleNode creates a new OracleNode instance with the provided context and
@@ -122,12 +140,27 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	isTwitterScraper := cfg.TwitterScraper
 	isWebScraper := cfg.WebScraper
 
-	var engine *actor.Engine
-	r := remote.New(fmt.Sprintf("0.0.0.0:%d", cfg.PortNbr), remote.NewConfig())
-	engine, err = actor.NewEngine(actor.NewEngineConfig().WithRemote(r))
-	if err != nil {
-		logrus.Errorf("start actor engine error %v", err)
+	// system := actor.NewActorSystem()
+	system := actor.NewActorSystemWithConfig(actor.Configure(
+		actor.ConfigOption(func(config *actor.Config) {
+			config.LoggerFactory = func(system *actor.ActorSystem) *slog.Logger {
+				return slog.New(slog.NewTextHandler(io.Discard, nil))
+			}
+		}),
+	))
+	engine := system.Root
+
+	var ip any
+	if os.Getenv("ENV") == "local" {
+		ip = getOutboundIP()
+	} else {
+		ip, _ = pubip.Get()
 	}
+	conf := remote.Configure("0.0.0.0", 4001,
+		remote.WithAdvertisedHost(fmt.Sprintf("%s:4001", ip)))
+
+	r := remote.NewRemote(system, conf)
+	go r.Start()
 
 	return &OracleNode{
 		Host:             hst,
@@ -143,6 +176,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsTwitterScraper: isTwitterScraper,
 		IsWebScraper:     isWebScraper,
 		ActorEngine:      engine,
+		ActorRemote:      r,
 	}, nil
 }
 
