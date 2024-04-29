@@ -64,7 +64,7 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.11-alpha"
+	Version     = "v0.0.1-beta"
 	FilePath    = "FILE_PATH"
 	WriterNode  = "WRITER_NODE"
 	CachePath   = "CACHE_PATH"
