@@ -6,26 +6,20 @@
 
 ### Breaking Changes
 
-* Gossip version change to 0.0.1-beta
+* None
 
 ### New Features
 
-* Added Llama3 LLM Model
+* Allow Nodes to participate in twitter scraping w/o bringing their own creds
 
 ### Bug Fixes
 
-* Replaces Actor Worker Model with protoactor-go
-* Handle RemoteUnreachableEvent to workers 
-* Updated API endpoints
-  * /api/v1/node/data
-  * /api/v1/node/:peerid
-  * /api/v1/node/status
+* None
 
 ### Performance Improvements
 
-* Added node data status to pubsub
-* Added worker status to pubsub
+* None
 
 ### ChangeLog
 
-* Version update
+* None
