@@ -6,7 +6,7 @@
 
 ### Breaking Changes
 
-* None
+* Gossip version change to 0.0.1-beta
 
 ### New Features
 
@@ -14,6 +14,7 @@
 
 ### Bug Fixes
 
+* Replaces Actor Worker Model with protoactor-go
 * Handle RemoteUnreachableEvent to workers 
 * Updated API endpoints
   * /api/v1/node/data
