@@ -140,7 +140,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	isTwitterScraper := cfg.TwitterScraper
 	isWebScraper := cfg.WebScraper
 
-	// system := actor.NewActorSystem()
 	system := actor.NewActorSystemWithConfig(actor.Configure(
 		actor.ConfigOption(func(config *actor.Config) {
 			config.LoggerFactory = func(system *actor.ActorSystem) *slog.Logger {

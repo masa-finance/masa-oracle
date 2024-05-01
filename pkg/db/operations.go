@@ -122,7 +122,7 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 		"ReadData":     true,
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
 
 	var err error
@@ -138,7 +138,7 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Debug("Failed to read from the database")
-		return nil
+		return val
 	}
 
 	return val

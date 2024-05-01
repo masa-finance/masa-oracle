@@ -18,7 +18,6 @@ test:
 
 clean:
 	@rm -rf bin
-	@rm -rf CACHE
 	@rm masa_oracle_node.log
 
 wp:
