@@ -272,13 +272,13 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 		// d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
 
 		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
-		// d, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token launch", "count": "5", "model": "claude-3-opus"})
+		// d, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
 
 		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
 		//	logrus.Errorf("%v", err)
 		//}
 
-		// go workers.SendWork(api.Node, d)
+		//go workers.SendWork(api.Node, d)
 		/// tests
 
 		keyStr := c.Query("key")
@@ -422,7 +422,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"IsWebScraper":     api.Node.IsWebScraper,
 				"FirstJoined":      nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
 				"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-				"CurrentUptime":    nodeData.AccumulatedUptimeStr,
+				"CurrentUptime":    sharedData["readableAccumulatedUptime"], // nodeData.AccumulatedUptimeStr,
 				"Rewards":          "Coming Soon!",
 				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
 			})

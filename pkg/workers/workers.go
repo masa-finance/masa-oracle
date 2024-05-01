@@ -170,19 +170,18 @@ func isBootnode(ipAddr string) bool {
 //   - *messages.Work: Contains the work data to be processed. The work data is parsed based on the request type, and the corresponding scraping function is called.
 //     The scraped data is then sent to the workerStatusCh channel for further processing.
 //
-// The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.
+// The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.	// @note we can use the WorkerTopic to SendWork anywhere in the service
+// Usage with the Worker Gossip Topic
+//
+//	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
+//		logrus.Errorf("%v", err)
+//	}
 func SendWork(node *masa.OracleNode, data []byte) {
 
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(data), Sender: pid}
 	node.ActorEngine.Send(pid, message)
-
-	// @note we can use the WorkerTopic to SendWork anywhere in the service
-	//if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
-	//	logrus.Errorf("%v", err)
-	//}
-
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)

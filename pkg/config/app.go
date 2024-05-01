@@ -143,7 +143,7 @@ func (c *AppConfig) setDefaultConfig() {
 		_ = godotenv.Load()
 
 		// Fetch bootnodes from s3
-		if os.Getenv("PEERNODE") == "true" {
+		if os.Getenv("BOOTNODES") != "" {
 			var url string
 			if os.Getenv("ENV") == "dev" {
 				url = "https://masa-oracle-init-dev.s3.amazonaws.com/node_init.json"
@@ -173,8 +173,6 @@ func (c *AppConfig) setDefaultConfig() {
 			} else {
 				viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
 			}
-		} else {
-			viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
 		}
 		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 		viper.SetDefault(Environment, os.Getenv("ENV"))
