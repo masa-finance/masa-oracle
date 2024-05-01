@@ -170,7 +170,8 @@ func isBootnode(ipAddr string) bool {
 //   - *messages.Work: Contains the work data to be processed. The work data is parsed based on the request type, and the corresponding scraping function is called.
 //     The scraped data is then sent to the workerStatusCh channel for further processing.
 //
-// The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.	// @note we can use the WorkerTopic to SendWork anywhere in the service
+// The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.
+// @note we can use the WorkerTopic to SendWork anywhere in the service
 // Usage with the Worker Gossip Topic
 //
 //	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {

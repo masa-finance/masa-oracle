@@ -428,8 +428,8 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"IsWebScraper":     nd.IsWebScraper,
 				"FirstJoined":      nd.FirstJoined.Format("2006-01-02 15:04:05"),
 				"LastJoined":       nd.LastJoined.Format("2006-01-02 15:04:05"),
-				"CurrentUptime":    nd.AccumulatedUptimeStr,
-				"Rewards":          "Coming Soon!",
+				"CurrentUptime":    nd.CurrentUptimeStr,
+				"TotalUptime":      nd.AccumulatedUptimeStr,
 				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
 			})
 		}
