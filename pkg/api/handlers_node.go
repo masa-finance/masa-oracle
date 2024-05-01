@@ -290,21 +290,21 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			return
 		}
 		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, keyStr)
-		err := json.Unmarshal(nodeVal, &sharedData)
+		nv := db.ReadData(api.Node, keyStr)
+		err := json.Unmarshal(nv, &sharedData)
 		if err != nil {
 			// Check if base64 encoded
-			if _, err := base64.StdEncoding.DecodeString(string(nodeVal)); err != nil {
+			if _, err := base64.StdEncoding.DecodeString(string(nv)); err != nil {
 				// If not base64, return the raw val
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
-					"message": string(nodeVal),
+					"message": string(nv),
 				})
 				return
 			} else {
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
-					"message": nodeVal,
+					"message": nv,
 				})
 				return
 			}
@@ -409,20 +409,26 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			})
 			return
 		} else {
+			nd := *nodeData
+			nd.CurrentUptime = nodeData.GetCurrentUptime()
+			nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+			nd.CurrentUptimeStr = pubsub.PrettyDuration(nd.CurrentUptime)
+			nd.AccumulatedUptimeStr = pubsub.PrettyDuration(nd.AccumulatedUptime)
+
 			sharedData := db.SharedData{}
-			nodeVal := db.ReadData(api.Node, api.Node.Host.ID().String())
-			_ = json.Unmarshal(nodeVal, &sharedData)
+			nv := db.ReadData(api.Node, api.Node.Host.ID().String())
+			_ = json.Unmarshal(nv, &sharedData)
 			bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
 			c.HTML(http.StatusOK, "index.html", gin.H{
 				"TotalPeers":       len(peers),
 				"Name":             "Masa Status Page",
 				"PeerID":           api.Node.Host.ID().String(),
-				"IsStaked":         api.Node.IsStaked,
-				"IsTwitterScraper": api.Node.IsTwitterScraper,
-				"IsWebScraper":     api.Node.IsWebScraper,
-				"FirstJoined":      nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
-				"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-				"CurrentUptime":    sharedData["readableAccumulatedUptime"], // nodeData.AccumulatedUptimeStr,
+				"IsStaked":         nd.IsStaked,
+				"IsTwitterScraper": nd.IsTwitterScraper,
+				"IsWebScraper":     nd.IsWebScraper,
+				"FirstJoined":      nd.FirstJoined.Format("2006-01-02 15:04:05"),
+				"LastJoined":       nd.LastJoined.Format("2006-01-02 15:04:05"),
+				"CurrentUptime":    nd.AccumulatedUptimeStr,
 				"Rewards":          "Coming Soon!",
 				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
 			})
