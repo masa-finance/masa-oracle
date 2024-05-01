@@ -2,73 +2,13 @@ package db
 
 import (
 	"context"
-	"database/sql"
-	"embed"
 	"fmt"
-	"io/fs"
-	"log"
-	"os"
-	"sort"
 	"time"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 
 	"github.com/sirupsen/logrus"
 )
-
-//go:embed migrations/*.sql
-var migrations embed.FS
-
-// ConnectToPostgres Function to connect to Postgres
-func ConnectToPostgres(migrations bool) (*sql.DB, error) {
-	database, err := sql.Open("postgres", os.Getenv("PG_URL"))
-	if err != nil {
-		return nil, err
-	}
-
-	if err = database.Ping(); err != nil {
-		return nil, err
-	}
-
-	if migrations {
-		err = applyMigrations(database)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return database, nil
-}
-
-// applyMigrations Function to execute SQL
-func applyMigrations(database *sql.DB) error {
-	// Read directory entries from embedded FS
-	entries, err := fs.ReadDir(migrations, "migrations")
-	if err != nil {
-		return err
-	}
-
-	// Sort files by name to ensure correct order
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name() < entries[j].Name()
-	})
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			content, err := fs.ReadFile(migrations, "migrations/"+entry.Name())
-			if err != nil {
-				return err
-			}
-
-			// Execute SQL file content
-			log.Printf("Applying migration: %s", entry.Name())
-			if _, err := database.Exec(string(content)); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
 
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
