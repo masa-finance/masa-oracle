@@ -75,7 +75,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 // data in the response.
 func (api *API) GetNodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		peerID := c.Param("peerID") // Get the peer ID from the URL parameters
+		peerID := c.Param("peerid") // Get the peer ID from the URL parameters
 		if api.Node == nil || api.Node.NodeTracker == nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -408,26 +408,24 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"BytesScraped":     0,
 			})
 			return
+		} else {
+			sharedData := db.SharedData{}
+			nodeVal := db.ReadData(api.Node, api.Node.Host.ID().String())
+			_ = json.Unmarshal(nodeVal, &sharedData)
+			bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"TotalPeers":       len(peers),
+				"Name":             "Masa Status Page",
+				"PeerID":           api.Node.Host.ID().String(),
+				"IsStaked":         api.Node.IsStaked,
+				"IsTwitterScraper": api.Node.IsTwitterScraper,
+				"IsWebScraper":     api.Node.IsWebScraper,
+				"FirstJoined":      nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
+				"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
+				"CurrentUptime":    nodeData.AccumulatedUptimeStr,
+				"Rewards":          "Coming Soon!",
+				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
+			})
 		}
-		nodeData.CurrentUptime = nodeData.GetCurrentUptime()
-		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
-		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, nodeData.PeerId.String())
-		_ = json.Unmarshal(nodeVal, &sharedData)
-		bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"TotalPeers":       len(peers),
-			"Name":             "Masa Status Page",
-			"PeerID":           nodeData.PeerId.String(),
-			"IsStaked":         nodeData.IsStaked,
-			"IsTwitterScraper": nodeData.TwitterScraper(),
-			"IsWebScraper":     nodeData.WebScraper(),
-			"FirstJoined":      nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
-			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
-			"Rewards":          "Coming Soon!",
-			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
-		})
 	}
 }

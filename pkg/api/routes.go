@@ -245,7 +245,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error retrieving node data by peer ID"
 		// @Router /node/data/{peerid} [get]
 		v1.GET("/node/data/:peerid", API.GetNodeHandler())
-		// @todo ^ fix
 
 		// @Summary Update Node Status
 		// @Description Updates the status of the node
@@ -257,7 +256,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error updating node status"
 		// @Router /node/status [post]
 		v1.POST("/node/status", API.PostNodeStatusHandler())
-		// @todo ^ fix
 
 		// @Summary Get Public Keys
 		// @Description Retrieves a list of public keys from the node
