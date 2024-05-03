@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/db"
+
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
@@ -21,7 +23,6 @@ import (
 	messages "github.com/masa-finance/masa-oracle/pkg/workers/messages"
 
 	"github.com/ipfs/go-cid"
-	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	mh "github.com/multiformats/go-multihash"
@@ -30,7 +31,9 @@ import (
 
 var (
 	clients        = actor.NewPIDSet()
+	dataLengthCh   = make(chan int)
 	workerStatusCh = make(chan []byte)
+	workerDoneCh   = make(chan []byte)
 )
 
 type Worker struct{}
@@ -78,9 +81,11 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("%v", err)
 				return
 			}
-			collectedData := llmbridge.SanitizeResponse(webData)
-			jsonData, _ := json.Marshal(collectedData)
-			workerStatusCh <- jsonData
+			if webData != "" {
+				collectedData := llmbridge.SanitizeResponse(webData)
+				jsonData, _ := json.Marshal(collectedData)
+				workerDoneCh <- jsonData
+			}
 		case "twitter":
 			count, err := strconv.Atoi(workData["count"])
 			if err != nil {
@@ -92,9 +97,11 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("%v", err)
 				return
 			}
-			collectedData := llmbridge.ConcatenateTweets(tweets)
-			jsonData, _ := json.Marshal(collectedData)
-			workerStatusCh <- jsonData
+			if tweets != nil {
+				collectedData := llmbridge.ConcatenateTweets(tweets)
+				jsonData, _ := json.Marshal(collectedData)
+				workerDoneCh <- jsonData
+			}
 		case "twitter-sentiment":
 			count, err := strconv.Atoi(workData["count"])
 			if err != nil {
@@ -102,8 +109,10 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			_, sentimentSummary, _ := twitter.ScrapeTweetsForSentiment(workData["query"], count, workData["model"])
-			jsonData, _ := json.Marshal(sentimentSummary)
-			workerStatusCh <- jsonData
+			if sentimentSummary != "" {
+				jsonData, _ := json.Marshal(sentimentSummary)
+				workerDoneCh <- jsonData
+			}
 		case "web-sentiment":
 			depth, err := strconv.Atoi(workData["depth"])
 			if err != nil {
@@ -111,11 +120,12 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			_, sentimentSummary, _ := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
-			jsonData, _ := json.Marshal(sentimentSummary)
-			workerStatusCh <- jsonData
+			if sentimentSummary != "" {
+				jsonData, _ := json.Marshal(sentimentSummary)
+				workerDoneCh <- jsonData
+			}
 		}
 		ctx.Poison(ctx.Self())
-		workerStatusCh <- []byte(m.Data)
 	default:
 		logrus.Warningf("Received unknown message: %T", m)
 	}
@@ -158,6 +168,29 @@ func isBootnode(ipAddr string) bool {
 	return false
 }
 
+// updateParticipation updates the participation metrics for a given node based on the total bytes processed.
+//
+// Parameters:
+//   - node: A pointer to the OracleNode instance whose participation metrics need to be updated.
+//   - totalBytes: The total number of bytes processed by the node which will be added to its current metrics.
+func updateParticipation(node *masa.OracleNode, totalBytes int) {
+	if totalBytes == 0 {
+		return
+	}
+	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	sharedData := db.SharedData{}
+	nodeVal := db.ReadData(node, nodeData.PeerId.String())
+	_ = json.Unmarshal(nodeVal, &sharedData)
+	bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+	nodeData.BytesScraped += bytesScraped + totalBytes
+	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+	if err != nil {
+		logrus.Error(err)
+	}
+	jsonData, _ := json.Marshal(nodeData)
+	go db.WriteData(node, node.Host.ID().String(), jsonData)
+}
+
 // SendWork is responsible for handling work messages and processing them based on the request type.
 // It supports the following request types:
 // - "web": Scrapes web data from the specified URL with the given depth.
@@ -175,10 +208,9 @@ func isBootnode(ipAddr string) bool {
 // Usage with the Worker Gossip Topic
 //
 //	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
-//		logrus.Errorf("%v", err)
+//	    logrus.Errorf("%v", err)
 //	}
 func SendWork(node *masa.OracleNode, data []byte) {
-
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(data), Sender: pid}
@@ -219,44 +251,44 @@ func SendWork(node *masa.OracleNode, data []byte) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
-	var err error
+	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
+
+	var err error
 	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
 
-	ticker := time.NewTicker(time.Second * 60)
+	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
 			logrus.Debug("tick")
-		case data := <-workerStatusCh:
+		case totalBytes := <-dataLengthCh:
+			logrus.Infof("totalBytes ==> %d", totalBytes)
+			go updateParticipation(node, totalBytes)
+		case work := <-workerStatusCh:
+			logrus.Infof("work ==> %s", string(work))
+			// If participating node
+			if node.IsTwitterScraper || node.IsWebScraper {
+				pid := node.ActorEngine.Spawn(actor.PropsFromProducer(NewWorker()))
+				message := &messages.Work{Data: string(work), Sender: pid}
+				logrus.Infof("work ==> %s %s", string(work), pid)
+				node.ActorEngine.Send(pid, message)
+			} else {
+				// Send to participating nodes
+				go SendWork(node, work)
+			}
+		case data := <-workerDoneCh:
 			key, _ := computeCid(string(data))
+			logrus.Infof("work done ==> %s %s", key, string(data))
 			val := db.ReadData(node, key)
 			if val == nil {
 				go db.WriteData(node, key, data)
-
-				nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-				sharedData := db.SharedData{}
-				nodeVal := db.ReadData(node, nodeData.PeerId.String())
-
-				_ = json.Unmarshal(nodeVal, &sharedData)
-
-				bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
-
-				nodeData.BytesScraped += bytesScraped
-				nodeData.BytesScraped += len(data)
-
-				err = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
-				if err != nil {
-					logrus.Error(err)
-				}
-
-				jsonData, _ := json.Marshal(nodeData)
-				go db.WriteData(node, node.Host.ID().String(), jsonData)
+				// @todo track all cids for data by calling peerID to persistent storage
 			}
 		case <-ctx.Done():
 			return

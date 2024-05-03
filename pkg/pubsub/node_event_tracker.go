@@ -311,7 +311,7 @@ func (net *NodeEventTracker) LoadNodeData() error {
 // It gets the peer's public key from the network's peerstore, converts
 // it to a hex string, and converts that to an Ethereum address.
 // Returns an empty string if there is no public key for the peer.
-func getEthAddress(remotePeer peer.ID, n network.Network) string {
+func GetEthAddress(remotePeer peer.ID, n network.Network) string {
 	var publicKeyHex string
 	var err error
 

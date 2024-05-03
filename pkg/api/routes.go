@@ -322,6 +322,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error adding post to topic"
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
+
+		// @note a test route for worker topics
+		v1.GET("/test", API.GetTest())
 	}
 
 	// @Summary Node Status Page

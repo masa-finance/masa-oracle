@@ -14,15 +14,15 @@ var sentimentPrompt = "Please perform a sentiment analysis on the following text
 // It contains a Title, representing the heading of the section, and Paragraphs, a slice of strings
 // containing the text content found within that section.
 type Section struct {
-	Title      string   // Title is the heading text of the section.
-	Paragraphs []string // Paragraphs contains all the text content of the section.
-	Images     []string // Images storing base64 - maybe!!?
+	Title      string   `json:"title"`      // Title is the heading text of the section.
+	Paragraphs []string `json:"paragraphs"` // Paragraphs contains all the text content of the section.
+	Images     []string `json:"images"`     // Images storing base64 - maybe!!?
 }
 
 // CollectedData represents the aggregated result of the scraping process.
 // It contains a slice of Section structs, each representing a distinct part of a scraped webpage.
 type CollectedData struct {
-	Sections []Section // Sections is a collection of webpage sections that have been scraped.
+	Sections []Section `json:"sections"` // Sections is a collection of webpage sections that have been scraped.
 }
 
 // ScrapeWebDataForSentiment initiates the scraping process for the given list of URIs.

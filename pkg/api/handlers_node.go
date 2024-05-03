@@ -265,22 +265,6 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 // value into a SharedData struct, and returns the data in the response.
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
-		/// tests
-
-		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
-		// d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
-
-		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
-		// d, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
-
-		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
-		//	logrus.Errorf("%v", err)
-		//}
-
-		//go workers.SendWork(api.Node, d)
-		/// tests
-
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -433,5 +417,26 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
 			})
 		}
+	}
+}
+
+func (api *API) GetTest() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		/// tests
+		// data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
+		// data, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
+		data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA Masa Finance, Masa AI, token price", "count": "5"})
+		// data, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
+
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
+			logrus.Errorf("%v", err)
+		}
+		/// tests
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "test",
+		})
 	}
 }
