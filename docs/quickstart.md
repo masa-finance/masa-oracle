@@ -69,6 +69,7 @@ PG_URL=
 ```bash
 ./masa-node
 ```
+
 Your Masa Oracle node should now be running and attempting to connect to the network. Check the logs to ensure it's functioning correctly. You will need your Public Key from the node startup logs to stake the node. Grab some testnet MASA from [Discord](https://discord.gg/masafinance).
 
 ```bash
@@ -88,10 +89,11 @@ Is Writer:              false
 Is TwitterScraper:      false
 Is WebScraper:          false
 INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
-INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.1-beta-dev
+INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.2-beta-dev
 ```
 
 ### 6. Stake the node with 1000 Sepolia MASA minimum
+
 Grab your Public Key and get some Sepolia MASA from Discord. Then use the following command to initiate staking. Make sure you restart your node once you have staked:
 
    ```bash
@@ -103,7 +105,9 @@ Grab your Public Key and get some Sepolia MASA from Discord. Then use the follow
    ```bash
    ./masa-node --stake 1000
    ```
+
 Your tokens will approve and stake:
+
 ```bash
 Approving staking contract to spend tokens.....
 0x8de79f5111b185fe67090f904b72f3dda7814a8aa81494cd177241549c213ba3
@@ -112,11 +116,15 @@ Staking tokens.....
 0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
 Stake transaction hash: 0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
 ```
+
 ### 7. Start the staked node
+
 ```bash
 ./masa-node
 ```
+
 The Is staked flag will change to `true`
+
 ```bash
 #######################################
 #     __  __    _    ____    _        #
@@ -134,13 +142,15 @@ Is Writer:              false
 Is TwitterScraper:      false
 Is WebScraper:          false
 INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
-INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.1-beta-dev
+INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.2-beta-dev
 ```
 
-### 7. View swagger API 
+### 7. View swagger API
+
 ```bash
 http://localhost:8080/swagger/index.html
 ```
+
 ### 8. Node Rewards Calculation
 
 Node rewards are determined by:

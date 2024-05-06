@@ -285,7 +285,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Error(err)
 		return
 	}
-	logrus.Info("handleStream -> Received data from:", remotePeer.String())
+	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
 }
 
 // IsPublisher returns true if this node is a publisher node.

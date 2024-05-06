@@ -289,6 +289,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			if val == nil {
 				go db.WriteData(node, key, data)
 				// @todo track all cids for data by calling peerID to persistent storage
+				// type CID struct {
+				//	RecordId string `json:recordid"`
+				//  Timestamp time.Time `json:"timestamp"`
+				// }
+				// type Record struct {
+				// 	PeerId string `json:"peerid"`
+				// 	CIDs []CID `json:"cids"`
+				// }
 			}
 		case <-ctx.Done():
 			return
