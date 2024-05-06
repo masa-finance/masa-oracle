@@ -24,5 +24,5 @@
 ### ChangeLog
 * 
 * Removed obsolete pg integration for new data persistence architecture
-* Added LLM_TWITTER_PROMPT to .env
-* Added LLM_SCRAPER_PROMPT to .env
+* Added LLM_TWITTER_PROMPT to .env (optional)
+* Added LLM_SCRAPER_PROMPT to .env (optional)
