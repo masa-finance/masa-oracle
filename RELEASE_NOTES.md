@@ -12,6 +12,7 @@
 
 * Allow Nodes to participate in twitter scraping w/o bringing their own creds
 * Added get bootnodes from deployment json on s3
+* Added OracleFlow struct to save events to API gateway
 
 ### Bug Fixes
 
@@ -22,7 +23,6 @@
 * Increased worker time syncing between peers
 
 ### ChangeLog
-* 
 * Removed obsolete pg integration for new data persistence architecture
 * Added LLM_TWITTER_PROMPT to .env (optional)
 * Added LLM_SCRAPER_PROMPT to .env (optional)

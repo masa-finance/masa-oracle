@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
@@ -35,6 +36,35 @@ var (
 	workerStatusCh = make(chan []byte)
 	workerDoneCh   = make(chan []byte)
 )
+
+// @todo to send to api gateway
+
+type CID struct {
+	RecordId  string    `json:"recordid"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+type Record struct {
+	PeerId string `json:"peerid"`
+	CIDs   []CID  `json:"cids"`
+}
+
+type OracleData struct {
+	Id        string `json:"id"`
+	PeerId    string `json:"peer_id"`
+	Request   string `json:"request"`
+	Domain    string `json:"domain"`
+	ModelType string `json:"model_type"`
+	ModelName string `json:"model_name"`
+	Steps     []struct {
+		Idx               int    `json:"idx"`
+		StructuredPrompt  string `json:"structured_prompt,omitempty"`
+		Timestamp         string `json:"timestamp"`
+		UserPrompt        string `json:"user_prompt,omitempty"`
+		RawContent        string `json:"raw_content,omitempty"`
+		StructuredContent string `json:"structured_content,omitempty"`
+	} `json:"steps"`
+}
 
 type Worker struct{}
 
@@ -213,7 +243,8 @@ func updateParticipation(node *masa.OracleNode, totalBytes int) {
 func SendWork(node *masa.OracleNode, data []byte) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
-	message := &messages.Work{Data: string(data), Sender: pid}
+	id := uuid.New().String()
+	message := &messages.Work{Data: string(data), Sender: pid, Id: id}
 	node.ActorEngine.Send(pid, message)
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
@@ -268,14 +299,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case <-ticker.C:
 			logrus.Debug("tick")
 		case totalBytes := <-dataLengthCh:
-			logrus.Infof("totalBytes ==> %d", totalBytes)
 			go updateParticipation(node, totalBytes)
 		case work := <-workerStatusCh:
 			logrus.Infof("work ==> %s", string(work))
 			// If participating node
 			if node.IsTwitterScraper || node.IsWebScraper {
 				pid := node.ActorEngine.Spawn(actor.PropsFromProducer(NewWorker()))
-				message := &messages.Work{Data: string(work), Sender: pid}
+				id := uuid.New().String()
+				message := &messages.Work{Data: string(work), Sender: pid, Id: id}
 				logrus.Infof("work ==> %s %s", string(work), pid)
 				node.ActorEngine.Send(pid, message)
 			} else {
@@ -287,16 +318,27 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Infof("work done ==> %s %s", key, string(data))
 			val := db.ReadData(node, key)
 			if val == nil {
-				go db.WriteData(node, key, data)
-				// @todo track all cids for data by calling peerID to persistent storage
-				// type CID struct {
-				//	RecordId string `json:recordid"`
-				//  Timestamp time.Time `json:"timestamp"`
-				// }
-				// type Record struct {
-				// 	PeerId string `json:"peerid"`
-				// 	CIDs []CID `json:"cids"`
-				// }
+				// store raw data
+				_ = db.WriteData(node, key, data)
+
+				// store record cids for the peer
+				existingRecord := Record{}
+				existingData := db.ReadData(node, key)
+				if existingData != nil {
+					_ = json.Unmarshal(existingData, &existingRecord)
+				}
+
+				newCID := CID{
+					RecordId:  key,
+					Timestamp: time.Now(),
+				}
+
+				record := Record{
+					PeerId: node.Host.ID().String(),
+					CIDs:   append(existingRecord.CIDs, newCID),
+				}
+				jsonData, _ := json.Marshal(record)
+				_ = db.WriteData(node, key, jsonData)
 			}
 		case <-ctx.Done():
 			return
