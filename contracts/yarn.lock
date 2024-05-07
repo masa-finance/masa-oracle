@@ -344,10 +344,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@masa-finance/masa-contracts-oracle@latest":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@masa-finance/masa-contracts-oracle/-/masa-contracts-oracle-0.3.0.tgz#1dd4ad9780ca3fba3a8f593a1d3a67ebe0418e8f"
-  integrity sha512-ZAKlem1sw0chrg3ftVrvOGU2KdjyLxO3FXA650OajzuIUGa3aoKAZkaa2MEqqbjfHf+R2+WSDe5P8j+Y5235KA==
+"@masa-finance/masa-contracts-oracle@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@masa-finance/masa-contracts-oracle/-/masa-contracts-oracle-0.3.2.tgz#916b141bf5e5e4b5d29dac523b4497b245fe2bda"
+  integrity sha512-QnYdXIJELR3AzzCqHrKPg6dP5jDyXlA4NhbJOiOLOxhsXbO9jxOrYHTlP+SvJsegtpDrSlroOadWSPBNmClycA==
   dependencies:
     ethers "~5.7.2"
 
