@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"math"
 	"net/http"
 	"strconv"
@@ -75,7 +76,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 // data in the response.
 func (api *API) GetNodeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		peerID := c.Param("peerID") // Get the peer ID from the URL parameters
+		peerID := c.Param("peerid") // Get the peer ID from the URL parameters
 		if api.Node == nil || api.Node.NodeTracker == nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -265,22 +266,6 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 // value into a SharedData struct, and returns the data in the response.
 func (api *API) GetFromDHT() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
-		/// tests
-
-		// d, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
-		// d, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://consensus2024.coindesk.com/", "depth": "1", "model": "claude-3-opus-20240229"})
-
-		// d, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA token launch", "count": "5"})
-		// d, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token launch", "count": "5", "model": "claude-3-opus"})
-
-		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), d); err != nil {
-		//	logrus.Errorf("%v", err)
-		//}
-
-		// go workers.SendWork(api.Node, d)
-		/// tests
-
 		keyStr := c.Query("key")
 		if len(keyStr) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -290,21 +275,21 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			return
 		}
 		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, keyStr)
-		err := json.Unmarshal(nodeVal, &sharedData)
+		nv := db.ReadData(api.Node, keyStr)
+		err := json.Unmarshal(nv, &sharedData)
 		if err != nil {
 			// Check if base64 encoded
-			if _, err := base64.StdEncoding.DecodeString(string(nodeVal)); err != nil {
+			if _, err := base64.StdEncoding.DecodeString(string(nv)); err != nil {
 				// If not base64, return the raw val
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
-					"message": string(nodeVal),
+					"message": string(nv),
 				})
 				return
 			} else {
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
-					"message": nodeVal,
+					"message": nv,
 				})
 				return
 			}
@@ -408,26 +393,51 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"BytesScraped":     0,
 			})
 			return
+		} else {
+			nd := *nodeData
+			nd.CurrentUptime = nodeData.GetCurrentUptime()
+			nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
+			nd.CurrentUptimeStr = pubsub.PrettyDuration(nd.CurrentUptime)
+			nd.AccumulatedUptimeStr = pubsub.PrettyDuration(nd.AccumulatedUptime)
+
+			sharedData := db.SharedData{}
+			nv := db.ReadData(api.Node, api.Node.Host.ID().String())
+			_ = json.Unmarshal(nv, &sharedData)
+			bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"TotalPeers":       len(peers),
+				"Name":             "Masa Status Page",
+				"PeerID":           api.Node.Host.ID().String(),
+				"IsStaked":         nd.IsStaked,
+				"IsTwitterScraper": nd.IsTwitterScraper,
+				"IsWebScraper":     nd.IsWebScraper,
+				"FirstJoined":      nd.FirstJoined.Format("2006-01-02 15:04:05"),
+				"LastJoined":       nd.LastJoined.Format("2006-01-02 15:04:05"),
+				"CurrentUptime":    nd.CurrentUptimeStr,
+				"TotalUptime":      nd.AccumulatedUptimeStr,
+				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
+			})
 		}
-		nodeData.CurrentUptime = nodeData.GetCurrentUptime()
-		nodeData.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-		nodeData.AccumulatedUptimeStr = pubsub.PrettyDuration(nodeData.AccumulatedUptime)
-		sharedData := db.SharedData{}
-		nodeVal := db.ReadData(api.Node, nodeData.PeerId.String())
-		_ = json.Unmarshal(nodeVal, &sharedData)
-		bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"TotalPeers":       len(peers),
-			"Name":             "Masa Status Page",
-			"PeerID":           nodeData.PeerId.String(),
-			"IsStaked":         nodeData.IsStaked,
-			"IsTwitterScraper": nodeData.TwitterScraper(),
-			"IsWebScraper":     nodeData.WebScraper(),
-			"FirstJoined":      nodeData.FirstJoined.Format("2006-01-02 15:04:05"),
-			"LastJoined":       nodeData.LastJoined.Format("2006-01-02 15:04:05"),
-			"CurrentUptime":    nodeData.AccumulatedUptimeStr,
-			"Rewards":          "Coming Soon!",
-			"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
+	}
+}
+
+func (api *API) GetTest() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		/// tests
+		// data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
+		// data, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
+		data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA Masa Finance token launch", "count": "2"})
+		// data, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
+		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
+		//	logrus.Errorf("%v", err)
+		//}
+		workers.SendWork(api.Node, data)
+		/// tests
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "test",
 		})
 	}
 }

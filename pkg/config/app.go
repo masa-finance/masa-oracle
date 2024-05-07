@@ -1,7 +1,9 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
+	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -46,6 +48,10 @@ var (
 	once     sync.Once
 )
 
+// AppConfig represents the configuration settings for the application.
+// It holds various parameters and settings that control the behavior and runtime environment of the application.
+// The fields in this struct are tagged with `mapstructure` to facilitate configuration loading from various sources
+// such as configuration files, environment variables, and command-line flags using the `viper` library.
 type AppConfig struct {
 	PortNbr              int      `mapstructure:"portNbr"`
 	UDP                  bool     `mapstructure:"udp"`
@@ -82,6 +88,19 @@ type AppConfig struct {
 	WebScraper         bool   `mapstructure:"webScraper"`
 }
 
+// GetInstance returns the singleton instance of AppConfig.
+//
+// If the instance has not been initialized yet, GetInstance will initialize it by:
+// 1. Creating a new AppConfig instance.
+// 2. Setting default configuration values.
+// 3. Overriding defaults with values from environment variables.
+// 4. Overriding defaults and environment variables with values from the configuration file.
+// 5. Overriding all previous values with command-line flags.
+// 6. Unmarshalling the configuration into the AppConfig instance.
+//
+// If the unmarshalling fails, the instance is set to nil.
+//
+// Subsequent calls to GetInstance will return the same initialized instance.
 func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
@@ -103,6 +122,10 @@ func GetInstance() *AppConfig {
 	return instance
 }
 
+// setDefaultConfig sets the default configuration values for the AppConfig instance.
+// It retrieves the user's home directory and sets default values for various configuration options
+// such as the MasaDir, Bootnodes, RpcUrl, Environment, FilePath, WriterNode, and CachePath.
+// It also fetches bootnode information from a remote URL based on the environment (dev, test, or main).
 func (c *AppConfig) setDefaultConfig() {
 
 	usr, err := user.Current()
@@ -120,35 +143,37 @@ func (c *AppConfig) setDefaultConfig() {
 		_ = godotenv.Load()
 
 		// Fetch bootnodes from s3
-		//var url string
-		//if os.Getenv("ENV") == "dev" {
-		//	url = "https://masa-oracle-init-dev.s3.amazonaws.com/node_init.json"
-		//} else if os.Getenv("ENV") == "test" {
-		//	url = "https://masa-oracle-init-test.s3.amazonaws.com/node_init.json"
-		//} else if os.Getenv("ENV") == "prod" {
-		//	url = "https://masa-oracle-init-prod.s3.amazonaws.com/node_init.json"
-		//}
-		//if url != "" {
-		//	resp, err := http.Get(url)
-		//	if err != nil {
-		//		logrus.Errorf("Failed to fetch %s: %v", url, err)
-		//	} else {
-		//		defer resp.Body.Close()
-		//		var nodeInitData struct {
-		//			Name      string   `json:"name"`
-		//			Id        string   `json:"id"`
-		//			NodeType  string   `json:"nodeType"`
-		//			BootNodes []string `json:"bootNodes"`
-		//		}
-		//		if err = json.NewDecoder(resp.Body).Decode(&nodeInitData); err != nil {
-		//			logrus.Errorf("Failed to parse: %v", err)
-		//		} else {
-		//			viper.SetDefault("Bootnodes", strings.Join(nodeInitData.BootNodes, ","))
-		//		}
-		//	}
-		//} else {
-		viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
-		// }
+		if os.Getenv("BOOTNODES") != "" {
+			var url string
+			if os.Getenv("ENV") == "dev" {
+				url = "https://masa-oracle-init-dev.s3.amazonaws.com/node_init.json"
+			} else if os.Getenv("ENV") == "test" {
+				url = "https://masa-oracle-init-test.s3.amazonaws.com/node_init.json"
+			} else if os.Getenv("ENV") == "main" {
+				url = "https://masa-oracle-init-main.s3.amazonaws.com/node_init.json"
+			}
+			if url != "" {
+				resp, err := http.Get(url)
+				if err != nil {
+					logrus.Errorf("Failed to fetch %s: %v", url, err)
+				} else {
+					defer resp.Body.Close()
+					var nodeInitData struct {
+						Name      string   `json:"name"`
+						Id        string   `json:"id"`
+						NodeType  string   `json:"nodeType"`
+						BootNodes []string `json:"bootNodes"`
+					}
+					if err = json.NewDecoder(resp.Body).Decode(&nodeInitData); err != nil {
+						logrus.Errorf("Failed to parse: %v", err)
+					} else {
+						viper.SetDefault("Bootnodes", strings.Join(nodeInitData.BootNodes, ","))
+					}
+				}
+			} else {
+				viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
+			}
+		}
 		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 		viper.SetDefault(Environment, os.Getenv("ENV"))
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
@@ -160,7 +185,6 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(ClaudeApiURL, os.Getenv("CLAUDE_API_URL"))
 		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
 		viper.SetDefault(GPTApiKey, os.Getenv("OPENAI_API_KEY"))
-
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
@@ -185,6 +209,9 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(WebScraper, false)
 }
 
+// setFileConfig loads configuration from a YAML file.
+// It takes the file path as a parameter and sets up Viper to read the config file.
+// If the config file exists, it will be read into the AppConfig struct.
 func (c *AppConfig) setFileConfig(path string) {
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
@@ -194,6 +221,9 @@ func (c *AppConfig) setFileConfig(path string) {
 	_ = viper.ReadInConfig()
 }
 
+// setEnvVariableConfig loads environment variables into the AppConfig struct.
+// It reads the .env file using the godotenv package and automatically binds
+// environment variables to Viper for configuration management.
 func (c *AppConfig) setEnvVariableConfig() {
 	err := godotenv.Load()
 	if err != nil {
@@ -202,6 +232,11 @@ func (c *AppConfig) setEnvVariableConfig() {
 	viper.AutomaticEnv()
 }
 
+// setCommandLineConfig parses command line flags and binds them to the AppConfig struct.
+// It takes no parameters and returns an error if there is an issue binding the flags.
+// The function sets up command line flags for various configuration options using the pflag package.
+// After parsing the flags, it binds them to Viper for additional configuration management.
+// Finally, it splits the 'bootnodes' flag value into a slice and assigns it to the Bootnodes field of the AppConfig struct.
 func (c *AppConfig) setCommandLineConfig() error {
 	var bootnodes string
 	pflag.IntVar(&c.PortNbr, "port", viper.GetInt(PortNbr), "The port number")
@@ -262,6 +297,9 @@ func (c *AppConfig) LogConfig() {
 	}
 }
 
+// HasBootnodes checks if the AppConfig has any bootnodes configured.
+// It returns true if there is at least one bootnode in the Bootnodes slice and it is not an empty string.
+// Otherwise, it returns false, indicating that no bootnodes are configured.
 func (c *AppConfig) HasBootnodes() bool {
 	return c.Bootnodes[0] != ""
 }
