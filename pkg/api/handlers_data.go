@@ -1,16 +1,21 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/twitter"
 )
@@ -337,5 +342,39 @@ func (api *API) WebData() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": llmbridge.SanitizeResponse(collectedData)})
+	}
+}
+
+func (api *API) LlmChat() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// we just want to proxy the request JSON directly to the endpoint we are calling.
+		body := c.Request.Body
+		bodyBytes, err := io.ReadAll(body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		// Process the message
+		uri := config.GetInstance().LLMChatUrl
+		resp, err := http.Post(uri, "application/json", bytes.NewReader(bodyBytes))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logrus.Error(err)
+			}
+		}(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		}
+		var payload map[string]interface{}
+		err = json.Unmarshal(respBody, &payload)
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		}
+		// Return the response
+		c.JSON(http.StatusOK, payload)
 	}
 }
