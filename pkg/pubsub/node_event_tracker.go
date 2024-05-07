@@ -307,7 +307,7 @@ func (net *NodeEventTracker) LoadNodeData() error {
 	return nil
 }
 
-// getEthAddress returns the Ethereum address for the given remote peer.
+// GetEthAddress returns the Ethereum address for the given remote peer.
 // It gets the peer's public key from the network's peerstore, converts
 // it to a hex string, and converts that to an Ethereum address.
 // Returns an empty string if there is no public key for the peer.
