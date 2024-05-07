@@ -20,7 +20,7 @@ import (
 func VerifyStakingEvent(userAddress string) (bool, error) {
 	rpcURL := config.GetInstance().RpcUrl
 	if rpcURL == "" {
-		return false, errors.New(fmt.Sprintf("%s is not set", config.RpcUrl))
+		return false, fmt.Errorf("%s is not set", config.RpcUrl)
 	}
 
 	client, err := ethclient.Dial(rpcURL)
