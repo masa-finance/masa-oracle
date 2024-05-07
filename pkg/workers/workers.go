@@ -58,7 +58,7 @@ type OracleData struct {
 	ModelName string `json:"model_name"`
 	Steps     []struct {
 		Idx               int    `json:"idx"`
-		StructuredPrompt  string `json:"structured_prompt,omitempty"`
+		SystemPrompt      string `json:"system_prompt,omitempty"`
 		Timestamp         string `json:"timestamp"`
 		UserPrompt        string `json:"user_prompt,omitempty"`
 		RawContent        string `json:"raw_content,omitempty"`
