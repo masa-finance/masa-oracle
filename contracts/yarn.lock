@@ -353,7 +353,7 @@
 
 "@masa-finance/masa-token@^2.7.1":
   version "2.7.1"
-  resolved "https://registry.yarnpkg.com/@masa-finance/masa-token/-/masa-token-2.7.1.tgz#0ed1835bfbb551add0637baf7ec457b1c1d971fd"
+  resolved "https://registry.npmjs.org/@masa-finance/masa-token/-/masa-token-2.7.1.tgz"
   integrity sha512-2/ElTvpNqFM+JYxcLx6wRljmWM3Y3wGpq6/BkV7BwT3GEMJlSmLHT6fgTDOyy1h0aBgcnz7ZDnRvGbqgjygLng==
 
 aes-js@3.0.0:
