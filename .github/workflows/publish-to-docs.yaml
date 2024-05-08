@@ -30,6 +30,11 @@ jobs:
         path: docs
         token: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Install Git
+      run: |
+        apt-get update
+        apt-get install -y git
+
     - name: Copy files to target repository
       run: |
         cp -r pub-docs/. docs/masa-oracle/
