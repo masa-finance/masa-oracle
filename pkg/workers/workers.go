@@ -37,11 +37,9 @@ var (
 	workerDoneCh   = make(chan []byte)
 )
 
-// @todo to send to api gateway
-
 type CID struct {
-	RecordId  string `json:"cid"`
-	Timestamp int64  `json:"timestamp"`
+	RecordId  string    `json:"cid"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type Record struct {
@@ -84,14 +82,14 @@ func NewWorker() actor.Producer {
 func (a *Worker) Receive(ctx actor.Context) {
 	switch m := ctx.Message().(type) {
 	case *messages.Connect:
-		logrus.Infof("Worker %v connected", m.Sender)
+		logrus.Infof("[+] Worker %v connected", m.Sender)
 		clients.Add(m.Sender)
 	case *actor.Started:
-		logrus.Info("actor started")
+		logrus.Info("[+] Actor started")
 	case *actor.Stopping:
-		logrus.Info("actor stopping")
+		logrus.Info("[+] Actor stopping")
 	case *actor.Stopped:
-		logrus.Info("actor stopped")
+		logrus.Info("[+] Actor stopped")
 	case *messages.Work:
 		var workData map[string]string
 		err := json.Unmarshal([]byte(m.Data), &workData)
@@ -157,7 +155,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		}
 		ctx.Poison(ctx.Self())
 	default:
-		logrus.Warningf("Received unknown message: %T", m)
+		logrus.Warningf("[+] Received unknown message: %T", m)
 	}
 }
 
@@ -221,6 +219,12 @@ func updateParticipation(node *masa.OracleNode, totalBytes int) {
 	go db.WriteData(node, node.Host.ID().String(), jsonData)
 }
 
+// updateRecords updates the records for a given node and key with the provided data.
+//
+// Parameters:
+//   - node: A pointer to the OracleNode instance whose records need to be updated.
+//   - data: The data to be written for the specified key.
+//   - key: The key under which the data should be stored.
 func updateRecords(node *masa.OracleNode, data []byte, key string) {
 	_ = db.WriteData(node, key, data)
 
@@ -228,7 +232,7 @@ func updateRecords(node *masa.OracleNode, data []byte, key string) {
 
 	newCID := CID{
 		RecordId:  key,
-		Timestamp: time.Now().Unix(),
+		Timestamp: time.Now(),
 	}
 
 	if nodeData.Records == nil {
@@ -329,11 +333,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case totalBytes := <-dataLengthCh:
 			go updateParticipation(node, totalBytes)
 		case work := <-workerStatusCh:
-			logrus.Infof("sending work ==> %s", string(work))
+			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
 			key, _ := computeCid(string(data))
-			logrus.Infof("work done ==> %s %s", key, string(data))
+			logrus.Infof("[+] Work done %s", key)
 			val := db.ReadData(node, key)
 			if val == nil {
 				updateRecords(node, data, key)
