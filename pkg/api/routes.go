@@ -327,6 +327,15 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
 
+		// @Summary Chat with AI
+		// @Description Initiates a chat session with an AI model that accepts common ollama formatted requests
+		// @Tags Chat
+		// @Accept  json
+		// @Produce  json
+		// @Param   message   body    string  true  "Message to send to AI"
+		// @Success 200 {object} ChatResponse "Successfully received response from AI"
+		// @Failure 400 {object} ErrorResponse "Error communicating with AI"
+		// @Router /chat [post]
 		v1.POST("/chat", API.LlmChat())
 	}
 

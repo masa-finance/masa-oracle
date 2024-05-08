@@ -345,6 +345,31 @@ func (api *API) WebData() gin.HandlerFunc {
 	}
 }
 
+// LlmChat handles requests for chatting with AI models hosted by ollama.
+// It expects a JSON request body with a structure formatted for the model. For example for Ollama:
+//
+//	{
+//	    "model": "llama3",
+//	    "messages": [
+//	        {
+//	            "role": "user",
+//	            "content": "why is the sky blue?"
+//	        }
+//	    ],
+//	    "stream": false
+//	}
+//
+// This function acts as a proxy, forwarding the request to hosted models and returning the proprietary structured response.
+// This is intended to be compatible with code that is looking to leverage a common payload for LLMs that is based on
+// the model name/type
+// So if it is an Ollama request it is the responsibility of the caller to properly format their payload to conform
+// to the required structure similar to above.
+//
+// See:
+// https://platform.openai.com/docs/api-reference/authentication
+// https://docs.anthropic.com/claude/reference/complete_post
+// https://github.com/ollama/ollama/blob/main/docs/api.md
+// note: Ollama recently added support for the OpenAI structure which can simplify integrating it.
 func (api *API) LlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// we just want to proxy the request JSON directly to the endpoint we are calling.
