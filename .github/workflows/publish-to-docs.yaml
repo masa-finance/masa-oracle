@@ -16,8 +16,6 @@ jobs:
       contents: write
 
     steps:
-    - uses: actions/checkout@v4
-
     - name: Copy Readme
       run: |
         mkdir pub-docs
