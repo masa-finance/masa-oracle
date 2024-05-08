@@ -88,6 +88,7 @@ const (
 	GPTApiKey        = "OPENAI_API_KEY"
 	TwitterScraper   = "TWITTER_SCRAPER"
 	WebScraper       = "WEB_SCRAPER"
+	LlmChatUrl       = "LLM_CHAT_URL"
 )
 
 // ProtocolWithVersion returns a libp2p protocol ID string
