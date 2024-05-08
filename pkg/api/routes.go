@@ -7,10 +7,9 @@ import (
 	"os"
 	"strings"
 
+	docs "github.com/masa-finance/masa-oracle/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
-	"github.com/masa-finance/masa-oracle/docs"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
