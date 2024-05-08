@@ -426,12 +426,11 @@ func (api *API) GetTest() gin.HandlerFunc {
 		/// tests
 		// data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
 		// data, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
-		data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA Masa Finance token launch", "count": "2"})
+		data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA masa finance, masa ai masa token", "count": "4"})
 		// data, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
 		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
 			logrus.Errorf("%v", err)
 		}
-		// workers.SendWork(api.Node, data)
 		/// tests
 
 		c.JSON(http.StatusOK, gin.H{

@@ -40,8 +40,8 @@ var (
 // @todo to send to api gateway
 
 type CID struct {
-	RecordId  string    `json:"recordid"`
-	Timestamp time.Time `json:"timestamp"`
+	RecordId  string `json:"cid"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 type Record struct {
@@ -225,27 +225,19 @@ func updateRecords(node *masa.OracleNode, data []byte, key string) {
 	_ = db.WriteData(node, key, data)
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-	sharedData := db.SharedData{}
-	nodeVal := db.ReadData(node, nodeData.PeerId.String())
-	_ = json.Unmarshal(nodeVal, &sharedData)
 
-	// existingRecord := Record{}
-	// existingData := db.ReadData(node, key)
-	// if existingData != nil {
-	// 	_ = json.Unmarshal(existingData, &existingRecord)
-	// }
+	newCID := CID{
+		RecordId:  key,
+		Timestamp: time.Now().Unix(),
+	}
 
-	// newCID := CID{
-	// 	RecordId:  key,
-	// 	Timestamp: time.Now(),
-	// }
+	if nodeData.Records == nil {
+		nodeData.Records = []CID{}
+	}
 
-	// record := Record{
-	// 	PeerId: node.Host.ID().String(),
-	// 	CIDs:   append(existingRecord.CIDs, newCID),
-	// }
-	// logrus.Info(record)
-	// nodeData.Records = append(nodeData.Records, record)
+	records := nodeData.Records.([]CID)
+	records = append(records, newCID)
+	nodeData.Records = records
 
 	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
 	if err != nil {
