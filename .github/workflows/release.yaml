@@ -7,6 +7,10 @@ on:
       - test
       - dev
 
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+
 permissions:
   id-token: write
   contents: read
