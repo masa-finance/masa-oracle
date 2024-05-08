@@ -12,17 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     container: alpine/git
 
-    permissions:
-      contents: write
-
     steps:
-    - name: Copy Readme
-      run: |
-        mkdir pub-docs
-        cp docs/welcome-to-masa.md pub-docs/
-        cp -r docs/ai-node-operator pub-docs/
-        cp -r docs/ai-oracle-node pub-docs/
-        cp -r docs/guides-and-tutorials pub-docs/
+      - name: Copy Readme
+        run: |
+          mkdir pub-docs
+          cp docs/welcome-to-masa.md pub-docs/
+          cp -r docs/ai-node-operator pub-docs/
+          cp -r docs/ai-oracle-node pub-docs/
+          cp -r docs/guides-and-tutorials pub-docs/
 
       - name: Pushes to another repository
         uses: cpina/github-action-push-to-another-repository@main
