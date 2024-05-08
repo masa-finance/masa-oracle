@@ -125,9 +125,11 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 							logrus.Infof("Connected to peer %s", availPeer.ID.String())
 						}
 					} else {
-						if len(config.GetInstance().Bootnodes) > 0 {
-							logrus.Info("Not connected to any bootnode. Attempting to reconnect...")
-							reconnectToBootnodes(ctx, host, config.GetInstance().Bootnodes)
+						for _, bn := range config.GetInstance().Bootnodes {
+							if len(bn) > 0 {
+								logrus.Info("Not connected to any bootnode. Attempting to reconnect...")
+								reconnectToBootnodes(ctx, host, config.GetInstance().Bootnodes)
+							}
 						}
 					}
 				}

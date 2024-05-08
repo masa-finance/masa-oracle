@@ -2,7 +2,9 @@ name: Publish to Docs
 
 on:
   push:
-    branches: [ main ]
+    branches: [ test ] # Change to main after mainnet is live and we publish masa-oracle to main (if desired)
+    paths: 
+      - 'docs/**'
 
 jobs:
   build:
@@ -12,7 +14,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Copy Readme
         run: |
-          cp README.md docs/README.md
+            cp docs/welcome-to-masa.md docs/
+            cp -r docs/ai-node-operator docs/
+            cp -r docs/ai-oracle-node docs/
+            cp -r docs/guides-and-tutorials docs/
       - name: Pushes to another repository
         uses: cpina/github-action-push-to-another-repository@main
         env:

@@ -92,7 +92,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	//	@Title			Masa API
 	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
 	//	@Host			https://api.masa.ai
-	//	@Version		0.0.1-beta
+	//	@Version		0.0.2-beta
 	//	@contact.name	Masa API Support
 	//	@contact.url	https://masa.ai
 	//	@contact.email	support@masa.ai
@@ -245,7 +245,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error retrieving node data by peer ID"
 		// @Router /node/data/{peerid} [get]
 		v1.GET("/node/data/:peerid", API.GetNodeHandler())
-		// @todo ^ fix
 
 		// @Summary Update Node Status
 		// @Description Updates the status of the node
@@ -257,7 +256,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error updating node status"
 		// @Router /node/status [post]
 		v1.POST("/node/status", API.PostNodeStatusHandler())
-		// @todo ^ fix
 
 		// @Summary Get Public Keys
 		// @Description Retrieves a list of public keys from the node
@@ -324,6 +322,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error adding post to topic"
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
+
+		// @note a test route for worker topics
+		v1.GET("/test", API.GetTest())
 	}
 
 	// @Summary Node Status Page

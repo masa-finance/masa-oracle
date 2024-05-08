@@ -46,6 +46,9 @@ type Record struct {
 func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager) {
 	var err error
 	cachePath := config.GetInstance().CachePath
+	if cachePath == "" {
+		cachePath = config.GetInstance().MasaDir + "/cache"
+	}
 	cache, err = leveldb.NewDatastore(cachePath, nil)
 	if err != nil {
 		log.Fatal(err)
