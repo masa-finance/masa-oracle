@@ -26,20 +26,14 @@ jobs:
         cp -r docs/ai-oracle-node pub-docs/
         cp -r docs/guides-and-tutorials pub-docs/
 
-    - name: Push to target repository
-      uses: actions/checkout@v4
-      with:
-        repository: masa-finance/docs
-        path: docs
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Copy files to target repository
-      run: |
-        cp -r pub-docs/. docs/masa-oracle/
-        cd docs
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add masa-oracle/
-        git commit -m "Update docs from source repository"
-        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/masa-finance/docs.git
-
+      - name: Pushes to another repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'pub-docs'
+          target-directory: 'docs/masa-oracle'
+          destination-github-username: 'masa-finance'
+          destination-repository-name: 'docs'
+          user-email: 13647606+H34D@users.noreply.github.com
+          target-branch: main
