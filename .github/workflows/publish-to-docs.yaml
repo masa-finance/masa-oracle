@@ -1,4 +1,4 @@
-name: Publish to Docs
+name: Publish Docs to Docs Repo
 
 on:
   push:
