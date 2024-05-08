@@ -1,4 +1,4 @@
 ---
-id: webscraper
-title: Webscraper
+id: web-scraper
+title: Web Scraper
 ---
