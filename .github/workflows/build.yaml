@@ -8,6 +8,9 @@ on:
       - stage
       - prod
 
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
 jobs:
   build-pr:
     runs-on: ubuntu-latest
