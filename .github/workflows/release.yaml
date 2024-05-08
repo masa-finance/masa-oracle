@@ -7,6 +7,13 @@ on:
       - test
       - dev
 
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/build.yaml'
+      - '.github/workflows/gh-release.yaml'
+      - '.github/workflows/publish-to-docs.yaml'
+
 permissions:
   id-token: write
   contents: read

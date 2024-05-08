@@ -1,4 +1,4 @@
-name: release
+name: Create Github Release
 
 on:
   push:
@@ -6,6 +6,14 @@ on:
       - main
       - test
       - dev
+
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/build.yaml'
+      - '.github/workflows/release.yaml'
+      - '.github/workflows/publish-to-docs.yaml'
+
 
 permissions:
   id-token: write
