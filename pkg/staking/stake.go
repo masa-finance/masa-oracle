@@ -29,9 +29,6 @@ func (sc *Client) Stake(amount *big.Int) (string, error) {
 	}
 
 	stakingContract := bind.NewBoundContract(OracleNodeStakingContractAddress, parsedABI, sc.EthClient, sc.EthClient, sc.EthClient)
-	if err != nil {
-		return "", fmt.Errorf("failed to bind staking contract instance: %v", err)
-	}
 
 	tx, err := stakingContract.Transact(auth, "stake", amount)
 	if err != nil {

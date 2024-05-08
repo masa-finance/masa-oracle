@@ -341,7 +341,8 @@ func (api *API) WebData() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"data": llmbridge.SanitizeResponse(collectedData)})
+		sanitizedData := llmbridge.SanitizeResponse(collectedData)
+		c.JSON(http.StatusOK, gin.H{"data": sanitizedData})
 	}
 }
 

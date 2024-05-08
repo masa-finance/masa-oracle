@@ -140,7 +140,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	isTwitterScraper := cfg.TwitterScraper
 	isWebScraper := cfg.WebScraper
 
-	// system := actor.NewActorSystem()
 	system := actor.NewActorSystemWithConfig(actor.Configure(
 		actor.ConfigOption(func(config *actor.Config) {
 			config.LoggerFactory = func(system *actor.ActorSystem) *slog.Logger {
@@ -286,7 +285,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Error(err)
 		return
 	}
-	logrus.Info("handleStream -> Received data from:", remotePeer.String())
+	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
 }
 
 // IsPublisher returns true if this node is a publisher node.

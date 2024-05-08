@@ -18,15 +18,13 @@ test:
 
 clean:
 	@rm -rf bin
-	@rm -rf CACHE
 	@rm masa_oracle_node.log
 
 wp:
 	@pdflatex whitepaper.tex
 
 proto:
-	protoc --go_out=. --go_opt=paths=source_relative --proto_path=. pkg/proto/msg/message.proto
-	protoc --go_out=. --go_opt=paths=source_relative --proto_path=. pkg/proto/scraper/scraper.proto
+	sh pkg/workers/messages/build.sh
 
 .PHONY: proto
 

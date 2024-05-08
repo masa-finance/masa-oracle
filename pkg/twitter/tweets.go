@@ -13,8 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var sentimentPrompt = "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
-
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
 // If no valid session is found, it performs a login with credentials specified in the application's configuration.
 // On successful login, it saves the session cookies for future use. If the login fails, it returns nil.
@@ -87,6 +85,10 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 			continue
 		}
 		tweets = append(tweets, &tweetResult.Tweet)
+	}
+	sentimentPrompt := os.Getenv("LLM_TWITTER_PROMPT")
+	if sentimentPrompt == "" {
+		sentimentPrompt = "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
 	}
 	prompt, sentiment, err := llmbridge.AnalyzeSentimentTweets(tweets, model, sentimentPrompt)
 	if err != nil {

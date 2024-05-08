@@ -15,20 +15,42 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Node Information</h5>
-                    <p class="card-text"><strong>Node ID:</strong> <span id="nodeId">{{.PeerID}}</span></p>
-                    <p class="card-text"><strong>Status:</strong> <span class="badge badge-success">Online</span></p>
-                    {{if .IsTwitterScraper}}
-                        <p class="card-text"><strong>Twitter Scraper:</strong> <span class="badge badge-success">{{.IsTwitterScraper}}</span></p>
-                    {{else}}
-                        <p class="card-text"><strong>Twitter Scraper:</strong> <span class="badge badge-danger">{{.IsTwitterScraper}}</span></p>
-                    {{end}}
-                    {{if .IsWebScraper}}
-                        <p class="card-text"><strong>Web Scraper:</strong> <span class="badge badge-success">{{.IsWebScraper}}</span></p>
-                    {{else}}
-                    <p class="card-text"><strong>Web Scraper:</strong> <span class="badge badge-danger">{{.IsWebScraper}}</span></p>
-                    {{end}}                    
-                    <p class="card-text"><strong>Bytes Scraped:</strong> <span id="bytesScraped">{{.BytesScraped}}</span></p>
-                    <p class="card-text"><strong>Total Peers:</strong> <span id="totalPeers">{{.TotalPeers}}</span></p>
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th scope="row">Peer ID</th>
+                                <td><span id="nodeId">{{.PeerID}}</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Status</th>
+                                <td><span class="badge badge-success">Online</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Twitter Scraper</th>
+                                {{if .IsTwitterScraper}}
+                                    <td><span class="badge badge-success">{{.IsTwitterScraper}}</span></td>
+                                {{else}}
+                                    <td><span class="badge badge-danger">{{.IsTwitterScraper}}</span></td>
+                                {{end}}
+                            </tr>
+                            <tr>
+                                <th scope="row">Web Scraper</th>
+                                {{if .IsWebScraper}}
+                                    <td><span class="badge badge-success">{{.IsWebScraper}}</span></td>
+                                {{else}}
+                                    <td><span class="badge badge-danger">{{.IsWebScraper}}</span></td>
+                                {{end}}
+                            </tr>
+                            <tr>
+                                <th scope="row">Bytes Scraped</th>
+                                <td><span id="bytesScraped">{{.BytesScraped}}</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Total Peers</th>
+                                <td><span id="totalPeers">{{.TotalPeers}}</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -36,23 +58,23 @@
 
     <div class="row mt-4">
         <div class="col-12">
-            <h3>Peer Metrics</h3>
+            <h5>Peer Metrics</h5>
             <table class="table">
                 <thead class="thead-light">
                 <tr>
                     <th scope="col">#</th>
-                    <th scope="col">Peer ID</th>
+                    <th scope="col" hidden>Peer ID</th>
                     <th scope="col" class="text-center">Staked</th>
                     <th scope="col" class="text-center">First Joined</th>
                     <th scope="col" class="text-center">Last Joined</th>
-                    <th scope="col" class="text-center">UpTime</th>
-                    <th scope="col" class="text-center">Rewards</th>
+                    <th scope="col" class="text-center">Session Time</th>
+                    <th scope="col" class="text-center">Total Time</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
                     <th scope="row">1</th>
-                    <td>{{.PeerID}}</td>
+                    <td hidden>{{.PeerID}}</td>
                     {{if .IsStaked}}
                         <td class="text-center"><span class="badge badge-success">{{.IsStaked}}</span></td>
                     {{else}}
@@ -61,7 +83,7 @@
                     <td class="text-center">{{.FirstJoined}}</td>
                     <td class="text-center">{{.LastJoined}}</td>
                     <td class="text-center">{{.CurrentUptime}}</td>
-                    <td class="text-center">{{.Rewards}}</td>
+                    <td class="text-center">{{.TotalUptime}}</td>
                 </tr>
                 <!-- Add more rows here based on your data -->
                 </tbody>

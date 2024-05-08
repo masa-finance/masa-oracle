@@ -50,7 +50,6 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt
 		}
 		return tweetsContent, sentimentSummary, nil
 	} else {
-		// @todo uses models for ollama and localai
 		stream := false
 		tweetsContent := ConcatenateTweets(tweets)
 
@@ -142,6 +141,47 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		}
 		return data, sentimentSummary, nil
 	} else {
-		return "", "", nil
+		stream := false
+
+		genReq := api.ChatRequest{
+			Model: model,
+			Messages: []api.Message{
+				{Role: "user", Content: data},
+				{Role: "assistant", Content: prompt},
+			},
+			Stream: &stream,
+			Options: map[string]interface{}{
+				"temperature": 0.0,
+				"seed":        42,
+				"num_ctx":     4096,
+			},
+		}
+
+		requestJSON, err := json.Marshal(genReq)
+		if err != nil {
+			return "", "", err
+		}
+		uri := os.Getenv("LLM_API_URL")
+		if uri == "" {
+			return "", "", errors.New("ollama api url not set")
+		}
+		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))
+		if err != nil {
+			return "", "", err
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", "", err
+		}
+
+		var payload api.ChatResponse
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			return "", "", err
+		}
+
+		sentimentSummary := payload.Message.Content
+		return data, SanitizeResponse(sentimentSummary), nil
 	}
 }
