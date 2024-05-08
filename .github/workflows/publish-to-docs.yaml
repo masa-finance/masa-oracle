@@ -41,4 +41,5 @@ jobs:
         git config user.email "actions@github.com"
         git add masa-oracle/
         git commit -m "Update docs from source repository"
-        git push
+        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/masa-finance/docs.git
+
