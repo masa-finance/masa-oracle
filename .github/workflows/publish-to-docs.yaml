@@ -4,7 +4,7 @@ on:
   push:
     branches: [test]  # Change to main after mainnet is live and we publish masa-oracle to main (if desired)
     paths:
-      - '.github/workflows/publish-to-docs.yml'
+      - '.github/workflows/publish-to-docs.yaml'
       - 'docs/**'
 
 jobs:
