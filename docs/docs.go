@@ -468,6 +468,46 @@ const docTemplate = `{
 					}
 				}
 			},
+			"/chat": {
+				"post": {
+					"description": "Initiates a chat session with an AI model that accepts common ollama formatted requests",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Chat"
+					],
+					"summary": "Chat with AI",
+					"parameters": [
+						{
+							"description": "Message to send to AI",
+							"name": "message",
+							"in": "body",
+							"required": true,
+							"schema": {
+								"type": "string"
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully received response from AI",
+							"schema": {
+								"$ref": "#/definitions/ChatResponse"
+							}
+						},
+						"400": {
+							"description": "Error communicating with AI",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
 			"/node/data": {
 				"get": {
 					"description": "Retrieves data from the node",
@@ -643,6 +683,14 @@ const docTemplate = `{
 					}
 				}
 			},
+		},
+		"ChatResponse": {
+			"type": "object",
+			"properties": {
+				"message": {
+					"type": "string"
+				}
+			}
 		},
 		"DHTResponse": {
 			"type": "object",

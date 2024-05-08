@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
@@ -25,7 +25,7 @@ import (
 
 	"github.com/ipfs/go-cid"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
@@ -33,14 +33,12 @@ import (
 var (
 	clients        = actor.NewPIDSet()
 	dataLengthCh   = make(chan int)
-	workerStatusCh = make(chan []byte)
-	workerDoneCh   = make(chan []byte)
+	workerStatusCh = make(chan *pubsub2.Message)
+	workerDoneCh   = make(chan *pubsub2.Message)
 )
 
-// @todo to send to api gateway
-
 type CID struct {
-	RecordId  string    `json:"recordid"`
+	RecordId  string    `json:"cid"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -58,7 +56,7 @@ type OracleData struct {
 	ModelName string `json:"model_name"`
 	Steps     []struct {
 		Idx               int    `json:"idx"`
-		StructuredPrompt  string `json:"structured_prompt,omitempty"`
+		SystemPrompt      string `json:"system_prompt,omitempty"`
 		Timestamp         string `json:"timestamp"`
 		UserPrompt        string `json:"user_prompt,omitempty"`
 		RawContent        string `json:"raw_content,omitempty"`
@@ -84,14 +82,14 @@ func NewWorker() actor.Producer {
 func (a *Worker) Receive(ctx actor.Context) {
 	switch m := ctx.Message().(type) {
 	case *messages.Connect:
-		logrus.Infof("Worker %v connected", m.Sender)
+		logrus.Infof("[+] Worker %v connected", m.Sender)
 		clients.Add(m.Sender)
 	case *actor.Started:
-		logrus.Info("actor started")
+		logrus.Info("[+] Actor started")
 	case *actor.Stopping:
-		logrus.Info("actor stopping")
+		logrus.Info("[+] Actor stopping")
 	case *actor.Stopped:
-		logrus.Info("actor stopped")
+		logrus.Info("[+] Actor stopped")
 	case *messages.Work:
 		var workData map[string]string
 		err := json.Unmarshal([]byte(m.Data), &workData)
@@ -114,7 +112,10 @@ func (a *Worker) Receive(ctx actor.Context) {
 			if webData != "" {
 				collectedData := llmbridge.SanitizeResponse(webData)
 				jsonData, _ := json.Marshal(collectedData)
-				workerDoneCh <- jsonData
+				workerDoneCh <- &pubsub2.Message{
+					ValidatorData: jsonData,
+					ID:            m.Id,
+				}
 			}
 		case "twitter":
 			count, err := strconv.Atoi(workData["count"])
@@ -130,7 +131,10 @@ func (a *Worker) Receive(ctx actor.Context) {
 			if tweets != nil {
 				collectedData := llmbridge.ConcatenateTweets(tweets)
 				jsonData, _ := json.Marshal(collectedData)
-				workerDoneCh <- jsonData
+				workerDoneCh <- &pubsub2.Message{
+					ValidatorData: jsonData,
+					ID:            m.Id,
+				}
 			}
 		case "twitter-sentiment":
 			count, err := strconv.Atoi(workData["count"])
@@ -141,7 +145,10 @@ func (a *Worker) Receive(ctx actor.Context) {
 			_, sentimentSummary, _ := twitter.ScrapeTweetsForSentiment(workData["query"], count, workData["model"])
 			if sentimentSummary != "" {
 				jsonData, _ := json.Marshal(sentimentSummary)
-				workerDoneCh <- jsonData
+				workerDoneCh <- &pubsub2.Message{
+					ValidatorData: jsonData,
+					ID:            m.Id,
+				}
 			}
 		case "web-sentiment":
 			depth, err := strconv.Atoi(workData["depth"])
@@ -152,12 +159,15 @@ func (a *Worker) Receive(ctx actor.Context) {
 			_, sentimentSummary, _ := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
 			if sentimentSummary != "" {
 				jsonData, _ := json.Marshal(sentimentSummary)
-				workerDoneCh <- jsonData
+				workerDoneCh <- &pubsub2.Message{
+					ValidatorData: jsonData,
+					ID:            m.Id,
+				}
 			}
 		}
 		ctx.Poison(ctx.Self())
 	default:
-		logrus.Warningf("Received unknown message: %T", m)
+		logrus.Warningf("[+] Received unknown message: %T", m)
 	}
 }
 
@@ -190,6 +200,9 @@ func computeCid(str string) (string, error) {
 // Otherwise, it returns false.
 func isBootnode(ipAddr string) bool {
 	for _, bn := range config.GetInstance().Bootnodes {
+		if bn == "" {
+			return true
+		}
 		bootNodeAddr := strings.Split(bn, "/")[2]
 		if bootNodeAddr == ipAddr {
 			return true
@@ -203,7 +216,7 @@ func isBootnode(ipAddr string) bool {
 // Parameters:
 //   - node: A pointer to the OracleNode instance whose participation metrics need to be updated.
 //   - totalBytes: The total number of bytes processed by the node which will be added to its current metrics.
-func updateParticipation(node *masa.OracleNode, totalBytes int) {
+func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
 	if totalBytes == 0 {
 		return
 	}
@@ -218,7 +231,39 @@ func updateParticipation(node *masa.OracleNode, totalBytes int) {
 		logrus.Error(err)
 	}
 	jsonData, _ := json.Marshal(nodeData)
-	go db.WriteData(node, node.Host.ID().String(), jsonData)
+	go db.WriteData(node, peerId, jsonData)
+}
+
+// updateRecords updates the records for a given node and key with the provided data.
+//
+// Parameters:
+//   - node: A pointer to the OracleNode instance whose records need to be updated.
+//   - data: The data to be written for the specified key.
+//   - key: The key under which the data should be stored.
+func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string) {
+	_ = db.WriteData(node, key, data)
+
+	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+
+	newCID := CID{
+		RecordId:  key,
+		Timestamp: time.Now(),
+	}
+
+	if nodeData.Records == nil {
+		nodeData.Records = []CID{}
+	}
+
+	records := nodeData.Records.([]CID)
+	records = append(records, newCID)
+	nodeData.Records = records
+
+	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+	if err != nil {
+		logrus.Error(err)
+	}
+	jsonData, _ := json.Marshal(nodeData)
+	_ = db.WriteData(node, peerId, jsonData)
 }
 
 // SendWork is responsible for handling work messages and processing them based on the request type.
@@ -240,12 +285,14 @@ func updateParticipation(node *masa.OracleNode, totalBytes int) {
 //	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
 //	    logrus.Errorf("%v", err)
 //	}
-func SendWork(node *masa.OracleNode, data []byte) {
+func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
-	id := uuid.New().String()
-	message := &messages.Work{Data: string(data), Sender: pid, Id: id}
-	node.ActorEngine.Send(pid, message)
+	// id := uuid.New().String()
+	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: fmt.Sprintf("%s", m.ReceivedFrom)}
+	if node.IsTwitterScraper || node.IsWebScraper {
+		node.ActorEngine.Send(pid, message)
+	}
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)
@@ -299,47 +346,17 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case <-ticker.C:
 			logrus.Debug("tick")
 		case totalBytes := <-dataLengthCh:
-			go updateParticipation(node, totalBytes)
+			go updateParticipation(node, totalBytes, node.Host.ID().String())
 		case work := <-workerStatusCh:
-			logrus.Infof("work ==> %s", string(work))
-			// If participating node
-			if node.IsTwitterScraper || node.IsWebScraper {
-				pid := node.ActorEngine.Spawn(actor.PropsFromProducer(NewWorker()))
-				id := uuid.New().String()
-				message := &messages.Work{Data: string(work), Sender: pid, Id: id}
-				logrus.Infof("work ==> %s %s", string(work), pid)
-				node.ActorEngine.Send(pid, message)
-			} else {
-				// Send to participating nodes
-				go SendWork(node, work)
-			}
+			logrus.Info("[+] Sending work to network")
+			go SendWork(node, work)
 		case data := <-workerDoneCh:
-			key, _ := computeCid(string(data))
-			logrus.Infof("work done ==> %s %s", key, string(data))
-			val := db.ReadData(node, key)
-			if val == nil {
-				// store raw data
-				_ = db.WriteData(node, key, data)
-
-				// store record cids for the peer
-				existingRecord := Record{}
-				existingData := db.ReadData(node, key)
-				if existingData != nil {
-					_ = json.Unmarshal(existingData, &existingRecord)
-				}
-
-				newCID := CID{
-					RecordId:  key,
-					Timestamp: time.Now(),
-				}
-
-				record := Record{
-					PeerId: node.Host.ID().String(),
-					CIDs:   append(existingRecord.CIDs, newCID),
-				}
-				jsonData, _ := json.Marshal(record)
-				_ = db.WriteData(node, key, jsonData)
-			}
+			key, _ := computeCid(string(data.ValidatorData.([]byte)))
+			logrus.Infof("[+] Work done %s", key)
+			// val := db.ReadData(node, key)
+			// if val == nil {
+			updateRecords(node, data.ValidatorData.([]byte), key, fmt.Sprintf("%s", data.ID))
+			// }
 		case <-ctx.Done():
 			return
 		}

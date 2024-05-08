@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -381,6 +382,10 @@ func (api *API) LlmChat() gin.HandlerFunc {
 		}
 		// Process the message
 		uri := config.GetInstance().LLMChatUrl
+		if uri == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CHAT_URL")})
+			return
+		}
 		resp, err := http.Post(uri, "application/json", bytes.NewReader(bodyBytes))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -69,9 +69,15 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 	var val []byte
 
 	if key != node.Host.ID().String() {
-		val, err = node.DHT.GetValue(ctx, "/db/"+key)
+		val, err = GetCache(ctx, key)
+		if val == nil || err != nil {
+			val, err = node.DHT.GetValue(ctx, "/db/"+key)
+		}
 	} else {
-		val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
+		val, err = GetCache(ctx, node.Host.ID().String())
+		if val == nil || err != nil {
+			val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
+		}
 	}
 
 	if err != nil {

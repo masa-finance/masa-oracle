@@ -1,7 +1,3 @@
-/*
-Package for Oracle Node Subscription Management in the Masa Oracle system. It enables OracleNodes to subscribe to network topics, ensuring they receive and process relevant data. The SubscribeToTopics function is central to this, facilitating node participation by keeping them updated, thus supporting the network's consensus mechanism. Ideal for developers needing to manage node subscriptions within the network.
-*/
-
 package masa
 
 import (

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"math"
 	"net/http"
 	"strconv"
@@ -425,14 +424,13 @@ func (api *API) GetTest() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		/// tests
-		// data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "1"})
+		data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "3"})
 		// data, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
-		data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA Masa Finance token launch", "count": "2"})
+		// data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA masa, masa ai token", "count": "3"})
 		// data, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
-		//if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
-		//	logrus.Errorf("%v", err)
-		//}
-		workers.SendWork(api.Node, data)
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
+			logrus.Errorf("%v", err)
+		}
 		/// tests
 
 		c.JSON(http.StatusOK, gin.H{

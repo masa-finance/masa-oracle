@@ -59,6 +59,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 				c.Next() // Proceed to the next middleware or handler without authentication.
 				return
 			}
+			if strings.HasPrefix(c.Request.URL.Path, "/health") {
+				c.Next() // Proceed to the next middleware or handler without authentication.
+				return
+			}
 			if strings.HasPrefix(c.Request.URL.Path, "/swagger") {
 				c.Next() // Proceed to the next middleware or handler without authentication.
 				return
@@ -349,6 +353,19 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
 	// @Router /status [get]
 	router.GET("/status", API.NodeStatusPageHandler())
+
+	// @Summary Health Check
+	// @Description Checks the health status of the API
+	// @Tags Health
+	// @Accept  json
+	// @Produce  json
+	// @Success 200 {object} map[string]bool "API health status"
+	// @Router /health [get]
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+		})
+	})
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.DefaultModelsExpandDepth(-1)))
 	return router
