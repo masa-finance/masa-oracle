@@ -11,6 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: alpine/git
+
+    permissions:
+      contents: write
+
     steps:
     - uses: actions/checkout@v4
 
