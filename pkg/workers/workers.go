@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/ipfs/go-cid"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
@@ -223,27 +223,29 @@ func updateParticipation(node *masa.OracleNode, totalBytes int) {
 
 func updateRecords(node *masa.OracleNode, data []byte, key string) {
 	_ = db.WriteData(node, key, data)
+
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	sharedData := db.SharedData{}
 	nodeVal := db.ReadData(node, nodeData.PeerId.String())
 	_ = json.Unmarshal(nodeVal, &sharedData)
 
-	existingRecord := Record{}
-	existingData := db.ReadData(node, key)
-	if existingData != nil {
-		_ = json.Unmarshal(existingData, &existingRecord)
-	}
+	// existingRecord := Record{}
+	// existingData := db.ReadData(node, key)
+	// if existingData != nil {
+	// 	_ = json.Unmarshal(existingData, &existingRecord)
+	// }
 
-	newCID := CID{
-		RecordId:  key,
-		Timestamp: time.Now(),
-	}
+	// newCID := CID{
+	// 	RecordId:  key,
+	// 	Timestamp: time.Now(),
+	// }
 
-	record := Record{
-		PeerId: node.Host.ID().String(),
-		CIDs:   append(existingRecord.CIDs, newCID),
-	}
-	nodeData.Records = append(nodeData.Records, record)
+	// record := Record{
+	// 	PeerId: node.Host.ID().String(),
+	// 	CIDs:   append(existingRecord.CIDs, newCID),
+	// }
+	// logrus.Info(record)
+	// nodeData.Records = append(nodeData.Records, record)
 
 	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
 	if err != nil {
