@@ -18,7 +18,7 @@ jobs:
     - name: Copy Readme
       run: |
         mkdir pub-docs
-        cp docs/welcome-to-masa.md pub-docs/
+        cp -r docs/welcome-to-masa pub-docs/
         cp -r docs/ai-node-operator pub-docs/
         cp -r docs/ai-oracle-node pub-docs/
         cp -r docs/guides-and-tutorials pub-docs/
