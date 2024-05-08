@@ -10,8 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: pandoc/latex
-
+    container: alpine/git
     steps:
     - uses: actions/checkout@v4
 
@@ -29,11 +28,6 @@ jobs:
         repository: masa-finance/docs
         path: docs
         token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Install Git
-      run: |
-        apt-get update
-        apt-get install -y git
 
     - name: Copy files to target repository
       run: |
