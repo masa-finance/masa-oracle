@@ -198,7 +198,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		if len(key) > 0 && key[0] == '/' {
 			key = key[1:]
 		}
-		logrus.Printf("syncing record %s %s", key, record.Value)
+		logrus.Printf("syncing record %s", key) // , record.Value
 		go WriteData(node, key, record.Value)
 	}
 }
