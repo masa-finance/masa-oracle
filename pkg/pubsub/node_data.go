@@ -3,6 +3,7 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"strconv"
 	"time"
 
@@ -64,6 +65,7 @@ type NodeData struct {
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
 	BytesScraped         int             `json:"bytesScraped"`
+	Records              workers.Record  `json:"records,omitempty"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given

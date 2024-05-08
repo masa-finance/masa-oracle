@@ -221,6 +221,38 @@ func updateParticipation(node *masa.OracleNode, totalBytes int) {
 	go db.WriteData(node, node.Host.ID().String(), jsonData)
 }
 
+func updateRecords(node *masa.OracleNode, data []byte, key string) {
+	_ = db.WriteData(node, key, data)
+	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	sharedData := db.SharedData{}
+	nodeVal := db.ReadData(node, nodeData.PeerId.String())
+	_ = json.Unmarshal(nodeVal, &sharedData)
+
+	existingRecord := Record{}
+	existingData := db.ReadData(node, key)
+	if existingData != nil {
+		_ = json.Unmarshal(existingData, &existingRecord)
+	}
+
+	newCID := CID{
+		RecordId:  key,
+		Timestamp: time.Now(),
+	}
+
+	record := Record{
+		PeerId: node.Host.ID().String(),
+		CIDs:   append(existingRecord.CIDs, newCID),
+	}
+	nodeData.Records = append(nodeData.Records, record)
+
+	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+	if err != nil {
+		logrus.Error(err)
+	}
+	jsonData, _ := json.Marshal(nodeData)
+	_ = db.WriteData(node, node.Host.ID().String(), jsonData)
+}
+
 // SendWork is responsible for handling work messages and processing them based on the request type.
 // It supports the following request types:
 // - "web": Scrapes web data from the specified URL with the given depth.
@@ -310,27 +342,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Infof("work done ==> %s %s", key, string(data))
 			val := db.ReadData(node, key)
 			if val == nil {
-				// store raw data
-				_ = db.WriteData(node, key, data)
-
-				// store record cids for the peer
-				existingRecord := Record{}
-				existingData := db.ReadData(node, key)
-				if existingData != nil {
-					_ = json.Unmarshal(existingData, &existingRecord)
-				}
-
-				newCID := CID{
-					RecordId:  key,
-					Timestamp: time.Now(),
-				}
-
-				record := Record{
-					PeerId: node.Host.ID().String(),
-					CIDs:   append(existingRecord.CIDs, newCID),
-				}
-				jsonData, _ := json.Marshal(record)
-				_ = db.WriteData(node, key, jsonData)
+				updateRecords(node, data, key)
 			}
 		case <-ctx.Done():
 			return
