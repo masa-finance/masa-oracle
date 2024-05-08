@@ -64,6 +64,7 @@ type NodeData struct {
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
 	BytesScraped         int             `json:"bytesScraped"`
+	Records              any             `json:"records,omitempty"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
