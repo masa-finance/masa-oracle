@@ -7,12 +7,14 @@ import (
 	"os"
 	"strings"
 
-	docs "github.com/masa-finance/masa-oracle/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	"github.com/masa-finance/masa-oracle/docs"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
@@ -322,6 +324,17 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error adding post to topic"
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
+
+		// @Summary Chat with AI
+		// @Description Initiates a chat session with an AI model that accepts common ollama formatted requests
+		// @Tags Chat
+		// @Accept  json
+		// @Produce  json
+		// @Param   message   body    string  true  "Message to send to AI"
+		// @Success 200 {object} ChatResponse "Successfully received response from AI"
+		// @Failure 400 {object} ErrorResponse "Error communicating with AI"
+		// @Router /chat [post]
+		v1.POST("/chat", API.LlmChat())
 
 		// @note a test route for worker topics
 		v1.GET("/test", API.GetTest())
