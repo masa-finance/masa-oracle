@@ -21,7 +21,7 @@ type WorkerEventTracker struct {
 	Workers        []Workers
 	WorkerTopic    *pubsub.Topic
 	mu             sync.Mutex
-	WorkerStatusCh chan []byte
+	WorkerStatusCh chan *pubsub.Message
 }
 
 // HandleMessage implements subscription WorkerEventTracker handler
@@ -36,5 +36,5 @@ func (h *WorkerEventTracker) HandleMessage(m *pubsub.Message) {
 	h.mu.Lock()
 	h.Workers = append(h.Workers, workers)
 	h.mu.Unlock()
-	h.WorkerStatusCh <- m.Data
+	h.WorkerStatusCh <- m
 }
