@@ -188,6 +188,9 @@ func computeCid(str string) (string, error) {
 // Otherwise, it returns false.
 func isBootnode(ipAddr string) bool {
 	for _, bn := range config.GetInstance().Bootnodes {
+		if bn == "" {
+			return false
+		}
 		bootNodeAddr := strings.Split(bn, "/")[2]
 		if bootNodeAddr == ipAddr {
 			return true
