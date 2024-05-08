@@ -245,7 +245,9 @@ func SendWork(node *masa.OracleNode, data []byte) {
 	pid := node.ActorEngine.Spawn(props)
 	id := uuid.New().String()
 	message := &messages.Work{Data: string(data), Sender: pid, Id: id}
-	node.ActorEngine.Send(pid, message)
+	if node.IsTwitterScraper || node.IsWebScraper {
+		node.ActorEngine.Send(pid, message)
+	}
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
 		conns := node.Host.Network().ConnsToPeer(peer)
@@ -301,18 +303,8 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case totalBytes := <-dataLengthCh:
 			go updateParticipation(node, totalBytes)
 		case work := <-workerStatusCh:
-			logrus.Infof("work ==> %s", string(work))
-			// If participating node
-			if node.IsTwitterScraper || node.IsWebScraper {
-				pid := node.ActorEngine.Spawn(actor.PropsFromProducer(NewWorker()))
-				id := uuid.New().String()
-				message := &messages.Work{Data: string(work), Sender: pid, Id: id}
-				logrus.Infof("work ==> %s %s", string(work), pid)
-				node.ActorEngine.Send(pid, message)
-			} else {
-				// Send to participating nodes
-				go SendWork(node, work)
-			}
+			logrus.Infof("sending work ==> %s", string(work))
+			go SendWork(node, work)
 		case data := <-workerDoneCh:
 			key, _ := computeCid(string(data))
 			logrus.Infof("work done ==> %s %s", key, string(data))
