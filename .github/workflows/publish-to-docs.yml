@@ -2,7 +2,9 @@ name: Publish to Docs
 
 on:
   push:
-    branches: [ main ]
+    branches: [ test ] # Change to main after mainnet is live and we publish masa-oracle to main (if desired)
+    paths: 
+      - 'docs/**'
 
 jobs:
   build:
