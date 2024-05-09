@@ -10,17 +10,16 @@
 
 ### New Features
 
-* Allow Nodes to participate in twitter scraping w/o bringing their own creds
-* Added get bootnodes from deployment json on s3
-* Added OracleFlow struct to save events to API gateway
+* Implemented Record and OracleData struct to save events to persisted storage
 
 ### Bug Fixes
 
-* None
+* Worker channel race condition
 
 ### Performance Improvements
 
 * Increased worker time syncing between peers
 
 ### ChangeLog
-* Removed obsolete pg integration for new data persistence architecture
+
+* version 0.0.3-beta
