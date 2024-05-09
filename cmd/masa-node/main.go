@@ -80,6 +80,14 @@ func main() {
 		}
 	}
 
+	// JWT
+	jwtToken, err := consensus.GenerateJWTToken(node.Host.ID().String())
+	if err != nil {
+		logrus.Error(err)
+	}
+	logrus.Infof("jwt token: %s", jwtToken)
+	// JWT
+
 	// PoW
 	apiKey := consensus.GenerateApiKey(node.Host.ID().String())
 	logrus.Infof("api key: %s", apiKey)
