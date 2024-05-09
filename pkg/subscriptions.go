@@ -30,11 +30,5 @@ func SubscribeToTopics(node *OracleNode) error {
 		return err
 	}
 
-	node.WorkerTracker = &pubsub2.WorkerEventTracker{}
-	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker); err != nil {
-		logrus.Errorf("Failed to subscribe to completed work topic: %v", err)
-		return err
-	}
-
 	return nil
 }

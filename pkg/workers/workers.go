@@ -331,10 +331,16 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
+	var err error
+
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
-	var err error
+	// Add subscription to worker tracker
+	node.WorkerTracker = &pubsub.WorkerEventTracker{}
+	_ = node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker)
+
+	// Subscribe to worker event tracker
 	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
 	if err != nil {
