@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	docs "github.com/masa-finance/masa-oracle/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -47,14 +49,18 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Middleware to enforce API token authentication, excluding ignored routes.
 	router.Use(func(c *gin.Context) {
 
-		if API.Node.IsStaked {
-			c.Next() // Proceed to the next middleware or handler as a staked node.
-			return
-		}
+		//if API.Node.IsStaked {
+		//	c.Next() // Proceed to the next middleware or handler as a staked node.
+		//	return
+		//}
 
 		// Iterate over the ignored routes to determine if the current request should bypass authentication.
 		for _, route := range ignoredRoutes {
 			if c.Request.URL.Path == route {
+				c.Next() // Proceed to the next middleware or handler without authentication.
+				return
+			}
+			if strings.HasPrefix(c.Request.URL.Path, "/auth") {
 				c.Next() // Proceed to the next middleware or handler without authentication.
 				return
 			}
@@ -79,12 +85,36 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		}
 		// Extract the token from the Authorization header by removing the Bearer schema prefix.
 		token := authHeader[len(BearerSchema):]
+
 		// Validate the token against the expected API key stored in environment variables.
-		if token != os.Getenv("API_KEY") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API token"})
+		if os.Getenv("API_KEY") != "" {
+			if token != os.Getenv("API_KEY") {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API token"})
+				return
+			} else {
+				c.Next()
+				return
+			}
+		}
+
+		// Validate the JWT token
+		claims := jwt.MapClaims{}
+		_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+			//@todo decode the token get the apiKey, hash and compare it
+			return []byte(API.Node.Host.ID().String()), nil
+		})
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid JWT token"})
 			return
 		}
-		c.Next() // Proceed to the next middleware or handler since authentication is successful.
+		// Check if the token has expired
+		if exp, ok := claims["exp"].(float64); ok {
+			if int64(exp) < time.Now().Unix() {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "JWT token has expired"})
+				return
+			}
+		}
+		c.Next()
 	})
 
 	// Serving html
@@ -271,7 +301,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error retrieving public keys"
 		// @Router /publickeys [get]
 		v1.GET("/publickeys", API.GetPublicKeysHandler())
-		// @todo ^ fix
 
 		// @Summary Publish Public Key
 		// @Description Publishes a new public key to the node
@@ -352,6 +381,16 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
 	// @Router /status [get]
 	router.GET("/status", API.NodeStatusPageHandler())
+
+	// @Summary Get Node API Key
+	// @Description Retrieves the API key for the node
+	// @Tags Authentication
+	// @Accept  json
+	// @Produce  json
+	// @Success 200 {object} map[string]interface{} "Successfully retrieved API key"
+	// @Failure 500 {object} ErrorResponse "Error generating API key"
+	// @Router /auth [get]
+	router.GET("/auth", API.GetNodeApiKey())
 
 	// @Summary Health Check
 	// @Description Checks the health status of the API

@@ -18,8 +18,8 @@ import (
 )
 
 func GenerateJWTToken(peerId string) (string, error) {
-	// Set the expiration time for the token (e.g., 1 hour from now)
-	expirationTime := time.Now().Add(1 * time.Hour)
+	// Set the expiration time for the token (e.g., 24 hours from now)
+	expirationTime := time.Now().Add(24 * time.Hour)
 
 	mhHash, err := mh.Sum([]byte(peerId), mh.SHA2_256, -1)
 	if err != nil {

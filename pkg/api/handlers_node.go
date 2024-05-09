@@ -420,6 +420,27 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	}
 }
 
+// GetNodeApiKey returns a gin.HandlerFunc that generates and returns a JWT token for the node.
+// The JWT token is signed using the node's host ID as the secret key.
+// On success, it returns the generated JWT token in a JSON response.
+// On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) GetNodeApiKey() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		jwtToken, err := consensus.GenerateJWTToken(api.Node.Host.ID().String())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": err,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": jwtToken,
+		})
+	}
+}
+
 func (api *API) GetTest() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
