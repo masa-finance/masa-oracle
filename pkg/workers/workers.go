@@ -310,7 +310,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	// id := uuid.New().String()
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	if node.IsTwitterScraper || node.IsWebScraper {
+	if node.IsActor() {
 		node.ActorEngine.Send(pid, message)
 	}
 	peers := node.Host.Network().Peers()
@@ -377,6 +377,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
+
 			key, _ := computeCid(string(data.ValidatorData.([]byte)))
 			logrus.Infof("[+] Work done %s", key)
 			val := db.ReadData(node, key)

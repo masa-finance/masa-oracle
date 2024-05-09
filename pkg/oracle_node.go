@@ -52,6 +52,7 @@ type OracleNode struct {
 	IsWriter              bool
 	IsTwitterScraper      bool
 	IsWebScraper          bool
+	IsLlmServer           bool
 	StartTime             time.Time
 	AdSubscriptionHandler *ad.SubscriptionHandler
 	WorkerTracker         *pubsub2.WorkerEventTracker
@@ -173,6 +174,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsWriter:         isWriter,
 		IsTwitterScraper: isTwitterScraper,
 		IsWebScraper:     isWebScraper,
+		IsLlmServer:      cfg.LlmServer,
 		ActorEngine:      engine,
 		ActorRemote:      r,
 	}, nil
@@ -292,6 +294,13 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
+}
+
+// IsActor - centralize flags for actor participation used in workers file.
+func (node *OracleNode) IsActor() bool {
+	return node.IsWebScraper ||
+		node.IsTwitterScraper ||
+		node.IsLlmServer
 }
 
 // Version returns the current version string of the oracle node software.
