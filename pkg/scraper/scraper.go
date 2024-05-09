@@ -8,9 +8,6 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-// @todo verify the depth is working as expected per library
-// checkout Apify scraper
-
 // Section represents a distinct part of a scraped webpage, typically defined by a heading.
 // It contains a Title, representing the heading of the section, and Paragraphs, a slice of strings
 // containing the text content found within that section.
