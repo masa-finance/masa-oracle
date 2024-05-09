@@ -22,4 +22,5 @@
 
 ### ChangeLog
 
+* Updated swagger docs
 * version 0.0.3-beta

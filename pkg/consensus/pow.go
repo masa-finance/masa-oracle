@@ -13,6 +13,7 @@ import (
 
 func GenerateApiKey(peerId string) string {
 	difficulty := 1
+	// difficulty := time.Now().Unix()
 
 	targetTime := 5 * time.Second
 	start := time.Now()

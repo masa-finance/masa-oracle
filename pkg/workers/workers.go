@@ -233,7 +233,7 @@ func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
 		logrus.Error(err)
 	}
 	jsonData, _ := json.Marshal(nodeData)
-	go db.WriteData(node, peerId, jsonData)
+	_ = db.WriteData(node, peerId, jsonData)
 }
 
 // updateRecords updates the records for a given node and key with the provided data.
@@ -291,7 +291,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	// id := uuid.New().String()
-	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: fmt.Sprintf("%s", m.ReceivedFrom)}
+	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	if node.IsTwitterScraper || node.IsWebScraper {
 		node.ActorEngine.Send(pid, message)
 	}
@@ -355,10 +355,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerDoneCh:
 			key, _ := computeCid(string(data.ValidatorData.([]byte)))
 			logrus.Infof("[+] Work done %s", key)
-			// val := db.ReadData(node, key)
-			// if val == nil {
-			updateRecords(node, data.ValidatorData.([]byte), key, fmt.Sprintf("%s", data.ID))
-			// }
+			val := db.ReadData(node, key)
+			// handle double spend
+			if val == nil {
+				updateRecords(node, data.ValidatorData.([]byte), key, data.ID)
+			}
 		case <-ctx.Done():
 			return
 		}
