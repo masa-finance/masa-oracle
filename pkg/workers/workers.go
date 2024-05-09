@@ -20,8 +20,9 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
-	actor "github.com/asynkron/protoactor-go/actor"
-	messages "github.com/masa-finance/masa-oracle/pkg/workers/messages"
+	"github.com/asynkron/protoactor-go/actor"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
 
 	"github.com/ipfs/go-cid"
 
@@ -100,6 +101,23 @@ func (a *Worker) Receive(ctx actor.Context) {
 		switch workData["request"] {
 		case "llm-chat":
 			logrus.Infof("[+] LLM Chat %s %s", m.Data, m.Sender)
+			uri := config.GetInstance().LLMChatUrl
+			if uri == "" {
+				logrus.Error("missing env variable LLM_CHAT_URL")
+				return
+			}
+			resp, err := Post(uri, []byte(workData["body"]), nil)
+			if err != nil {
+				return
+			}
+			//
+			//var result map[string]interface{}
+			//err = json.Unmarshal(resp, &result)
+			workerDoneCh <- &pubsub2.Message{
+				ValidatorData: resp,
+				ID:            m.Id,
+			}
+
 		case "web":
 			depth, err := strconv.Atoi(workData["depth"])
 			if err != nil {

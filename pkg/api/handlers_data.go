@@ -1,9 +1,7 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -380,32 +378,26 @@ func (api *API) LlmChat() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		// Process the message
-		uri := config.GetInstance().LLMChatUrl
-		if uri == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CHAT_URL")})
-			return
-		}
-		resp, err := http.Post(uri, "application/json", bytes.NewReader(bodyBytes))
+
+		llmRequest := make(map[string]string)
+		llmRequest["request"] = "llm-chat"
+		llmRequest["body"] = string(bodyBytes)
+		jsn, err := json.Marshal(llmRequest)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
 			if err != nil {
-				logrus.Error(err)
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			}
-		}(resp.Body)
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
-		var payload map[string]interface{}
-		err = json.Unmarshal(respBody, &payload)
-		if err != nil {
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn); err != nil {
+			logrus.Errorf("%v", err)
 		}
-		// Return the response
+
+		payload := make(map[string]interface{})
+		//err = json.Unmarshal(respBody, &payload)
+		//if err != nil {
+		//	c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		//}
+		//// Return the response
 		c.JSON(http.StatusOK, payload)
 	}
 }
