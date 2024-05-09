@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -19,6 +21,11 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--version" {
+		fmt.Printf("Masa Oracle Node Version: %s\n", config.Version)
+		os.Exit(0)
+	}
+
 	cfg := config.GetInstance()
 	cfg.LogConfig()
 	cfg.SetupLogging()
@@ -73,6 +80,19 @@ func main() {
 		}
 	}
 
+	// JWT
+	jwtToken, err := consensus.GenerateJWTToken(node.Host.ID().String())
+	if err != nil {
+		logrus.Error(err)
+	}
+	logrus.Infof("jwt token: %s", jwtToken)
+	// JWT
+
+	// PoW
+	apiKey := consensus.GenerateApiKey(node.Host.ID().String())
+	logrus.Infof("api key: %s", apiKey)
+	// PoW
+
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -100,7 +120,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode, cfg.TwitterScraper, cfg.WebScraper)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode, cfg.TwitterScraper, cfg.WebScraper, config.Version)
 
 	<-ctx.Done()
 }

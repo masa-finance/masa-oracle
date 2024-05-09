@@ -86,10 +86,7 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 		}
 		tweets = append(tweets, &tweetResult.Tweet)
 	}
-	sentimentPrompt := os.Getenv("LLM_TWITTER_PROMPT")
-	if sentimentPrompt == "" {
-		sentimentPrompt = "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
-	}
+	sentimentPrompt := "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
 	prompt, sentiment, err := llmbridge.AnalyzeSentimentTweets(tweets, model, sentimentPrompt)
 	if err != nil {
 		return "", "", err

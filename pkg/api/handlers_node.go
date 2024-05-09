@@ -420,14 +420,37 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	}
 }
 
+// GetNodeApiKey returns a gin.HandlerFunc that generates and returns a JWT token for the node.
+// The JWT token is signed using the node's host ID as the secret key.
+// On success, it returns the generated JWT token in a JSON response.
+// On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) GetNodeApiKey() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		jwtToken, err := consensus.GenerateJWTToken(api.Node.Host.ID().String())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": err,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": jwtToken,
+		})
+	}
+}
+
 func (api *API) GetTest() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		/// tests
-		data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "3"})
+		data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "2"})
 		// data, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
 		// data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA masa, masa ai token", "count": "3"})
 		// data, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
+
+		// data, _ := json.Marshal(map[string]string{"request": "llm-chat", "prompt": "why is the sky blue?", "model": "llama3"})
 		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
 			logrus.Errorf("%v", err)
 		}
