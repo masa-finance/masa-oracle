@@ -1,6 +1,6 @@
 # Masa Oracle Release Notes
 
-## [0.0.2-beta](https://github.com/masa-finance/masa-oracle/releases) (2024)
+## [0.0.3-beta](https://github.com/masa-finance/masa-oracle/releases) (2024)
 
 > Masa Oracle Node Release
 
@@ -24,5 +24,3 @@
 
 ### ChangeLog
 * Removed obsolete pg integration for new data persistence architecture
-* Added LLM_TWITTER_PROMPT to .env (optional)
-* Added LLM_SCRAPER_PROMPT to .env (optional)

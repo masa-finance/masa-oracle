@@ -445,12 +445,12 @@ func (api *API) GetTest() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		/// tests
-		// data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "2"})
+		data, _ := json.Marshal(map[string]string{"request": "web", "url": "https://www.masa.ai", "depth": "2"})
 		// data, _ := json.Marshal(map[string]string{"request": "web-sentiment", "url": "https://en.wikipedia.org/wiki/Maize", "depth": "1", "model": "claude-3-opus-20240229"})
 		// data, _ := json.Marshal(map[string]string{"request": "twitter", "query": "$MASA masa, masa ai token", "count": "3"})
 		// data, _ := json.Marshal(map[string]string{"request": "twitter-sentiment", "query": "$MASA token price", "count": "5", "model": "claude-3-opus"})
 
-		data, _ := json.Marshal(map[string]string{"request": "llm-chat", "prompt": "why is the sky blue?", "model": "llama3"})
+		// data, _ := json.Marshal(map[string]string{"request": "llm-chat", "prompt": "why is the sky blue?", "model": "llama3"})
 		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
 			logrus.Errorf("%v", err)
 		}

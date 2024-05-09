@@ -2,7 +2,6 @@ package scraper
 
 import (
 	"encoding/json"
-	"os"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 
@@ -117,10 +116,7 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 	c.Wait()
 
 	j, _ := json.Marshal(collectedData)
-	sentimentPrompt := os.Getenv("LLM_SCRAPER_PROMPT")
-	if sentimentPrompt == "" {
-		sentimentPrompt = "Please perform a sentiment analysis on the following text, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in this text, including the proportion of positive, negative, and neutral sentiments if applicable."
-	}
+	sentimentPrompt := "Please perform a sentiment analysis on the following text, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in this text, including the proportion of positive, negative, and neutral sentiments if applicable."
 	sentimentRequest, sentimentSummary, err := llmbridge.AnalyzeSentimentWeb(string(j), model, sentimentPrompt)
 
 	if err != nil {
