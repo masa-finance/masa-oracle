@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -150,7 +149,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	engine := system.Root
 
 	var ip any
-	if os.Getenv("ENV") == "local" {
+	if cfg.Environment == "local" {
 		ip = getOutboundIP()
 	} else {
 		ip, _ = pubip.Get()
