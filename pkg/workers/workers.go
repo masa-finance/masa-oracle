@@ -98,6 +98,8 @@ func (a *Worker) Receive(ctx actor.Context) {
 			return
 		}
 		switch workData["request"] {
+		case "llm-chat":
+			logrus.Infof("[+] LLM Chat %s %s", m.Data, m.Sender)
 		case "web":
 			depth, err := strconv.Atoi(workData["depth"])
 			if err != nil {

@@ -49,10 +49,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Middleware to enforce API token authentication, excluding ignored routes.
 	router.Use(func(c *gin.Context) {
 
-		//if API.Node.IsStaked {
-		//	c.Next() // Proceed to the next middleware or handler as a staked node.
-		//	return
-		//}
+		if API.Node.IsStaked {
+			c.Next() // Proceed to the next middleware or handler as a staked node.
+			return
+		}
 
 		// Iterate over the ignored routes to determine if the current request should bypass authentication.
 		for _, route := range ignoredRoutes {
