@@ -15,7 +15,8 @@ func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool
 	// red := "\033[31m"
 
 	// green := "\033[32m"
-
+	// @todo add masa-node --version then exit
+	// @todo add version here in the welcome message
 	borderLine := "#######################################"
 
 	fmt.Println(yellow + borderLine + reset)

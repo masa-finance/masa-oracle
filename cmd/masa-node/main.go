@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
@@ -72,6 +72,11 @@ func main() {
 			go workers.MonitorWorkers(ctx, node)
 		}
 	}
+
+	// PoW
+	apiKey := consensus.GenerateApiKey(node.Host.ID().String())
+	logrus.Infof("api key: %s", apiKey)
+	// PoW
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
