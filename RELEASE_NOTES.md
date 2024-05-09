@@ -6,7 +6,7 @@
 
 ### Breaking Changes
 
-* None
+* Normalized all command line params to camelCase
 
 ### New Features
 
