@@ -8,6 +8,9 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
+// @todo verify the depth is working as expected per library
+// checkout Apify scraper
+
 // Section represents a distinct part of a scraped webpage, typically defined by a heading.
 // It contains a Title, representing the heading of the section, and Paragraphs, a slice of strings
 // containing the text content found within that section.
@@ -21,6 +24,7 @@ type Section struct {
 // It contains a slice of Section structs, each representing a distinct part of a scraped webpage.
 type CollectedData struct {
 	Sections []Section `json:"sections"` // Sections is a collection of webpage sections that have been scraped.
+	Pages    []string  `json:"pages"`
 }
 
 // ScrapeWebDataForSentiment initiates the scraping process for the given list of URIs.
@@ -45,6 +49,7 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 
 	c := colly.NewCollector(
 		colly.AllowURLRevisit(),
+		colly.IgnoreRobotsTxt(),
 		colly.MaxDepth(depth),
 	)
 
@@ -104,6 +109,12 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 		// }
 	})
 
+	c.OnHTML("a", func(e *colly.HTMLElement) {
+		pageURL := e.Request.AbsoluteURL(e.Attr("href"))
+		collectedData.Pages = append(collectedData.Pages, pageURL)
+		_ = e.Request.Visit(pageURL)
+	})
+
 	// Visit each URL
 	for _, u := range uri {
 		err := c.Visit(u)
@@ -146,6 +157,7 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 
 	c := colly.NewCollector(
 		colly.AllowURLRevisit(),
+		colly.IgnoreRobotsTxt(),
 		colly.MaxDepth(depth),
 	)
 
@@ -181,6 +193,12 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 			lastSection := &collectedData.Sections[len(collectedData.Sections)-1]
 			lastSection.Images = append(lastSection.Images, imageURL)
 		}
+	})
+
+	c.OnHTML("a", func(e *colly.HTMLElement) {
+		pageURL := e.Request.AbsoluteURL(e.Attr("href"))
+		collectedData.Pages = append(collectedData.Pages, pageURL)
+		_ = e.Request.Visit(pageURL)
 	})
 
 	// Visit each URL
