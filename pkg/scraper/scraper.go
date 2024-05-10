@@ -3,9 +3,8 @@ package scraper
 import (
 	"encoding/json"
 
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-
 	"github.com/gocolly/colly/v2"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 // Section represents a distinct part of a scraped webpage, typically defined by a heading.
@@ -198,7 +197,6 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 		_ = e.Request.Visit(pageURL)
 	})
 
-	// Visit each URL
 	for _, u := range uri {
 		err := c.Visit(u)
 		if err != nil {
