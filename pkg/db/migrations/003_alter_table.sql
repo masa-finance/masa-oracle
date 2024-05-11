@@ -1,0 +1,1 @@
+ALTER TABLE "public"."work" OWNER TO "postgres";

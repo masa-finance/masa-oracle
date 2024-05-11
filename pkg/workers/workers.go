@@ -361,11 +361,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerDoneCh:
 			key, _ := computeCid(string(data.ValidatorData.([]byte)))
 			logrus.Infof("[+] Work done %s", key)
-			val := db.ReadData(node, key)
+			// val := db.ReadData(node, key)
 			// handle double spend
-			if val == nil {
-				updateRecords(node, data.ValidatorData.([]byte), key, data.ID)
-			}
+			// if val == nil {
+			updateRecords(node, data.ValidatorData.([]byte), key, data.ID)
+			// }
 		case <-ctx.Done():
 			return
 		}

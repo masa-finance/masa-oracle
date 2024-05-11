@@ -1,9 +1,14 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
 
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -107,4 +112,48 @@ func TopicWithVersion(protocolName string) string {
 		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, Version)
 	}
 	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, Version, viper.GetString(Environment))
+}
+
+// Function to call the Cloudflare API and parse the response
+func GetCloudflareModels() ([]string, error) {
+	url := "https://api.cloudflare.com/client/v4/accounts/a72433aa3bb83aecaca1bc8acecdb166/ai/models/search"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_TOKEN"))
+	logrus.Info(bearer)
+
+	req.Header.Set("Authorization", "Bearer RThNM7O6TRp0MC4R8lraSa8esKjIna3GxAGnJoa2")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Result []struct {
+			ID string `json:"id"`
+		} `json:"result"`
+	}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	var models []string
+	for _, model := range result.Result {
+		models = append(models, model.ID)
+	}
+
+	return models, nil
 }

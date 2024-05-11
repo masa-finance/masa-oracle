@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -80,18 +81,70 @@ func main() {
 		}
 	}
 
-	// JWT
-	jwtToken, err := consensus.GenerateJWTToken(node.Host.ID().String())
-	if err != nil {
-		logrus.Error(err)
+	// WIP
+
+	//models, _ := config.GetCloudflareModels()
+	//logrus.Info(models)
+
+	if os.Getenv("PG_URL") != "" {
+		type Work struct {
+			id      int64
+			payload json.RawMessage
+			raw     json.RawMessage
+		}
+
+		// IMPORTANT migrations true will drop all
+		database, err := db.ConnectToPostgres(false)
+		if err != nil {
+			logrus.Error(err)
+		}
+		defer database.Close()
+
+		insertQuery := `INSERT INTO "public"."work" ("payload", "raw") VALUES ($1, $2)`
+		payloadJSON := json.RawMessage(`{"request":"twitter", "query":"$MASA", "count":5}`)
+		rawJSON := json.RawMessage(`{"tweets": []}`)
+		_, err = database.Exec(insertQuery, payloadJSON, rawJSON)
+		if err != nil {
+			logrus.Error(err)
+		}
+
+		data := []Work{}
+		query := `SELECT "id", "payload", "raw" FROM "public"."work"`
+		rows, err := database.Query(query)
+		if err != nil {
+			logrus.Error(err)
+		}
+		defer rows.Close()
+
+		var (
+			id      int64
+			payload json.RawMessage
+			raw     json.RawMessage
+		)
+
+		for rows.Next() {
+			if err = rows.Scan(&id, &payload, &raw); err != nil {
+				log.Fatal(err)
+			}
+			data = append(data, Work{id, payload, raw})
+		}
+		logrus.Infof("%s", data[0].payload)
 	}
-	logrus.Infof("jwt token: %s", jwtToken)
+
+	// JWT
+	// jwtToken, err := consensus.GenerateJWTToken(node.Host.ID().String())
+	// if err != nil {
+	// 	logrus.Error(err)
+	// }
+	// logrus.Infof("jwt token: %s", jwtToken)
 	// JWT
 
 	// PoW
-	apiKey := consensus.GenerateApiKey(node.Host.ID().String())
-	logrus.Infof("api key: %s", apiKey)
+	// apiKey := consensus.GeneratePoW(node.Host.ID().String())
+	// logrus.Infof("api key: %s", apiKey)
 	// PoW
+
+	// WIP
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
