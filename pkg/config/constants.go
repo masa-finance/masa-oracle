@@ -3,12 +3,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -123,9 +122,7 @@ func GetCloudflareModels() ([]string, error) {
 	}
 
 	bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_TOKEN"))
-	logrus.Info(bearer)
-
-	req.Header.Set("Authorization", "Bearer RThNM7O6TRp0MC4R8lraSa8esKjIna3GxAGnJoa2")
+	req.Header.Set("Authorization", bearer)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -135,7 +132,7 @@ func GetCloudflareModels() ([]string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
