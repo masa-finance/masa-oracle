@@ -12,6 +12,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 
@@ -376,6 +377,44 @@ func (api *API) WebData() gin.HandlerFunc {
 // note: Ollama recently added support for the OpenAI structure which can simplify integrating it.
 func (api *API) LlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// we just want to proxy the request JSON directly to the endpoint we are calling.
+		body := c.Request.Body
+		bodyBytes, err := io.ReadAll(body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		// Process the message
+		uri := config.GetInstance().LLMChatUrl
+		if uri == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CHAT_URL")})
+			return
+		}
+		resp, err := http.Post(uri, "application/json", bytes.NewReader(bodyBytes))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logrus.Error(err)
+			}
+		}(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		}
+		var payload map[string]interface{}
+		err = json.Unmarshal(respBody, &payload)
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		}
+		// Return the response
+		c.JSON(http.StatusOK, payload)
+	}
+}
+
+func (api *API) LlmChatCf() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		body := c.Request.Body
 		var reqBody struct {
 			Query     string `json:"query,omitempty"`
@@ -416,10 +455,10 @@ func (api *API) LlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		uri := config.GetInstance().LLMChatUrl
+		model := "@cf/meta/llama-3-8b-instruct"
+		uri := fmt.Sprintf("%s%s", os.Getenv("LLM_CF_URL"), model)
 		if uri == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CHAT_URL")})
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CF_URL")})
 			return
 		}
 		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))

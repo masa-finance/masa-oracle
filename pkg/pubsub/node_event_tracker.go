@@ -342,6 +342,10 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 	return peerNd.IsStaked
 }
 
+// AddOrUpdateNodeData adds or updates the node data in the node event tracker.
+// If the node data does not exist, it is added and marked as self-identified.
+// If the node data exists, it updates the staked status, Ethereum address, and multiaddress if needed.
+// It also sends the updated node data to the NodeDataChan if the data changed or forceGossip is true.
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debug("Adding self identity")
 	dataChanged := false
