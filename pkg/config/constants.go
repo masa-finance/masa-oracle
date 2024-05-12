@@ -121,7 +121,7 @@ func GetCloudflareModels() ([]string, error) {
 		return nil, err
 	}
 
-	bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_TOKEN"))
+	bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_CF_TOKEN"))
 	req.Header.Set("Authorization", bearer)
 	req.Header.Set("Content-Type", "application/json")
 

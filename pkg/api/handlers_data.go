@@ -466,7 +466,7 @@ func (api *API) LlmChatCf() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_TOKEN"))
+		bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_CF_TOKEN"))
 		req.Header.Set("Authorization", bearer)
 		req.Header.Set("Content-Type", "application/json")
 		client := &http.Client{}
