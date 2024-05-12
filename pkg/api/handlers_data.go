@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	"github.com/sirupsen/logrus"
-
 	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
 	"github.com/gin-gonic/gin"
@@ -350,16 +348,20 @@ func (api *API) WebData() gin.HandlerFunc {
 // LlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //
-//	{
-//	    "model": "llama3",
-//	    "messages": [
-//	        {
-//	            "role": "user",
-//	            "content": "why is the sky blue?"
-//	        }
-//	    ],
-//	    "stream": false
-//	}
+//		{
+//		    "model": "llama3",
+//		    "messages": [
+//		        {
+//		            "role": "user",
+//		            "content": "why is the sky blue?"
+//		        }
+//		    ],
+//		    "stream": false
+//		}
+//
+//		{
+//	 	"query": "I just successfully staked my $MASA Tokens. It’s super easy. Choose your lock-up time and earn up to 25% APY in MASA rewards. @getmasafi"
+//		}
 //
 // This function acts as a proxy, forwarding the request to hosted models and returning the proprietary structured response.
 // This is intended to be compatible with code that is looking to leverage a common payload for LLMs that is based on
@@ -374,41 +376,60 @@ func (api *API) WebData() gin.HandlerFunc {
 // note: Ollama recently added support for the OpenAI structure which can simplify integrating it.
 func (api *API) LlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// we just want to proxy the request JSON directly to the endpoint we are calling.
 		body := c.Request.Body
-		bodyBytes, err := io.ReadAll(body)
+		var reqBody struct {
+			Query     string `json:"query,omitempty"`
+			MaxTokens int    `json:"max_tokens"`
+			Messages  []struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"messages"`
+		}
+		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		reqBody.MaxTokens = 2048
+		reqBody.Messages = append(reqBody.Messages, struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		}{
+			Role: "system",
+			// use this for sentiment analysis
+			// Content: "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer`s attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.",
+			// use this for standard chat
+			Content: os.Getenv("PROMPT"),
+		})
+
+		reqBody.Messages = append(reqBody.Messages, struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		}{
+			Role:    "user",
+			Content: reqBody.Query,
+		})
+
+		reqBody.Query = ""
+
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
-		// uri := config.GetInstance().LLMChatUrl
-		// if uri == "" {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CHAT_URL")})
-		// 	return
-		// }
 
-		uri := "https://gateway.ai.cloudflare.com/v1/a72433aa3bb83aecaca1bc8acecdb166/masa/workers-ai/@cf/meta/llama-3-8b-instruct"
-
+		uri := config.GetInstance().LLMChatUrl
+		if uri == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CHAT_URL")})
+			return
+		}
+		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_TOKEN"))
-
-		payload := map[string]interface{}{
-			"model":    "llama3",
-			"messages": []map[string]string{{"role": "user", "content": string(bodyBytes)}},
-			"stream":   false,
-		}
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		req, err := http.NewRequest("POST", uri, bytes.NewReader(payloadBytes))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
 		req.Header.Set("Authorization", bearer)
 		req.Header.Set("Content-Type", "application/json")
-
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
@@ -416,43 +437,16 @@ func (api *API) LlmChat() gin.HandlerFunc {
 			return
 		}
 		defer resp.Body.Close()
-		logrus.Infof("LLM Chat Response: %v", resp)
-
-		// body, err = io.ReadAll(resp.Body)
-		// if err != nil {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		// 	return
-		// }
-		// logrus.Infof("LLM Chat Response: %v", body)
-
-		// Make the HTTP POST request to the LLM chat URL
-		// resp, err := http.Post(uri, "application/json", bytes.NewReader(payloadBytes))
-		// if err != nil {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		// 	return
-		// }
-		// defer resp.Body.Close()
-
-		// resp, err := http.Post(uri, "application/json", bytes.NewReader(bodyBytes))
-		// if err != nil {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		// }
-		// defer func(Body io.ReadCloser) {
-		// 	err := Body.Close()
-		// 	if err != nil {
-		// 		logrus.Error(err)
-		// 	}
-		// }(resp.Body)
-		// respBody, err := io.ReadAll(resp.Body)
-		// if err != nil {
-		// 	c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-		// }
-		// var payload map[string]interface{}
-		// err = json.Unmarshal(respBody, &payload)
-		// if err != nil {
-		// 	c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-		// }
-		// // Return the response
-		// c.JSON(http.StatusOK, payload)
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		var payload map[string]interface{}
+		err = json.Unmarshal(respBody, &payload)
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		}
+		c.JSON(http.StatusOK, payload)
 	}
 }
