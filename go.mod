@@ -30,7 +30,6 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.10.1
 	github.com/multiformats/go-multiaddr v0.12.3
 	github.com/multiformats/go-multihash v0.2.3
-	github.com/n0madic/twitter-scraper v0.0.0-20231104223941-296710769dd8
 	github.com/ollama/ollama v0.1.34
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.23.1
@@ -148,6 +147,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
+	github.com/masa-finance/masa-twitter-scraper v0.0.0-20240510173152-94fb5a019cca // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect

@@ -9,7 +9,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
 

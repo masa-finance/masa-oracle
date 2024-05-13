@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/ollama/ollama/api"
 	"github.com/sirupsen/logrus"
 )
