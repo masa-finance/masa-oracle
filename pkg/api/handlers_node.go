@@ -369,6 +369,11 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"status": "Message posted to topic successfully"})
 	}
 }
+func (api *API) ChatPageHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.HTML(http.StatusOK, "chat.html", gin.H{})
+	}
+}
 
 // NodeStatusPageHandler handles HTTP requests to show the node status page.
 // It retrieves the node data from the node tracker, formats it, and renders

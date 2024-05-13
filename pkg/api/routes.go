@@ -384,6 +384,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// @Router /status [get]
 	router.GET("/status", API.NodeStatusPageHandler())
 
+	router.GET("/chat", API.ChatPageHandler())
+
 	// @Summary Get Node API Key
 	// @Description Retrieves the API key for the node
 	// @Tags Authentication

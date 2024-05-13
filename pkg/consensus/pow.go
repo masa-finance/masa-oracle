@@ -11,7 +11,7 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
-// @todo WIP for later use cases
+// @todo WIP for future use case
 
 func GeneratePoW(peerId string) string {
 	difficulty := 1

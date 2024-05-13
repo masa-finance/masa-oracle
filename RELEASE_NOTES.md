@@ -11,6 +11,10 @@
 ### New Features
 
 * Implemented Record and OracleData struct to save events to persisted storage
+* Discord Scraper as pkg
+* Twitter Scraper as pkg
+* Reddit Scraper as pkg
+* Web Scraper as pkg
 
 ### Bug Fixes
 

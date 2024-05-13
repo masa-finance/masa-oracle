@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/google/uuid"
+
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -88,6 +90,7 @@ func main() {
 	if os.Getenv("PG_URL") != "" {
 		type Work struct {
 			id      int64
+			uuid    string
 			payload json.RawMessage
 			raw     json.RawMessage
 		}
@@ -98,11 +101,11 @@ func main() {
 			logrus.Error(err)
 		}
 		defer database.Close()
-
-		insertQuery := `INSERT INTO "public"."work" ("payload", "raw") VALUES ($1, $2)`
-		payloadJSON := json.RawMessage(`{"request":"twitter", "query":"$MASA", "count":5}`)
-		rawJSON := json.RawMessage(`{"tweets": []}`)
-		_, err = database.Exec(insertQuery, payloadJSON, rawJSON)
+		uid := uuid.New().String()
+		insertQuery := `INSERT INTO "public"."work" ("uuid", "payload", "raw") VALUES ($1, $2, $3)`
+		payloadJSON := json.RawMessage(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`)
+		rawJSON := json.RawMessage(`{"tweets": ["twit", "twit"]}`)
+		_, err = database.Exec(insertQuery, uid, payloadJSON, rawJSON)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -125,7 +128,7 @@ func main() {
 			if err = rows.Scan(&id, &payload, &raw); err != nil {
 				log.Fatal(err)
 			}
-			data = append(data, Work{id, payload, raw})
+			data = append(data, Work{id, uid, payload, raw})
 		}
 		logrus.Infof("record from pg %s", data[0].payload)
 	}

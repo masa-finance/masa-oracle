@@ -349,20 +349,16 @@ func (api *API) WebData() gin.HandlerFunc {
 // LlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //
-//		{
-//		    "model": "llama3",
-//		    "messages": [
-//		        {
-//		            "role": "user",
-//		            "content": "why is the sky blue?"
-//		        }
-//		    ],
-//		    "stream": false
-//		}
-//
-//		{
-//	 	"query": "I just successfully staked my $MASA Tokens. It’s super easy. Choose your lock-up time and earn up to 25% APY in MASA rewards. @getmasafi"
-//		}
+//	{
+//	    "model": "llama3",
+//	    "messages": [
+//	        {
+//	            "role": "user",
+//	            "content": "why is the sky blue?"
+//	        }
+//	    ],
+//	    "stream": false
+//	}
 //
 // This function acts as a proxy, forwarding the request to hosted models and returning the proprietary structured response.
 // This is intended to be compatible with code that is looking to leverage a common payload for LLMs that is based on
@@ -413,6 +409,7 @@ func (api *API) LlmChat() gin.HandlerFunc {
 	}
 }
 
+// LlmChatCf cloudflare WIP
 func (api *API) LlmChatCf() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body := c.Request.Body
@@ -455,7 +452,43 @@ func (api *API) LlmChatCf() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		model := "@cf/meta/llama-3-8b-instruct"
+
+		// @notes
+		// messages: [
+		// 	{ role: "system", content: "you are a professional computer science assistant" },
+		// 	{ role: "user", content: "what is $MASA ?" },
+		// 	{ role: "assistant", content: "$MASA is a crypto currency" },
+		// 	{ role: "user", content: "What is the current price of $MASA?" },
+		// 	{ role: "assistant", content: "No, Python does not directly compile to WebAssembly" },
+		// 	{ role: "user", content: "what about Rust?" },
+		// ],
+
+		// model := "@cf/qwen/qwen1.5-0.5b-chat"
+		// model := "@hf/meta-llama/meta-llama-3-8b-instruct"
+		// model := "@hf/nexusflow/starling-lm-7b-beta"
+		// model := "@hf/google/gemma-7b-it"
+		// model := "@cf/tinyllama/tinyllama-1.1b-chat-v1.0"
+		// model := "@cf/fblgit/una-cybertron-7b-v2-bf16"
+		// model := "@cf/llava-hf/llava-1.5-7b-hf"
+		// model := "@cf/lykon/dreamshaper-8-lcm"
+		// model := "@cf/meta/detr-resnet-50"
+		// model := "@hf/thebloke/openhermes-2.5-mistral-7b-awq"
+		// model := "@cf/meta/m2m100-1.2b"
+		// model := "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"
+		// model := "@cf/baai/bge-small-en-v1.5"
+		// model := "@cf/deepseek-ai/deepseek-math-7b-instruct"
+		// model := "@cf/tiiuae/falcon-7b-instruct"
+		// model := "@hf/nousresearch/hermes-2-pro-mistral-7b"
+		// model := "@cf/baai/bge-base-en-v1.5"
+		// model := "@cf/qwen/qwen1.5-1.8b-chat"
+		// model := "@cf/openai/whisper-tiny-en"
+		// model := "@cf/defog/sqlcoder-7b-2"
+		// model := "@cf/microsoft/phi-2"
+		// model := "@cf/facebook/bart-large-cnn"
+		// model := "@cf/runwayml/stable-diffusion-v1-5-img2img"
+		// model := "@cf/meta/llama-3-8b-instruct"
+		model := "@cf/mistral/mistral-7b-instruct-v0.1"
+
 		uri := fmt.Sprintf("%s%s", os.Getenv("LLM_CF_URL"), model)
 		if uri == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CF_URL")})
