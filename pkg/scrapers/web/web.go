@@ -1,4 +1,4 @@
-package scraper
+package web
 
 import (
 	"encoding/json"

@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 )
 
 // Global scraper instance

@@ -82,7 +82,6 @@ func main() {
 	}
 
 	// WIP
-
 	//models, _ := config.GetCloudflareModels()
 	//logrus.Info(models)
 
@@ -128,7 +127,7 @@ func main() {
 			}
 			data = append(data, Work{id, payload, raw})
 		}
-		logrus.Infof("%s", data[0].payload)
+		logrus.Infof("record from pg %s", data[0].payload)
 	}
 
 	// JWT

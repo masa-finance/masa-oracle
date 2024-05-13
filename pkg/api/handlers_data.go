@@ -11,13 +11,13 @@ import (
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	"github.com/masa-finance/masa-oracle/pkg/scraper"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 )
 
 // GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.
@@ -200,7 +200,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+				_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 				j, _ := json.Marshal(sentimentSummary)
 				sentimentSummary = string(j)
 
@@ -223,7 +223,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		} else {
 
-			_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+			_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 			j, _ := json.Marshal(sentimentSummary)
 			sentimentSummary = llmbridge.SanitizeResponse(string(j))
 
@@ -336,7 +336,7 @@ func (api *API) WebData() gin.HandlerFunc {
 			reqBody.Depth = 10 // Default count
 		}
 
-		collectedData, err := scraper.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
+		collectedData, err := web.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
 			return
