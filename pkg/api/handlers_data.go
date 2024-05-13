@@ -1,17 +1,22 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"reflect"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
@@ -382,8 +387,13 @@ func (api *API) LlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+
 		llmRequest := make(map[string]string)
 		llmRequest["request"] = "llm-chat"
+		llmRequest["request_id"] = requestID
 		llmRequest["body"] = string(bodyBytes)
 		jsn, err := json.Marshal(llmRequest)
 		if err != nil {
@@ -395,13 +405,18 @@ func (api *API) LlmChat() gin.HandlerFunc {
 			logrus.Errorf("%v", err)
 		}
 
-		payload := make(map[string]interface{})
-		//err = json.Unmarshal(respBody, &payload)
-		//if err != nil {
-		//	c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-		//}
-		//// Return the response
-		c.JSON(http.StatusOK, payload)
+		result := make(map[string]interface{})
+		// Wait for the response
+		select {
+		case response := <-responseCh:
+			err := json.Unmarshal(response, &result)
+			if err != nil {
+				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			}
+			c.JSON(http.StatusOK, result)
+		case <-time.After(30 * time.Second):
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+		}
 	}
 }
 

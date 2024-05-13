@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
@@ -144,7 +145,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 			//err = json.Unmarshal(resp, &result)
 			workerDoneCh <- &pubsub2.Message{
 				ValidatorData: resp,
-				ID:            m.Id,
+				ID:            workData["request_id"],
 			}
 
 		case "web":
@@ -395,6 +396,8 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
+	rcm := pubsub.GetResponseChannelMap()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -405,9 +408,12 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
-
 			key, _ := computeCid(string(data.ValidatorData.([]byte)))
 			logrus.Infof("[+] Work done %s", key)
+			if ch, ok := rcm.Get(data.ID); ok {
+				ch <- data.ValidatorData.([]byte)
+				close(ch)
+			}
 			// val := db.ReadData(node, key)
 			// handle double spend
 			// if val == nil {
