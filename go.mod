@@ -1,8 +1,7 @@
 module github.com/masa-finance/masa-oracle
 
 go 1.22
-
-toolchain go1.22.1
+toolchain go1.22.2
 
 require (
 	github.com/asynkron/protoactor-go v0.0.0-20240413045429-76c172a71a16
@@ -18,7 +17,6 @@ require (
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gocolly/colly/v2 v2.1.0
-	github.com/google/uuid v1.6.0
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ds-leveldb v0.5.0
@@ -30,7 +28,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.12.3
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/n0madic/twitter-scraper v0.0.0-20231104223941-296710769dd8
-	github.com/ollama/ollama v0.1.34
+	github.com/ollama/ollama v0.1.37
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.23.1
 	github.com/sirupsen/logrus v1.9.3
@@ -104,6 +102,7 @@ require (
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20240207164012-fb44976bdcd5 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
