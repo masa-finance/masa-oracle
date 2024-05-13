@@ -17,6 +17,7 @@ services:
     volumes:
       - .:/app
       - .masa-keys:/home/masa/.masa
+    restart: always
 
 volumes:
   masa-keys:

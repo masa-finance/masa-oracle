@@ -14,7 +14,7 @@ The LLM Chat handler functions by forwarding user requests directly to the speci
 
 The request structure varies based on the LLM being targeted. For example, when interacting with ollama, the request might look like this:
 
-```
+```json
 {
     "model": "llama3",
     "messages": [
@@ -35,13 +35,14 @@ To use the LLM Chat feature, you simply send a POST request to the Masa Node end
 
 > POST to the endpoint `/v1/api/chat`
 
-
 ### URLs for Data Structure Formats
 
 For detailed information on the data structure formats required by different LLMs, refer to their official documentation:
 
 - **OpenAI (GPT models):** [OpenAI API Documentation](https://platform.openai.com/docs/api-reference/authentication)
+
 - **Anthropic (Claude models):** [Anthropic API Documentation](https://docs.anthropic.com/claude/reference/complete_post)
+
 - **Ollama:** [Ollama API Documentation](https://github.com/ollama/ollama/blob/main/docs/api.md)
 
 ### Example Usage
@@ -76,8 +77,6 @@ By following these steps, you can enhance your Masa Node with the ability to ser
 
 For more detailed information on setting up and using Ollama, refer to the [Ollama Documentation](https://github.com/ollama/ollama/tree/main/docs).
 
-
 ### Conclusion
 
 The LLM Chat feature of the Masa Node offers a versatile and powerful tool for developers and researchers to interact with large language models. By acting as a proxy, it simplifies the process of integrating advanced conversational AI into various applications, providing flexibility and ease of use.
-

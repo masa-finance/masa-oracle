@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	"github.com/masa-finance/masa-oracle/pkg/scraper"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 
 	"github.com/multiformats/go-multiaddr"
 
@@ -98,6 +99,34 @@ func (a *Worker) Receive(ctx actor.Context) {
 			logrus.Errorf("Error parsing work data: %v", err)
 			return
 		}
+		// WIP oracle work data
+		id := uuid.New().String()
+		oracleData := OracleData{
+			Id:        id,
+			PeerId:    m.Id,
+			Request:   workData["request"],
+			Domain:    workData["domain"],
+			ModelType: workData["modelType"],
+			ModelName: workData["model"],
+			Steps: []struct {
+				Idx               int    `json:"idx"`
+				SystemPrompt      string `json:"system_prompt,omitempty"`
+				Timestamp         string `json:"timestamp"`
+				UserPrompt        string `json:"user_prompt,omitempty"`
+				RawContent        string `json:"raw_content,omitempty"`
+				StructuredContent string `json:"structured_content,omitempty"`
+			}{
+				{
+					Idx:        0,
+					Timestamp:  time.Now().String(),
+					RawContent: `{"request": "twitter", "query": "$MASA", "count": 5}`,
+				},
+			},
+		}
+		jsonOD, _ := json.Marshal(oracleData)
+		logrus.Infof("oracleData to gateway %s", jsonOD)
+		// WIP oracle work data
+
 		switch workData["request"] {
 		case "llm-chat":
 			logrus.Infof("[+] LLM Chat %s %s", m.Data, m.Sender)
@@ -124,7 +153,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("Error converting depth to int: %v", err)
 				return
 			}
-			webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
+			webData, err := web.ScrapeWebData([]string{workData["url"]}, depth)
 			if err != nil {
 				logrus.Errorf("%v", err)
 				return
@@ -176,7 +205,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("Error converting depth to int: %v", err)
 				return
 			}
-			_, sentimentSummary, _ := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
+			_, sentimentSummary, _ := web.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
 			if sentimentSummary != "" {
 				jsonData, _ := json.Marshal(sentimentSummary)
 				workerDoneCh <- &pubsub2.Message{
@@ -308,7 +337,6 @@ func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
-	// id := uuid.New().String()
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	if node.IsActor() {
 		node.ActorEngine.Send(pid, message)
@@ -380,11 +408,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 
 			key, _ := computeCid(string(data.ValidatorData.([]byte)))
 			logrus.Infof("[+] Work done %s", key)
-			val := db.ReadData(node, key)
+			// val := db.ReadData(node, key)
 			// handle double spend
-			if val == nil {
-				updateRecords(node, data.ValidatorData.([]byte), key, data.ID)
-			}
+			// if val == nil {
+			updateRecords(node, data.ValidatorData.([]byte), key, data.ID)
+			// }
 		case <-ctx.Done():
 			return
 		}

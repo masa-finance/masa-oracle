@@ -4,19 +4,18 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-
-	"github.com/masa-finance/masa-oracle/pkg/scraper"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 )
 
 // GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.
@@ -199,7 +198,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+				_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 				j, _ := json.Marshal(sentimentSummary)
 				sentimentSummary = string(j)
 
@@ -222,7 +221,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		} else {
 
-			_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+			_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 			j, _ := json.Marshal(sentimentSummary)
 			sentimentSummary = llmbridge.SanitizeResponse(string(j))
 
@@ -335,7 +334,7 @@ func (api *API) WebData() gin.HandlerFunc {
 			reqBody.Depth = 10 // Default count
 		}
 
-		collectedData, err := scraper.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
+		collectedData, err := web.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
 			return
@@ -348,16 +347,20 @@ func (api *API) WebData() gin.HandlerFunc {
 // LlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //
-//	{
-//	    "model": "llama3",
-//	    "messages": [
-//	        {
-//	            "role": "user",
-//	            "content": "why is the sky blue?"
-//	        }
-//	    ],
-//	    "stream": false
-//	}
+//		{
+//		    "model": "llama3",
+//		    "messages": [
+//		        {
+//		            "role": "user",
+//		            "content": "why is the sky blue?"
+//		        }
+//		    ],
+//		    "stream": false
+//		}
+//
+//		{
+//	 	"query": "I just successfully staked my $MASA Tokens. It’s super easy. Choose your lock-up time and earn up to 25% APY in MASA rewards. @getmasafi"
+//		}
 //
 // This function acts as a proxy, forwarding the request to hosted models and returning the proprietary structured response.
 // This is intended to be compatible with code that is looking to leverage a common payload for LLMs that is based on
@@ -398,6 +401,83 @@ func (api *API) LlmChat() gin.HandlerFunc {
 		//	c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		//}
 		//// Return the response
+		c.JSON(http.StatusOK, payload)
+	}
+}
+
+func (api *API) LlmChatCf() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		body := c.Request.Body
+		var reqBody struct {
+			Query     string `json:"query,omitempty"`
+			MaxTokens int    `json:"max_tokens"`
+			Messages  []struct {
+				Role    string `json:"role"`
+				Content string `json:"content"`
+			} `json:"messages"`
+		}
+		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		reqBody.MaxTokens = 2048
+		reqBody.Messages = append(reqBody.Messages, struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		}{
+			Role: "system",
+			// use this for sentiment analysis
+			// Content: "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer`s attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.",
+			// use this for standard chat
+			Content: os.Getenv("PROMPT"),
+		})
+
+		reqBody.Messages = append(reqBody.Messages, struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		}{
+			Role:    "user",
+			Content: reqBody.Query,
+		})
+
+		reqBody.Query = ""
+
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		model := "@cf/meta/llama-3-8b-instruct"
+		uri := fmt.Sprintf("%s%s", os.Getenv("LLM_CF_URL"), model)
+		if uri == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CF_URL")})
+			return
+		}
+		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_CF_TOKEN"))
+		req.Header.Set("Authorization", bearer)
+		req.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		var payload map[string]interface{}
+		err = json.Unmarshal(respBody, &payload)
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		}
 		c.JSON(http.StatusOK, payload)
 	}
 }

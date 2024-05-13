@@ -1,11 +1,10 @@
-package scraper
+package web
 
 import (
 	"encoding/json"
 
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-
 	"github.com/gocolly/colly/v2"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 // Section represents a distinct part of a scraped webpage, typically defined by a heading.
@@ -21,6 +20,7 @@ type Section struct {
 // It contains a slice of Section structs, each representing a distinct part of a scraped webpage.
 type CollectedData struct {
 	Sections []Section `json:"sections"` // Sections is a collection of webpage sections that have been scraped.
+	Pages    []string  `json:"pages"`
 }
 
 // ScrapeWebDataForSentiment initiates the scraping process for the given list of URIs.
@@ -45,6 +45,7 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 
 	c := colly.NewCollector(
 		colly.AllowURLRevisit(),
+		colly.IgnoreRobotsTxt(),
 		colly.MaxDepth(depth),
 	)
 
@@ -104,6 +105,12 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 		// }
 	})
 
+	c.OnHTML("a", func(e *colly.HTMLElement) {
+		pageURL := e.Request.AbsoluteURL(e.Attr("href"))
+		collectedData.Pages = append(collectedData.Pages, pageURL)
+		_ = e.Request.Visit(pageURL)
+	})
+
 	// Visit each URL
 	for _, u := range uri {
 		err := c.Visit(u)
@@ -146,6 +153,7 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 
 	c := colly.NewCollector(
 		colly.AllowURLRevisit(),
+		colly.IgnoreRobotsTxt(),
 		colly.MaxDepth(depth),
 	)
 
@@ -183,7 +191,12 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 		}
 	})
 
-	// Visit each URL
+	c.OnHTML("a", func(e *colly.HTMLElement) {
+		pageURL := e.Request.AbsoluteURL(e.Attr("href"))
+		collectedData.Pages = append(collectedData.Pages, pageURL)
+		_ = e.Request.Visit(pageURL)
+	})
+
 	for _, u := range uri {
 		err := c.Visit(u)
 		if err != nil {

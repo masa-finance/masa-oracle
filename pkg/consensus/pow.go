@@ -11,7 +11,9 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
-func GenerateApiKey(peerId string) string {
+// @todo WIP for later use cases
+
+func GeneratePoW(peerId string) string {
 	difficulty := 1
 	// difficulty := time.Now().Unix()
 
