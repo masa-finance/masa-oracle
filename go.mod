@@ -12,13 +12,12 @@ require (
 	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/chyeh/pubip v0.0.0-20170203095919-b7e679cf541c
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
-	github.com/ethereum/go-ethereum v1.14.2
+	github.com/ethereum/go-ethereum v1.14.3
 	github.com/fatih/color v1.16.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gocolly/colly/v2 v2.1.0
-	github.com/google/uuid v1.6.0
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ds-leveldb v0.5.0
@@ -104,6 +103,7 @@ require (
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20240207164012-fb44976bdcd5 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
