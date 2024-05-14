@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 
 	_ "github.com/lib/pq"
-	twitterscraper "github.com/n0madic/twitter-scraper"
-	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	"github.com/sirupsen/logrus"
 )
 
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.

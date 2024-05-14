@@ -187,6 +187,18 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /ads/subscribe [post]
 		v1.POST("/ads/subscribe", API.SubscribeToAds())
 
+		// @Summary Search Followers by Twitter Username
+		// @Description Retrieves followers from a specific Twitter profile.
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Param   username   path    string  true  "Twitter Username"
+		// @Param   maxUsersNbr   query   int     false  "Maximum number of users to return"  default(20)
+		// @Success 200 {array} Profile "Array of profiles a user has as followers"
+		// @Failure 400 {object} ErrorResponse "Invalid username or error fetching followers"
+		// @Router /data/twitter/followers/{username} [get]
+		v1.GET("/data/twitter/followers/:username", API.GetTwitterFollowersHandler())
+
 		// @Summary Search Twitter Profile
 		// @Description Retrieves tweets from a specific Twitter profile
 		// @Tags Twitter

@@ -9,11 +9,10 @@ import (
 	"net/http"
 	"strings"
 
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/ollama/ollama/api"
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 // AnalyzeSentimentTweets analyzes the sentiment of the provided tweets by sending them to the Claude API.

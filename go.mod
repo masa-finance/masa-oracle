@@ -28,10 +28,10 @@ require (
 	github.com/libp2p/go-libp2p v0.33.2
 	github.com/libp2p/go-libp2p-kad-dht v0.25.2
 	github.com/libp2p/go-libp2p-pubsub v0.10.1
+	github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514161642-42499225507a
 	github.com/multiformats/go-multiaddr v0.12.3
 	github.com/multiformats/go-multihash v0.2.3
-	github.com/n0madic/twitter-scraper v0.0.0-20231104223941-296710769dd8
-	github.com/ollama/ollama v0.1.37
+	github.com/ollama/ollama v0.1.34
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.24.0
 	github.com/sirupsen/logrus v1.9.3

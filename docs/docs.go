@@ -262,6 +262,55 @@ const docTemplate = `{
 					]
 				}
 			},
+			"/data/twitter/followers/{username}": {
+				"get": {
+					"description": "Retrieves followers from a specific Twitter profile.",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Twitter"
+					],
+					"summary": "Search Followers by Twitter Username",
+					"parameters": [
+						{
+							"type": "string",
+							"description": "Twitter Username",
+							"name": "username",
+							"in": "path",
+							"required": true
+						},
+						{
+							"type": "integer",
+							"description": "Maximum number of users to return",
+							"name": "maxUsersNbr",
+							"in": "query",
+							"required": false,
+							"default": 20
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Array of profiles a user has as followers",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Profile"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid username or error fetching followers",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
 			"/data/twitter/tweets/recent": {
 				"post": {
 					"description": "Retrieves recent tweets based on query parameters",

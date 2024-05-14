@@ -8,7 +8,11 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+
 	"strings"
+
+	"strconv"
+
 	"time"
 
 	"github.com/google/uuid"
@@ -258,6 +262,33 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"tweets": profile})
+	}
+}
+
+// GetTwitterFollowersHandler returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
+func (api *API) GetTwitterFollowersHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.Param("username") // Assuming you're using a URL parameter for the username
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		// Extracting maxUsersNbr from query parameters, with a default value if not specified
+		maxUsersNbrStr := c.DefaultQuery("maxUsersNbr", "20") // Default to 20 if not specified
+		maxUsersNbr, err := strconv.Atoi(maxUsersNbrStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid maxUsersNbr parameter"})
+			return
+		}
+
+		followers, err := twitter.ScrapeFollowersForProfile(username, maxUsersNbr)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch followers", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"followers": followers})
 	}
 }
 
