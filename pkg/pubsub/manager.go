@@ -76,7 +76,7 @@ func (sm *Manager) createTopic(topicName string) (*pubsub.Topic, error) {
 // It creates the topic if needed, subscribes to it, and adds the subscription
 // and handler to the manager's maps. It launches a goroutine to handle incoming
 // messages, skipping messages from self, and calling the handler on each message.
-func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler) error {
+func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler, includeSelf bool) error {
 	topic, err := sm.createTopic(topicName)
 	if err != nil {
 		return err
@@ -95,8 +95,8 @@ func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler
 				logrus.Errorf("Error reading from topic: %v", err)
 				continue
 			}
-			// Skip messages from the same node
-			if msg.ReceivedFrom == sm.host.ID() {
+			if !includeSelf && msg.ReceivedFrom == sm.host.ID() {
+				// Skip messages from the same node
 				continue
 			}
 			// Use the handler to process the message

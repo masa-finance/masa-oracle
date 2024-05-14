@@ -395,18 +395,13 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
-	var err error
 
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
 	// Add subscription to worker tracker
-	node.WorkerTracker = &pubsub.WorkerEventTracker{}
-	_ = node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker)
-
-	// Subscribe to worker event tracker
-	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
+	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
@@ -421,7 +416,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Debug("tick")
 		case totalBytes := <-dataLengthCh:
 			go updateParticipation(node, totalBytes, node.Host.ID().String())
-		case work := <-workerStatusCh:
+		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
