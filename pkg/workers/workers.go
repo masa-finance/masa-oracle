@@ -378,7 +378,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					}
 					response := result.(*messages.Response)
 					temp := make(map[string]interface{})
-					err = json.Unmarshal([]byte(response.Value), &temp)
+					_ = json.Unmarshal([]byte(response.Value), &temp)
 					msg := &pubsub2.Message{
 						ValidatorData: temp["ValidatorData"],
 						ID:            temp["ID"].(string),

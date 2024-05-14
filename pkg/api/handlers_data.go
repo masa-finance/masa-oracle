@@ -34,6 +34,7 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 			string(config.Models.ClaudeSonnet),
 			string(config.Models.ClaudeHaiku),
 			string(config.Models.GPT4),
+			string(config.Models.GPT4o),
 			string(config.Models.GPT4Turbo),
 			string(config.Models.GPT35Turbo),
 			string(config.Models.LLama2),
@@ -62,21 +63,7 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
 // Models Supported:
 //
-//	"all"
-//
-// claude-3-opus-20240229
-// claude-3-sonnet-20240229
-// claude-3-haiku-20240307
-// gpt-4
-// gpt-4-turbo-preview
-// gpt-3.5-turbo
-// llama2
-// llama3
-// mistral
-// gemma
-// mixtral
-// openchat
-// neural-chat
+//	chose a model or use "all"
 func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 

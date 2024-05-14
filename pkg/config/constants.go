@@ -21,6 +21,7 @@ const (
 	ClaudeSonnet20240229                       ModelType = "claude-3-sonnet-20240229"
 	ClaudeHaiku20240307                        ModelType = "claude-3-haiku-20240307"
 	GPT4                                       ModelType = "gpt-4"
+	GPT4o                                      ModelType = "gpt-4o"
 	GPT4TurboPreview                           ModelType = "gpt-4-turbo-preview"
 	GPT35Turbo                                 ModelType = "gpt-3.5-turbo"
 	LLama2                                     ModelType = "ollama/llama2"
@@ -45,13 +46,14 @@ const (
 
 // Models holds the available models for easy access and iteration.
 var Models = struct {
-	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat, CloudflareQwen15Chat, CloudflareLlama27bChatFp16, CloudflareLlama38bInstruct, CloudflareMistral7bInstruct, CloudflareMistral7bInstructV01, HuggingFaceGoogleGemma7bIt, HuggingFaceNousresearchHermes2ProMistral7b, HuggingFaceTheblokeLlama213bChatAwq, HuggingFaceTheblokeNeuralChat7bV31Awq, CloudflareOpenchat35_0106, CloudflareMicrosoftPhi2 ModelType
+	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4o, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat, CloudflareQwen15Chat, CloudflareLlama27bChatFp16, CloudflareLlama38bInstruct, CloudflareMistral7bInstruct, CloudflareMistral7bInstructV01, HuggingFaceGoogleGemma7bIt, HuggingFaceNousresearchHermes2ProMistral7b, HuggingFaceTheblokeLlama213bChatAwq, HuggingFaceTheblokeNeuralChat7bV31Awq, CloudflareOpenchat35_0106, CloudflareMicrosoftPhi2 ModelType
 }{
 	ClaudeOpus:                     ClaudeOpus,
 	ClaudeOpus20240229:             ClaudeOpus20240229,
 	ClaudeSonnet:                   ClaudeSonnet20240229,
 	ClaudeHaiku:                    ClaudeHaiku20240307,
 	GPT4:                           GPT4,
+	GPT4o:                          GPT4o,
 	GPT4Turbo:                      GPT4TurboPreview,
 	GPT35Turbo:                     GPT35Turbo,
 	LLama2:                         LLama2,
