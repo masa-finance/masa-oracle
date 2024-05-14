@@ -12,6 +12,10 @@ import (
 )
 
 // @todo WIP for future use case
+// PoW Usage
+// apiKey := consensus.GeneratePoW(node.Host.ID().String())
+// logrus.Infof("api key: %s", apiKey)
+// PoW
 
 func GeneratePoW(peerId string) string {
 	difficulty := 1

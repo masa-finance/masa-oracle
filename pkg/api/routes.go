@@ -368,6 +368,15 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /chat [post]
 		v1.POST("/chat", API.LlmChat())
 
+		// @Summary Chat using Cloudflare AI
+		// @Description Initiates a chat session with a Cloudflare AI model
+		// @Tags Chat
+		// @Accept  json
+		// @Produce  json
+		// @Param   message   body    string  true  "Message to send to Cloudflare AI"
+		// @Success 200 {object} ChatResponse "Successfully received response from Cloudflare AI"
+		// @Failure 400 {object} ErrorResponse "Error communicating with Cloudflare AI"
+		// @Router /chat/cf [post]
 		v1.POST("/chat/cf", API.LlmChatCf())
 
 		// @note a test route for worker topics
@@ -384,6 +393,14 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// @Router /status [get]
 	router.GET("/status", API.NodeStatusPageHandler())
 
+	// @Summary Chat Page
+	// @Description Renders the chat page for user interaction with the AI
+	// @Tags Chat
+	// @Accept  html
+	// @Produce  html
+	// @Success 200 {object} string "Successfully rendered chat page"
+	// @Failure 500 {object} ErrorResponse "Error rendering chat page"
+	// @Router /chat [get]
 	router.GET("/chat", API.ChatPageHandler())
 
 	// @Summary Get Node API Key

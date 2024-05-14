@@ -84,9 +84,6 @@ func main() {
 	}
 
 	// WIP
-	//models, _ := config.GetCloudflareModels()
-	//logrus.Info(models)
-
 	if os.Getenv("PG_URL") != "" {
 		type Work struct {
 			id      int64
@@ -132,19 +129,6 @@ func main() {
 		}
 		logrus.Infof("record from pg %s", data[0].payload)
 	}
-
-	// JWT
-	// jwtToken, err := consensus.GenerateJWTToken(node.Host.ID().String())
-	// if err != nil {
-	// 	logrus.Error(err)
-	// }
-	// logrus.Infof("jwt token: %s", jwtToken)
-	// JWT
-
-	// PoW
-	// apiKey := consensus.GeneratePoW(node.Host.ID().String())
-	// logrus.Infof("api key: %s", apiKey)
-	// PoW
 
 	// WIP
 
