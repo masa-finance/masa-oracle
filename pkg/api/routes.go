@@ -37,9 +37,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Initialize CORS middleware with a configuration that allows all origins and specifies
 	// the HTTP methods and headers that can be used in requests.
 	router.Use(cors.New(cors.Config{
-		AllowAllOrigins: true,                                      // Allow requests from any origin
-		AllowMethods:    []string{"GET", "POST", "PUT", "OPTIONS"}, // Specify allowed methods
-		AllowHeaders:    []string{"Origin", "Authorization"},       // Specify allowed headers
+		AllowAllOrigins:     true,                                      // Allow requests from any origin
+		AllowMethods:        []string{"GET", "POST", "PUT", "OPTIONS"}, // Specify allowed methods
+		AllowHeaders:        []string{"Origin", "Authorization"},       // Specify allowed headers
+		AllowPrivateNetwork: true,
 	}))
 
 	// Define a list of routes that should not require authentication.
