@@ -260,6 +260,25 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 	}
 }
 
+// GetTwitterFollowersHandler returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
+func (api *API) GetTwitterFollowersHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.Param("username") // Assuming you're using a URL parameter for the username
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		followers, err := twitter.ScrapeFollowersForProfile(username)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch followers", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"followers": followers})
+	}
+}
+
 // SearchTweetsRecent returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
 // It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
 // The handler validates the request body, ensuring the query is not empty and the count is positive.

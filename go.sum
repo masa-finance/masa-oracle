@@ -438,6 +438,16 @@ github.com/masa-finance/masa-twitter-scraper v0.0.0-20231104223941-296710769dd8 
 github.com/masa-finance/masa-twitter-scraper v0.0.0-20231104223941-296710769dd8/go.mod h1:qoLNLwgpaGspT8E82iwzof9xGsQTg35j36PlXrD3R4o=
 github.com/masa-finance/masa-twitter-scraper v0.0.0-20240510173152-94fb5a019cca h1:zljgtYi5Cv50PDv6uLdqx/EcWBH/2HoGXgMDcsf1Gi0=
 github.com/masa-finance/masa-twitter-scraper v0.0.0-20240510173152-94fb5a019cca/go.mod h1:XGpkgx353aIe+KFZz7owFQkV20F4xf8CHbdJlLrZgRE=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240513203958-884f6e450c2d h1:3WSiiidY7Qxk8MuWRhWOcxjijo44u4Y1AG3Ts1xxp1c=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240513203958-884f6e450c2d/go.mod h1:XGpkgx353aIe+KFZz7owFQkV20F4xf8CHbdJlLrZgRE=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514012733-9e55b2797d79 h1:/SwY5G/EB8V1/u5yttrdRPtojwiNof1YtCQ/rIGZycE=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514012733-9e55b2797d79/go.mod h1:XGpkgx353aIe+KFZz7owFQkV20F4xf8CHbdJlLrZgRE=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514014044-b4fab639bef8 h1:7MFUou29EOd1J2HU2wATcAFBGgVv+8B4dFup2VbADNk=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514014044-b4fab639bef8/go.mod h1:XGpkgx353aIe+KFZz7owFQkV20F4xf8CHbdJlLrZgRE=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514020002-f2cf35cf7077 h1:+G6gYes7OHXwgLSZWFRflO+Bl9+1UJP7mpx0FiylbVI=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514020002-f2cf35cf7077/go.mod h1:XGpkgx353aIe+KFZz7owFQkV20F4xf8CHbdJlLrZgRE=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514153231-e4fb5d5eb596 h1:YBkqkqMEb2Sw/3O54V3EQS0RCSvDzxS+ui+HERCzczA=
+github.com/masa-finance/masa-twitter-scraper v0.0.0-20240514153231-e4fb5d5eb596/go.mod h1:XGpkgx353aIe+KFZz7owFQkV20F4xf8CHbdJlLrZgRE=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
 github.com/mattn/go-colorable v0.1.13/go.mod h1:7S9/ev0klgBDR4GtXTXX8a3vIGJpMovkB8vQcUbaXHg=
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
