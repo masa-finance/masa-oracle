@@ -141,7 +141,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			val := &pubsub2.Message{
-				ValidatorData: resp,
+				ValidatorData: string(resp),
 				ID:            workData["request_id"],
 			}
 			jsn, err := json.Marshal(val)
@@ -369,8 +369,12 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						return
 					}
 					response := result.(*messages.Response)
-					msg := &pubsub2.Message{}
-					err = json.Unmarshal([]byte(response.Value), msg)
+					temp := make(map[string]interface{})
+					err = json.Unmarshal([]byte(response.Value), &temp)
+					msg := &pubsub2.Message{
+						ValidatorData: temp["ValidatorData"],
+						ID:            temp["ID"].(string),
+					}
 					workerDoneCh <- msg
 
 					node.ActorEngine.Send(spawnedPID, message)
