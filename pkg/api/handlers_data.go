@@ -403,6 +403,8 @@ func (api *API) LlmChat() gin.HandlerFunc {
 		}
 		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn); err != nil {
 			logrus.Errorf("%v", err)
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			return
 		}
 
 		result := make(map[string]interface{})
@@ -412,6 +414,7 @@ func (api *API) LlmChat() gin.HandlerFunc {
 			err := json.Unmarshal(response, &result)
 			if err != nil {
 				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+				return
 			}
 			c.JSON(http.StatusOK, result)
 		case <-time.After(30 * time.Second):
