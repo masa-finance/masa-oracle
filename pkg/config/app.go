@@ -87,6 +87,7 @@ type AppConfig struct {
 	TwitterScraper     bool   `mapstructure:"twitterScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
+	LLMCfUrl           string `mapstructure:"llmCfUrl"`
 }
 
 // GetInstance returns the singleton instance of AppConfig.
@@ -187,6 +188,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
 		viper.SetDefault(GPTApiKey, os.Getenv("OPENAI_API_KEY"))
 		viper.SetDefault(LlmChatUrl, os.Getenv(LlmChatUrl))
+		viper.SetDefault(LlmCfUrl, os.Getenv(LlmCfUrl))
 
 	} else {
 		viper.SetDefault(FilePath, ".")
@@ -198,6 +200,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
 		viper.SetDefault(ClaudeApiVersion, "2023-06-01")
 		viper.SetDefault(LlmChatUrl, "http://localhost:11434/api/chat")
+		viper.SetDefault(LlmCfUrl, "https://gateway.ai.cloudflare.com/v1/a72433aa3bb83aecaca1bc8acecdb166/masa/workers-ai/")
 	}
 
 	// Set defaults
@@ -272,6 +275,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
+	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

@@ -16,40 +16,62 @@ type ModelType string
 
 // Define model constants.
 const (
-	ClaudeOpus           ModelType = "claude-3-opus"
-	ClaudeOpus20240229   ModelType = "claude-3-opus-20240229"
-	ClaudeSonnet20240229 ModelType = "claude-3-sonnet-20240229"
-	ClaudeHaiku20240307  ModelType = "claude-3-haiku-20240307"
-	GPT4                 ModelType = "gpt-4"
-	GPT4TurboPreview     ModelType = "gpt-4-turbo-preview"
-	GPT35Turbo           ModelType = "gpt-3.5-turbo"
-	LLama2               ModelType = "llama2"
-	LLama3               ModelType = "llama3"
-	Mistral              ModelType = "mistral"
-	Gemma                ModelType = "gemma"
-	Mixtral              ModelType = "mixtral"
-	OpenChat             ModelType = "openchat"
-	NeuralChat           ModelType = "neural-chat"
+	ClaudeOpus                                 ModelType = "claude-3-opus"
+	ClaudeOpus20240229                         ModelType = "claude-3-opus-20240229"
+	ClaudeSonnet20240229                       ModelType = "claude-3-sonnet-20240229"
+	ClaudeHaiku20240307                        ModelType = "claude-3-haiku-20240307"
+	GPT4                                       ModelType = "gpt-4"
+	GPT4TurboPreview                           ModelType = "gpt-4-turbo-preview"
+	GPT35Turbo                                 ModelType = "gpt-3.5-turbo"
+	LLama2                                     ModelType = "ollama/llama2"
+	LLama3                                     ModelType = "ollama/llama3"
+	Mistral                                    ModelType = "ollama/mistral"
+	Gemma                                      ModelType = "ollama/gemma"
+	Mixtral                                    ModelType = "ollama/mixtral"
+	OpenChat                                   ModelType = "ollama/openchat"
+	NeuralChat                                 ModelType = "ollama/neural-chat"
+	CloudflareQwen15Chat                       ModelType = "@cf/qwen/qwen1.5-0.5b-chat"
+	CloudflareLlama27bChatFp16                 ModelType = "@cf/meta/llama-2-7b-chat-fp16"
+	CloudflareLlama38bInstruct                 ModelType = "@cf/meta/llama-3-8b-instruct"
+	CloudflareMistral7bInstruct                ModelType = "@cf/mistral/mistral-7b-instruct"
+	CloudflareMistral7bInstructV01             ModelType = "@cf/mistral/mistral-7b-instruct-v0.1"
+	HuggingFaceGoogleGemma7bIt                 ModelType = "@hf/google/gemma-7b-it"
+	HuggingFaceNousresearchHermes2ProMistral7b ModelType = "@hf/nousresearch/hermes-2-pro-mistral-7b"
+	HuggingFaceTheblokeLlama213bChatAwq        ModelType = "@hf/thebloke/llama-2-13b-chat-awq"
+	HuggingFaceTheblokeNeuralChat7bV31Awq      ModelType = "@hf/thebloke/neural-chat-7b-v3-1-awq"
+	CloudflareOpenchat35_0106                  ModelType = "@cf/openchat/openchat-3.5-0106"
+	CloudflareMicrosoftPhi2                    ModelType = "@cf/microsoft/phi-2"
 )
 
 // Models holds the available models for easy access and iteration.
 var Models = struct {
-	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat ModelType
+	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat, CloudflareQwen15Chat, CloudflareLlama27bChatFp16, CloudflareLlama38bInstruct, CloudflareMistral7bInstruct, CloudflareMistral7bInstructV01, HuggingFaceGoogleGemma7bIt, HuggingFaceNousresearchHermes2ProMistral7b, HuggingFaceTheblokeLlama213bChatAwq, HuggingFaceTheblokeNeuralChat7bV31Awq, CloudflareOpenchat35_0106, CloudflareMicrosoftPhi2 ModelType
 }{
-	ClaudeOpus:         ClaudeOpus,
-	ClaudeOpus20240229: ClaudeOpus20240229,
-	ClaudeSonnet:       ClaudeSonnet20240229,
-	ClaudeHaiku:        ClaudeHaiku20240307,
-	GPT4:               GPT4,
-	GPT4Turbo:          GPT4TurboPreview,
-	GPT35Turbo:         GPT35Turbo,
-	LLama2:             LLama2,
-	LLama3:             LLama3,
-	Mistral:            Mistral,
-	Gemma:              Gemma,
-	Mixtral:            Mixtral,
-	OpenChat:           OpenChat,
-	NeuralChat:         NeuralChat,
+	ClaudeOpus:                     ClaudeOpus,
+	ClaudeOpus20240229:             ClaudeOpus20240229,
+	ClaudeSonnet:                   ClaudeSonnet20240229,
+	ClaudeHaiku:                    ClaudeHaiku20240307,
+	GPT4:                           GPT4,
+	GPT4Turbo:                      GPT4TurboPreview,
+	GPT35Turbo:                     GPT35Turbo,
+	LLama2:                         LLama2,
+	LLama3:                         LLama3,
+	Mistral:                        Mistral,
+	Gemma:                          Gemma,
+	Mixtral:                        Mixtral,
+	OpenChat:                       OpenChat,
+	NeuralChat:                     NeuralChat,
+	CloudflareQwen15Chat:           CloudflareQwen15Chat,
+	CloudflareLlama27bChatFp16:     CloudflareLlama27bChatFp16,
+	CloudflareLlama38bInstruct:     CloudflareLlama38bInstruct,
+	CloudflareMistral7bInstruct:    CloudflareMistral7bInstruct,
+	CloudflareMistral7bInstructV01: CloudflareMistral7bInstructV01,
+	HuggingFaceGoogleGemma7bIt:     HuggingFaceGoogleGemma7bIt,
+	HuggingFaceNousresearchHermes2ProMistral7b: HuggingFaceNousresearchHermes2ProMistral7b,
+	HuggingFaceTheblokeLlama213bChatAwq:        HuggingFaceTheblokeLlama213bChatAwq,
+	HuggingFaceTheblokeNeuralChat7bV31Awq:      HuggingFaceTheblokeNeuralChat7bV31Awq,
+	CloudflareOpenchat35_0106:                  CloudflareOpenchat35_0106,
+	CloudflareMicrosoftPhi2:                    CloudflareMicrosoftPhi2,
 }
 
 const (
@@ -93,6 +115,7 @@ const (
 	TwitterScraper   = "TWITTER_SCRAPER"
 	WebScraper       = "WEB_SCRAPER"
 	LlmChatUrl       = "LLM_CHAT_URL"
+	LlmCfUrl         = "LLM_CF_URL"
 )
 
 // ProtocolWithVersion returns a libp2p protocol ID string

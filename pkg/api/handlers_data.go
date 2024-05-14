@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
@@ -39,9 +40,19 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 			string(config.Models.Mixtral),
 			string(config.Models.OpenChat),
 			string(config.Models.NeuralChat),
+			string(config.Models.CloudflareQwen15Chat),
+			string(config.Models.CloudflareLlama27bChatFp16),
+			string(config.Models.CloudflareLlama38bInstruct),
+			string(config.Models.CloudflareMistral7bInstruct),
+			string(config.Models.CloudflareMistral7bInstructV01),
+			string(config.Models.CloudflareOpenchat35_0106),
+			string(config.Models.CloudflareMicrosoftPhi2),
+			string(config.Models.HuggingFaceGoogleGemma7bIt),
+			string(config.Models.HuggingFaceNousresearchHermes2ProMistral7b),
+			string(config.Models.HuggingFaceTheblokeLlama213bChatAwq),
+			string(config.Models.HuggingFaceTheblokeNeuralChat7bV31Awq),
 		}
 		c.JSON(http.StatusOK, gin.H{"models": models})
-
 	}
 }
 
@@ -346,6 +357,15 @@ func (api *API) WebData() gin.HandlerFunc {
 	}
 }
 
+type LLMChat struct {
+	Model    string `json:"model,omitempty"`
+	Messages []struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"messages,omitempty"`
+	Stream bool `json:"stream"`
+}
+
 // LlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //
@@ -375,7 +395,14 @@ func (api *API) LlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// we just want to proxy the request JSON directly to the endpoint we are calling.
 		body := c.Request.Body
-		bodyBytes, err := io.ReadAll(body)
+		var reqBody LLMChat
+		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		reqBody.Model = strings.TrimPrefix(reqBody.Model, "ollama/")
+		reqBody.Stream = false
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -409,23 +436,43 @@ func (api *API) LlmChat() gin.HandlerFunc {
 	}
 }
 
-// LlmChatCf cloudflare WIP
+// LlmChatCf handles the Cloudflare LLM chat requests.
+// It reads the request body, appends a system message, and forwards the request to the configured LLM endpoint.
+// The response from the LLM endpoint is then returned to the client.
+//
+//	{
+//	    "model": "@cf/meta/llama-3-8b-instruct",
+//	    "messages": [
+//	        {
+//	            "role": "user",
+//	            "content": "why is the sky blue?"
+//	        }
+//	    ]
+//	}
+//
+// Models
+//
+//	@cf/qwen/qwen1.5-0.5b-chat
+//	@cf/meta/llama-2-7b-chat-fp16
+//	@cf/meta/llama-3-8b-instruct
+//	@cf/mistral/mistral-7b-instruct
+//	@cf/mistral/mistral-7b-instruct-v0.1
+//	@hf/google/gemma-7b-it
+//	@hf/nousresearch/hermes-2-pro-mistral-7b
+//	@hf/thebloke/llama-2-13b-chat-awq
+//	@hf/thebloke/neural-chat-7b-v3-1-awq
+//	@cf/openchat/openchat-3.5-0106
+//	@cf/microsoft/phi-2
+//
+// @return gin.HandlerFunc - the handler function for the LLM chat requests.
 func (api *API) LlmChatCf() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body := c.Request.Body
-		var reqBody struct {
-			Query     string `json:"query,omitempty"`
-			MaxTokens int    `json:"max_tokens"`
-			Messages  []struct {
-				Role    string `json:"role"`
-				Content string `json:"content"`
-			} `json:"messages"`
-		}
+		var reqBody LLMChat
 		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		reqBody.MaxTokens = 2048
 		reqBody.Messages = append(reqBody.Messages, struct {
 			Role    string `json:"role"`
 			Content string `json:"content"`
@@ -437,63 +484,18 @@ func (api *API) LlmChatCf() gin.HandlerFunc {
 			Content: os.Getenv("PROMPT"),
 		})
 
-		reqBody.Messages = append(reqBody.Messages, struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		}{
-			Role:    "user",
-			Content: reqBody.Query,
-		})
-
-		reqBody.Query = ""
-
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// @notes
-		// messages: [
-		// 	{ role: "system", content: "you are a professional computer science assistant" },
-		// 	{ role: "user", content: "what is $MASA ?" },
-		// 	{ role: "assistant", content: "$MASA is a crypto currency" },
-		// 	{ role: "user", content: "What is the current price of $MASA?" },
-		// 	{ role: "assistant", content: "No, Python does not directly compile to WebAssembly" },
-		// 	{ role: "user", content: "what about Rust?" },
-		// ],
-
-		// model := "@cf/qwen/qwen1.5-0.5b-chat"
-		// model := "@hf/meta-llama/meta-llama-3-8b-instruct"
-		// model := "@hf/nexusflow/starling-lm-7b-beta"
-		// model := "@hf/google/gemma-7b-it"
-		// model := "@cf/tinyllama/tinyllama-1.1b-chat-v1.0"
-		// model := "@cf/fblgit/una-cybertron-7b-v2-bf16"
-		// model := "@cf/llava-hf/llava-1.5-7b-hf"
-		// model := "@cf/lykon/dreamshaper-8-lcm"
-		// model := "@cf/meta/detr-resnet-50"
-		// model := "@hf/thebloke/openhermes-2.5-mistral-7b-awq"
-		// model := "@cf/meta/m2m100-1.2b"
-		// model := "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"
-		// model := "@cf/baai/bge-small-en-v1.5"
-		// model := "@cf/deepseek-ai/deepseek-math-7b-instruct"
-		// model := "@cf/tiiuae/falcon-7b-instruct"
-		// model := "@hf/nousresearch/hermes-2-pro-mistral-7b"
-		// model := "@cf/baai/bge-base-en-v1.5"
-		// model := "@cf/qwen/qwen1.5-1.8b-chat"
-		// model := "@cf/openai/whisper-tiny-en"
-		// model := "@cf/defog/sqlcoder-7b-2"
-		// model := "@cf/microsoft/phi-2"
-		// model := "@cf/facebook/bart-large-cnn"
-		// model := "@cf/runwayml/stable-diffusion-v1-5-img2img"
-		// model := "@cf/meta/llama-3-8b-instruct"
-		model := "@cf/mistral/mistral-7b-instruct-v0.1"
-
-		uri := fmt.Sprintf("%s%s", os.Getenv("LLM_CF_URL"), model)
-		if uri == "" {
+		cfUrl := config.GetInstance().LLMCfUrl
+		if cfUrl == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CF_URL")})
 			return
 		}
+		uri := fmt.Sprintf("%s%s", cfUrl, reqBody.Model)
 		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

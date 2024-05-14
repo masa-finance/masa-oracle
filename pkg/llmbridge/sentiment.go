@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -140,11 +141,47 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 			return "", "", err
 		}
 		return data, sentimentSummary, nil
-	} else {
+	} else if strings.HasPrefix(model, "@") {
+		genReq := api.ChatRequest{
+			Model: model,
+			Messages: []api.Message{
+				{Role: "user", Content: data},
+				{Role: "assistant", Content: prompt},
+			},
+		}
+
+		requestJSON, err := json.Marshal(genReq)
+		if err != nil {
+			return "", "", err
+		}
+		cfUrl := config.GetInstance().LLMCfUrl
+		if cfUrl == "" {
+			return "", "", errors.New("cloudflare workers url not set")
+		}
+		uri := fmt.Sprintf("%s%s", cfUrl, model)
+		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))
+		if err != nil {
+			return "", "", err
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", "", err
+		}
+
+		var payload api.ChatResponse
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			return "", "", err
+		}
+
+		sentimentSummary := payload.Message.Content
+		return data, SanitizeResponse(sentimentSummary), nil
+	} else if strings.HasPrefix(model, "ollama/") {
 		stream := false
 
 		genReq := api.ChatRequest{
-			Model: model,
+			Model: strings.TrimPrefix(model, "ollama/"),
 			Messages: []api.Message{
 				{Role: "user", Content: data},
 				{Role: "assistant", Content: prompt},
@@ -183,5 +220,7 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 
 		sentimentSummary := payload.Message.Content
 		return data, SanitizeResponse(sentimentSummary), nil
+	} else {
+		return "", "", errors.New("model not supported")
 	}
 }
