@@ -12,14 +12,13 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
-	"github.com/sirupsen/logrus"
-
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -48,8 +47,6 @@ func main() {
 	if err != nil {
 		logrus.Error(err)
 	}
-
-	isStaked = true
 	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
@@ -78,8 +75,10 @@ func main() {
 	go db.InitResolverCache(node, keyManager)
 
 	// Start monitoring actor workers
-	if node.IsActor() && isStaked {
-		go workers.MonitorWorkers(ctx, node)
+	if cfg.TwitterScraper || cfg.WebScraper {
+		if isStaked {
+			go workers.MonitorWorkers(ctx, node)
+		}
 	}
 
 	// WIP
