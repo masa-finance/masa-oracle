@@ -11,14 +11,14 @@ import (
 
 // ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
 // It takes the username as a parameter and returns the scraped profile information and an error if any.
-func ScrapeFollowersForProfile(username string) ([]*twitterscraper.Legacy, error) {
+func ScrapeFollowersForProfile(username string) ([]twitterscraper.Legacy, error) {
 	scraper := auth()
 
 	if scraper == nil {
 		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")
 	}
 
-	followingResponse, errString, _ := scraper.FetchFollowers(username, 20, "")
+	followingResponse, errString, _ := scraper.FetchFollowers(username, 100, "")
 	if errString != "" {
 		logrus.Printf("Error fetching profile: %v", errString)
 		return nil, fmt.Errorf("%v", errString)
