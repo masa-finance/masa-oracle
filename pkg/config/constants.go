@@ -114,6 +114,7 @@ const (
 	GPTApiKey        = "OPENAI_API_KEY"
 	TwitterScraper   = "TWITTER_SCRAPER"
 	WebScraper       = "WEB_SCRAPER"
+	LlmServer        = "LLM_SERVER"
 	LlmChatUrl       = "LLM_CHAT_URL"
 	LlmCfUrl         = "LLM_CF_URL"
 )

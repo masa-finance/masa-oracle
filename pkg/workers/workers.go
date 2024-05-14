@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 
@@ -21,8 +22,9 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
-	actor "github.com/asynkron/protoactor-go/actor"
-	messages "github.com/masa-finance/masa-oracle/pkg/workers/messages"
+	"github.com/asynkron/protoactor-go/actor"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
 
 	"github.com/ipfs/go-cid"
 
@@ -137,6 +139,27 @@ func (a *Worker) Receive(ctx actor.Context) {
 		switch workData["request"] {
 		case "llm-chat":
 			logrus.Infof("[+] LLM Chat %s %s", m.Data, m.Sender)
+			uri := config.GetInstance().LLMChatUrl
+			if uri == "" {
+				logrus.Error("missing env variable LLM_CHAT_URL")
+				return
+			}
+			resp, err := Post(uri, []byte(workData["body"]), nil)
+			if err != nil {
+				return
+			}
+			val := &pubsub2.Message{
+				ValidatorData: string(resp),
+				ID:            workData["request_id"],
+			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			// Send the response back to the original requester
+			ctx.Respond(&messages.Response{Value: string(jsn)})
+
 		case "web":
 			depth, err := strconv.Atoi(workData["depth"])
 			if err != nil {
@@ -328,7 +351,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	if node.IsTwitterScraper || node.IsWebScraper {
+	if node.IsActor() {
 		node.ActorEngine.Send(pid, message)
 	}
 	peers := node.Host.Network().Peers()
@@ -347,7 +370,20 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					node.ActorEngine.Send(spawnedPID, &messages.Connect{
 						Sender: client,
 					})
-					node.ActorEngine.Send(spawnedPID, message)
+					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
+					result, err := future.Result()
+					if err != nil {
+						logrus.Errorf("Error receiving response: %v", err)
+						return
+					}
+					response := result.(*messages.Response)
+					temp := make(map[string]interface{})
+					err = json.Unmarshal([]byte(response.Value), &temp)
+					msg := &pubsub2.Message{
+						ValidatorData: temp["ValidatorData"],
+						ID:            temp["ID"].(string),
+					}
+					workerDoneCh <- msg
 				}
 			}
 		}
@@ -367,40 +403,47 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
-	var err error
 
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
 	// Add subscription to worker tracker
-	node.WorkerTracker = &pubsub.WorkerEventTracker{}
-	_ = node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker)
-
-	// Subscribe to worker event tracker
-	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
+	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
+	rcm := pubsub.GetResponseChannelMap()
+
 	for {
 		select {
 		case <-ticker.C:
 			logrus.Debug("tick")
 		case totalBytes := <-dataLengthCh:
 			go updateParticipation(node, totalBytes, node.Host.ID().String())
-		case work := <-workerStatusCh:
+		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
-			key, _ := computeCid(string(data.ValidatorData.([]byte)))
+			var validatorData []byte
+			if _, ok := data.ValidatorData.([]byte); ok {
+				validatorData = data.ValidatorData.([]byte)
+			} else {
+				validatorData = []byte(data.ValidatorData.(string))
+			}
+			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
+			if ch, ok := rcm.Get(data.ID); ok {
+				ch <- validatorData
+				close(ch)
+			}
 			// val := db.ReadData(node, key)
 			// handle double spend
 			// if val == nil {
-			updateRecords(node, data.ValidatorData.([]byte), key, data.ID)
+			updateRecords(node, validatorData, key, data.ID)
 			// }
 		case <-ctx.Done():
 			return

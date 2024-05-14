@@ -14,19 +14,19 @@ import (
 // Errors during subscription are logged and returned, halting the process to ensure the node's correct setup before operation.
 func SubscribeToTopics(node *OracleNode) error {
 	// Subscribe to NodeGossipTopic to participate in the network's gossip protocol.
-	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker); err != nil {
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker, false); err != nil {
 		return err
 	}
 
 	// Initialize and subscribe to AdTopic for receiving advertisement-related messages.
 	node.AdSubscriptionHandler = &ad.SubscriptionHandler{}
-	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.AdTopic), node.AdSubscriptionHandler); err != nil {
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.AdTopic), node.AdSubscriptionHandler, false); err != nil {
 		logrus.Errorf("Failed to subscribe to ad topic: %v", err)
 		return err
 	}
 
 	// Subscribe to PublicKeyTopic to manage and verify public keys within the network.
-	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}); err != nil {
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}, false); err != nil {
 		return err
 	}
 

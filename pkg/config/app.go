@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -86,6 +87,7 @@ type AppConfig struct {
 	GPTApiKey          string `mapstructure:"gptApiKey"`
 	TwitterScraper     bool   `mapstructure:"twitterScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
+	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
 }
@@ -159,7 +161,12 @@ func (c *AppConfig) setDefaultConfig() {
 				if err != nil {
 					logrus.Errorf("Failed to fetch %s: %v", url, err)
 				} else {
-					defer resp.Body.Close()
+					defer func(Body io.ReadCloser) {
+						err := Body.Close()
+						if err != nil {
+							logrus.Errorf("Failed to close body: %v", err)
+						}
+					}(resp.Body)
 					var nodeInitData struct {
 						Name      string   `json:"name"`
 						Id        string   `json:"id"`
@@ -214,6 +221,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 	viper.SetDefault(TwitterScraper, false)
 	viper.SetDefault(WebScraper, false)
+	viper.SetDefault(LlmServer, false)
 }
 
 // setFileConfig loads configuration from a YAML file.
@@ -276,6 +284,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
+	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

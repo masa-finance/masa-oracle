@@ -3,14 +3,14 @@ package twitter
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	_ "github.com/lib/pq"
-	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
@@ -51,7 +51,7 @@ func auth() *twitterscraper.Scraper {
 
 	logrus.WithFields(logrus.Fields{
 		"auth":     true,
-		"username": os.Getenv("TWITTER_USER"),
+		"username": username,
 	}).Debug("Login successful")
 
 	return scraper

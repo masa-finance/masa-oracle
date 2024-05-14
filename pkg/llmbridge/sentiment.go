@@ -9,10 +9,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/ollama/ollama/api"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 // AnalyzeSentimentTweets analyzes the sentiment of the provided tweets by sending them to the Claude API.
@@ -72,7 +73,7 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt
 		if err != nil {
 			return "", "", err
 		}
-		uri := config.LlmChatUrl
+		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
 			return "", "", errors.New("ollama api url not set")
 		}
@@ -198,7 +199,7 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		if err != nil {
 			return "", "", err
 		}
-		uri := config.LlmChatUrl
+		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
 			return "", "", errors.New("ollama api url not set")
 		}
