@@ -150,7 +150,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 			}
 			val := &pubsub2.Message{
 				ValidatorData: string(resp),
-				ID:            workData["request_id"],
+				ID:            m.Id,
 			}
 			jsn, err := json.Marshal(val)
 			if err != nil {
@@ -158,7 +158,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			// Send the response back to the original requester
-			ctx.Respond(&messages.Response{Value: string(jsn)})
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 
 		case "web":
 			depth, err := strconv.Atoi(workData["depth"])
