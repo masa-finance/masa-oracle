@@ -141,16 +141,18 @@
                 chatBox.appendChild(loadingSpinner);
 
                 // Send user input to server and get response
-                fetch('http://localhost:11434/api/chat', {
+                
+                fetch('http://localhost:8080/api/v1/chat/cf', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                      "model": "llama3",
+                      "model": "@cf/qwen/qwen1.5-0.5b-chat",
                       "messages": [
                           { "role": "user", "content": userText }
-                      ], "stream": false
+                      ]
+                      // , "stream": false
                   })
                 })
                 .then(response => response.json())
@@ -158,7 +160,7 @@
                     chatBox.removeChild(loadingSpinner);
                     var botMsg = document.createElement('div');
                     botMsg.classList.add('message', 'bot');
-                    botMsg.innerHTML = '<div id="loading-spinner" class="spinner-border text-primary" role="status" style="display: none;"><span class="sr-only">Loading...</span></div>' + data?.message?.content;
+                    botMsg.innerHTML = '<div id="loading-spinner" class="spinner-border text-primary" role="status" style="display: none;"><span class="sr-only">Loading...</span></div>' + data?.result?.response;
                     chatBox.appendChild(botMsg);
                     chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
                 })

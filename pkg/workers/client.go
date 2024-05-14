@@ -100,7 +100,7 @@ func call(url, method string, buffer *bytes.Buffer, headers map[string]string) (
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error reading response: %v", err))
+		return nil, fmt.Errorf("error reading response: %v", err)
 	}
 	if resp.StatusCode > 299 {
 		return body, errors.New(resp.Status)
