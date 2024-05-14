@@ -357,7 +357,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
 
-		// @Summary Chat with AI
+		// @Summary Chat with Local Ollama AI
 		// @Description Initiates a chat session with an AI model that accepts common ollama formatted requests
 		// @Tags Chat
 		// @Accept  json
@@ -366,9 +366,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Success 200 {object} ChatResponse "Successfully received response from AI"
 		// @Failure 400 {object} ErrorResponse "Error communicating with AI"
 		// @Router /chat [post]
-		v1.POST("/chat", API.LlmChat())
+		v1.POST("/chat", API.LocalLlmChat())
 
-		// @Summary Chat using Cloudflare AI
+		// @Summary Chat using Cloudflare AI Workers
 		// @Description Initiates a chat session with a Cloudflare AI model
 		// @Tags Chat
 		// @Accept  json
@@ -377,7 +377,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Success 200 {object} ChatResponse "Successfully received response from Cloudflare AI"
 		// @Failure 400 {object} ErrorResponse "Error communicating with Cloudflare AI"
 		// @Router /chat/cf [post]
-		v1.POST("/chat/cf", API.LlmChatCf())
+		v1.POST("/chat/cf", API.CfLlmChat())
 
 		// @note a test route for worker topics
 		v1.GET("/test", API.GetTest())

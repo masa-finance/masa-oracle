@@ -366,7 +366,7 @@ type LLMChat struct {
 	Stream bool `json:"stream"`
 }
 
-// LlmChat handles requests for chatting with AI models hosted by ollama.
+// LocalLlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //
 //	{
@@ -391,7 +391,7 @@ type LLMChat struct {
 // https://docs.anthropic.com/claude/reference/complete_post
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 // note: Ollama recently added support for the OpenAI structure which can simplify integrating it.
-func (api *API) LlmChat() gin.HandlerFunc {
+func (api *API) LocalLlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// we just want to proxy the request JSON directly to the endpoint we are calling.
 		body := c.Request.Body
@@ -436,7 +436,7 @@ func (api *API) LlmChat() gin.HandlerFunc {
 	}
 }
 
-// LlmChatCf handles the Cloudflare LLM chat requests.
+// CfLlmChat handles the Cloudflare LLM chat requests.
 // It reads the request body, appends a system message, and forwards the request to the configured LLM endpoint.
 // The response from the LLM endpoint is then returned to the client.
 //
@@ -465,7 +465,7 @@ func (api *API) LlmChat() gin.HandlerFunc {
 //	@cf/microsoft/phi-2
 //
 // @return gin.HandlerFunc - the handler function for the LLM chat requests.
-func (api *API) LlmChatCf() gin.HandlerFunc {
+func (api *API) CfLlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body := c.Request.Body
 		var reqBody LLMChat

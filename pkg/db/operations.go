@@ -70,6 +70,16 @@ func applyMigrations(database *sql.DB) error {
 	return nil
 }
 
+// @todo: implement this for the gateway
+func PostData(node *masa.OracleNode, id string, value []byte) error {
+	return nil
+}
+
+// @todo: implement this for the gateway
+func FireEvent(node *masa.OracleNode, id string, value []byte) error {
+	return nil
+}
+
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
 func WriteData(node *masa.OracleNode, key string, value []byte) error {
