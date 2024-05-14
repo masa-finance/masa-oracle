@@ -140,13 +140,17 @@ func (a *Worker) Receive(ctx actor.Context) {
 			if err != nil {
 				return
 			}
-			//
-			//var result map[string]interface{}
-			//err = json.Unmarshal(resp, &result)
-			workerDoneCh <- &pubsub2.Message{
+			val := &pubsub2.Message{
 				ValidatorData: resp,
 				ID:            workData["request_id"],
 			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			// Send the response back to the original requester
+			ctx.Respond(&messages.Response{Value: string(jsn)})
 
 		case "web":
 			depth, err := strconv.Atoi(workData["depth"])
@@ -358,6 +362,17 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					node.ActorEngine.Send(spawnedPID, &messages.Connect{
 						Sender: client,
 					})
+					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
+					result, err := future.Result()
+					if err != nil {
+						logrus.Errorf("Error receiving response: %v", err)
+						return
+					}
+					response := result.(*messages.Response)
+					msg := &pubsub2.Message{}
+					err = json.Unmarshal([]byte(response.Value), msg)
+					workerDoneCh <- msg
+
 					node.ActorEngine.Send(spawnedPID, message)
 				}
 			}
