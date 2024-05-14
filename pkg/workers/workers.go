@@ -376,8 +376,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						ID:            temp["ID"].(string),
 					}
 					workerDoneCh <- msg
-
-					node.ActorEngine.Send(spawnedPID, message)
 				}
 			}
 		}
@@ -427,16 +425,22 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
-			key, _ := computeCid(string(data.ValidatorData.([]byte)))
+			var validatorData []byte
+			if _, ok := data.ValidatorData.([]byte); ok {
+				validatorData = data.ValidatorData.([]byte)
+			} else {
+				validatorData = []byte(data.ValidatorData.(string))
+			}
+			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
 			if ch, ok := rcm.Get(data.ID); ok {
-				ch <- data.ValidatorData.([]byte)
+				ch <- validatorData
 				close(ch)
 			}
 			// val := db.ReadData(node, key)
 			// handle double spend
 			// if val == nil {
-			updateRecords(node, data.ValidatorData.([]byte), key, data.ID)
+			updateRecords(node, validatorData, key, data.ID)
 			// }
 		case <-ctx.Done():
 			return
