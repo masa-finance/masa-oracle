@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
@@ -269,7 +270,15 @@ func (api *API) GetTwitterFollowersHandler() gin.HandlerFunc {
 			return
 		}
 
-		followers, err := twitter.ScrapeFollowersForProfile(username)
+		// Extracting maxUsersNbr from query parameters, with a default value if not specified
+		maxUsersNbrStr := c.DefaultQuery("maxUsersNbr", "20") // Default to 20 if not specified
+		maxUsersNbr, err := strconv.Atoi(maxUsersNbrStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid maxUsersNbr parameter"})
+			return
+		}
+
+		followers, err := twitter.ScrapeFollowersForProfile(username, maxUsersNbr)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch followers", "details": err.Error()})
 			return
