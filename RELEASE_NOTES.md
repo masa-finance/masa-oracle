@@ -7,7 +7,7 @@
 ### Breaking Changes
 
 * Normalized all command line params to camelCase
-* Changed default model to ollama/*
+* Changed Ollama LLM Models default names to ollama/*
 
 ### New Features
 
@@ -17,9 +17,12 @@
 * Twitter Scraper as pkg
 * Reddit Scraper as pkg
 * Web Scraper as pkg
+* Added /auth endpoint to generate 24 api bearer token for node calls
+* Added /chat for LLM chat completion PoC
 
 ### Bug Fixes
 
+* Fixed update Records array for node data
 * Worker channel race condition
 
 ### Performance Improvements
