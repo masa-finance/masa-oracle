@@ -15,10 +15,12 @@
 * Implemented Record and OracleData struct to save events to persisted storage
 * Discord Scraper as pkg
 * Twitter Scraper as pkg
+* Added Followers scraper call for Twitter pkg
 * Reddit Scraper as pkg
 * Web Scraper as pkg
 * Added /auth endpoint to generate 24 api bearer token for node calls
 * Added /chat for LLM chat completion PoC
+* Added LLM Chat capability, enabling interaction with large language models (LLMs) such as OpenAI's GPT and others, directly through the node.
 
 ### Bug Fixes
 
