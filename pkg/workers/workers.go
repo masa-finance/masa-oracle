@@ -129,7 +129,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 			},
 		}
 		jsonOD, _ := json.Marshal(oracleData)
-		logrus.Infof("oracleData to gateway %s", jsonOD)
+		logrus.Debugf("oracleData to gateway %s", jsonOD)
 		// WIP oracle work data
 
 		switch workData["request"] {
@@ -301,36 +301,55 @@ func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
 func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string) {
 	_ = db.WriteData(node, key, data)
 
-	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	nodeDataBytes, err := db.GetCache(context.Background(), peerId)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	var nodeData pubsub.NodeData
+	err = json.Unmarshal(nodeDataBytes, &nodeData)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 
 	newCID := CID{
 		RecordId:  key,
 		Timestamp: time.Now(),
 	}
 
-	if nodeData.Records == nil {
-		nodeData.Records = []CID{}
+	records := nodeData.Records
+
+	if records == nil {
+		recordsSlice, ok := records.([]CID)
+		if !ok {
+			recordsSlice = []CID{}
+		}
+		recordsSlice = append(recordsSlice, newCID)
+		nodeData.Records = recordsSlice
+		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	} else {
+		records = append(nodeData.Records.([]interface{}), newCID)
+		nodeData.Records = records
+		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 	}
 
-	records := nodeData.Records.([]CID)
-	records = append(records, newCID)
-	nodeData.Records = records
-
-	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
 		logrus.Error(err)
+		return
 	}
-	jsonData, _ := json.Marshal(nodeData)
 	_ = db.WriteData(node, peerId, jsonData)
 }
-
-//type Message struct {
-//	*pb.Message
-//	ID            string
-//	ReceivedFrom  peer.ID
-//	ValidatorData interface{}
-//	Local         bool
-//}
 
 // SendWork is responsible for handling work messages and processing them based on the request type.
 // It supports the following request types:
@@ -356,20 +375,21 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	if node.IsActor() {
-		future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
-		result, err := future.Result()
-		if err != nil {
-			logrus.Errorf("Error receiving response: %v", err)
-			return
-		}
-		response := result.(*messages.Response)
-		msg := &pubsub2.Message{}
-		err = json.Unmarshal([]byte(response.Value), msg)
-		if err != nil {
-			logrus.Error(err)
-			return
-		}
-		workerDoneCh <- msg
+		node.ActorEngine.Send(pid, message)
+		//future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
+		//result, err := future.Result()
+		//if err != nil {
+		//	logrus.Errorf("Error receiving response: %v", err)
+		//	return
+		//}
+		//response := result.(*messages.Response)
+		//msg := &pubsub2.Message{}
+		//err = json.Unmarshal([]byte(response.Value), msg)
+		//if err != nil {
+		//	logrus.Error(err)
+		//	return
+		//}
+		//workerDoneCh <- msg
 	}
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
@@ -393,9 +413,17 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						logrus.Errorf("Error receiving response: %v", err)
 						return
 					}
-					response := result.(*messages.Response)
+					response, ok := result.(*messages.Response)
+					if !ok {
+						logrus.Errorf("Error asserting response type")
+						return
+					}
 					msg := &pubsub2.Message{}
-					_ = json.Unmarshal([]byte(response.Value), msg)
+					err = json.Unmarshal([]byte(response.Value), msg)
+					if err != nil {
+						logrus.Error(err)
+						return
+					}
 					workerDoneCh <- msg
 				}
 			}

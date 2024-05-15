@@ -31,7 +31,7 @@ func ScrapeFollowersForProfile(username string, maxUsersNbr int) ([]twitterscrap
 		logrus.Errorf("Error marshaling followingResponse: %v", err)
 	} else {
 		// Log the JSON string of followingResponse
-		logrus.Infof("Following response: %s", responseJSON)
+		logrus.Debugf("Following response: %s", responseJSON)
 	}
 
 	return followingResponse, nil

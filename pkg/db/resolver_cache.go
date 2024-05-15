@@ -198,8 +198,8 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		if len(key) > 0 && key[0] == '/' {
 			key = key[1:]
 		}
-		logrus.Printf("syncing record %s", key) // , record.Value
-		go WriteData(node, key, record.Value)
+		logrus.Printf("syncing record %s", key)
+		_ = WriteData(node, key, record.Value)
 	}
 }
 
@@ -208,7 +208,6 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 // It runs a ticker to call iterateAndPublish on the provided interval.
 func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
-	// nodeStatusHandler := &pubsub.NodeEventTracker{NodeDataChan: nodeDataChan}
 	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker)
 	if err != nil {
 		logrus.Errorf("%v", err)
@@ -227,7 +226,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			}
 		case nodeData := <-nodeDataChan:
 			jsonData, _ := json.Marshal(nodeData)
-			go WriteData(node, nodeData.PeerId.String(), jsonData)
+			_ = WriteData(node, nodeData.PeerId.String(), jsonData)
 		case <-ctx.Done():
 			return
 		}

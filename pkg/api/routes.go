@@ -394,7 +394,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		v1.POST("/chat/cf", API.CfLlmChat())
 
 		// @note a test route for worker topics
-		v1.GET("/test", API.GetTest())
+		v1.GET("/test/:i", API.GetTest())
 	}
 
 	// @Summary Node Status Page
