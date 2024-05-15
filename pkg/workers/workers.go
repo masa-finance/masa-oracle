@@ -468,7 +468,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 }
 
 func SubscribeToWorkers(node *masa.OracleNode) {
-	// @todo need to add this even if not participating to send messages ....
+	// @note need to add this even if not participating to send messages ....
 	// Add subscription to worker tracker
 	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
