@@ -319,17 +319,17 @@ func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
 func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string) {
 	_ = db.WriteData(node, key, data)
 
+	var nodeData pubsub.NodeData
 	nodeDataBytes, err := db.GetCache(context.Background(), peerId)
 	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	var nodeData pubsub.NodeData
-	err = json.Unmarshal(nodeDataBytes, &nodeData)
-	if err != nil {
-		logrus.Error(err)
-		return
+		nd := node.NodeTracker.GetNodeData(peerId)
+		nodeData = *nd
+	} else {
+		err = json.Unmarshal(nodeDataBytes, &nodeData)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 	}
 
 	newCID := CID{
