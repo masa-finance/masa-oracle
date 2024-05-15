@@ -17,6 +17,7 @@
 * Twitter Scraper as pkg
 * Reddit Scraper as pkg
 * Web Scraper as pkg
+* Added LLM Chat capability, enabling interaction with large language models (LLMs) such as OpenAI's GPT and others, directly through the node.
 
 ### Bug Fixes
 

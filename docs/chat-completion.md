@@ -31,7 +31,7 @@ However, for services like OpenAI's GPT models, the request structure would foll
 
 ### Proxying Requests
 
-To use the LLM Chat feature, you simply send a POST request to the Masa Node endpoint designated for LLM chat interactions. The body of your request should match the structure expected by the LLM you're querying.
+To use the LLM Chat feature, you simply send a POST request to a staked Masa Node endpoint, this can be done to your local node if it is staked. If the node does not have an LLM it will be sent out to the all of your known peers where any node that does support LLMs can service the request.  There is a timeout if no response is received within 30 seconds. The first node to process the request and return the response to the node you called "wins". The body of your request should match the structure expected by the LLM you're querying.  It is an important note that one of the peers in your peer store must support the model for the request. 
 
 > POST to the endpoint `/v1/api/chat`
 
