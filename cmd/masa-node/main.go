@@ -85,10 +85,10 @@ func main() {
 	// WIP
 	if os.Getenv("PG_URL") != "" {
 		type Work struct {
-			id      int64
-			uuid    string
-			payload json.RawMessage
-			raw     json.RawMessage
+			id       int64
+			uuid     string
+			payload  json.RawMessage
+			response json.RawMessage
 		}
 
 		// IMPORTANT migrations true will drop all
@@ -98,16 +98,16 @@ func main() {
 		}
 		defer database.Close()
 		uid := uuid.New().String()
-		insertQuery := `INSERT INTO "public"."work" ("uuid", "payload", "raw") VALUES ($1, $2, $3)`
+		insertQuery := `INSERT INTO "public"."work" ("uuid", "payload", "response") VALUES ($1, $2, $3)`
 		payloadJSON := json.RawMessage(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`)
-		rawJSON := json.RawMessage(`{"tweets": ["twit", "twit"]}`)
-		_, err = database.Exec(insertQuery, uid, payloadJSON, rawJSON)
+		responseJSON := json.RawMessage(`{"tweets": ["twit", "twit"]}`)
+		_, err = database.Exec(insertQuery, uid, payloadJSON, responseJSON)
 		if err != nil {
 			logrus.Error(err)
 		}
 
 		data := []Work{}
-		query := `SELECT "id", "payload", "raw" FROM "public"."work"`
+		query := `SELECT "id", "payload", "response" FROM "public"."work"`
 		rows, err := database.Query(query)
 		if err != nil {
 			logrus.Error(err)
@@ -115,16 +115,16 @@ func main() {
 		defer rows.Close()
 
 		var (
-			id      int64
-			payload json.RawMessage
-			raw     json.RawMessage
+			id       int64
+			payload  json.RawMessage
+			response json.RawMessage
 		)
 
 		for rows.Next() {
-			if err = rows.Scan(&id, &payload, &raw); err != nil {
+			if err = rows.Scan(&id, &payload, &response); err != nil {
 				log.Fatal(err)
 			}
-			data = append(data, Work{id, uid, payload, raw})
+			data = append(data, Work{id, uid, payload, response})
 		}
 		logrus.Infof("record from pg %s", data[0].payload)
 	}
