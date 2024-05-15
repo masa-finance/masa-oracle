@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/libp2p/go-libp2p/core/peer"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
@@ -44,6 +47,11 @@ type CID struct {
 type Record struct {
 	PeerId string `json:"peerid"`
 	CIDs   []CID  `json:"cids"`
+}
+
+type LLMResponse struct {
+	Response  map[string]interface{}
+	ChannelId string
 }
 
 type OracleData struct {
@@ -144,8 +152,18 @@ func (a *Worker) Receive(ctx actor.Context) {
 			if err != nil {
 				return
 			}
+			var temp map[string]interface{}
+			err = json.Unmarshal(resp, &temp)
+			if err != nil {
+				logrus.Errorf("Error unmarshalling response: %v", err)
+				return
+			}
+			llmResponse := LLMResponse{
+				Response:  temp,
+				ChannelId: workData["request_id"],
+			}
 			val := &pubsub2.Message{
-				ValidatorData: string(resp),
+				ValidatorData: llmResponse,
 				ID:            m.Id,
 			}
 			jsn, err := json.Marshal(val)
@@ -324,13 +342,21 @@ func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string
 	_ = db.WriteData(node, peerId, jsonData)
 }
 
-//type Message struct {
-//	*pb.Message
-//	ID            string
-//	ReceivedFrom  peer.ID
-//	ValidatorData interface{}
-//	Local         bool
-//}
+func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
+	responseData := map[string]interface{}{}
+
+	err := json.Unmarshal([]byte(response.Value), &responseData)
+	if err != nil {
+		return nil, err
+	}
+	msg := &pubsub2.Message{
+		ID:            responseData["ID"].(string),
+		ReceivedFrom:  peer.ID(responseData["ReceivedFrom"].(string)),
+		ValidatorData: responseData["ValidatorData"],
+		Local:         responseData["Local"].(bool),
+	}
+	return msg, nil
+}
 
 // SendWork is responsible for handling work messages and processing them based on the request type.
 // It supports the following request types:
@@ -362,14 +388,13 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			logrus.Errorf("Error receiving response: %v", err)
 			return
 		}
-		response := result.(*messages.Response)
-		msg := &pubsub2.Message{}
-		err = json.Unmarshal([]byte(response.Value), msg)
+		msg, err := getResponseMessage(result.(*messages.Response))
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Error getting response message: %v", err)
 			return
 		}
 		workerDoneCh <- msg
+
 	}
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
@@ -393,9 +418,11 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						logrus.Errorf("Error receiving response: %v", err)
 						return
 					}
-					response := result.(*messages.Response)
-					msg := &pubsub2.Message{}
-					_ = json.Unmarshal([]byte(response.Value), msg)
+					msg, err := getResponseMessage(result.(*messages.Response))
+					if err != nil {
+						logrus.Errorf("Error getting response message: %v", err)
+						return
+					}
 					workerDoneCh <- msg
 				}
 			}
@@ -430,6 +457,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 	rcm := pubsub.GetResponseChannelMap()
+	var validatorData []byte
 
 	for {
 		select {
@@ -441,18 +469,32 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
-			var validatorData []byte
 			if _, ok := data.ValidatorData.([]byte); ok {
 				validatorData = data.ValidatorData.([]byte)
-			} else {
+			} else if _, ok := data.ValidatorData.([]byte); ok {
 				validatorData = []byte(data.ValidatorData.(string))
+			} else {
+				switch reflect.TypeOf(data.ValidatorData).Kind() {
+				case reflect.Map:
+					validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
+					if !ok {
+						logrus.Errorf("Error asserting type: %v", ok)
+					}
+
+					if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
+						validatorData, err = json.Marshal(validatorDataMap["Response"])
+						if err != nil {
+							logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+						}
+						ch <- validatorData
+						close(ch)
+					}
+				default:
+					logrus.Errorf("Error processing data.ValidatorData: %v", data.ValidatorData)
+				}
 			}
 			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
-			if ch, ok := rcm.Get(data.ID); ok {
-				ch <- validatorData
-				close(ch)
-			}
 			// val := db.ReadData(node, key)
 			// handle double spend
 			// if val == nil {
