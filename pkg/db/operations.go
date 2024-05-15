@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log"
@@ -12,12 +13,23 @@ import (
 	"time"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
-
 	"github.com/sirupsen/logrus"
 )
 
 //go:embed migrations/*.sql
 var migrations embed.FS
+
+type WorkEvent struct {
+	ID      int64           `json:"id"`
+	WorkId  string          `json:"work_id"`
+	Payload json.RawMessage `json:"payload"`
+}
+type Work struct {
+	ID       int64           `json:"id"`
+	Uuid     string          `json:"uuid"`
+	Payload  json.RawMessage `json:"payload"`
+	Response json.RawMessage `json:"response"`
+}
 
 // ConnectToPostgres Function to connect to Postgres
 func ConnectToPostgres(migrations bool) (*sql.DB, error) {
@@ -70,14 +82,65 @@ func applyMigrations(database *sql.DB) error {
 	return nil
 }
 
-// @todo: implement this for the gateway
-func PostData(node *masa.OracleNode, id string, value []byte) error {
+func PostData(uid string, payload []byte, response []byte) error {
+	database, err := ConnectToPostgres(false)
+	if err != nil {
+		return nil
+	}
+	defer database.Close()
+	insertQuery := `INSERT INTO "public"."work" ("uuid", "payload", "response") VALUES ($1, $2, $3)`
+	payloadJSON := json.RawMessage(payload)
+	responseJSON := json.RawMessage(response)
+	_, err = database.Exec(insertQuery, uid, payloadJSON, responseJSON)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-// @todo: implement this for the gateway
-func FireEvent(node *masa.OracleNode, id string, value []byte) error {
+func FireEvent(uid string, value []byte) error {
+	database, err := ConnectToPostgres(false)
+	if err != nil {
+		return err
+	}
+	defer database.Close()
+
+	insertEventQuery := `INSERT INTO "public"."event" ("work_id", "payload") VALUES ($1, $2)`
+	payloadEventJSON := json.RawMessage(`{"event":"Actor Started"}`)
+	_, err = database.Exec(insertEventQuery, uid, payloadEventJSON)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func GetData(uid string) ([]Work, error) {
+	database, err := ConnectToPostgres(false)
+	if err != nil {
+		logrus.Error(err)
+	}
+	defer database.Close()
+	data := []Work{}
+	query := `SELECT "id", "payload", "response" FROM "public"."work"`
+	rows, err := database.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		id       int64
+		payload  json.RawMessage
+		response json.RawMessage
+	)
+
+	for rows.Next() {
+		if err = rows.Scan(&id, &payload, &response); err != nil {
+			return nil, err
+		}
+		data = append(data, Work{id, uid, payload, response})
+	}
+	return data, nil
 }
 
 // WriteData encapsulates the logic for writing data to the database,

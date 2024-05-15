@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -84,51 +83,34 @@ func main() {
 
 	// WIP
 	if os.Getenv("PG_URL") != "" {
-		type Work struct {
-			id       int64
-			uuid     string
-			payload  json.RawMessage
-			response json.RawMessage
-		}
 
-		// IMPORTANT migrations true will drop all
-		database, err := db.ConnectToPostgres(false)
-		if err != nil {
-			logrus.Error(err)
-		}
-		defer database.Close()
+		// to run migrations
+		_, _ = db.ConnectToPostgres(true)
+
 		uid := uuid.New().String()
-		insertQuery := `INSERT INTO "public"."work" ("uuid", "payload", "response") VALUES ($1, $2, $3)`
-		payloadJSON := json.RawMessage(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`)
-		responseJSON := json.RawMessage(`{"tweets": ["twit", "twit"]}`)
-		_, err = database.Exec(insertQuery, uid, payloadJSON, responseJSON)
+		err := db.PostData(uid, []byte(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`), []byte(`{"tweets": ["twit", "twit"]}`))
 		if err != nil {
 			logrus.Error(err)
 		}
-
-		data := []Work{}
-		query := `SELECT "id", "payload", "response" FROM "public"."work"`
-		rows, err := database.Query(query)
-		if err != nil {
-			logrus.Error(err)
+		fErr := db.FireEvent(uid, []byte(`{"event":"Actor Started"}`))
+		if fErr != nil {
+			logrus.Error(fErr)
 		}
-		defer rows.Close()
 
-		var (
-			id       int64
-			payload  json.RawMessage
-			response json.RawMessage
-		)
+		work, gErr := db.GetData(uid)
+		if gErr != nil {
+			logrus.Error(gErr)
+		}
 
-		for rows.Next() {
-			if err = rows.Scan(&id, &payload, &response); err != nil {
-				log.Fatal(err)
+		for _, w := range work {
+			jsonData, err := json.Marshal(w)
+			if err != nil {
+				logrus.Error("Failed to parse work into JSON: ", err)
+			} else {
+				logrus.Info(string(jsonData))
 			}
-			data = append(data, Work{id, uid, payload, response})
 		}
-		logrus.Infof("record from pg %s", data[0].payload)
 	}
-
 	// WIP
 
 	// Listen for SIGINT (CTRL+C)

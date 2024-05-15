@@ -25,7 +25,6 @@ func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool
 	fmt.Println(yellow + borderLine + reset)
 	fmt.Println("")
 	fmt.Printf(green+"Version:		%s\n"+reset, version)
-	fmt.Println("")
 	// Displaying the multi-address and IP address in blue
 	fmt.Printf(blue+"Multiaddress:		%s\n"+reset, multiAddr)
 	fmt.Printf(blue+"IP Address:		%s\n"+reset, ipAddr)

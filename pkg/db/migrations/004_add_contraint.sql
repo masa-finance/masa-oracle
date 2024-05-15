@@ -1,1 +1,0 @@
-ALTER TABLE "public"."work" ADD CONSTRAINT "work_pkey" PRIMARY KEY ("id");
