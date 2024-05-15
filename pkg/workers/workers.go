@@ -430,8 +430,11 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		msg := &pubsub2.Message{}
 		err = json.Unmarshal([]byte(response.Value), msg)
 		if err != nil {
-			logrus.Error(err)
-			return
+			msg, err = getResponseMessage(result.(*messages.Response))
+			if err != nil {
+				logrus.Errorf("Error getting response message: %v", err)
+				return
+			}
 		}
 		workerDoneCh <- msg
 	}
@@ -459,7 +462,15 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					}
 					response := result.(*messages.Response)
 					msg := &pubsub2.Message{}
-					_ = json.Unmarshal([]byte(response.Value), msg)
+					err = json.Unmarshal([]byte(response.Value), msg)
+					if err != nil {
+						msg, err = getResponseMessage(result.(*messages.Response))
+						if err != nil {
+							logrus.Errorf("Error getting response message: %v", err)
+							return
+						}
+					}
+
 					workerDoneCh <- msg
 				}
 			}
