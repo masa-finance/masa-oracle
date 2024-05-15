@@ -12,7 +12,7 @@ Welcome to Masa, the people's network powering Fair AI. We are on a mission to r
 
 The AI industry is at a critical juncture. A few centralized players currently dominate the landscape, controlling access to large language models (LLMs) and compute resources. This centralization has led to several issues:
 
-- LLMs are often unfair to people, failing to properly attribute outputs ts to data sources. This has resulted in lawsuits and risks for companies using these models.
+- LLMs are often unfair to people, failing to properly attribute outputs to data sources. This has resulted in lawsuits and risks for companies using these models.
 - As general purpose LLMs become commoditized, the most valuable AI applications will be the most specialized ones. However, building specialized AI requires access to specialized training data, which is not readily available.
 - Leading compute and inference providers charge high prices and can arbitrarily deny service to builders, stifling innovation and limiting access.
 
@@ -20,13 +20,13 @@ Masa believes that the solution to these challenges lies in a decentralized netw
 
 ## The Masa Solution
 
-Masa has built the leading a marketplace for data and compute, connecting data and compute contributors with developers. Our platform incentivizes people to contribute specialized data sets and sell compute resources in an open, permissionless manner. 
+Masa has built the leading marketplace for data and compute, connecting data and compute contributors with developers. Our platform incentivizes people to contribute specialized data sets and sell compute resources in an open, permissionless manner. 
 
 Key features of the Masa network include:
 
 - **Fair AI**: Masa pioneers the concept of Fair AI, transparently attributing results to contributors and rewarding them whenever their data is used in applications. This solves a major problem for developers and companies, helping them avoid liability from using content without proper licensing.
 
-- **Specialized Data & Open Source LLMs**: Masa enables the to contribution of specialized data sets to train AI models and access to open source LLMs provisioned by workers. This empowers builders to create the most valuable and specialized AI applications by leveraging unique data and powerful open source LLMs, all within a decentralized, permissionless ecosystem.
+- **Specialized Data & Open Source LLMs**: Masa enables the contribution of specialized data sets to train AI models and access to open source LLMs provisioned by workers. This empowers builders to create the most valuable and specialized AI applications by leveraging unique data and powerful open source LLMs, all within a decentralized, permissionless ecosystem.
 
 - **Open Marketplace**: Our open, permissionless marketplace democratizes access to AI training data and compute resources. Contributors can earn rewards by contributing data and selling compute, while developers can access the resources they need to build innovative applications.
 
@@ -52,7 +52,7 @@ Masa offers developers a decentralized platform to access diverse data sources a
   - **Crypto Community Insights**: Leverage our Discord Profile and Guild Membership Scraper to extract comprehensive data from prominent crypto communities on Discord. 
   - **Crypto News Aggregation and Summarization**: Utilize our Web Scraper to collect real-time data from leading crypto news websites and blogs. 
 
-By leveraging Masa as a Oracel Node, developers can build innovative AI applications with the power of decentralized data and compute at their fingertips.
+By leveraging Masa as a Oracle Node, developers can build innovative AI applications with the power of decentralized data and compute at their fingertips.
 
 ## Join the Fair AI Revolution
 
@@ -64,4 +64,5 @@ We invite you to join us in building a decentralized future for AI. Explore our 
 **Join our Community on Discord!**  
 Ready to dive deeper into the Masa ecosystem? Connect with our vibrant community on Discord for the latest updates, discussions, and support. [Join us here](https://discord.gg/masafinance)
 :::
+
 
