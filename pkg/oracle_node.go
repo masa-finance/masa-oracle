@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -53,6 +52,7 @@ type OracleNode struct {
 	IsWriter              bool
 	IsTwitterScraper      bool
 	IsWebScraper          bool
+	IsLlmServer           bool
 	StartTime             time.Time
 	AdSubscriptionHandler *ad.SubscriptionHandler
 	WorkerTracker         *pubsub2.WorkerEventTracker
@@ -112,7 +112,9 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	securityOptions := []libp2p.Option{
 		libp2p.Security(noise.ID, noise.New),
 	}
-	// @todo buffer size (was: 208 kiB, wanted: 2048 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+	// @note fix for increase buffer size warning on linux
+	// sudo sysctl -w net.core.rmem_max=7500000
+	// sudo sysctl -w net.core.wmem_max=7500000
 	if cfg.UDP {
 		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))
@@ -150,7 +152,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	engine := system.Root
 
 	var ip any
-	if os.Getenv("ENV") == "local" {
+	if cfg.Environment == "local" {
 		ip = getOutboundIP()
 	} else {
 		ip, _ = pubip.Get()
@@ -174,6 +176,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsWriter:         isWriter,
 		IsTwitterScraper: isTwitterScraper,
 		IsWebScraper:     isWebScraper,
+		IsLlmServer:      cfg.LlmServer,
 		ActorEngine:      engine,
 		ActorRemote:      r,
 	}, nil
@@ -293,6 +296,13 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
+}
+
+// IsActor - centralize flags for actor participation used in workers file.
+func (node *OracleNode) IsActor() bool {
+	return node.IsWebScraper ||
+		node.IsTwitterScraper ||
+		node.IsLlmServer
 }
 
 // Version returns the current version string of the oracle node software.

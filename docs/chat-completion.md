@@ -14,7 +14,7 @@ The LLM Chat handler functions by forwarding user requests directly to the speci
 
 The request structure varies based on the LLM being targeted. For example, when interacting with ollama, the request might look like this:
 
-```
+```json
 {
     "model": "llama3",
     "messages": [
@@ -31,17 +31,18 @@ However, for services like OpenAI's GPT models, the request structure would foll
 
 ### Proxying Requests
 
-To use the LLM Chat feature, you simply send a POST request to the Masa Node endpoint designated for LLM chat interactions. The body of your request should match the structure expected by the LLM you're querying.
+To use the LLM Chat feature, you simply send a POST request to a staked Masa Node endpoint, this can be done to your local node if it is staked. If the node does not have an LLM it will be sent out to the all of your known peers where any node that does support LLMs can service the request.  There is a timeout if no response is received within 30 seconds. The first node to process the request and return the response to the node you called "wins". The body of your request should match the structure expected by the LLM you're querying.  It is an important note that one of the peers in your peer store must support the model for the request. 
 
 > POST to the endpoint `/v1/api/chat`
-
 
 ### URLs for Data Structure Formats
 
 For detailed information on the data structure formats required by different LLMs, refer to their official documentation:
 
 - **OpenAI (GPT models):** [OpenAI API Documentation](https://platform.openai.com/docs/api-reference/authentication)
+
 - **Anthropic (Claude models):** [Anthropic API Documentation](https://docs.anthropic.com/claude/reference/complete_post)
+
 - **Ollama:** [Ollama API Documentation](https://github.com/ollama/ollama/blob/main/docs/api.md)
 
 ### Example Usage
@@ -76,8 +77,41 @@ By following these steps, you can enhance your Masa Node with the ability to ser
 
 For more detailed information on setting up and using Ollama, refer to the [Ollama Documentation](https://github.com/ollama/ollama/tree/main/docs).
 
-
 ### Conclusion
 
 The LLM Chat feature of the Masa Node offers a versatile and powerful tool for developers and researchers to interact with large language models. By acting as a proxy, it simplifies the process of integrating advanced conversational AI into various applications, providing flexibility and ease of use.
 
+## Running Hosted LLM with Cloudflare AI Workers
+
+To run a hosted LLM using Cloudflare AI Workers, follow these steps:
+
+### Setting Up Cloudflare AI Workers
+
+Cloudflare AI Workers provide a scalable and efficient way to host and manage LLMs. To set up Cloudflare AI Workers for your use case, follow these steps:
+
+1. **Create a Cloudflare Account**: If you don't already have a Cloudflare account, sign up at [Cloudflare](https://www.cloudflare.com/).
+
+2. **Set Up a Worker**: Navigate to the Workers section in the Cloudflare dashboard and create a new Worker. Follow the instructions to set up your Worker environment.
+
+3. **Deploy Your Worker**: Write and deploy your Worker script. This script will handle incoming requests and forward them to the appropriate LLM endpoint. Refer to the [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/) for detailed instructions on deploying Workers.
+
+4. **Configure Environment Variables**: Set the necessary environment variables in your Cloudflare Worker script. These variables include the LLM endpoint URL and any required authentication tokens. For example:
+
+    ```javascript
+    export LLM_CF_URL = 'https://gateway.ai.cloudflare.com/v1/a72433aa3bb83aecaca1bc8acecdb166/masa/workers-ai/';
+    export LLM_CF_TOKEN = 'YOUR_CLOUDFLARE_TOKEN';
+    ```
+
+5. **Set LLM_CF_URL**: In your `.env` file, set the `LLM_CF_URL` to point to your Cloudflare Worker instance's URL. This ensures that your Masa Node can route LLM chat requests to Cloudflare AI Workers.
+
+6. **Test Your Setup**: Finally, test your setup by sending a request to your Masa Node that should be handled by the LLM. Verify that the request is correctly processed by Cloudflare AI Workers and that the expected response is returned. This will usually be: `https://<your-worker-subdomain>.workers.dev/api/v1/chat`
+
+7. **Supported LLM Models**: Call the endpoint on your node `http://localhost:8080/api/v1/llm/models` to see the list of supported LLMs.
+
+By following these steps, you can enhance your Masa Node with the ability to serve responses from LLMs hosted on Cloudflare AI Workers, providing a robust and scalable solution for natural language processing and chat functionalities.
+
+For more detailed information on setting up and using Cloudflare AI Workers, refer to the [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/).
+
+### Conclusion
+
+The LLM Chat feature of the Masa Node, when integrated with Cloudflare AI Workers, offers a powerful and scalable tool for developers and researchers to interact with large language models. By leveraging Cloudflare's infrastructure, it simplifies the process of integrating advanced conversational AI into various applications, providing flexibility and ease of use.

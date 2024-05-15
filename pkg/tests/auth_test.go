@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
+	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
 

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masa LLM Playground</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #chat-container {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #chat-box {
+            flex: 1;
+            overflow-y: scroll;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+            display: flex;
+            align-items: center;
+        }
+        .message.user {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+        }
+        .message.bot {
+            background-color: #f1f0f0;
+            align-self: flex-start;
+        }
+        #input-area {
+            padding: 10px;
+            background-color: #eee;
+            display: flex;
+        }
+        #input-box {
+            flex: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+        }
+        #submit-btn {
+            padding: 10px 20px;
+            margin-left: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        #submit-btn:hover {
+            background-color: #0056b3;
+        }
+        #loading-spinner {
+          margin-right: 10px;
+        } 
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        #chat-container {
+            margin-top: 56px; /* Adjust based on navbar height */
+            padding-bottom: 5px;
+        }
+      </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Masa LLM Playground</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#">Staking</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#">Rewards</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Connect</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div id="chat-container">
+        <div id="chat-box">
+            <!-- Messages will appear here -->
+        </div>
+        <div id="input-area">
+            <input type="text" id="input-box" class="form-control" placeholder="Type your message here...">
+            <button id="submit-btn" class="btn btn-primary">Send</button>
+        </div>      
+    </div>
+
+    <script>
+      // add title make full page and a save icon to store the chat history
+        document.getElementById('submit-btn').addEventListener('click', function() {
+            var inputBox = document.getElementById('input-box');
+            var chatBox = document.getElementById('chat-box');
+            var userText = inputBox.value;
+            if(userText.trim()) {
+                // Add user message to chat box
+                var userMsg = document.createElement('div');
+                userMsg.classList.add('message', 'user');
+                userMsg.textContent = userText;
+                chatBox.appendChild(userMsg);
+                inputBox.value = '';
+                chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+
+                var loadingSpinner = document.createElement('div');
+                loadingSpinner.id = 'loading-spinner';
+                loadingSpinner.classList.add('spinner-border', 'text-primary');
+                loadingSpinner.role = 'status';
+                loadingSpinner.innerHTML = '<span class="sr-only">Loading...</span>';
+                chatBox.appendChild(loadingSpinner);
+
+                // Send user input to server and get response
+                
+                fetch('http://localhost:8080/api/v1/chat/cf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      "model": "@cf/qwen/qwen1.5-0.5b-chat",
+                      "messages": [
+                          { "role": "user", "content": userText }
+                      ]
+                      // , "stream": false
+                  })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    chatBox.removeChild(loadingSpinner);
+                    var botMsg = document.createElement('div');
+                    botMsg.classList.add('message', 'bot');
+                    botMsg.innerHTML = '<div id="loading-spinner" class="spinner-border text-primary" role="status" style="display: none;"><span class="sr-only">Loading...</span></div>' + data?.result?.response;
+                    chatBox.appendChild(botMsg);
+                    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    chatBox.removeChild(loadingSpinner);
+                    var errorMsg = document.createElement('div');
+                    errorMsg.classList.add('message', 'bot');
+                    errorMsg.textContent = 'Sorry, there was an error processing your request.';
+                    chatBox.appendChild(errorMsg);
+                    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+                });
+            }
+        });
+
+        document.getElementById('input-box').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('submit-btn').click();
+            }
+        });
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

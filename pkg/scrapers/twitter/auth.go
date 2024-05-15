@@ -3,7 +3,7 @@ package twitter
 import (
 	"fmt"
 
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 )
 
 // Login attempts to log in to the Twitter scraper service.

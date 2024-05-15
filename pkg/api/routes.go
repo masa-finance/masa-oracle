@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
-	docs "github.com/masa-finance/masa-oracle/docs"
+	"github.com/golang-jwt/jwt/v4"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"github.com/masa-finance/masa-oracle/docs"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -34,9 +37,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Initialize CORS middleware with a configuration that allows all origins and specifies
 	// the HTTP methods and headers that can be used in requests.
 	router.Use(cors.New(cors.Config{
-		AllowAllOrigins: true,                                      // Allow requests from any origin
-		AllowMethods:    []string{"GET", "POST", "PUT", "OPTIONS"}, // Specify allowed methods
-		AllowHeaders:    []string{"Origin", "Authorization"},       // Specify allowed headers
+		AllowAllOrigins:     true,                                      // Allow requests from any origin
+		AllowMethods:        []string{"GET", "POST", "PUT", "OPTIONS"}, // Specify allowed methods
+		AllowHeaders:        []string{"Origin", "Authorization"},       // Specify allowed headers
+		AllowPrivateNetwork: true,
 	}))
 
 	// Define a list of routes that should not require authentication.
@@ -55,6 +59,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// Iterate over the ignored routes to determine if the current request should bypass authentication.
 		for _, route := range ignoredRoutes {
 			if c.Request.URL.Path == route {
+				c.Next() // Proceed to the next middleware or handler without authentication.
+				return
+			}
+			if strings.HasPrefix(c.Request.URL.Path, "/auth") {
 				c.Next() // Proceed to the next middleware or handler without authentication.
 				return
 			}
@@ -79,12 +87,36 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		}
 		// Extract the token from the Authorization header by removing the Bearer schema prefix.
 		token := authHeader[len(BearerSchema):]
+
 		// Validate the token against the expected API key stored in environment variables.
-		if token != os.Getenv("API_KEY") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API token"})
+		if os.Getenv("API_KEY") != "" {
+			if token != os.Getenv("API_KEY") {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API token"})
+				return
+			} else {
+				c.Next()
+				return
+			}
+		}
+
+		// Validate the JWT token
+		claims := jwt.MapClaims{}
+		_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+			//@todo decode the token get the apiKey, hash and compare it
+			return []byte(API.Node.Host.ID().String()), nil
+		})
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid JWT token"})
 			return
 		}
-		c.Next() // Proceed to the next middleware or handler since authentication is successful.
+		// Check if the token has expired
+		if exp, ok := claims["exp"].(float64); ok {
+			if int64(exp) < time.Now().Unix() {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "JWT token has expired"})
+				return
+			}
+		}
+		c.Next()
 	})
 
 	// Serving html
@@ -97,7 +129,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	//	@Title			Masa API
 	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
 	//	@Host			https://api.masa.ai
-	//	@Version		0.0.2-beta
+	//	@Version		0.0.3-beta
 	//	@contact.name	Masa API Support
 	//	@contact.url	https://masa.ai
 	//	@contact.email	support@masa.ai
@@ -155,6 +187,18 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Invalid subscription data"
 		// @Router /ads/subscribe [post]
 		v1.POST("/ads/subscribe", API.SubscribeToAds())
+
+		// @Summary Search Followers by Twitter Username
+		// @Description Retrieves followers from a specific Twitter profile.
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Param   username   path    string  true  "Twitter Username"
+		// @Param   maxUsersNbr   query   int     false  "Maximum number of users to return"  default(20)
+		// @Success 200 {array} Profile "Array of profiles a user has as followers"
+		// @Failure 400 {object} ErrorResponse "Invalid username or error fetching followers"
+		// @Router /data/twitter/followers/{username} [get]
+		v1.GET("/data/twitter/followers/:username", API.GetTwitterFollowersHandler())
 
 		// @Summary Search Twitter Profile
 		// @Description Retrieves tweets from a specific Twitter profile
@@ -271,7 +315,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error retrieving public keys"
 		// @Router /publickeys [get]
 		v1.GET("/publickeys", API.GetPublicKeysHandler())
-		// @todo ^ fix
 
 		// @Summary Publish Public Key
 		// @Description Publishes a new public key to the node
@@ -328,7 +371,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
 
-		// @Summary Chat with AI
+		// @Summary Chat with Local Ollama AI
 		// @Description Initiates a chat session with an AI model that accepts common ollama formatted requests
 		// @Tags Chat
 		// @Accept  json
@@ -337,10 +380,21 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Success 200 {object} ChatResponse "Successfully received response from AI"
 		// @Failure 400 {object} ErrorResponse "Error communicating with AI"
 		// @Router /chat [post]
-		v1.POST("/chat", API.LlmChat())
+		v1.POST("/chat", API.LocalLlmChat())
+
+		// @Summary Chat using Cloudflare AI Workers
+		// @Description Initiates a chat session with a Cloudflare AI model
+		// @Tags Chat
+		// @Accept  json
+		// @Produce  json
+		// @Param   message   body    string  true  "Message to send to Cloudflare AI"
+		// @Success 200 {object} ChatResponse "Successfully received response from Cloudflare AI"
+		// @Failure 400 {object} ErrorResponse "Error communicating with Cloudflare AI"
+		// @Router /chat/cf [post]
+		v1.POST("/chat/cf", API.CfLlmChat())
 
 		// @note a test route for worker topics
-		v1.GET("/test", API.GetTest())
+		v1.GET("/test/:i", API.GetTest())
 	}
 
 	// @Summary Node Status Page
@@ -352,6 +406,26 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
 	// @Router /status [get]
 	router.GET("/status", API.NodeStatusPageHandler())
+
+	// @Summary Chat Page
+	// @Description Renders the chat page for user interaction with the AI
+	// @Tags Chat
+	// @Accept  html
+	// @Produce  html
+	// @Success 200 {object} string "Successfully rendered chat page"
+	// @Failure 500 {object} ErrorResponse "Error rendering chat page"
+	// @Router /chat [get]
+	router.GET("/chat", API.ChatPageHandler())
+
+	// @Summary Get Node API Key
+	// @Description Retrieves the API key for the node
+	// @Tags Authentication
+	// @Accept  json
+	// @Produce  json
+	// @Success 200 {object} map[string]interface{} "Successfully retrieved API key"
+	// @Failure 500 {object} ErrorResponse "Error generating API key"
+	// @Router /auth [get]
+	router.GET("/auth", API.GetNodeApiKey())
 
 	// @Summary Health Check
 	// @Description Checks the health status of the API
