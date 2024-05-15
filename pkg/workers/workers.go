@@ -369,6 +369,16 @@ func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string
 	_ = db.WriteData(node, peerId, jsonData)
 }
 
+// getResponseMessage converts a messages.Response object into a pubsub2.Message object.
+// It unmarshals the JSON-encoded response value into a map and then constructs a new pubsub2.Message
+// using the extracted data.
+//
+// Parameters:
+//   - response: A pointer to a messages.Response object containing the JSON-encoded response data.
+//
+// Returns:
+//   - A pointer to a pubsub2.Message object constructed from the response data.
+//   - An error if there is an issue with unmarshalling the response data.
 func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
 	responseData := map[string]interface{}{}
 
@@ -457,6 +467,16 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	}
 }
 
+func SubscribeToWorkers(node *masa.OracleNode) {
+	// @todo need to add this even if not participating to send messages ....
+	// Add subscription to worker tracker
+	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
+	if err != nil {
+		logrus.Errorf("Subscribe error %v", err)
+	}
+}
+
 // MonitorWorkers monitors worker data by subscribing to the completed work topic,
 // computing a CID for each received data, and writing the data to the database.
 //
@@ -473,13 +493,6 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
-
-	// Add subscription to worker tracker
-	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
-	if err != nil {
-		logrus.Errorf("Subscribe error %v", err)
-	}
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -509,7 +522,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 					}
 
 					if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
-						validatorData, err = json.Marshal(validatorDataMap["Response"])
+						validatorData, err := json.Marshal(validatorDataMap["Response"])
 						if err != nil {
 							logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
 						}
@@ -522,11 +535,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			}
 			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
-			// val := db.ReadData(node, key)
-			// handle double spend
-			// if val == nil {
 			updateRecords(node, validatorData, key, data.ID)
-			// }
 		case <-ctx.Done():
 			return
 		}

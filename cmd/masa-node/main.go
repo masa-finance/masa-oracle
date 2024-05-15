@@ -76,7 +76,8 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// Start monitoring actor workers
+	// Subscribe and if actor start monitoring actor workers
+	go workers.SubscribeToWorkers(node)
 	if node.IsActor() && isStaked {
 		go workers.MonitorWorkers(ctx, node)
 	}
