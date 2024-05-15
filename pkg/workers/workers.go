@@ -9,22 +9,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
-
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
+	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
 
 	"github.com/multiformats/go-multiaddr"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/pubsub"
-
 	"github.com/asynkron/protoactor-go/actor"
-
-	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
 
 	"github.com/ipfs/go-cid"
 
@@ -328,6 +324,14 @@ func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string
 	_ = db.WriteData(node, peerId, jsonData)
 }
 
+//type Message struct {
+//	*pb.Message
+//	ID            string
+//	ReceivedFrom  peer.ID
+//	ValidatorData interface{}
+//	Local         bool
+//}
+
 // SendWork is responsible for handling work messages and processing them based on the request type.
 // It supports the following request types:
 // - "web": Scrapes web data from the specified URL with the given depth.
@@ -352,7 +356,20 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	if node.IsActor() {
-		node.ActorEngine.Send(pid, message)
+		future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
+		result, err := future.Result()
+		if err != nil {
+			logrus.Errorf("Error receiving response: %v", err)
+			return
+		}
+		response := result.(*messages.Response)
+		msg := &pubsub2.Message{}
+		err = json.Unmarshal([]byte(response.Value), msg)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		workerDoneCh <- msg
 	}
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
@@ -377,12 +394,8 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						return
 					}
 					response := result.(*messages.Response)
-					temp := make(map[string]interface{})
-					_ = json.Unmarshal([]byte(response.Value), &temp)
-					msg := &pubsub2.Message{
-						ValidatorData: temp["ValidatorData"],
-						ID:            temp["ID"].(string),
-					}
+					msg := &pubsub2.Message{}
+					_ = json.Unmarshal([]byte(response.Value), msg)
 					workerDoneCh <- msg
 				}
 			}

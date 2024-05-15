@@ -89,7 +89,7 @@ func main() {
 			logrus.Error(err)
 		} else {
 			uid := uuid.New().String()
-			err := db.PostData(uid, []byte(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`), []byte(`{"tweets": ["twit", "twit"]}`))
+			err := db.FireData(uid, []byte(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`), []byte(`{"tweets": ["twit", "twit"]}`))
 			if err != nil {
 				logrus.Error(err)
 			}

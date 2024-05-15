@@ -87,7 +87,7 @@ func applyMigrations(database *sql.DB) error {
 	return nil
 }
 
-func PostData(uid string, payload []byte, response []byte) error {
+func FireData(uid string, payload []byte, response []byte) error {
 	database, err := ConnectToPostgres(false)
 	if err != nil {
 		return nil
