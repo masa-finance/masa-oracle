@@ -83,31 +83,33 @@ func main() {
 
 	// WIP
 	if os.Getenv("PG_URL") != "" {
-
-		// to run migrations
-		_, _ = db.ConnectToPostgres(true)
-
-		uid := uuid.New().String()
-		err := db.PostData(uid, []byte(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`), []byte(`{"tweets": ["twit", "twit"]}`))
+		// run migrations
+		_, err = db.ConnectToPostgres(true)
 		if err != nil {
 			logrus.Error(err)
-		}
-		fErr := db.FireEvent(uid, []byte(`{"event":"Actor Started"}`))
-		if fErr != nil {
-			logrus.Error(fErr)
-		}
-
-		work, gErr := db.GetData(uid)
-		if gErr != nil {
-			logrus.Error(gErr)
-		}
-
-		for _, w := range work {
-			jsonData, err := json.Marshal(w)
+		} else {
+			uid := uuid.New().String()
+			err := db.PostData(uid, []byte(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`), []byte(`{"tweets": ["twit", "twit"]}`))
 			if err != nil {
-				logrus.Error("Failed to parse work into JSON: ", err)
-			} else {
-				logrus.Info(string(jsonData))
+				logrus.Error(err)
+			}
+			fErr := db.FireEvent(uid, []byte(`{"event":"Actor Started"}`))
+			if fErr != nil {
+				logrus.Error(fErr)
+			}
+
+			work, gErr := db.GetData(uid)
+			if gErr != nil {
+				logrus.Error(gErr)
+			}
+
+			for _, w := range work {
+				jsonData, err := json.Marshal(w)
+				if err != nil {
+					logrus.Error("Failed to parse work into JSON: ", err)
+				} else {
+					logrus.Info(string(jsonData))
+				}
 			}
 		}
 	}

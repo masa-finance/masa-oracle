@@ -33,6 +33,11 @@ type Work struct {
 
 // ConnectToPostgres Function to connect to Postgres
 func ConnectToPostgres(migrations bool) (*sql.DB, error) {
+	writer := os.Getenv("WRITER_NODE")
+	if writer == "" || writer == "false" {
+		return nil, fmt.Errorf("401, node is not authorized to write to the datastore")
+	}
+
 	database, err := sql.Open("postgres", os.Getenv("PG_URL"))
 	if err != nil {
 		return nil, err
@@ -106,7 +111,7 @@ func FireEvent(uid string, value []byte) error {
 	defer database.Close()
 
 	insertEventQuery := `INSERT INTO "public"."event" ("work_id", "payload") VALUES ($1, $2)`
-	payloadEventJSON := json.RawMessage(`{"event":"Actor Started"}`)
+	payloadEventJSON := json.RawMessage(value) // `{"event":"Actor Started"}`
 	_, err = database.Exec(insertEventQuery, uid, payloadEventJSON)
 	if err != nil {
 		return err
