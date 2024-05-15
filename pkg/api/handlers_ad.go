@@ -40,7 +40,7 @@ func (api *API) PostAd() gin.HandlerFunc {
 func (api *API) SubscribeToAds() gin.HandlerFunc {
 	handler := &ad.SubscriptionHandler{}
 	return func(c *gin.Context) {
-		err := api.Node.PubSubManager.AddSubscription(config.TopicWithVersion(config.AdTopic), handler)
+		err := api.Node.PubSubManager.AddSubscription(config.TopicWithVersion(config.AdTopic), handler, false)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

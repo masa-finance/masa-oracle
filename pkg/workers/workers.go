@@ -4,24 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
-	"github.com/masa-finance/masa-oracle/pkg/db"
+	"github.com/google/uuid"
+	"github.com/libp2p/go-libp2p/core/peer"
 
+	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	"github.com/masa-finance/masa-oracle/pkg/scraper"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
+	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
 
 	"github.com/multiformats/go-multiaddr"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/pubsub"
-
-	actor "github.com/asynkron/protoactor-go/actor"
-	messages "github.com/masa-finance/masa-oracle/pkg/workers/messages"
+	"github.com/asynkron/protoactor-go/actor"
 
 	"github.com/ipfs/go-cid"
 
@@ -47,20 +49,23 @@ type Record struct {
 	CIDs   []CID  `json:"cids"`
 }
 
+type LLMResponse struct {
+	Response  map[string]interface{}
+	ChannelId string
+}
+
 type OracleData struct {
 	Id        string `json:"id"`
 	PeerId    string `json:"peer_id"`
 	Request   string `json:"request"`
-	Domain    string `json:"domain"`
-	ModelType string `json:"model_type"`
-	ModelName string `json:"model_name"`
+	ModelName string `json:"model_name,omitempty"`
 	Steps     []struct {
 		Idx               int    `json:"idx"`
+		RawContent        string `json:"raw_content,omitempty"`
+		StructuredContent string `json:"structured_content,omitempty"`
 		SystemPrompt      string `json:"system_prompt,omitempty"`
 		Timestamp         string `json:"timestamp"`
 		UserPrompt        string `json:"user_prompt,omitempty"`
-		RawContent        string `json:"raw_content,omitempty"`
-		StructuredContent string `json:"structured_content,omitempty"`
 	} `json:"steps"`
 }
 
@@ -97,14 +102,85 @@ func (a *Worker) Receive(ctx actor.Context) {
 			logrus.Errorf("Error parsing work data: %v", err)
 			return
 		}
+		// WIP oracle work data
+		id := uuid.New().String()
+		oracleData := OracleData{
+			Id:        id,
+			PeerId:    m.Id,
+			Request:   workData["request"],
+			ModelName: workData["model"],
+			Steps: []struct {
+				Idx               int    `json:"idx"`
+				RawContent        string `json:"raw_content,omitempty"`
+				StructuredContent string `json:"structured_content,omitempty"`
+				SystemPrompt      string `json:"system_prompt,omitempty"`
+				Timestamp         string `json:"timestamp"`
+				UserPrompt        string `json:"user_prompt,omitempty"`
+			}{
+				{
+					Idx:        0,
+					Timestamp:  time.Now().String(),
+					RawContent: `Actor Started`,
+				},
+				{
+					Idx:          1,
+					RawContent:   `{"request": "twitter", "query": "$MASA", "count": 5}`,
+					SystemPrompt: `the sentiment prompt`,
+					Timestamp:    time.Now().String(),
+					UserPrompt:   `$MASA masa finance token price`,
+				},
+				{
+					Idx:        2,
+					Timestamp:  time.Now().String(),
+					RawContent: `Actor Stopped`,
+				},
+			},
+		}
+		jsonOD, _ := json.Marshal(oracleData)
+		logrus.Debugf("oracleData to gateway %s", jsonOD)
+		// WIP oracle work data
+
 		switch workData["request"] {
+		case "llm-chat":
+			logrus.Infof("[+] LLM Chat %s %s", m.Data, m.Sender)
+			uri := config.GetInstance().LLMChatUrl
+			if uri == "" {
+				logrus.Error("missing env variable LLM_CHAT_URL")
+				return
+			}
+			resp, err := Post(uri, []byte(workData["body"]), nil)
+			if err != nil {
+				return
+			}
+			var temp map[string]interface{}
+			err = json.Unmarshal(resp, &temp)
+			if err != nil {
+				logrus.Errorf("Error unmarshalling response: %v", err)
+				return
+			}
+			llmResponse := LLMResponse{
+				Response:  temp,
+				ChannelId: workData["request_id"],
+			}
+			val := &pubsub2.Message{
+				ValidatorData: llmResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			// Send the response back to the original requester
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+
 		case "web":
 			depth, err := strconv.Atoi(workData["depth"])
 			if err != nil {
 				logrus.Errorf("Error converting depth to int: %v", err)
 				return
 			}
-			webData, err := scraper.ScrapeWebData([]string{workData["url"]}, depth)
+			webData, err := web.ScrapeWebData([]string{workData["url"]}, depth)
 			if err != nil {
 				logrus.Errorf("%v", err)
 				return
@@ -156,7 +232,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("Error converting depth to int: %v", err)
 				return
 			}
-			_, sentimentSummary, _ := scraper.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
+			_, sentimentSummary, _ := web.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
 			if sentimentSummary != "" {
 				jsonData, _ := json.Marshal(sentimentSummary)
 				workerDoneCh <- &pubsub2.Message{
@@ -231,7 +307,7 @@ func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
 		logrus.Error(err)
 	}
 	jsonData, _ := json.Marshal(nodeData)
-	go db.WriteData(node, peerId, jsonData)
+	_ = db.WriteData(node, peerId, jsonData)
 }
 
 // updateRecords updates the records for a given node and key with the provided data.
@@ -243,27 +319,80 @@ func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
 func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string) {
 	_ = db.WriteData(node, key, data)
 
-	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+	var nodeData pubsub.NodeData
+	nodeDataBytes, err := db.GetCache(context.Background(), peerId)
+	if err != nil {
+		nd := node.NodeTracker.GetNodeData(peerId)
+		nodeData = *nd
+	} else {
+		err = json.Unmarshal(nodeDataBytes, &nodeData)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	}
 
 	newCID := CID{
 		RecordId:  key,
 		Timestamp: time.Now(),
 	}
 
-	if nodeData.Records == nil {
-		nodeData.Records = []CID{}
+	records := nodeData.Records
+
+	if records == nil {
+		recordsSlice, ok := records.([]CID)
+		if !ok {
+			recordsSlice = []CID{}
+		}
+		recordsSlice = append(recordsSlice, newCID)
+		nodeData.Records = recordsSlice
+		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	} else {
+		records = append(nodeData.Records.([]interface{}), newCID)
+		nodeData.Records = records
+		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 	}
 
-	records := nodeData.Records.([]CID)
-	records = append(records, newCID)
-	nodeData.Records = records
-
-	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
 		logrus.Error(err)
+		return
 	}
-	jsonData, _ := json.Marshal(nodeData)
 	_ = db.WriteData(node, peerId, jsonData)
+}
+
+// getResponseMessage converts a messages.Response object into a pubsub2.Message object.
+// It unmarshals the JSON-encoded response value into a map and then constructs a new pubsub2.Message
+// using the extracted data.
+//
+// Parameters:
+//   - response: A pointer to a messages.Response object containing the JSON-encoded response data.
+//
+// Returns:
+//   - A pointer to a pubsub2.Message object constructed from the response data.
+//   - An error if there is an issue with unmarshalling the response data.
+func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
+	responseData := map[string]interface{}{}
+
+	err := json.Unmarshal([]byte(response.Value), &responseData)
+	if err != nil {
+		return nil, err
+	}
+	msg := &pubsub2.Message{
+		ID:            responseData["ID"].(string),
+		ReceivedFrom:  peer.ID(responseData["ReceivedFrom"].(string)),
+		ValidatorData: responseData["ValidatorData"],
+		Local:         responseData["Local"].(bool),
+	}
+	return msg, nil
 }
 
 // SendWork is responsible for handling work messages and processing them based on the request type.
@@ -288,10 +417,26 @@ func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
-	// id := uuid.New().String()
-	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: fmt.Sprintf("%s", m.ReceivedFrom)}
-	if node.IsTwitterScraper || node.IsWebScraper {
-		node.ActorEngine.Send(pid, message)
+	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
+	if node.IsActor() {
+		// node.ActorEngine.Send(pid, message)
+		future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
+		result, err := future.Result()
+		if err != nil {
+			logrus.Errorf("Error receiving response: %v", err)
+			return
+		}
+		response := result.(*messages.Response)
+		msg := &pubsub2.Message{}
+		err = json.Unmarshal([]byte(response.Value), msg)
+		if err != nil {
+			msg, err = getResponseMessage(result.(*messages.Response))
+			if err != nil {
+				logrus.Errorf("Error getting response message: %v", err)
+				return
+			}
+		}
+		workerDoneCh <- msg
 	}
 	peers := node.Host.Network().Peers()
 	for _, peer := range peers {
@@ -309,10 +454,44 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					node.ActorEngine.Send(spawnedPID, &messages.Connect{
 						Sender: client,
 					})
-					node.ActorEngine.Send(spawnedPID, message)
+					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
+					result, err := future.Result()
+					if err != nil {
+						logrus.Errorf("Error receiving response: %v", err)
+						return
+					}
+					response := result.(*messages.Response)
+					msg := &pubsub2.Message{}
+					err = json.Unmarshal([]byte(response.Value), msg)
+					if err != nil {
+						msg, err = getResponseMessage(result.(*messages.Response))
+						if err != nil {
+							logrus.Errorf("Error getting response message: %v", err)
+							return
+						}
+					}
+
+					workerDoneCh <- msg
 				}
 			}
 		}
+	}
+}
+
+// SubscribeToWorkers subscribes the given OracleNode to worker events.
+// @note need to add this even if not participating to send messages ....
+//
+// Parameters:
+//   - node: A pointer to the OracleNode instance that will be subscribed to worker events.
+//
+// The function initializes the WorkerEventTracker for the node and adds a subscription
+// to the worker topic using the PubSubManager. If an error occurs during the subscription,
+// it logs the error.
+func SubscribeToWorkers(node *masa.OracleNode) {
+	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
+	if err != nil {
+		logrus.Errorf("Subscribe error %v", err)
 	}
 }
 
@@ -329,34 +508,52 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
+
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
-	var err error
-	workerEventTracker := &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err = node.PubSubManager.Subscribe(config.TopicWithVersion(config.WorkerTopic), workerEventTracker)
-	if err != nil {
-		logrus.Errorf("Subscribe error %v", err)
-	}
-
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
+	rcm := pubsub.GetResponseChannelMap()
+	var validatorData []byte
+
 	for {
 		select {
 		case <-ticker.C:
 			logrus.Debug("tick")
 		case totalBytes := <-dataLengthCh:
 			go updateParticipation(node, totalBytes, node.Host.ID().String())
-		case work := <-workerStatusCh:
+		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
-			key, _ := computeCid(string(data.ValidatorData.([]byte)))
+			if _, ok := data.ValidatorData.([]byte); ok {
+				validatorData = data.ValidatorData.([]byte)
+			} else if _, ok := data.ValidatorData.([]byte); ok {
+				validatorData = []byte(data.ValidatorData.(string))
+			} else {
+				switch reflect.TypeOf(data.ValidatorData).Kind() {
+				case reflect.Map:
+					validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
+					if !ok {
+						logrus.Errorf("Error asserting type: %v", ok)
+					}
+
+					if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
+						validatorData, err := json.Marshal(validatorDataMap["Response"])
+						if err != nil {
+							logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+						}
+						ch <- validatorData
+						close(ch)
+					}
+				default:
+					logrus.Errorf("Error processing data.ValidatorData: %v", data.ValidatorData)
+				}
+			}
+			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
-			// val := db.ReadData(node, key)
-			// if val == nil {
-			updateRecords(node, data.ValidatorData.([]byte), key, fmt.Sprintf("%s", data.ID))
-			// }
+			updateRecords(node, validatorData, key, data.ID)
 		case <-ctx.Done():
 			return
 		}

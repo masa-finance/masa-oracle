@@ -19,4 +19,5 @@ message Work {
 
 message Response {
   string Value = 1;
+  string RequestId = 2;
 }
