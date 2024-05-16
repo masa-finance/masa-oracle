@@ -6,19 +6,26 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"reflect"
+
+	"strings"
+
+	"strconv"
+
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-
-	"github.com/masa-finance/masa-oracle/pkg/scraper"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
+
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 )
 
 // GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.
@@ -31,6 +38,7 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 			string(config.Models.ClaudeSonnet),
 			string(config.Models.ClaudeHaiku),
 			string(config.Models.GPT4),
+			string(config.Models.GPT4o),
 			string(config.Models.GPT4Turbo),
 			string(config.Models.GPT35Turbo),
 			string(config.Models.LLama2),
@@ -40,30 +48,26 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 			string(config.Models.Mixtral),
 			string(config.Models.OpenChat),
 			string(config.Models.NeuralChat),
+			string(config.Models.CloudflareQwen15Chat),
+			string(config.Models.CloudflareLlama27bChatFp16),
+			string(config.Models.CloudflareLlama38bInstruct),
+			string(config.Models.CloudflareMistral7bInstruct),
+			string(config.Models.CloudflareMistral7bInstructV01),
+			string(config.Models.CloudflareOpenchat35_0106),
+			string(config.Models.CloudflareMicrosoftPhi2),
+			string(config.Models.HuggingFaceGoogleGemma7bIt),
+			string(config.Models.HuggingFaceNousresearchHermes2ProMistral7b),
+			string(config.Models.HuggingFaceTheblokeLlama213bChatAwq),
+			string(config.Models.HuggingFaceTheblokeNeuralChat7bV31Awq),
 		}
 		c.JSON(http.StatusOK, gin.H{"models": models})
-
 	}
 }
 
 // SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
 // Models Supported:
 //
-//	"all"
-//
-// claude-3-opus-20240229
-// claude-3-sonnet-20240229
-// claude-3-haiku-20240307
-// gpt-4
-// gpt-4-turbo-preview
-// gpt-3.5-turbo
-// llama2
-// llama3
-// mistral
-// gemma
-// mixtral
-// openchat
-// neural-chat
+//	chose a model or use "all"
 func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -201,7 +205,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 				model := val.Field(i).Interface().(config.ModelType)
 				startTime := time.Now() // Start time measurement
 
-				_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+				_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 				j, _ := json.Marshal(sentimentSummary)
 				sentimentSummary = string(j)
 
@@ -224,7 +228,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		} else {
 
-			_, sentimentSummary, err = scraper.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
+			_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
 			j, _ := json.Marshal(sentimentSummary)
 			sentimentSummary = llmbridge.SanitizeResponse(string(j))
 
@@ -258,6 +262,33 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"tweets": profile})
+	}
+}
+
+// GetTwitterFollowersHandler returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
+func (api *API) GetTwitterFollowersHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.Param("username") // Assuming you're using a URL parameter for the username
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		// Extracting maxUsersNbr from query parameters, with a default value if not specified
+		maxUsersNbrStr := c.DefaultQuery("maxUsersNbr", "20") // Default to 20 if not specified
+		maxUsersNbr, err := strconv.Atoi(maxUsersNbrStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid maxUsersNbr parameter"})
+			return
+		}
+
+		followers, err := twitter.ScrapeFollowersForProfile(username, maxUsersNbr)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch followers", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"followers": followers})
 	}
 }
 
@@ -337,7 +368,7 @@ func (api *API) WebData() gin.HandlerFunc {
 			reqBody.Depth = 10 // Default count
 		}
 
-		collectedData, err := scraper.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
+		collectedData, err := web.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
 			return
@@ -347,7 +378,16 @@ func (api *API) WebData() gin.HandlerFunc {
 	}
 }
 
-// LlmChat handles requests for chatting with AI models hosted by ollama.
+type LLMChat struct {
+	Model    string `json:"model,omitempty"`
+	Messages []struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"messages,omitempty"`
+	Stream bool `json:"stream"`
+}
+
+// LocalLlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //
 //	{
@@ -372,40 +412,143 @@ func (api *API) WebData() gin.HandlerFunc {
 // https://docs.anthropic.com/claude/reference/complete_post
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 // note: Ollama recently added support for the OpenAI structure which can simplify integrating it.
-func (api *API) LlmChat() gin.HandlerFunc {
+func (api *API) LocalLlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// we just want to proxy the request JSON directly to the endpoint we are calling.
 		body := c.Request.Body
-		bodyBytes, err := io.ReadAll(body)
-		if err != nil {
+		var reqBody LLMChat
+		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		// Process the message
-		uri := config.GetInstance().LLMChatUrl
-		if uri == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CHAT_URL")})
 			return
 		}
-		resp, err := http.Post(uri, "application/json", bytes.NewReader(bodyBytes))
+		reqBody.Model = strings.TrimPrefix(reqBody.Model, "ollama/")
+		reqBody.Stream = false
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
+
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+
+		llmRequest := make(map[string]string)
+		llmRequest["request"] = "llm-chat"
+		llmRequest["request_id"] = requestID
+		llmRequest["body"] = string(bodyBytes)
+		jsn, err := json.Marshal(llmRequest)
+		if err != nil {
 			if err != nil {
-				logrus.Error(err)
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			}
-		}(resp.Body)
+		}
+		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn); err != nil {
+			logrus.Errorf("%v", err)
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			return
+		}
+
+		result := make(map[string]interface{})
+		// Wait for the response
+		select {
+		case response := <-responseCh:
+			err := json.Unmarshal(response, &result)
+			if err != nil {
+				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, result)
+		case <-time.After(30 * time.Second):
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+		}
+	}
+}
+
+// CfLlmChat handles the Cloudflare LLM chat requests.
+// It reads the request body, appends a system message, and forwards the request to the configured LLM endpoint.
+// The response from the LLM endpoint is then returned to the client.
+//
+//	{
+//	    "model": "@cf/meta/llama-3-8b-instruct",
+//	    "messages": [
+//	        {
+//	            "role": "user",
+//	            "content": "why is the sky blue?"
+//	        }
+//	    ]
+//	}
+//
+// Models
+//
+//	@cf/qwen/qwen1.5-0.5b-chat
+//	@cf/meta/llama-2-7b-chat-fp16
+//	@cf/meta/llama-3-8b-instruct
+//	@cf/mistral/mistral-7b-instruct
+//	@cf/mistral/mistral-7b-instruct-v0.1
+//	@hf/google/gemma-7b-it
+//	@hf/nousresearch/hermes-2-pro-mistral-7b
+//	@hf/thebloke/llama-2-13b-chat-awq
+//	@hf/thebloke/neural-chat-7b-v3-1-awq
+//	@cf/openchat/openchat-3.5-0106
+//	@cf/microsoft/phi-2
+//
+// @return gin.HandlerFunc - the handler function for the LLM chat requests.
+func (api *API) CfLlmChat() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		body := c.Request.Body
+		var reqBody LLMChat
+		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		reqBody.Messages = append(reqBody.Messages, struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		}{
+			Role: "system",
+			// use this for sentiment analysis
+			// Content: "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer`s attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.",
+			// use this for standard chat
+			Content: os.Getenv("PROMPT"),
+		})
+
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		cfUrl := config.GetInstance().LLMCfUrl
+		if cfUrl == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CF_URL")})
+			return
+		}
+		uri := fmt.Sprintf("%s%s", cfUrl, reqBody.Model)
+		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_CF_TOKEN"))
+		req.Header.Set("Authorization", bearer)
+		req.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		defer resp.Body.Close()
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 		var payload map[string]interface{}
 		err = json.Unmarshal(respBody, &payload)
 		if err != nil {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
-		// Return the response
 		c.JSON(http.StatusOK, payload)
 	}
 }

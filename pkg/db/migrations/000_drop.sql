@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS "public"."event" CASCADE;
+DROP TABLE IF EXISTS "public"."work" CASCADE;
+

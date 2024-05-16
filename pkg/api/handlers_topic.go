@@ -1,8 +1,9 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
@@ -29,7 +30,7 @@ func (api *API) CreateNewTopicHandler() gin.HandlerFunc {
 		topicHandler := pubsub.NewTopicHandler()
 
 		// Use the AddSubscription method to create the new topic and subscribe the TopicHandler to it.
-		if err := api.Node.PubSubManager.AddSubscription(config.TopicWithVersion(request.TopicName), topicHandler); err != nil {
+		if err := api.Node.PubSubManager.AddSubscription(config.TopicWithVersion(request.TopicName), topicHandler, false); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

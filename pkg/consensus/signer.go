@@ -8,10 +8,43 @@ package consensus
 import (
 	"encoding/hex"
 	"fmt"
+	"time"
 
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
+
+func GenerateJWTToken(peerId string) (string, error) {
+	// Set the expiration time for the token (e.g., 24 hours from now)
+	expirationTime := time.Now().Add(24 * time.Hour)
+
+	mhHash, err := mh.Sum([]byte(peerId), mh.SHA2_256, -1)
+	if err != nil {
+		return "", err
+	}
+	apiKey := cid.NewCidV1(cid.Raw, mhHash).String()
+
+	// Create the JWT claims
+	claims := jwt.MapClaims{
+		"apiKey": apiKey,
+		"exp":    expirationTime.Unix(),
+	}
+
+	// Create a new JWT token with the claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign the token
+	secretKey := []byte(peerId)
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
 
 // SignData signs the data using the provided private key and returns the signature.
 func SignData(privKey crypto.PrivKey, data []byte) ([]byte, error) {

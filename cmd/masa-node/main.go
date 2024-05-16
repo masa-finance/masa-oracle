@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
+	"github.com/google/uuid"
+
 	"github.com/masa-finance/masa-oracle/pkg/workers"
+
+	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
@@ -15,10 +21,14 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--version" {
+		fmt.Printf("Masa Oracle Node Version: %s\n", config.Version)
+		os.Exit(0)
+	}
+
 	cfg := config.GetInstance()
 	cfg.LogConfig()
 	cfg.SetupLogging()
@@ -66,12 +76,45 @@ func main() {
 
 	go db.InitResolverCache(node, keyManager)
 
-	// Start monitoring actor workers
-	if cfg.TwitterScraper || cfg.WebScraper {
-		if isStaked {
-			go workers.MonitorWorkers(ctx, node)
+	// Subscribe and if actor start monitoring actor workers
+	go workers.SubscribeToWorkers(node)
+	if node.IsActor() && isStaked {
+		go workers.MonitorWorkers(ctx, node)
+	}
+
+	// WIP
+	if os.Getenv("PG_URL") != "" {
+		// run migrations
+		_, err = db.ConnectToPostgres(true)
+		if err != nil {
+			logrus.Error(err)
+		} else {
+			uid := uuid.New().String()
+			err := db.FireData(uid, []byte(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`), []byte(`{"tweets": ["twit", "twit"]}`))
+			if err != nil {
+				logrus.Error(err)
+			}
+			fErr := db.FireEvent(uid, []byte(`{"event":"Actor Started"}`))
+			if fErr != nil {
+				logrus.Error(fErr)
+			}
+
+			work, gErr := db.GetData(uid)
+			if gErr != nil {
+				logrus.Error(gErr)
+			}
+
+			for _, w := range work {
+				jsonData, err := json.Marshal(w)
+				if err != nil {
+					logrus.Error("Failed to parse work into JSON: ", err)
+				} else {
+					logrus.Info(string(jsonData))
+				}
+			}
 		}
 	}
+	// WIP
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
@@ -100,7 +143,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode, cfg.TwitterScraper, cfg.WebScraper)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode, cfg.TwitterScraper, cfg.WebScraper, config.Version)
 
 	<-ctx.Done()
 }
