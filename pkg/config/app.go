@@ -81,6 +81,7 @@ type AppConfig struct {
 	TwitterUsername    string `mapstructure:"twitterUsername"`
 	TwitterPassword    string `mapstructure:"twitterPassword"`
 	Twitter2FaCode     string `mapstructure:"twitter2FaCode"`
+	DiscordBotToken    string `mapstructure:"discordBotToken"`
 	ClaudeApiKey       string `mapstructure:"claudeApiKey"`
 	ClaudeApiURL       string `mapstructure:"claudeApiURL"`
 	ClaudeApiVersion   string `mapstructure:"claudeApiVersion"`
@@ -191,6 +192,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
 		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
 		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
+		viper.SetDefault(DiscordBotToken, os.Getenv("DISCORD_BOT_TOKEN"))
 		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
 		viper.SetDefault(ClaudeApiURL, os.Getenv("CLAUDE_API_URL"))
 		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
@@ -279,6 +281,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.TwitterUsername, "twitterUsername", viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")
 	pflag.StringVar(&c.Twitter2FaCode, "twitter2FaCode", viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
+	pflag.StringVar(&c.DiscordBotToken, "discordBotToken", viper.GetString(DiscordBotToken), "Discord Bot Token")
 	pflag.StringVar(&c.ClaudeApiKey, "claudeApiKey", viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API Url")
 	pflag.StringVar(&c.ClaudeApiVersion, "claudeApiVersion", viper.GetString(ClaudeApiVersion), "Claude API Version")

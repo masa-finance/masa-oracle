@@ -406,6 +406,95 @@ const docTemplate = `{
 					]
 				}
 			},
+			"/data/discord/profile/{userID}": {
+				"get": {
+					"description": "Retrieves a Discord user profile by user ID.",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Discord"
+					],
+					"summary": "Search Discord Profile",
+					"parameters": [
+						{
+							"name": "userID",
+							"in": "path",
+							"description": "Discord User ID",
+							"required": true,
+							"type": "string"
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved Discord user profile",
+							"schema": {
+								"$ref": "#/definitions/UserProfile"
+							}
+						},
+						"400": {
+							"description": "Invalid user ID or error fetching profile",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
+				}
+			},
+			"/data/discord/guilds/{userID}": {
+				"get": {
+					"description": "Retrieves guild memberships for a Discord user by user ID.",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Discord"
+					],
+					"summary": "Search Discord Guild Memberships",
+					"parameters": [
+						{
+							"name": "userID",
+							"in": "path",
+							"description": "Discord User ID",
+							"required": true,
+							"type": "string"
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved guild memberships",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/GuildMember"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid user ID or error fetching guild memberships",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
+				}
+			},
 			"/data/web": {
 				"post": {
 					"description": "Retrieves data from the web",

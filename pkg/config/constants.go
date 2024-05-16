@@ -110,6 +110,7 @@ const (
 	TwitterUsername  = "TWITTER_USERNAME"
 	TwitterPassword  = "TWITTER_PASSWORD"
 	Twitter2FaCode   = "TWITTER_2FA_CODE"
+	DiscordBotToken  = "DISCORD_BOT_TOKEN"
 	ClaudeApiKey     = "CLAUDE_API_KEY"
 	ClaudeApiURL     = "CLAUDE_API_URL"
 	ClaudeApiVersion = "CLAUDE_API_VERSION"

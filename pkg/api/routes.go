@@ -232,6 +232,28 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /data/twitter/tweets/trends [get]
 		v1.GET("/data/twitter/tweets/trends", API.SearchTweetsTrends())
 
+		// @Summary Search Discord Profile
+		// @Description Retrieves a Discord user profile by user ID.
+		// @Tags Discord
+		// @Accept  json
+		// @Produce  json
+		// @Param   userID   path    string  true  "Discord User ID"
+		// @Success 200 {object} UserProfile "Successfully retrieved Discord user profile"
+		// @Failure 400 {object} ErrorResponse "Invalid user ID or error fetching profile"
+		// @Router /discord/profile/{userID} [get]
+		v1.GET("/discord/profile/:userID", API.SearchDiscordProfile())
+
+		// @Summary Search Discord Guild Memberships
+		// @Description Retrieves guild memberships for a Discord user by user ID.
+		// @Tags Discord
+		// @Accept  json
+		// @Produce  json
+		// @Param   userID   path    string  true  "Discord User ID"
+		// @Success 200 {array} GuildMember "Successfully retrieved guild memberships"
+		// @Failure 400 {object} ErrorResponse "Invalid user ID or error fetching guild memberships"
+		// @Router /discord/guilds/{userID} [get]
+		v1.GET("/discord/guilds/:userID", API.SearchDiscordGuildMemberships())
+
 		// @Summary Web Data
 		// @Description Retrieves data from the web
 		// @Tags Web
