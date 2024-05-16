@@ -15,7 +15,6 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
@@ -31,6 +30,32 @@ import (
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
+
+type WorkerType string
+
+const (
+	LLMChat          WorkerType = "llm-chat"
+	Twitter          WorkerType = "twitter"
+	TwitterFollowers WorkerType = "twitter-followers"
+	TwitterProfile   WorkerType = "twitter-profile"
+	TwitterSentiment WorkerType = "twitter-sentiment"
+	TwitterTrends    WorkerType = "twitter-trends"
+	Web              WorkerType = "web"
+	WebSentiment     WorkerType = "web-sentiment"
+)
+
+var WORKER = struct {
+	LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment WorkerType
+}{
+	LLMChat:          LLMChat,
+	Twitter:          Twitter,
+	TwitterFollowers: TwitterFollowers,
+	TwitterProfile:   TwitterProfile,
+	TwitterSentiment: TwitterSentiment,
+	TwitterTrends:    TwitterTrends,
+	Web:              Web,
+	WebSentiment:     WebSentiment,
+}
 
 var (
 	clients        = actor.NewPIDSet()
@@ -49,7 +74,7 @@ type Record struct {
 	CIDs   []CID  `json:"cids"`
 }
 
-type LLMResponse struct {
+type ChanResponse struct {
 	Response  map[string]interface{}
 	ChannelId string
 }
@@ -102,6 +127,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 			logrus.Errorf("Error parsing work data: %v", err)
 			return
 		}
+
 		// WIP oracle work data
 		id := uuid.New().String()
 		oracleData := OracleData{
@@ -123,11 +149,9 @@ func (a *Worker) Receive(ctx actor.Context) {
 					RawContent: `Actor Started`,
 				},
 				{
-					Idx:          1,
-					RawContent:   `{"request": "twitter", "query": "$MASA", "count": 5}`,
-					SystemPrompt: `the sentiment prompt`,
-					Timestamp:    time.Now().String(),
-					UserPrompt:   `$MASA masa finance token price`,
+					Idx:        1,
+					RawContent: workData["request"],
+					Timestamp:  time.Now().String(),
 				},
 				{
 					Idx:        2,
@@ -137,11 +161,18 @@ func (a *Worker) Receive(ctx actor.Context) {
 			},
 		}
 		jsonOD, _ := json.Marshal(oracleData)
-		logrus.Debugf("oracleData to gateway %s", jsonOD)
+		jsonPayload := map[string]string{
+			"raw": string(jsonOD),
+		}
+		err = db.SendToS3(id, jsonPayload)
+		if err != nil {
+			logrus.Errorf("[-] Failed to send oracle data: %v", err)
+		}
+
 		// WIP oracle work data
 
 		switch workData["request"] {
-		case "llm-chat":
+		case string(WORKER.LLMChat):
 			logrus.Infof("[+] LLM Chat %s %s", m.Data, m.Sender)
 			uri := config.GetInstance().LLMChatUrl
 			if uri == "" {
@@ -158,12 +189,12 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("Error unmarshalling response: %v", err)
 				return
 			}
-			llmResponse := LLMResponse{
+			chanResponse := ChanResponse{
 				Response:  temp,
 				ChannelId: workData["request_id"],
 			}
 			val := &pubsub2.Message{
-				ValidatorData: llmResponse,
+				ValidatorData: chanResponse,
 				ID:            m.Id,
 			}
 			jsn, err := json.Marshal(val)
@@ -171,75 +202,203 @@ func (a *Worker) Receive(ctx actor.Context) {
 				logrus.Errorf("Error marshalling response: %v", err)
 				return
 			}
-			// Send the response back to the original requester
 			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+			// if not API
+		case string(WORKER.Twitter):
+			var bodyData map[string]interface{}
+			if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
+				logrus.Errorf("Error unmarshalling body: %v", err)
+				return
+			}
+			count := int(bodyData["count"].(float64))
+			resp, err := twitter.ScrapeTweetsByQuery(bodyData["query"].(string), count)
+			if err != nil {
+				logrus.Errorf("%v", err)
+				return
+			}
+			var temp []map[string]interface{}
+			respBytes, err := json.Marshal(resp)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			err = json.Unmarshal(respBytes, &temp)
+			if err != nil {
+				logrus.Errorf("Error unmarshalling response: %v", err)
+				return
+			}
+			chanResponse := ChanResponse{
+				Response:  map[string]interface{}{"data": temp},
+				ChannelId: workData["request_id"],
+			}
+			val := &pubsub2.Message{
+				ValidatorData: chanResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		case string(WORKER.TwitterFollowers):
+			var bodyData map[string]interface{}
+			if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
+				logrus.Errorf("Error unmarshalling body: %v", err)
+				return
+			}
+			username := bodyData["username"].(string)
+			count := int(bodyData["count"].(float64))
 
-		case "web":
-			depth, err := strconv.Atoi(workData["depth"])
-			if err != nil {
-				logrus.Errorf("Error converting depth to int: %v", err)
-				return
-			}
-			webData, err := web.ScrapeWebData([]string{workData["url"]}, depth)
+			resp, err := twitter.ScrapeFollowersForProfile(username, count)
 			if err != nil {
 				logrus.Errorf("%v", err)
 				return
 			}
-			if webData != "" {
-				collectedData := llmbridge.SanitizeResponse(webData)
-				jsonData, _ := json.Marshal(collectedData)
-				workerDoneCh <- &pubsub2.Message{
-					ValidatorData: jsonData,
-					ID:            m.Id,
-				}
+			chanResponse := ChanResponse{
+				Response:  map[string]interface{}{"data": resp},
+				ChannelId: workData["request_id"],
 			}
-		case "twitter":
-			count, err := strconv.Atoi(workData["count"])
+			val := &pubsub2.Message{
+				ValidatorData: chanResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
 			if err != nil {
-				logrus.Errorf("Error converting count to int: %v", err)
+				logrus.Errorf("Error marshalling response: %v", err)
 				return
 			}
-			tweets, err := twitter.ScrapeTweetsByQuery(workData["query"], count)
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		case string(WORKER.TwitterProfile):
+			var bodyData map[string]interface{}
+			if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
+				logrus.Errorf("Error unmarshalling body: %v", err)
+				return
+			}
+			username := bodyData["username"].(string)
+
+			resp, err := twitter.ScrapeTweetsProfile(username)
 			if err != nil {
 				logrus.Errorf("%v", err)
 				return
 			}
-			if tweets != nil {
-				collectedData := llmbridge.ConcatenateTweets(tweets)
-				jsonData, _ := json.Marshal(collectedData)
-				workerDoneCh <- &pubsub2.Message{
-					ValidatorData: jsonData,
-					ID:            m.Id,
-				}
+			chanResponse := ChanResponse{
+				Response:  map[string]interface{}{"data": resp},
+				ChannelId: workData["request_id"],
 			}
-		case "twitter-sentiment":
-			count, err := strconv.Atoi(workData["count"])
+			val := &pubsub2.Message{
+				ValidatorData: chanResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
 			if err != nil {
-				logrus.Errorf("Error converting count to int: %v", err)
+				logrus.Errorf("Error marshalling response: %v", err)
 				return
 			}
-			_, sentimentSummary, _ := twitter.ScrapeTweetsForSentiment(workData["query"], count, workData["model"])
-			if sentimentSummary != "" {
-				jsonData, _ := json.Marshal(sentimentSummary)
-				workerDoneCh <- &pubsub2.Message{
-					ValidatorData: jsonData,
-					ID:            m.Id,
-				}
-			}
-		case "web-sentiment":
-			depth, err := strconv.Atoi(workData["depth"])
-			if err != nil {
-				logrus.Errorf("Error converting depth to int: %v", err)
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		case string(WORKER.TwitterSentiment):
+			var bodyData map[string]interface{}
+			if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
+				logrus.Errorf("Error unmarshalling body: %v", err)
 				return
 			}
-			_, sentimentSummary, _ := web.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
-			if sentimentSummary != "" {
-				jsonData, _ := json.Marshal(sentimentSummary)
-				workerDoneCh <- &pubsub2.Message{
-					ValidatorData: jsonData,
-					ID:            m.Id,
-				}
+			count := int(bodyData["count"].(float64))
+			_, resp, _ := twitter.ScrapeTweetsForSentiment(bodyData["query"].(string), count, bodyData["model"].(string))
+			chanResponse := ChanResponse{
+				Response:  map[string]interface{}{"data": resp},
+				ChannelId: workData["request_id"],
 			}
+			val := &pubsub2.Message{
+				ValidatorData: chanResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		case string(WORKER.TwitterTrends):
+			resp, err := twitter.ScrapeTweetsByTrends()
+			if err != nil {
+				logrus.Errorf("%v", err)
+				return
+			}
+			chanResponse := ChanResponse{
+				Response:  map[string]interface{}{"data": resp},
+				ChannelId: workData["request_id"],
+			}
+			val := &pubsub2.Message{
+				ValidatorData: chanResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		case string(WORKER.Web):
+			var bodyData map[string]interface{}
+			if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
+				logrus.Errorf("Error unmarshalling body: %v", err)
+				return
+			}
+			depth := int(bodyData["depth"].(float64))
+			resp, err := web.ScrapeWebData([]string{bodyData["url"].(string)}, depth)
+			if err != nil {
+				logrus.Errorf("%v", err)
+				return
+			}
+
+			var temp map[string]interface{}
+			err = json.Unmarshal([]byte(resp), &temp)
+			if err != nil {
+				logrus.Errorf("Error unmarshalling response: %v", err)
+				return
+			}
+			chanResponse := ChanResponse{
+				Response:  temp,
+				ChannelId: workData["request_id"],
+			}
+			val := &pubsub2.Message{
+				ValidatorData: chanResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		case string(WORKER.WebSentiment):
+			var bodyData map[string]interface{}
+			if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
+				logrus.Errorf("Error unmarshalling body: %v", err)
+				return
+			}
+			depth := int(bodyData["depth"].(float64))
+			_, resp, _ := web.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
+			var temp map[string]interface{}
+			err = json.Unmarshal([]byte(resp), &temp)
+			if err != nil {
+				logrus.Errorf("Error unmarshalling response: %v", err)
+				return
+			}
+			chanResponse := ChanResponse{
+				Response:  temp,
+				ChannelId: workData["request_id"],
+			}
+			val := &pubsub2.Message{
+				ValidatorData: chanResponse,
+				ID:            m.Id,
+			}
+			jsn, err := json.Marshal(val)
+			if err != nil {
+				logrus.Errorf("Error marshalling response: %v", err)
+				return
+			}
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 		}
 		ctx.Poison(ctx.Self())
 	default:
@@ -553,6 +712,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			}
 			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
+			// @todo to use FireData ...
 			updateRecords(node, validatorData, key, data.ID)
 		case <-ctx.Done():
 			return

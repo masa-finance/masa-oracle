@@ -286,7 +286,7 @@ const docTemplate = `{
 						{
 							"type": "integer",
 							"description": "Maximum number of users to return",
-							"name": "maxUsersNbr",
+							"name": "count",
 							"in": "query",
 							"required": false,
 							"default": 20
@@ -970,6 +970,23 @@ const docTemplate = `{
 			}
 		},
 		"definitions": {
+			"UserProfile": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					},
+					"discriminator": {
+						"type": "string"
+					},
+					"avatar": {
+						"type": "string"
+					}
+				}
+			},		
 			"ErrorResponse": {
 				"type": "object",
 				"properties": {
