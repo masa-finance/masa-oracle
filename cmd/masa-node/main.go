@@ -78,7 +78,7 @@ func main() {
 
 	// Subscribe and if actor start monitoring actor workers
 	go workers.SubscribeToWorkers(node)
-	if node.IsActor() && isStaked {
+	if node.IsActor() {
 		go workers.MonitorWorkers(ctx, node)
 	}
 

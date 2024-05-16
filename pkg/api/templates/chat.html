@@ -141,8 +141,7 @@
                 chatBox.appendChild(loadingSpinner);
 
                 // Send user input to server and get response
-                
-                fetch('http://localhost:8080/api/v1/chat/cf', {
+                fetch('api/v1/chat/cf', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

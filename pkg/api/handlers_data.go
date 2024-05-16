@@ -7,27 +7,77 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"reflect"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	"strings"
-
-	"strconv"
 
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 )
+
+type LLMChat struct {
+	Model    string `json:"model,omitempty"`
+	Messages []struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"messages,omitempty"`
+	Stream bool `json:"stream"`
+}
+
+// publishWorkRequest sends a work request to the PubSubManager for processing by a worker.
+// It marshals the request details into JSON and publishes it to the configured topic.
+//
+// Parameters:
+// - api: The API instance containing the Node and PubSubManager.
+// - requestID: A unique identifier for the request.
+// - request: The type of work to be performed by the worker.
+// - bodyBytes: The request body in byte slice format.
+//
+// Returns:
+// - error: An error object if the request could not be published, otherwise nil.
+func publishWorkRequest(api *API, requestID string, request workers.WorkerType, bodyBytes []byte) error {
+	llmRequest := map[string]string{
+		"request":    string(request),
+		"request_id": requestID,
+		"body":       string(bodyBytes),
+	}
+	jsn, err := json.Marshal(llmRequest)
+	if err != nil {
+		return err
+	}
+	return api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn)
+}
+
+// handleWorkResponse processes the response from a worker and sends it back to the client.
+// It listens on the provided response channel for a response or a timeout signal.
+// If a response is received within the timeout period, it unmarshals the JSON response and sends it back to the client.
+// If no response is received within the timeout period, it sends a timeout error to the client.
+//
+// Parameters:
+// - c: The gin.Context object, which provides the context for the HTTP request.
+// - responseCh: A channel that receives the worker's response as a byte slice.
+func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
+	select {
+	case response := <-responseCh:
+		var result map[string]interface{}
+		if err := json.Unmarshal(response, &result); err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, result)
+	case <-time.After(60 * time.Second):
+		c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+	}
+}
 
 // GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.
 // It does not expect any request parameters.
@@ -98,67 +148,30 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 
-		var sentimentSummary string
-		var err error
-
-		if reqBody.Model == "all" {
-			models := config.Models
-			val := reflect.ValueOf(models)
-
-			type ModelResult struct {
-				Model     string `json:"model"`
-				Sentiment string `json:"sentiment"`
-				Duration  string `json:"duration"`
-			}
-			var results []ModelResult
-
-			for i := 0; i < val.NumField(); i++ {
-				model := val.Field(i).Interface().(config.ModelType)
-				startTime := time.Now() // Start time measurement
-
-				_, sentimentSummary, err = twitter.ScrapeTweetsForSentiment(reqBody.Query, reqBody.Count, string(model))
-				duration := time.Since(startTime) // Calculate duration
-
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment for model " + string(model)})
-					return
-				}
-
-				results = append(results, ModelResult{
-					Model:     string(model),
-					Sentiment: sentimentSummary,
-					Duration:  duration.String(),
-				})
-			}
-
-			// Return the results as JSON
-			c.JSON(http.StatusOK, gin.H{"results": results})
-			return
-		} else {
-			_, sentimentSummary, err = twitter.ScrapeTweetsForSentiment(reqBody.Query, reqBody.Count, reqBody.Model)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tweets and analyze sentiment"})
-				return
-			}
+		// worker handler implementation
+		bodyBytes, wErr := json.Marshal(reqBody)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
-
-		c.JSON(http.StatusOK, gin.H{"sentiment": sentimentSummary})
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		wErr = publishWorkRequest(api, requestID, workers.WORKER.TwitterSentiment, bodyBytes)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 
 // SearchWebAndAnalyzeSentiment returns a gin.HandlerFunc that processes web search requests and performs sentiment analysis.
 // It first validates the request body for required fields such as URL, Depth, and Model. If the Model is set to "all",
 // it iterates through all available models to perform sentiment analysis on the web content fetched from the specified URL.
-// The function responds with the sentiment analysis results in JSON format.
+// The function responds with the sentiment analysis results in JSON format.// Models Supported:
 // Models Supported:
 //
-//	"all"
-//	"claude-3-opus-20240229"
-//	"claude-3-sonnet-20240229"
-//	"claude-3-haiku-20240307"
-//	"gpt-4"
-//	"gpt-4-turbo-preview"
-//	"gpt-3.5-turbo"
+//	chose a model or use "all"
 func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -188,58 +201,20 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 
-		var sentimentSummary string
-		var err error
-
-		if reqBody.Model == "all" {
-			models := config.Models
-			val := reflect.ValueOf(models)
-
-			type ModelResult struct {
-				Model     string `json:"model"`
-				Sentiment string `json:"sentiment"`
-				Duration  string `json:"duration"`
-			}
-			var results []ModelResult
-
-			for i := 0; i < val.NumField(); i++ {
-				model := val.Field(i).Interface().(config.ModelType)
-				startTime := time.Now() // Start time measurement
-
-				_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
-				j, _ := json.Marshal(sentimentSummary)
-				sentimentSummary = string(j)
-
-				duration := time.Since(startTime) // Calculate duration
-
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch web data and analyze sentiment for model " + string(model)})
-					return
-				}
-
-				results = append(results, ModelResult{
-					Model:     string(model),
-					Sentiment: sentimentSummary,
-					Duration:  duration.String(),
-				})
-			}
-
-			// Return the results as JSON
-			c.JSON(http.StatusOK, gin.H{"sentiment": results})
-			return
-		} else {
-
-			_, sentimentSummary, err = web.ScrapeWebDataForSentiment([]string{reqBody.Url}, reqBody.Depth, reqBody.Model)
-			j, _ := json.Marshal(sentimentSummary)
-			sentimentSummary = llmbridge.SanitizeResponse(string(j))
-
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch web data and analyze sentiment"})
-				return
-			}
+		// worker handler implementation
+		bodyBytes, wErr := json.Marshal(reqBody)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
-
-		c.JSON(http.StatusOK, gin.H{"sentiment": sentimentSummary})
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		wErr = publishWorkRequest(api, requestID, workers.WORKER.WebSentiment, bodyBytes)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 
@@ -250,19 +225,29 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 // On success, it returns the scraped profile information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		username := c.Param("username")
-
-		if username == "" {
+		var reqBody struct {
+			Username string `json:"username"`
+		}
+		if c.Param("username") == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Username must be provided and valid"})
 			return
 		}
+		reqBody.Username = c.Param("username")
 
-		profile, err := twitter.ScrapeTweetsProfile(username)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get twitter profile", "details": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, gin.H{"tweets": profile})
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.TwitterProfile, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 
@@ -272,6 +257,7 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 // If the request is valid, it attempts to fetch the user's profile.
 // On success, it returns the fetched profile information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchDiscordProfile() gin.HandlerFunc {
+	// @todo add to workers
 	return func(c *gin.Context) {
 		userID := c.Param("userID")
 
@@ -298,6 +284,7 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 // If the request is valid, it attempts to fetch the user's guild memberships.
 // On success, it returns the fetched guild membership information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchDiscordGuildMemberships() gin.HandlerFunc {
+	// @todo add to workers
 	return func(c *gin.Context) {
 		userID := c.Param("userID")
 
@@ -321,30 +308,39 @@ func (api *API) SearchDiscordGuildMemberships() gin.HandlerFunc {
 	}
 }
 
-// GetTwitterFollowersHandler returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
-func (api *API) GetTwitterFollowersHandler() gin.HandlerFunc {
+// SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
+func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var reqBody struct {
+			Username string `json:"username"`
+			Count    int    `json:"count"`
+		}
+
 		username := c.Param("username") // Assuming you're using a URL parameter for the username
 		if username == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
 			return
 		}
-
-		// Extracting maxUsersNbr from query parameters, with a default value if not specified
-		maxUsersNbrStr := c.DefaultQuery("maxUsersNbr", "20") // Default to 20 if not specified
-		maxUsersNbr, err := strconv.Atoi(maxUsersNbrStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid maxUsersNbr parameter"})
-			return
+		reqBody.Username = username
+		if reqBody.Count == 0 {
+			reqBody.Count = 20
 		}
 
-		followers, err := twitter.ScrapeFollowersForProfile(username, maxUsersNbr)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch followers", "details": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.TwitterFollowers, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 
-		c.JSON(http.StatusOK, gin.H{"followers": followers})
 	}
 }
 
@@ -370,12 +366,20 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 			return
 		}
 
-		tweets, err := twitter.ScrapeTweetsByQuery(reqBody.Query, reqBody.Count)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scrape tweets", "details": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, gin.H{"tweets": tweets})
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.Twitter, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 
@@ -385,13 +389,16 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 // On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
-		tweets, err := twitter.ScrapeTweetsByTrends()
+		// worker handler implementation
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err := publishWorkRequest(api, requestID, workers.WORKER.TwitterTrends, nil)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scrape tweets", "details": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, gin.H{"tweets": tweets})
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 
@@ -424,23 +431,29 @@ func (api *API) WebData() gin.HandlerFunc {
 			reqBody.Depth = 10 // Default count
 		}
 
-		collectedData, err := web.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		sanitizedData := llmbridge.SanitizeResponse(collectedData)
-		c.JSON(http.StatusOK, gin.H{"data": sanitizedData})
-	}
-}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.Web, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 
-type LLMChat struct {
-	Model    string `json:"model,omitempty"`
-	Messages []struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	} `json:"messages,omitempty"`
-	Stream bool `json:"stream"`
+		// collectedData, err := web.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
+		// if err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
+		// 	return
+		// }
+		// sanitizedData := llmbridge.SanitizeResponse(collectedData)
+		// c.JSON(http.StatusOK, gin.H{"data": sanitizedData})
+	}
 }
 
 // LocalLlmChat handles requests for chatting with AI models hosted by ollama.
@@ -470,7 +483,6 @@ type LLMChat struct {
 // note: Ollama recently added support for the OpenAI structure which can simplify integrating it.
 func (api *API) LocalLlmChat() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// we just want to proxy the request JSON directly to the endpoint we are calling.
 		body := c.Request.Body
 		var reqBody LLMChat
 		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
@@ -479,44 +491,21 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 		}
 		reqBody.Model = strings.TrimPrefix(reqBody.Model, "ollama/")
 		reqBody.Stream = false
+
+		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-
-		llmRequest := make(map[string]string)
-		llmRequest["request"] = "llm-chat"
-		llmRequest["request_id"] = requestID
-		llmRequest["body"] = string(bodyBytes)
-		jsn, err := json.Marshal(llmRequest)
+		err = publishWorkRequest(api, requestID, workers.WORKER.LLMChat, bodyBytes)
 		if err != nil {
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn); err != nil {
-			logrus.Errorf("%v", err)
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-			return
-		}
-
-		result := make(map[string]interface{})
-		// Wait for the response
-		select {
-		case response := <-responseCh:
-			err := json.Unmarshal(response, &result)
-			if err != nil {
-				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(http.StatusOK, result)
-		case <-time.After(30 * time.Second):
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
-		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 

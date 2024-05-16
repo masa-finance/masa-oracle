@@ -1,13 +1,16 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"sort"
 	"time"
@@ -29,6 +32,7 @@ type Work struct {
 	Uuid     string          `json:"uuid"`
 	Payload  json.RawMessage `json:"payload"`
 	Response json.RawMessage `json:"response"`
+	Event    json.RawMessage `json:"event"`
 }
 
 // ConnectToPostgres Function to connect to Postgres
@@ -123,29 +127,71 @@ func GetData(uid string) ([]Work, error) {
 	database, err := ConnectToPostgres(false)
 	if err != nil {
 		logrus.Error(err)
+		return nil, err
 	}
 	defer database.Close()
+
 	data := []Work{}
-	query := `SELECT "id", "payload", "response" FROM "public"."work"`
-	rows, err := database.Query(query)
+	query := `SELECT "work".id, "work".uuid, "work".payload, "work".response, event.payload as "event" FROM "work" INNER JOIN event ON "work".uuid = event.work_id WHERE "work"."uuid" = $1;`
+	rows, err := database.Query(query, uid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var (
-		id       int64
-		payload  json.RawMessage
-		response json.RawMessage
-	)
-
 	for rows.Next() {
-		if err = rows.Scan(&id, &payload, &response); err != nil {
+		var work Work
+		if err = rows.Scan(&work.ID, &work.Uuid, &work.Payload, &work.Response, &work.Event); err != nil {
 			return nil, err
 		}
-		data = append(data, Work{id, uid, payload, response})
+		data = append(data, work)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return data, nil
+}
+
+func SendToS3(uid string, payload map[string]string) error {
+
+	// apiUrl := os.Getenv("API_URL")
+	apiURL := "https://test.oracle-api.masa.ai/data"
+	authToken := "your-secret-token"
+
+	// Create the JSON payload
+	// payload := map[string]string{
+	// 	"key1": "value1",
+	// 	"key2": "value2",
+	// }
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON payload: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authToken)
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("received non-OK response: %s, body: %s", resp.Status, string(bodyBytes))
+	}
+
+	return nil
 }
 
 // WriteData encapsulates the logic for writing data to the database,
