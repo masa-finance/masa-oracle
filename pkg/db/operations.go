@@ -32,6 +32,7 @@ type Work struct {
 	Uuid     string          `json:"uuid"`
 	Payload  json.RawMessage `json:"payload"`
 	Response json.RawMessage `json:"response"`
+	Event    json.RawMessage `json:"event"`
 }
 
 // ConnectToPostgres Function to connect to Postgres
@@ -126,28 +127,30 @@ func GetData(uid string) ([]Work, error) {
 	database, err := ConnectToPostgres(false)
 	if err != nil {
 		logrus.Error(err)
+		return nil, err
 	}
 	defer database.Close()
+
 	data := []Work{}
-	query := `SELECT "id", "payload", "response" FROM "public"."work"`
-	rows, err := database.Query(query)
+	query := `SELECT "work".id, "work".uuid, "work".payload, "work".response, event.payload as "event" FROM "work" INNER JOIN event ON "work".uuid = event.work_id WHERE "work"."uuid" = $1;`
+	rows, err := database.Query(query, uid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var (
-		id       int64
-		payload  json.RawMessage
-		response json.RawMessage
-	)
-
 	for rows.Next() {
-		if err = rows.Scan(&id, &payload, &response); err != nil {
+		var work Work
+		if err = rows.Scan(&work.ID, &work.Uuid, &work.Payload, &work.Response, &work.Event); err != nil {
 			return nil, err
 		}
-		data = append(data, Work{id, uid, payload, response})
+		data = append(data, work)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return data, nil
 }
 
