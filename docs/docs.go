@@ -22,6 +22,18 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+    "security": [
+        {
+            "Bearer": []
+        }
+    ],
     "paths": {
 			"/peers": {
 				"get": {
@@ -46,7 +58,12 @@ const docTemplate = `{
 								}
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/peer/addresses": {
@@ -72,7 +89,12 @@ const docTemplate = `{
 								}
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/ads": {
@@ -98,7 +120,12 @@ const docTemplate = `{
 								}
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				},
 				"post": {
 					"description": "Adds a new ad to the network",
@@ -136,7 +163,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/ads/subscribe": {
@@ -176,7 +208,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/data/twitter/profile/{username}": {
@@ -213,6 +250,60 @@ const docTemplate = `{
 						},
 						"400": {
 							"description": "Invalid username or error fetching tweets",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
+				}
+			},
+			"/data/twitter/followers/{username}": {
+				"get": {
+					"description": "Retrieves followers from a specific Twitter profile.",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Twitter"
+					],
+					"summary": "Search Followers by Twitter Username",
+					"parameters": [
+						{
+							"type": "string",
+							"description": "Twitter Username",
+							"name": "username",
+							"in": "path",
+							"required": true
+						},
+						{
+							"type": "integer",
+							"description": "Maximum number of users to return",
+							"name": "maxUsersNbr",
+							"in": "query",
+							"required": false,
+							"default": 20
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Array of profiles a user has as followers",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Profile"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid username or error fetching followers",
 							"schema": {
 								"$ref": "#/definitions/ErrorResponse"
 							}
@@ -270,7 +361,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/data/twitter/tweets/trends": {
@@ -302,7 +398,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/data/web": {
@@ -352,7 +453,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/dht": {
@@ -390,7 +496,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				},
 				"post": {
 					"description": "Adds data to the DHT (Distributed Hash Table)",
@@ -436,7 +547,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/llm/models": {
@@ -465,7 +581,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/chat": {
@@ -505,7 +626,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/node/data": {
@@ -534,7 +660,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/node/data/{peerid}": {
@@ -572,7 +703,12 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
 				}
 			},
 			"/sentiment/tweets": {
@@ -841,7 +977,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.0.2-beta",
+	Version:          "0.0.3-beta",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
