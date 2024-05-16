@@ -286,7 +286,7 @@ const docTemplate = `{
 						{
 							"type": "integer",
 							"description": "Maximum number of users to return",
-							"name": "maxUsersNbr",
+							"name": "count",
 							"in": "query",
 							"required": false,
 							"default": 20
