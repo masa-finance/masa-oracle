@@ -51,6 +51,7 @@ type OracleNode struct {
 	IsStaked              bool
 	IsWriter              bool
 	IsTwitterScraper      bool
+	IsDiscordScraper      bool
 	IsWebScraper          bool
 	IsLlmServer           bool
 	StartTime             time.Time
@@ -140,6 +141,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 
 	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
 	isTwitterScraper := cfg.TwitterScraper
+	isDiscordScraper := cfg.DiscordScraper
 	isWebScraper := cfg.WebScraper
 
 	system := actor.NewActorSystemWithConfig(actor.Configure(
@@ -175,6 +177,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsStaked:         isStaked,
 		IsWriter:         isWriter,
 		IsTwitterScraper: isTwitterScraper,
+		IsDiscordScraper: isDiscordScraper,
 		IsWebScraper:     isWebScraper,
 		IsLlmServer:      cfg.LlmServer,
 		ActorEngine:      engine,
@@ -302,6 +305,7 @@ func (node *OracleNode) IsPublisher() bool {
 func (node *OracleNode) IsActor() bool {
 	return node.IsWebScraper ||
 		node.IsTwitterScraper ||
+		node.IsDiscordScraper ||
 		node.IsLlmServer
 }
 
