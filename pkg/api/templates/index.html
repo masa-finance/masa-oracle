@@ -34,6 +34,14 @@
                                 {{end}}
                             </tr>
                             <tr>
+                                <th scope="row">Discord Scraper</th>
+                                {{if .IsDiscordScraper}}
+                                    <td><span class="badge badge-success">{{.IsDiscordScraper}}</span></td>
+                                {{else}}
+                                    <td><span class="badge badge-danger">{{.IsDiscordScraper}}</span></td>
+                                {{end}}
+                            </tr>
+                            <tr>
                                 <th scope="row">Web Scraper</th>
                                 {{if .IsWebScraper}}
                                     <td><span class="badge badge-success">{{.IsWebScraper}}</span></td>

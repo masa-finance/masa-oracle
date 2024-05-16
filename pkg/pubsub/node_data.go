@@ -62,6 +62,7 @@ type NodeData struct {
 	SelfIdentified       bool            `json:"-"`
 	IsWriterNode         bool            `json:"isWriterNode"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
+	IsDiscordScraper     bool            `json:"isDiscordScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
 	BytesScraped         int             `json:"bytesScraped"`
 	Records              any             `json:"records,omitempty"`
@@ -75,6 +76,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	cfg := config.GetInstance()
 	wn, _ := strconv.ParseBool(cfg.WriterNode)
 	ts := cfg.TwitterScraper
+	ds := cfg.DiscordScraper
 	ws := cfg.WebScraper
 
 	return &NodeData{
@@ -88,6 +90,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		SelfIdentified:    false,
 		IsWriterNode:      wn,
 		IsTwitterScraper:  ts,
+		IsDiscordScraper:  ds,
 		IsWebScraper:      ws,
 		BytesScraped:      0,
 	}
@@ -103,6 +106,11 @@ func (n *NodeData) Address() string {
 func (n *NodeData) TwitterScraper() bool {
 	cfg := config.GetInstance()
 	return cfg.TwitterScraper
+}
+
+func (n *NodeData) DiscordScraper() bool {
+	cfg := config.GetInstance()
+	return cfg.DiscordScraper
 }
 
 func (n *NodeData) WebScraper() bool {

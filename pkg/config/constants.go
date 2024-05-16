@@ -115,6 +115,7 @@ const (
 	ClaudeApiVersion = "CLAUDE_API_VERSION"
 	GPTApiKey        = "OPENAI_API_KEY"
 	TwitterScraper   = "TWITTER_SCRAPER"
+	DiscordScraper   = "DISCORD_SCRAPER"
 	WebScraper       = "WEB_SCRAPER"
 	LlmServer        = "LLM_SERVER"
 	LlmChatUrl       = "LLM_CHAT_URL"

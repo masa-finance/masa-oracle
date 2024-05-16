@@ -86,6 +86,7 @@ type AppConfig struct {
 	ClaudeApiVersion   string `mapstructure:"claudeApiVersion"`
 	GPTApiKey          string `mapstructure:"gptApiKey"`
 	TwitterScraper     bool   `mapstructure:"twitterScraper"`
+	DiscordScraper     bool   `mapstructure:"discordScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
@@ -202,6 +203,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
 		viper.SetDefault(WriterNode, "false")
 		viper.SetDefault(TwitterScraper, "false")
+		viper.SetDefault(DiscordScraper, "false")
 		viper.SetDefault(WebScraper, "false")
 		viper.SetDefault(CachePath, "CACHE")
 		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
@@ -220,6 +222,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 	viper.SetDefault(TwitterScraper, false)
+	viper.SetDefault(DiscordScraper, false)
 	viper.SetDefault(WebScraper, false)
 	viper.SetDefault(LlmServer, false)
 }
@@ -281,6 +284,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.ClaudeApiVersion, "claudeApiVersion", viper.GetString(ClaudeApiVersion), "Claude API Version")
 	pflag.StringVar(&c.GPTApiKey, "gptApiKey", viper.GetString(GPTApiKey), "OpenAI API Key")
 	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
+	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "DiscordScraper")
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
