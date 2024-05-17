@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/sirupsen/logrus"
 
 	"strings"
 
@@ -557,11 +558,21 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			Content: os.Getenv("PROMPT"),
 		})
 
+		logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
+			Level: logrus.ErrorLevel,
+			Data:  logrus.Fields{"reqBody": reqBody},
+		})
+
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
+		logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
+			Level: logrus.ErrorLevel,
+			Data:  logrus.Fields{"bodyBytes": bodyBytes},
+		})
 
 		cfUrl := config.GetInstance().LLMCfUrl
 		if cfUrl == "" {
@@ -569,8 +580,19 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			return
 		}
 		uri := fmt.Sprintf("%s%s", cfUrl, reqBody.Model)
+
+		logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
+			Level: logrus.ErrorLevel,
+			Data:  logrus.Fields{"uri": uri},
+		})
+
 		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))
 		if err != nil {
+			logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
+				Level: logrus.ErrorLevel,
+				Data:  logrus.Fields{"post": err},
+			})
+
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -580,18 +602,25 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
+			logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
+				Level: logrus.ErrorLevel,
+				Data:  logrus.Fields{"resp": err},
+			})
+
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		defer resp.Body.Close()
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
+			logrus.Error(err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		var payload map[string]interface{}
 		err = json.Unmarshal(respBody, &payload)
 		if err != nil {
+			logrus.Error(err)
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
