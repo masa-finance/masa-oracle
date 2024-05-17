@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p/core/peer"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -129,47 +128,45 @@ func (a *Worker) Receive(ctx actor.Context) {
 		}
 
 		// WIP oracle work data
-		id := uuid.New().String()
-		oracleData := OracleData{
-			Id:        id,
-			PeerId:    m.Id,
-			Request:   workData["request"],
-			ModelName: workData["model"],
-			Steps: []struct {
-				Idx               int    `json:"idx"`
-				RawContent        string `json:"raw_content,omitempty"`
-				StructuredContent string `json:"structured_content,omitempty"`
-				SystemPrompt      string `json:"system_prompt,omitempty"`
-				Timestamp         string `json:"timestamp"`
-				UserPrompt        string `json:"user_prompt,omitempty"`
-			}{
-				{
-					Idx:        0,
-					Timestamp:  time.Now().String(),
-					RawContent: `Actor Started`,
-				},
-				{
-					Idx:        1,
-					RawContent: workData["request"],
-					Timestamp:  time.Now().String(),
-				},
-				{
-					Idx:        2,
-					Timestamp:  time.Now().String(),
-					RawContent: `Actor Stopped`,
-				},
-			},
-		}
-		jsonOD, _ := json.Marshal(oracleData)
-		jsonPayload := map[string]string{
-			"raw": string(jsonOD),
-		}
-		err = db.SendToS3(id, jsonPayload)
-		if err != nil {
-			logrus.Errorf("[-] Failed to send oracle data: %v", err)
-		}
-
-		// WIP oracle work data
+		//id := uuid.New().String()
+		//oracleData := OracleData{
+		//	Id:        id,
+		//	PeerId:    m.Id,
+		//	Request:   workData["request"],
+		//	ModelName: workData["model"],
+		//	Steps: []struct {
+		//		Idx               int    `json:"idx"`
+		//		RawContent        string `json:"raw_content,omitempty"`
+		//		StructuredContent string `json:"structured_content,omitempty"`
+		//		SystemPrompt      string `json:"system_prompt,omitempty"`
+		//		Timestamp         string `json:"timestamp"`
+		//		UserPrompt        string `json:"user_prompt,omitempty"`
+		//	}{
+		//		{
+		//			Idx:        0,
+		//			Timestamp:  time.Now().String(),
+		//			RawContent: `Actor Started`,
+		//		},
+		//		{
+		//			Idx:        1,
+		//			RawContent: workData["request"],
+		//			Timestamp:  time.Now().String(),
+		//		},
+		//		{
+		//			Idx:        2,
+		//			Timestamp:  time.Now().String(),
+		//			RawContent: `Actor Stopped`,
+		//		},
+		//	},
+		//}
+		//jsonOD, _ := json.Marshal(oracleData)
+		//jsonPayload := map[string]string{
+		//	"raw": string(jsonOD),
+		//}
+		//err = db.SendToS3(id, jsonPayload)
+		//if err != nil {
+		//	logrus.Errorf("[-] Failed to send oracle data: %v", err)
+		//}
 
 		switch workData["request"] {
 		case string(WORKER.LLMChat):

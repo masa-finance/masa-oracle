@@ -46,12 +46,12 @@ type LLMChat struct {
 // Returns:
 // - error: An error object if the request could not be published, otherwise nil.
 func publishWorkRequest(api *API, requestID string, request workers.WorkerType, bodyBytes []byte) error {
-	llmRequest := map[string]string{
+	workRequest := map[string]string{
 		"request":    string(request),
 		"request_id": requestID,
 		"body":       string(bodyBytes),
 	}
-	jsn, err := json.Marshal(llmRequest)
+	jsn, err := json.Marshal(workRequest)
 	if err != nil {
 		return err
 	}
