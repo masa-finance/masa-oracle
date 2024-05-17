@@ -35,5 +35,4 @@ func (c *AppConfig) SetupLogging() {
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
-
 }
