@@ -200,7 +200,6 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
-			// if not API
 		case string(WORKER.Twitter):
 			var bodyData map[string]interface{}
 			if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
@@ -595,8 +594,8 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		workerDoneCh <- msg
 	}
 	peers := node.Host.Network().Peers()
-	for _, peer := range peers {
-		conns := node.Host.Network().ConnsToPeer(peer)
+	for _, p := range peers {
+		conns := node.Host.Network().ConnsToPeer(p)
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)

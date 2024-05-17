@@ -303,11 +303,13 @@ func (node *OracleNode) IsPublisher() bool {
 
 // IsActor - centralize flags for actor participation used in workers file.
 func (node *OracleNode) IsActor() bool {
-	return node.IsStaked &&
-		node.IsWebScraper ||
-		node.IsTwitterScraper ||
-		node.IsDiscordScraper ||
-		node.IsLlmServer
+	if node.IsStaked {
+		return true
+	}
+	if node.IsWebScraper || node.IsTwitterScraper || node.IsDiscordScraper || node.IsLlmServer {
+		return true
+	}
+	return false
 }
 
 // Version returns the current version string of the oracle node software.
