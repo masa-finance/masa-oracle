@@ -46,12 +46,12 @@ type LLMChat struct {
 // Returns:
 // - error: An error object if the request could not be published, otherwise nil.
 func publishWorkRequest(api *API, requestID string, request workers.WorkerType, bodyBytes []byte) error {
-	llmRequest := map[string]string{
+	workRequest := map[string]string{
 		"request":    string(request),
 		"request_id": requestID,
 		"body":       string(bodyBytes),
 	}
-	jsn, err := json.Marshal(llmRequest)
+	jsn, err := json.Marshal(workRequest)
 	if err != nil {
 		return err
 	}
@@ -558,21 +558,11 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			Content: os.Getenv("PROMPT"),
 		})
 
-		logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
-			Level: logrus.ErrorLevel,
-			Data:  logrus.Fields{"reqBody": reqBody},
-		})
-
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
-			Level: logrus.ErrorLevel,
-			Data:  logrus.Fields{"bodyBytes": bodyBytes},
-		})
 
 		cfUrl := config.GetInstance().LLMCfUrl
 		if cfUrl == "" {
@@ -580,19 +570,8 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			return
 		}
 		uri := fmt.Sprintf("%s%s", cfUrl, reqBody.Model)
-
-		logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
-			Level: logrus.ErrorLevel,
-			Data:  logrus.Fields{"uri": uri},
-		})
-
 		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))
 		if err != nil {
-			logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
-				Level: logrus.ErrorLevel,
-				Data:  logrus.Fields{"post": err},
-			})
-
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -602,11 +581,6 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			logrus.New().Hooks.Fire(logrus.ErrorLevel, &logrus.Entry{
-				Level: logrus.ErrorLevel,
-				Data:  logrus.Fields{"resp": err},
-			})
-
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
