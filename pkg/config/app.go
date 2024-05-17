@@ -220,7 +220,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
 	viper.SetDefault(AllowedPeer, true)
-	viper.SetDefault(LogLevel, "info")
+	viper.SetDefault(LogLevel, "error") // "info"
 	viper.SetDefault(LogFilePath, "masa_oracle_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 	viper.SetDefault(TwitterScraper, false)
