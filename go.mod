@@ -31,7 +31,7 @@ require (
 	github.com/masa-finance/masa-twitter-scraper v0.0.0-20240515201201-b83fa3597a31
 	github.com/multiformats/go-multiaddr v0.12.3
 	github.com/multiformats/go-multihash v0.2.3
-	github.com/ollama/ollama v0.1.37
+	github.com/ollama/ollama v0.1.38
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.24.0
 	github.com/sirupsen/logrus v1.9.3
