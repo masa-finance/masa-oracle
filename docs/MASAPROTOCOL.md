@@ -1,4 +1,4 @@
-# Masa: Decentralized Data Protocol 
+# Masa: Decentralized Data Protocol  
 
 ## Introduction
 
