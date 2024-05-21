@@ -573,8 +573,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	if node.IsActor() {
-		// node.ActorEngine.Send(pid, message)
+	if node.IsStaked {
 		future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
 		result, err := future.Result()
 		if err != nil {
