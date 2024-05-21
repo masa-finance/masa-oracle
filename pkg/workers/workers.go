@@ -299,7 +299,11 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			count := int(bodyData["count"].(float64))
-			_, resp, _ := twitter.ScrapeTweetsForSentiment(bodyData["query"].(string), count, bodyData["model"].(string))
+			_, resp, err := twitter.ScrapeTweetsForSentiment(bodyData["query"].(string), count, bodyData["model"].(string))
+			if err != nil {
+				logrus.Errorf("%v", err)
+				return
+			}
 			chanResponse := ChanResponse{
 				Response:  map[string]interface{}{"data": resp},
 				ChannelId: workData["request_id"],
@@ -374,7 +378,11 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			depth := int(bodyData["depth"].(float64))
-			_, resp, _ := web.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
+			_, resp, err := web.ScrapeWebDataForSentiment([]string{workData["url"]}, depth, workData["model"])
+			if err != nil {
+				logrus.Errorf("%v", err)
+				return
+			}
 			var temp map[string]interface{}
 			err = json.Unmarshal([]byte(resp), &temp)
 			if err != nil {
@@ -684,7 +692,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerDoneCh:
 			if _, ok := data.ValidatorData.([]byte); ok {
 				validatorData = data.ValidatorData.([]byte)
-			} else if _, ok := data.ValidatorData.([]byte); ok {
+			} else if _, ok := data.ValidatorData.(string); ok {
 				validatorData = []byte(data.ValidatorData.(string))
 			} else {
 				switch reflect.TypeOf(data.ValidatorData).Kind() {
