@@ -16,10 +16,10 @@ jobs:
         run: |
             mkdir pub-docs
             cp -r docs/welcome-to-masa pub-docs/
-            cp -r docs/ai-node-operator pub-docs/
             cp -r docs/ai-worker-node pub-docs/
             cp -r docs/ai-oracle-node pub-docs/
             cp -r docs/guides-and-tutorials pub-docs/
+            cp RELEASE_NOTES.md pub-docs/
       - name: Pushes to another repository
         uses: cpina/github-action-push-to-another-repository@main
         env:
