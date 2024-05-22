@@ -379,7 +379,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 				return
 			}
 			depth := int(bodyData["depth"].(float64))
-			_, resp, err := web.ScrapeWebDataForSentiment([]string{bodyData["url"].(string)}, depth, workData["model"])
+			_, resp, err := web.ScrapeWebDataForSentiment([]string{bodyData["url"].(string)}, depth, bodyData["model"].(string))
 			if err != nil {
 				logrus.Errorf("%v", err)
 				return
