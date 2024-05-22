@@ -67,16 +67,24 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
 func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
-	select {
-	case response := <-responseCh:
-		var result map[string]interface{}
-		if err := json.Unmarshal(response, &result); err != nil {
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+	interval := 10 * time.Second
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+		case response := <-responseCh:
+			var result map[string]interface{}
+			if err := json.Unmarshal(response, &result); err != nil {
+				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, result)
+		case <-time.After(60 * time.Second):
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+		case <-c.Done():
 			return
 		}
-		c.JSON(http.StatusOK, result)
-	case <-time.After(60 * time.Second):
-		c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
 	}
 }
 
@@ -409,8 +417,8 @@ func (api *API) WebData() gin.HandlerFunc {
 		}
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
 		err = publishWorkRequest(api, requestID, workers.WORKER.Web, bodyBytes)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
