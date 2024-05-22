@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -579,32 +578,27 @@ func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
 //	    logrus.Errorf("%v", err)
 //	}
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
-	var wg sync.WaitGroup
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	if node.IsStaked {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
-			result, err := future.Result()
+		future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
+		result, err := future.Result()
+		if err != nil {
+			logrus.Errorf("Error receiving response: %v", err)
+			return
+		}
+		response := result.(*messages.Response)
+		msg := &pubsub2.Message{}
+		err = json.Unmarshal([]byte(response.Value), msg)
+		if err != nil {
+			msg, err = getResponseMessage(result.(*messages.Response))
 			if err != nil {
-				logrus.Errorf("Error receiving response: %v", err)
+				logrus.Errorf("Error getting response message: %v", err)
 				return
 			}
-			response := result.(*messages.Response)
-			msg := &pubsub2.Message{}
-			err = json.Unmarshal([]byte(response.Value), msg)
-			if err != nil {
-				msg, err = getResponseMessage(result.(*messages.Response))
-				if err != nil {
-					logrus.Errorf("Error getting response message: %v", err)
-					return
-				}
-			}
-			workerDoneCh <- msg
-		}()
+		}
+		workerDoneCh <- msg
 	}
 	peers := node.Host.Network().Peers()
 	for _, p := range peers {
@@ -613,41 +607,37 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			if !isBootnode(ipAddr) {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+				if err != nil {
+					logrus.Debugf("Spawned error %v", err)
+				} else {
+					spawnedPID := spawned.Pid
+					client := node.ActorEngine.Spawn(props)
+					node.ActorEngine.Send(spawnedPID, &messages.Connect{
+						Sender: client,
+					})
+					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
+					result, err := future.Result()
 					if err != nil {
-						logrus.Debugf("Spawned error %v", err)
-					} else {
-						spawnedPID := spawned.Pid
-						client := node.ActorEngine.Spawn(props)
-						node.ActorEngine.Send(spawnedPID, &messages.Connect{
-							Sender: client,
-						})
-						future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
-						result, err := future.Result()
+						logrus.Errorf("Error receiving response: %v", err)
+						return
+					}
+					response := result.(*messages.Response)
+					msg := &pubsub2.Message{}
+					err = json.Unmarshal([]byte(response.Value), msg)
+					if err != nil {
+						msg, err = getResponseMessage(result.(*messages.Response))
 						if err != nil {
-							logrus.Errorf("Error receiving response: %v", err)
+							logrus.Errorf("Error getting response message: %v", err)
 							return
 						}
-						response := result.(*messages.Response)
-						msg := &pubsub2.Message{}
-						err = json.Unmarshal([]byte(response.Value), msg)
-						if err != nil {
-							msg, err = getResponseMessage(result.(*messages.Response))
-							if err != nil {
-								logrus.Errorf("Error getting response message: %v", err)
-								return
-							}
-						}
-						workerDoneCh <- msg
 					}
-				}()
+
+					workerDoneCh <- msg
+				}
 			}
 		}
 	}
-	wg.Wait()
 }
 
 // SubscribeToWorkers subscribes the given OracleNode to worker events.
