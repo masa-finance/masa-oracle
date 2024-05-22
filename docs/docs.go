@@ -634,25 +634,45 @@ const docTemplate = `{
 			},
 			"/chat": {
 				"post": {
-					"description": "Initiates a chat session with an AI model that accepts common ollama formatted requests",
-					"consumes": [
-						"application/json"
-					],
-					"produces": [
-						"application/json"
-					],
-					"tags": [
-						"Chat"
-					],
 					"summary": "Chat with AI",
+					"description": "Initiates a chat session with an AI model.",
+					"consumes": ["application/json"],
+					"produces": ["application/json"],
 					"parameters": [
 						{
-							"description": "Message to send to AI",
-							"name": "message",
 							"in": "body",
+							"name": "body",
+							"description": "Chat request payload",
 							"required": true,
 							"schema": {
-								"type": "string"
+								"type": "object",
+								"properties": {
+									"model": {
+										"type": "string",
+										"example": "llama3"
+									},
+									"messages": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"properties": {
+												"role": {
+													"type": "string",
+													"example": "user"
+												},
+												"content": {
+													"type": "string",
+													"example": "why is the sky blue?"
+												}
+											}
+										}
+									},
+									"stream": {
+										"type": "boolean",
+										"example": false
+									}
+								},
+								"required": ["model", "messages", "stream"]
 							}
 						}
 					],
@@ -669,12 +689,7 @@ const docTemplate = `{
 								"$ref": "#/definitions/ErrorResponse"
 							}
 						}
-					},
-					"security": [
-						{
-							"Bearer": []
-						}
-					]
+					}
 				}
 			},
 			"/node/data": {

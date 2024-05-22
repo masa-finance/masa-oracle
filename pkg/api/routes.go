@@ -387,7 +387,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Tags Chat
 		// @Accept  json
 		// @Produce  json
-		// @Param   message   body    string  true  "Message to send to AI"
+		// @Param   reqBody  body      LLMChat  true  "Chat Request"
 		// @Success 200 {object} ChatResponse "Successfully received response from AI"
 		// @Failure 400 {object} ErrorResponse "Error communicating with AI"
 		// @Router /chat [post]
@@ -423,6 +423,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// @Tags Chat
 	// @Accept  html
 	// @Produce  html
+	// @Param
 	// @Success 200 {object} string "Successfully rendered chat page"
 	// @Failure 500 {object} ErrorResponse "Error rendering chat page"
 	// @Router /chat [get]
