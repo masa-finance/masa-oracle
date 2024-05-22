@@ -67,12 +67,8 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
 func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
-	interval := 10 * time.Second
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
 	for {
 		select {
-		case <-ticker.C:
 		case response := <-responseCh:
 			var result map[string]interface{}
 			if err := json.Unmarshal(response, &result); err != nil {
