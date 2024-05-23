@@ -112,6 +112,6 @@ By following these steps, you can enhance your Masa Node with the ability to ser
 
 For more detailed information on setting up and using Cloudflare AI Workers, refer to the [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/).
 
-### Conclusion
+### Conclusions
 
 The LLM Chat feature of the Masa Node, when integrated with Cloudflare AI Workers, offers a powerful and scalable tool for developers and researchers to interact with large language models. By leveraging Cloudflare's infrastructure, it simplifies the process of integrating advanced conversational AI into various applications, providing flexibility and ease of use.

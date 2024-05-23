@@ -95,11 +95,12 @@ func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler
 				logrus.Errorf("Error reading from topic: %v", err)
 				continue
 			}
-			// if !includeSelf && msg.ReceivedFrom == sm.host.ID() {
-			// if msg.ReceivedFrom == sm.host.ID() {
-			// Skip messages from the same node
-			// 	continue
-			// }
+			if !includeSelf {
+				// if !includeSelf && msg.ReceivedFrom == sm.host.ID() {
+				// if msg.ReceivedFrom == sm.host.ID() {
+				// Skip messages from the same node
+				continue
+			}
 			// Use the handler to process the message
 			handler.HandleMessage(msg)
 		}
@@ -237,7 +238,5 @@ func (sm *Manager) Subscribe(topicName string, handler SubscriptionHandler) erro
 			handler.HandleMessage(msg)
 		}
 	}()
-
 	return nil
-
 }
