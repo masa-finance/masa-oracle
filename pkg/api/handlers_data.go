@@ -67,16 +67,20 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
 func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
-	select {
-	case response := <-responseCh:
-		var result map[string]interface{}
-		if err := json.Unmarshal(response, &result); err != nil {
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+	for {
+		select {
+		case response := <-responseCh:
+			var result map[string]interface{}
+			if err := json.Unmarshal(response, &result); err != nil {
+				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, result)
+		case <-time.After(60 * time.Second):
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+		case <-c.Done():
 			return
 		}
-		c.JSON(http.StatusOK, result)
-	case <-time.After(60 * time.Second):
-		c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
 	}
 }
 
@@ -279,36 +283,6 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 	}
 }
 
-// SearchDiscordGuildMemberships returns a gin.HandlerFunc that processes a request to search for guild memberships of a Discord user.
-// It expects a URL parameter "userID" representing the Discord user ID to search for.
-// The handler validates the userID, ensuring it is provided.
-// If the request is valid, it attempts to fetch the user's guild memberships.
-// On success, it returns the fetched guild membership information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) SearchDiscordGuildMemberships() gin.HandlerFunc {
-	// @todo add to workers
-	return func(c *gin.Context) {
-		userID := c.Param("userID")
-
-		if userID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
-			return
-		}
-
-		botToken := os.Getenv("DISCORD_BOT_TOKEN")
-		if botToken == "" {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Bot token is not configured"})
-			return
-		}
-
-		guildMemberships, err := discord.ListGuildMemberships(userID, botToken)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get Discord guild memberships", "details": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"guild_memberships": guildMemberships})
-	}
-}
-
 // SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
 func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -439,8 +413,8 @@ func (api *API) WebData() gin.HandlerFunc {
 		}
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
 		err = publishWorkRequest(api, requestID, workers.WORKER.Web, bodyBytes)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
