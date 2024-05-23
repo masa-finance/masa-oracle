@@ -559,88 +559,6 @@ func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
 	return msg, nil
 }
 
-// SendWork is responsible for handling work messages and processing them based on the request type.
-// It supports the following request types:
-// - "web": Scrapes web data from the specified URL with the given depth.
-// - "twitter": Scrapes tweets based on the provided query and count.
-//
-// The Worker actor receives messages through its Receive method, which is called by the actor system when a message is sent to the actor.
-// It handles the following message types:
-//   - *messages.Connect: Indicates that a client has connected to the worker. The client's sender information is added to the clients set.
-//   - *actor.Started: Indicates that the actor has started. It prints a debug message.
-//   - *messages.Work: Contains the work data to be processed. The work data is parsed based on the request type, and the corresponding scraping function is called.
-//     The scraped data is then sent to the workerStatusCh channel for further processing.
-//
-// The Worker actor is responsible for the NewWorker function, which returns an actor.Producer that can be used to spawn new instances of the Worker actor.
-// @note we can use the WorkerTopic to SendWork anywhere in the service
-// Usage with the Worker Gossip Topic
-//
-//	if err := node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), data); err != nil {
-//	    logrus.Errorf("%v", err)
-//	}
-// func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
-// 	props := actor.PropsFromProducer(NewWorker())
-// 	pid := node.ActorEngine.Spawn(props)
-// 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-// 	if node.IsStaked {
-// 		future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
-// 		result, err := future.Result()
-// 		if err != nil {
-// 			logrus.Errorf("Error receiving response: %v", err)
-// 			return
-// 		}
-// 		response := result.(*messages.Response)
-// 		msg := &pubsub2.Message{}
-// 		err = json.Unmarshal([]byte(response.Value), msg)
-// 		if err != nil {
-// 			msg, err = getResponseMessage(result.(*messages.Response))
-// 			if err != nil {
-// 				logrus.Errorf("Error getting response message: %v", err)
-// 				return
-// 			}
-// 		}
-// 		workerDoneCh <- msg
-// 	}
-// 	peers := node.Host.Network().Peers()
-// 	for _, p := range peers {
-// 		conns := node.Host.Network().ConnsToPeer(p)
-// 		for _, conn := range conns {
-// 			addr := conn.RemoteMultiaddr()
-// 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-// 			if !isBootnode(ipAddr) {
-// 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
-// 				if err != nil {
-// 					logrus.Debugf("Spawned error %v", err)
-// 				} else {
-// 					spawnedPID := spawned.Pid
-// 					client := node.ActorEngine.Spawn(props)
-// 					node.ActorEngine.Send(spawnedPID, &messages.Connect{
-// 						Sender: client,
-// 					})
-// 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
-// 					result, err := future.Result()
-// 					if err != nil {
-// 						logrus.Errorf("Error receiving response: %v", err)
-// 						return
-// 					}
-// 					response := result.(*messages.Response)
-// 					msg := &pubsub2.Message{}
-// 					err = json.Unmarshal([]byte(response.Value), msg)
-// 					if err != nil {
-// 						msg, err = getResponseMessage(result.(*messages.Response))
-// 						if err != nil {
-// 							logrus.Errorf("Error getting response message: %v", err)
-// 							return
-// 						}
-// 					}
-
-// 					workerDoneCh <- msg
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	var wg sync.WaitGroup
 	props := actor.PropsFromProducer(NewWorker())
@@ -787,8 +705,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				}
 			}
 			key, _ := computeCid(string(validatorData))
-			logrus.Infof("[+] Work done %s", key)
-			updateRecords(node, validatorData, key, data.ID)
+			val := db.ReadData(node, key)
+			if val != nil {
+				logrus.Infof("[+] Work done %s", key)
+				updateRecords(node, validatorData, key, data.ID)
+			}
 
 		case <-ctx.Done():
 			return
