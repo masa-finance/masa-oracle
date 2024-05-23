@@ -5,11 +5,11 @@ title: Twitter Worker
 
 ## Introduction
 
-This guide is for oracle node workers who are interested in contributing compute resources to fulfill Twitter data requests within the Masa Oracle Node network. It focuses on the specific requirements, setup, and operational guidelines for workers to efficiently process Twitter data requests. By dedicating your node to handle these requests, you play a crucial role in the decentralized processing of real-time Twitter data, which is vital for applications such as sentiment analysis, trend monitoring, and more.
+This guide is for protocol node workers who are interested in contributing compute resources to fulfill Twitter data requests within the Masa Protocol Node network. It focuses on the specific requirements, setup, and operational guidelines for workers to efficiently process Twitter data requests. By dedicating your node to handle these requests, you play a crucial role in the decentralized processing of real-time Twitter data, which is vital for applications such as sentiment analysis, trend monitoring, and more.
 
 ## Getting Started: Worker's Role in Processing Twitter Data
 
-As a worker in the Masa Oracle Node network, your primary function is to process Twitter data requests sent by clients. This involves fetching tweets based on specified queries and returning the data to the network. Here's a brief overview of how it works:
+As a worker in the Masa Protocol Node network, your primary function is to process Twitter data requests sent by clients. This involves fetching tweets based on specified queries and returning the data to the network. Here's a brief overview of how it works:
 
 ### Worker's Workflow
 
@@ -23,15 +23,15 @@ As a worker in the Masa Oracle Node network, your primary function is to process
 
 To become a worker focused on Twitter data requests, you need to:
 
-- Have your Masa Oracle Node staked as outlined in the [Staking Guide for Masa Oracle Node](staking-guide.md).
+- Have your Masa Protocol Node staked as outlined in the [Staking Guide for Masa Protocol Node](staking-guide.md).
 - Add your Twitter login credentials to your node's `.env` file. This is crucial for authenticating with Twitter and fetching tweet data.
-- Ensure your Masa Oracle Node is up and running, with network accessibility for receiving and processing requests.
+- Ensure your Masa Protocol Node is up and running, with network accessibility for receiving and processing requests.
 
 ## Setting Up Your Node for Twitter Requests
 
 ### Adding Twitter Credentials
 
-1. Locate your `.env` file in your Masa Oracle Node's directory.
+1. Locate your `.env` file in your Masa Protocol Node's directory.
 2. Add the following entries, replacing `your_twitter_username` and `your_twitter_password` with your actual Twitter API credentials. If you have 2FA enabled set your 2FA code in `your_2fa_code`. You must set `TWITTER_SCRAPER=true` to start your node as a Twitter Worker. When you start your node a session is saved locally with cookies to prevent repeated logins:
 
 ```shell
@@ -76,4 +76,4 @@ As a worker, maintaining optimal performance and reliability is key. Here are so
 
 ## Conclusion
 
-By contributing compute resources as a worker in the Masa Oracle Node network, you're at the forefront of providing real-time Twitter data to a wide array of decentralized applications. Your participation not only supports the network's operational efficiency but also enables the development of innovative solutions that leverage social media data for insightful analysis and decision-making. Follow this guide to ensure your node is properly set up and ready to fulfill Twitter data requests effectively.
+By contributing compute resources as a worker in the Masa Protocol Node network, you're at the forefront of providing real-time Twitter data to a wide array of decentralized applications. Your participation not only supports the network's operational efficiency but also enables the development of innovative solutions that leverage social media data for insightful analysis and decision-making. Follow this guide to ensure your node is properly set up and ready to fulfill Twitter data requests effectively.

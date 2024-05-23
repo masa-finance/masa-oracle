@@ -17,8 +17,8 @@ Before you begin, ensure you have the following installed on your system:
 Start by cloning the masa-node repository to your local machine. Open a terminal and run:
 
 ```bash
-git clone git@github.com:masa-finance/masa-oracle.git
-cd masa-oracle
+git clone git@github.com:masa-finance/masa-protocol.git
+cd masa-protocol
 ```
 
 ### 2. Environment Configuration
@@ -33,7 +33,7 @@ RPC_URL=https://ethereum-sepolia.publicnode.com
 ENV=test
 ```
 
-*be sure to use ENV=test to join the masa oracle testnet
+*be sure to use ENV=test to join the masa protocol testnet
 
 ### 3. Building the Docker Image
 

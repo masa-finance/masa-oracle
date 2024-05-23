@@ -3,13 +3,13 @@ id: quickstart
 title: Quickstart
 ---
 
-Follow these steps to get your Masa Oracle node up and running quickly:
+Follow these steps to get your Masa Protocol node up and running quickly:
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/masa-finance/masa-oracle.git
-cd masa-oracle
+git clone https://github.com/masa-finance/masa-protocol.git
+cd masa-protocol
 ```
 
 ### 2. Build the node
@@ -71,7 +71,7 @@ PG_URL=
 ./masa-node
 ```
 
-Your Masa Oracle node should now be running and attempting to connect to the network. Check the logs to ensure it's functioning correctly. You will need your Public Key from the node startup logs to stake the node. Grab some testnet MASA from [Discord](https://discord.gg/masafinance).
+Your Masa Protocol node should now be running and attempting to connect to the network. Check the logs to ensure it's functioning correctly. You will need your Public Key from the node startup logs to stake the node. Grab some testnet MASA from [Discord](https://discord.gg/masafinance).
 
 ```bash
 #######################################

@@ -40,7 +40,7 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: projects/784882329213/locations/global/workloadIdentityPools/github-oidc-pool/providers/github-oidc-provider
-        service_account: gh-masa-oracle-${{ github.ref_name }}@masa-chain.iam.gserviceaccount.com
+        service_account: gh-masa-protocol-${{ github.ref_name }}@masa-chain.iam.gserviceaccount.com
 
     - name: Install Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -70,7 +70,7 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: projects/784882329213/locations/global/workloadIdentityPools/github-oidc-pool/providers/github-oidc-provider
-        service_account: gh-masa-oracle-${{ github.ref_name }}@masa-chain.iam.gserviceaccount.com
+        service_account: gh-masa-protocol-${{ github.ref_name }}@masa-chain.iam.gserviceaccount.com
 
     - name: Update Instance Metadata
       run: |
@@ -83,6 +83,6 @@ jobs:
         for INSTANCE in $INSTANCES; do
           ZONE=$(gcloud compute instances list --filter="name=($INSTANCE)" --format="get(zone)" --limit=1)
           echo "Updating instance: $INSTANCE in zone: $ZONE"
-          gcloud compute instances add-metadata $INSTANCE --metadata masa-oracle-redeploy=latest --zone=$(echo $ZONE | tr -d '\n')
+          gcloud compute instances add-metadata $INSTANCE --metadata masa-protocol-redeploy=latest --zone=$(echo $ZONE | tr -d '\n')
         done
 

@@ -101,7 +101,6 @@ const (
 	OracleProtocol       = "oracle_protocol"
 	NodeDataSyncProtocol = "nodeDataSync"
 	NodeGossipTopic      = "gossip"
-	AdTopic              = "ad"
 	PublicKeyTopic       = "bootNodePublicKey"
 	WorkerTopic          = "workerTopic"
 	Rendezvous           = "masa-mdns"

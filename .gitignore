@@ -28,7 +28,7 @@ go.work
 .DS_Store
 
 private.key
-masa-oracle
+masa-protocol
 
 tools/tools
 tools/*.json

@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "masa-oracle.fullname" . }}
+  name: {{ include "masa-protocol.fullname" . }}
   labels:
-    {{- include "masa-oracle.labels" . | nindent 4 }}
+    {{- include "masa-protocol.labels" . | nindent 4 }}
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
@@ -13,4 +13,4 @@ spec:
       protocol: UDP
       name: udpconnection
   selector:
-    {{- include "masa-oracle.selectorLabels" . | nindent 4 }}
+    {{- include "masa-protocol.selectorLabels" . | nindent 4 }}

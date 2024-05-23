@@ -28,19 +28,19 @@ type Record struct {
 	Value []byte
 }
 
-// InitResolverCache initializes the resolver cache for the Masa Oracle node.
+// InitResolverCache initializes the resolver cache for the Masa Protocol node.
 //
 // Parameters:
-//   - node: A pointer to the Masa Oracle node (masa.OracleNode) that the resolver cache will be associated with.
+//   - node: A pointer to the Masa Protocol node (masa.OracleNode) that the resolver cache will be associated with.
 //   - keyManager: A pointer to the key manager (masacrypto.KeyManager) used for cryptographic operations.
 //
-// This function sets up the resolver cache for the Masa Oracle node. The resolver cache is responsible for storing and managing resolved data within the node.
+// This function sets up the resolver cache for the Masa Protocol node. The resolver cache is responsible for storing and managing resolved data within the node.
 //
 // The function takes two parameters:
-//  1. `node`: It represents the Masa Oracle node instance to which the resolver cache will be attached. The node provides the necessary context and dependencies for the resolver cache to operate.
+//  1. `node`: It represents the Masa Protocol node instance to which the resolver cache will be attached. The node provides the necessary context and dependencies for the resolver cache to operate.
 //  2. `keyManager`: It is an instance of the key manager that handles cryptographic operations. The key manager is used by the resolver cache for any required cryptographic tasks, such as signing or verifying data.
 //
-// The purpose of this function is to initialize the resolver cache and perform any necessary setup or configuration. It associates the resolver cache with the provided Masa Oracle node and key manager.
+// The purpose of this function is to initialize the resolver cache and perform any necessary setup or configuration. It associates the resolver cache with the provided Masa Protocol node and key manager.
 //
 // Note: The specific implementation details of the `InitResolverCache` function are not provided in the given code snippet. The function signature suggests that it initializes the resolver cache, but the actual initialization logic would be present in the function body.
 func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager) {

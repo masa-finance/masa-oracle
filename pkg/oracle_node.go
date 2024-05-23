@@ -29,7 +29,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/ad"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
@@ -37,28 +36,27 @@ import (
 )
 
 type OracleNode struct {
-	Host                  host.Host
-	PrivKey               *ecdsa.PrivateKey
-	Protocol              protocol.ID
-	priorityAddrs         multiaddr.Multiaddr
-	multiAddrs            []multiaddr.Multiaddr
-	DHT                   *dht.IpfsDHT
-	Context               context.Context
-	PeerChan              chan myNetwork.PeerEvent
-	NodeTracker           *pubsub2.NodeEventTracker
-	PubSubManager         *pubsub2.Manager
-	Signature             string
-	IsStaked              bool
-	IsWriter              bool
-	IsTwitterScraper      bool
-	IsDiscordScraper      bool
-	IsWebScraper          bool
-	IsLlmServer           bool
-	StartTime             time.Time
-	AdSubscriptionHandler *ad.SubscriptionHandler
-	WorkerTracker         *pubsub2.WorkerEventTracker
-	ActorEngine           *actor.RootContext
-	ActorRemote           *remote.Remote
+	Host             host.Host
+	PrivKey          *ecdsa.PrivateKey
+	Protocol         protocol.ID
+	priorityAddrs    multiaddr.Multiaddr
+	multiAddrs       []multiaddr.Multiaddr
+	DHT              *dht.IpfsDHT
+	Context          context.Context
+	PeerChan         chan myNetwork.PeerEvent
+	NodeTracker      *pubsub2.NodeEventTracker
+	PubSubManager    *pubsub2.Manager
+	Signature        string
+	IsStaked         bool
+	IsWriter         bool
+	IsTwitterScraper bool
+	IsDiscordScraper bool
+	IsWebScraper     bool
+	IsLlmServer      bool
+	StartTime        time.Time
+	WorkerTracker    *pubsub2.WorkerEventTracker
+	ActorEngine      *actor.RootContext
+	ActorRemote      *remote.Remote
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -87,7 +85,7 @@ func getOutboundIP() string {
 
 // NewOracleNode creates a new OracleNode instance with the provided context and
 // staking status. It initializes the libp2p host, DHT, pubsub manager, and other
-// components needed for an Oracle node to join the network and participate.
+// components needed for an Protocol node to join the network and participate.
 func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	// Start with the default scaling limits.
 	cfg := config.GetInstance()

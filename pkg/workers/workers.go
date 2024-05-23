@@ -128,7 +128,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 			return
 		}
 
-		// WIP oracle work data
+		// WIP work data
 		//id := uuid.New().String()
 		//oracleData := OracleData{
 		//	Id:        id,
@@ -166,7 +166,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		//}
 		//err = db.SendToS3(id, jsonPayload)
 		//if err != nil {
-		//	logrus.Errorf("[-] Failed to send oracle data: %v", err)
+		//	logrus.Errorf("[-] Failed to send data: %v", err)
 		//}
 
 		switch workData["request"] {

@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "masa-oracle.fullname" . }}
+  name: {{ include "masa-protocol.fullname" . }}
   labels:
-    {{- include "masa-oracle.labels" . | nindent 4 }}
+    {{- include "masa-protocol.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "masa-oracle.selectorLabels" . | nindent 6 }}
+      {{- include "masa-protocol.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -15,13 +15,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "masa-oracle.selectorLabels" . | nindent 8 }}
+        {{- include "masa-protocol.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "masa-oracle.serviceAccountName" . }}
+      serviceAccountName: {{ include "masa-protocol.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -44,7 +44,7 @@ spec:
           {{- if .Values.gcpEnvSecret }}
           envFrom:
           - secretRef:
-              name: {{ include "masa-oracle.fullname" . }}
+              name: {{ include "masa-protocol.fullname" . }}
           {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

@@ -11,7 +11,7 @@ import (
 	mh "github.com/multiformats/go-multihash"
 )
 
-// @todo WIP for future use case
+// @@note WIP for future use case
 // PoW Usage
 // apiKey := consensus.GeneratePoW(node.Host.ID().String())
 // logrus.Infof("api key: %s", apiKey)

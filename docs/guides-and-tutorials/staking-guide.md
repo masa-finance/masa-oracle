@@ -3,21 +3,21 @@ id: staking-guide
 title: Staking Guide
 ---
 
-This guide provides a comprehensive guide on how to stake tokens on the Masa Oracle Node. Staking is a crucial process for participating in the network and securing it. Follow the steps below to stake your tokens successfully.
+This guide provides a comprehensive guide on how to stake tokens on the Masa Protocol Node. Staking is a crucial process for participating in the network and securing it. Follow the steps below to stake your tokens successfully.
 
 ## Prerequisites
 
 Before you begin the staking process, ensure you have:
 
-- Cloned the Masa Oracle Node repository to your local machine.
+- Cloned the Masa Protocol Node repository to your local machine.
 - Installed all the necessary dependencies as outlined in the project's README.
-- Successfully built the Masa Oracle Node executable.
+- Successfully built the Masa Protocol Node executable.
 
 ## How to Stake
 
-Staking on the Masa Oracle Node involves specifying the amount of tokens you wish to stake and using the staking functionality built into the node. Here's how to do it:
+Staking on the Masa Protocol Node involves specifying the amount of tokens you wish to stake and using the staking functionality built into the node. Here's how to do it:
 
-1. **Open a Terminal:** Navigate to the directory where the Masa Oracle Node is located.
+1. **Open a Terminal:** Navigate to the directory where the Masa Protocol Node is located.
 
 2. **Execute the Staking Command:** Use the following command to initiate staking:
 
@@ -45,4 +45,4 @@ Ensure the staking amount is correctly set using one of these methods before ini
 
 ## Conclusion
 
-Staking tokens on the Masa Oracle Node is a straightforward process that can be accomplished by following the steps outlined in this guide. If you encounter any issues or have questions, consult the project's documentation or contact the development team for assistance.
+Staking tokens on the Masa Protocol Node is a straightforward process that can be accomplished by following the steps outlined in this guide. If you encounter any issues or have questions, consult the project's documentation or contact the development team for assistance.

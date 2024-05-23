@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "masa-oracle.name" -}}
+{{- define "masa-protocol.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "masa-oracle.fullname" -}}
+{{- define "masa-protocol.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "masa-oracle.chart" -}}
+{{- define "masa-protocol.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "masa-oracle.labels" -}}
-helm.sh/chart: {{ include "masa-oracle.chart" . }}
-{{ include "masa-oracle.selectorLabels" . }}
+{{- define "masa-protocol.labels" -}}
+helm.sh/chart: {{ include "masa-protocol.chart" . }}
+{{ include "masa-protocol.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "masa-oracle.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "masa-oracle.name" . }}
+{{- define "masa-protocol.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "masa-protocol.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "masa-oracle.serviceAccountName" -}}
+{{- define "masa-protocol.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "masa-oracle.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "masa-protocol.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

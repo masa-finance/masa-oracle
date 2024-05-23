@@ -208,7 +208,7 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 // showMenu creates and returns the menu component.
 func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 	menu := tview.NewList().
-		AddItem("Connect", "[darkgray]connect to an oracle node", '1', func() {
+		AddItem("Connect", "[darkgray]connect to a protocol node", '1', func() {
 			handleOption(app, "1", output)
 		}).
 		AddItem("LLM Model", "[darkgray]select an llm model to use", '2', func() {
@@ -223,7 +223,7 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 		AddItem("Sentiment", "[darkgray]analyze sentiment from tweets", '5', func() {
 			handleOption(app, "5", output)
 		}).
-		AddItem("Oracle Nodes", "[darkgray]view active nodes", '6', func() {
+		AddItem("Nodes", "[darkgray]view active nodes", '6', func() {
 			handleOption(app, "6", output)
 		})
 
@@ -365,7 +365,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			inputField.SetText("")
 
 			if userMessage == "\\q" {
-				output.SetText(" Welcome to the MASA Oracle Client ")
+				output.SetText(" Welcome to the MASA Protocol Client ")
 
 				mainFlex.Clear().
 					AddItem(content, 0, 1, false).
@@ -463,7 +463,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			inputField.SetText("")
 
 			if userMessage == "\\q" {
-				output.SetText(" Welcome to the MASA Oracle Client ")
+				output.SetText(" Welcome to the MASA Protocol Client ")
 
 				mainFlex.Clear().
 					AddItem(content, 0, 1, false).
@@ -558,7 +558,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 			AddItem(flex, 0, 3, true)
 
 		flex.SetBorder(true).SetBorderColor(tcell.ColorBlue).
-			SetTitle(" Masa Oracle Nodes, press esc to return to menu ")
+			SetTitle(" Masa Protocol Nodes, press esc to return to menu ")
 
 		app.SetRoot(mainFlex, true).SetFocus(table)
 	case "7":

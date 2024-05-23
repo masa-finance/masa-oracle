@@ -1,4 +1,4 @@
-# Masa Oracle: Decentralized Data and LLM Network 🌐
+# Masa Protocol: Decentralized Data and LLM Network 🌐
 
 ## Contents
 
@@ -35,7 +35,7 @@ For complete instructions on building, staking, and running a node with Docker, 
 ##### 1. Clone the repository
 
 ```shell
-git clone https://github.com/masa-finance/masa-oracle.git
+git clone https://github.com/masa-finance/masa-protocol.git
 ```
 
 ##### 2. Build the go code into the masa-node binary
@@ -123,7 +123,7 @@ The test command runs all the tests in the project using the go test command. It
 
 ### make clean
 
-The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_oracle_node.log file, which may contain log output from previous runs.
+The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_node.log file, which may contain log output from previous runs.
 
 To execute any of these commands, simply run make in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
 
@@ -167,7 +167,7 @@ After setting up your node, its address will be displayed, indicating it's ready
 
 ## Updates & Additional Information
 
-Stay tuned to the Masa Oracle repository for updates and additional details on effectively using the protocol. For Docker users, update your node by pulling the latest changes from the Git repository, then rebuild and restart your Docker containers.
+Stay tuned to the Masa Protocol repository for updates and additional details on effectively using the protocol. For Docker users, update your node by pulling the latest changes from the Git repository, then rebuild and restart your Docker containers.
 
 ## Masa Node CLI
 

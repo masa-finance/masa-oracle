@@ -2,7 +2,7 @@ name: Publish to Docs
 
 on:
   push:
-    branches: [ test ] # Change to main after mainnet is live and we publish masa-oracle to main (if desired)
+    branches: [ test ] # Change to main after mainnet is live and we publish masa-protocol to main (if desired)
     paths: 
       - 'docs/**'
 
@@ -17,7 +17,7 @@ jobs:
             mkdir pub-docs
             cp -r docs/welcome-to-masa pub-docs/
             cp -r docs/ai-worker-node pub-docs/
-            cp -r docs/ai-oracle-node pub-docs/
+            cp -r docs/ai-protocol-node pub-docs/
             cp -r docs/guides-and-tutorials pub-docs/
             cp RELEASE_NOTES.md pub-docs/
       - name: Pushes to another repository
@@ -26,7 +26,7 @@ jobs:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
           source-directory: 'pub-docs'
-          target-directory: 'docs/masa-oracle'
+          target-directory: 'docs/masa-protocol'
           destination-github-username: 'masa-finance'
           destination-repository-name: 'docs'
           user-email: 13647606+H34D@users.noreply.github.com

@@ -5,11 +5,11 @@ title: Twitter Data
 
 ## Introduction
 
-This gide serves as a comprehensive guide to utilizing the Twitter data endpoints available through the Masa Oracle Node API. It is designed to assist developers in harnessing the power of real-time Twitter data for a variety of applications, from sentiment analysis, to trend monitoring, and model fine-tuning. Before diving into the technical details, it's important to ensure that your Masa Oracle Node is properly staked. If you want to contribute to the network as a worker please add necessary Twitter credentials so your node can fullfill requests. This guide will walk you through the prerequisites, provide detailed information on how to access and use the Twitter endpoints, and offer example use case of deploying a decentralized AI agent for social media analysis. Whether you're looking to analyze public sentiment, track trending topics, or gather data for your AI Agents, this guide will equip you with the knowledge to effectively integrate Twitter data into your project.
+This gide serves as a comprehensive guide to utilizing the Twitter data endpoints available through the Masa Protocol Node API. It is designed to assist developers in harnessing the power of real-time Twitter data for a variety of applications, from sentiment analysis, to trend monitoring, and model fine-tuning. Before diving into the technical details, it's important to ensure that your Masa Protocol Node is properly staked. If you want to contribute to the network as a worker please add necessary Twitter credentials so your node can fullfill requests. This guide will walk you through the prerequisites, provide detailed information on how to access and use the Twitter endpoints, and offer example use case of deploying a decentralized AI agent for social media analysis. Whether you're looking to analyze public sentiment, track trending topics, or gather data for your AI Agents, this guide will equip you with the knowledge to effectively integrate Twitter data into your project.
 
 ## How It Works: Processing Twitter Data Requests
 
-The Masa Oracle Node employs an actor-based model to efficiently process Twitter data requests, enabling real-time access to Twitter data that is sourced through a decentralized network of workers. Each worker is able to fullfill a request and provide data to the network. This section outlines the workflow from receiving a request to delivering data back to the API.
+The Masa Protocol Node employs an actor-based model to efficiently process Twitter data requests, enabling real-time access to Twitter data that is sourced through a decentralized network of workers. Each worker is able to fullfill a request and provide data to the network. This section outlines the workflow from receiving a request to delivering data back to the API.
 
 ### Step 1: Initialization
 
@@ -25,13 +25,13 @@ The Manager assesses the request and delegates the task to an available Worker a
 
 ## Prerequisites
 
-- Ensure your Masa Oracle Node is staked as described in the [Staking Guide for Masa Oracle Node](staking-guide.md).
+- Ensure your Masa Protocol Node is staked as described in the [Staking Guide for Masa Protocol Node](staking-guide.md).
 - Add Twitter credentials to your `.env` file if you want to become a worker.
-- Have the Masa Oracle Node running and accessible.
+- Have the Masa Protocol Node running and accessible.
 
 ## Twitter Endpoints
 
-The Masa Oracle Node provides several endpoints for interacting with Twitter data:
+The Masa Protocol Node provides several endpoints for interacting with Twitter data:
 
 ### Search Tweets
 
@@ -209,7 +209,7 @@ Example response:
 
 ## Use Case: Decentralized AI Agent
 
-Imagine a decentralized AI agent designed to monitor and analyze public sentiment on social media platforms, specifically Twitter, regarding various cryptocurrencies. This agent, let's call it "CryptoSentimentAI," uses the Masa Oracle Node's Twitter data endpoints to gather real-time data on what people are saying about different cryptocurrencies.
+Imagine a decentralized AI agent designed to monitor and analyze public sentiment on social media platforms, specifically Twitter, regarding various cryptocurrencies. This agent, let's call it "CryptoSentimentAI," uses the Masa Protocol Node's Twitter data endpoints to gather real-time data on what people are saying about different cryptocurrencies.
 
 ### How CryptoSentimentAI Leverages LLMs
 
@@ -235,4 +235,4 @@ Upon collecting the tweets, CryptoSentimentAI processes and analyzes the text co
 
 ### Conclusion
 
-The `/data/tweets` endpoint in the Masa Oracle Node API provides a rich foundation for developing decentralized applications that can interact with social media data in real-time. By leveraging this endpoint, developers are empowered to create innovative AI agents capable of analyzing social media trends and sentiments. These agents can uncover deep insights from the vast stream of social media conversations, offering valuable intelligence for a wide range of applications and decision-making processes.
+The `/data/tweets` endpoint in the Masa Protocol Node API provides a rich foundation for developing decentralized applications that can interact with social media data in real-time. By leveraging this endpoint, developers are empowered to create innovative AI agents capable of analyzing social media trends and sentiments. These agents can uncover deep insights from the vast stream of social media conversations, offering valuable intelligence for a wide range of applications and decision-making processes.

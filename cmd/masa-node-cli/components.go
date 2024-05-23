@@ -120,7 +120,7 @@ const logo = `
 `
 
 const (
-	subtitle   = `masa oracle client`
+	subtitle   = `masa protocol client`
 	navigation = `[yellow]use keys or mouse to navigate`
 	mouse      = `[green]v0.0.4-beta`
 )

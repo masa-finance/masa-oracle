@@ -111,12 +111,12 @@ func main() {
 	fmt.Println(node)
 
 	questions := []Questions{
-		NewQuestion("Connect to Oracle Node"),
+		NewQuestion("Connect to a Node"),
 		NewQuestion("Select LLM Model"),
 		NewQuestion("Set Twitter Credentials"),
 		NewQuestion("Analyze Sentiment from Tweets"),
 		NewQuestion("Analyze Sentiment from Website"),
-		NewQuestion("Oracle Nodes"),
+		NewQuestion("Nodes"),
 	}
 	m := New(questions)
 	p := tea.NewProgram(m, tea.WithAltScreen())

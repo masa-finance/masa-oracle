@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Masa is a groundbreaking solution in the web3 space, addressing the pressing need for a unified data layer that encapsulates a user's holistic behavior and identity data. In the decentralized realm, while the promise of privacy and control over one's data is paramount, the absence of a comprehensive data layer has led to fragmented experiences and inefficiencies. Masa Oracle aims to bridge this gap, introducing a privacy-first approach that intertwines identity, behaviorial, onchain, and social graph data in a unified and secure manner.
+Masa is a groundbreaking solution in the web3 space, addressing the pressing need for a unified data layer that encapsulates a user's holistic behavior and identity data. In the decentralized realm, while the promise of privacy and control over one's data is paramount, the absence of a comprehensive data layer has led to fragmented experiences and inefficiencies. Masa Protocol aims to bridge this gap, introducing a privacy-first approach that intertwines identity, behaviorial, onchain, and social graph data in a unified and secure manner.
 
 ## Problem Statement
 
@@ -30,7 +30,7 @@ Leveraging its proprietary and privacy preserving cookieless tracking, Masa achi
 
 ## Masa Protocol: The Solution
 
-The Masa Protocol, encompassing the Masa Oracle and other components, offers a robust solution to this challenge. It aims to provide a unified, secure, and privacy-preserving data layer that places the user at its core.
+The Masa Protocol, encompassing the Masa Protocol and other components, offers a robust solution to this challenge. It aims to provide a unified, secure, and privacy-preserving data layer that places the user at its core.
 
 - **Unified Data Layer**: The Masa Protocol consolidates a user's behavioral and identity data, ensuring that it remains accessible yet private, irrespective of its source (on-chain or off-chain).
   
@@ -40,15 +40,15 @@ The Masa Protocol, encompassing the Masa Oracle and other components, offers a r
 
 - **Data Monetization**: Through opting in to sharing privacy preserved data the Masa protocol enables a decentralized behavioral and identity marketplace that rewards uses whenever their data is used by a third party. For example, training a AI agent model for serving customer support documentation at critical steps in a user journey through an app.
 
-## The Masa Oracle: Bridging Gaps
+## The Masa Protocol: Bridging Gaps
 
-Acting as the linchpin of the Masa Protocol, the Masa Oracle bridges the on-chain and off-chain worlds. It serves as a conduit, channeling a tokenized representation of a user's complete identity. This identity encapsulates all the relationships a user has, spanning accounts and data both on and off-chain. The Oracle's use of zkSBT ensures that this representation, while comprehensive, never compromises on privacy. The Masa Oracle enables querying and sharing of private and anonymous data with any third party in a fully decentralized architecture.
+Acting as the linchpin of the Masa Protocol, the Masa Protocol bridges the on-chain and off-chain worlds. It serves as a conduit, channeling a tokenized representation of a user's complete identity. This identity encapsulates all the relationships a user has, spanning accounts and data both on and off-chain. The protocol's use of zkSBT ensures that this representation, while comprehensive, never compromises on privacy. The Masa Protocol enables querying and sharing of private and anonymous data with any third party in a fully decentralized architecture.
 
 ## Node Incentivization through Masa Tokens
 
 ### Earning Masa Tokens
 
-Masa Oracle rewards its participating nodes with its native token, Masa. These tokens are issued as an incentive for nodes to actively contribute and maintain the health of the decentralized data network. By staking and providing essential services, nodes ensure the integrity and availability of data, receiving Masa tokens as compensation.
+Masa Protocol rewards its participating nodes with its native token, Masa. These tokens are issued as an incentive for nodes to actively contribute and maintain the health of the decentralized data network. By staking and providing essential services, nodes ensure the integrity and availability of data, receiving Masa tokens as compensation.
 
 ### Revenue from Data Requests
 
@@ -56,11 +56,11 @@ Beyond the foundational rewards in Masa tokens, nodes have the opportunity to ea
 
 #### Revenue Conversion
 
-Revenue garnered from data requests in various native currencies, such as ETH, MATIC, USDC, or other native tokens, doesn't remain fragmented. Instead, Masa Oracle employs a DEX (Decentralized Exchange) to convert these earnings into Masa tokens. This not only simplifies the reward mechanism but also ensures that node operators consistently augment their Masa holdings.
+Revenue garnered from data requests in various native currencies, such as ETH, MATIC, USDC, or other native tokens, doesn't remain fragmented. Instead, Masa Protocol employs a DEX (Decentralized Exchange) to convert these earnings into Masa tokens. This not only simplifies the reward mechanism but also ensures that node operators consistently augment their Masa holdings.
 
 ## Protocol Governance & Voting
 
-Masa Oracle isn't just about data distribution; it's also about community-driven growth and evolution. Node operators who stake Masa tokens gain the privilege to partake in protocol governance. This decentralized governance approach ensures that every staking member has a voice. From proposing enhancements to voting on pivotal protocol decisions, staking in the Masa Oracle ecosystem empowers node operators to sculpt the future of decentralized data protocols.
+Masa Protocol isn't just about data distribution; it's also about community-driven growth and evolution. Node operators who stake Masa tokens gain the privilege to partake in protocol governance. This decentralized governance approach ensures that every staking member has a voice. From proposing enhancements to voting on pivotal protocol decisions, staking in the Masa Protocol ecosystem empowers node operators to sculpt the future of decentralized data protocols.
 
 ## Use Cases
 
@@ -70,7 +70,7 @@ Masa Oracle isn't just about data distribution; it's also about community-driven
   
 3. **Governance and Community Building**: With the comprehensive view that Masa provides, platforms can foster stronger communities. They can understand user needs better, drive engagement, and even facilitate governance mechanisms that are truly representative of the community's desires.
 
-4. **Decentralized Identity Verification**: With Masa Oracle, platforms can seamlessly verify a user's identity without compromising on their privacy. From simple sign-ins to complex identity checks, Masa streamlines the process.
+4. **Decentralized Identity Verification**: With Masa Protocol, platforms can seamlessly verify a user's identity without compromising on their privacy. From simple sign-ins to complex identity checks, Masa streamlines the process.
 
 ## Conclusion
 

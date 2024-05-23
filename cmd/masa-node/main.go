@@ -25,7 +25,7 @@ import (
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
-		fmt.Printf("Masa Oracle Node Version: %s\n", config.Version)
+		fmt.Printf("Masa Protocol Node Version: %s\n", config.Version)
 		os.Exit(0)
 	}
 

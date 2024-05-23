@@ -35,15 +35,15 @@ Key features of the Masa network include:
 Masa empowers contributors to monetize their data and compute resources by becoming Worker Nodes on the network. As a Worker Node, you can:
 
 - Stake tokens to provide work to the network and earn rewards for your nodes availablity and uptime.
-- Receive and process data requests from Oracle Nodes, servicing data and LLM requests.
+- Receive and process data requests from Protocol Nodes, servicing data and LLM requests.
 - Earn network emissions and fees for the work you provide, generating a new revenue stream.
 - Access the network's vast dataset and LLM resources to efficiently process requests and deliver accurate results.
 
 By contributing to Masa as a Worker Node, you play a vital role in powering the decentralized AI ecosystem while being rewarded for your efforts.
 
-## [Masa for Developers: AI Oracle Nodes](docs/ai-oracle-node/introduction.md)
+## [Masa for Developers: AI Protocol Nodes](docs/ai-protocol-node/introduction.md)
 
-Masa offers developers a decentralized platform to access diverse data sources and powerful LLM services through Oracle Nodes. By running an Oracle Node, you can:
+Masa offers developers a decentralized platform to access diverse data sources and powerful LLM services through Protocol Nodes. By running an Protocol Node, you can:
 
 - Stake tokens to access the network's rich data and powerful open source LLM services, submitting data or LLM requests to Worker Nodes.
 - Submit data or LLM requests to Worker Nodes to power your AI applications.
@@ -52,7 +52,7 @@ Masa offers developers a decentralized platform to access diverse data sources a
   - **Crypto Community Insights**: Leverage our Discord Profile scraper to extract comprehensive data from prominent crypto users on Discord.
   - **Crypto News Aggregation and Summarization**: Utilize our Web Scraper to collect real-time data from leading crypto news websites and blogs.
 
-By leveraging Masa as a Oracle Node, developers can build innovative AI applications with the power of decentralized data and compute at their fingertips.
+By leveraging Masa as a Protocol Node, developers can build innovative AI applications with the power of decentralized data and compute at their fingertips.
 
 ## Join the Fair AI Revolution
 

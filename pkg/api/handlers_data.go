@@ -153,7 +153,6 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 
-		// worker handler implementation
 		bodyBytes, wErr := json.Marshal(reqBody)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
@@ -166,7 +165,6 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -174,9 +172,6 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 // It first validates the request body for required fields such as URL, Depth, and Model. If the Model is set to "all",
 // it iterates through all available models to perform sentiment analysis on the web content fetched from the specified URL.
 // The function responds with the sentiment analysis results in JSON format.// Models Supported:
-// Models Supported:
-//
-//	chose a model or use "all"
 func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -206,7 +201,6 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 
-		// worker handler implementation
 		bodyBytes, wErr := json.Marshal(reqBody)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
@@ -219,7 +213,6 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -239,7 +232,6 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		}
 		reqBody.Username = c.Param("username")
 
-		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -252,7 +244,6 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -283,7 +274,8 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 	}
 }
 
-// SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
+// SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers
+// of a given Twitter user.
 func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
@@ -301,7 +293,6 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 			reqBody.Count = 20
 		}
 
-		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -314,8 +305,6 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
-
 	}
 }
 
@@ -341,7 +330,6 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 			return
 		}
 
-		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -354,7 +342,6 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -364,7 +351,6 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 // On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// worker handler implementation
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
@@ -373,7 +359,6 @@ func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -406,7 +391,6 @@ func (api *API) WebData() gin.HandlerFunc {
 			reqBody.Depth = 10 // Default count
 		}
 
-		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -419,15 +403,6 @@ func (api *API) WebData() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
-
-		// collectedData, err := web.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
-		// if err != nil {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
-		// 	return
-		// }
-		// sanitizedData := llmbridge.SanitizeResponse(collectedData)
-		// c.JSON(http.StatusOK, gin.H{"data": sanitizedData})
 	}
 }
 
@@ -467,7 +442,6 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 		reqBody.Model = strings.TrimPrefix(reqBody.Model, "ollama/")
 		reqBody.Stream = false
 
-		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -480,7 +454,6 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 

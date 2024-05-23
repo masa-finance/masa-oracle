@@ -3,9 +3,9 @@ id: data-catalog
 title: Data Catalog
 ---
 
-## Decentralized AI Data Oracle - Data Product Catalog
+## Decentralized AI Data Protocol - Data Product Catalog
 
-Our Decentralized AI Data Oracle offers a comprehensive suite of high-quality data products to fuel your AI agents and fine-tune large language models for optimal performance and insights. Each of our data scrapers is carefully crafted to extract valuable information from a wide range of sources, empowering you with the data needed to drive innovation and excellence in your AI applications.
+Our Decentralized AI Data Protocol offers a comprehensive suite of high-quality data products to fuel your AI agents and fine-tune large language models for optimal performance and insights. Each of our data scrapers is carefully crafted to extract valuable information from a wide range of sources, empowering you with the data needed to drive innovation and excellence in your AI applications.
 
 ## Live
 

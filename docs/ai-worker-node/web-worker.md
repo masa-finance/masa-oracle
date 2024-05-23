@@ -5,11 +5,11 @@ title: Web Scraper Worker
 
 ## Introduction
 
-This guide is designed for oracle node workers who are interested in contributing compute resources to fulfill web scraping data requests within the Masa Oracle Node network. It outlines the specific requirements, setup, and operational guidelines for workers to efficiently process web scraping requests. By configuring your node to handle these requests, you play a pivotal role in the decentralized extraction of data from various websites, which is essential for applications such as content aggregation, market analysis, and competitive research.
+This guide is designed for protocol node workers who are interested in contributing compute resources to fulfill web scraping data requests within the Masa Protocol Node network. It outlines the specific requirements, setup, and operational guidelines for workers to efficiently process web scraping requests. By configuring your node to handle these requests, you play a pivotal role in the decentralized extraction of data from various websites, which is essential for applications such as content aggregation, market analysis, and competitive research.
 
 ## Getting Started: Worker's Role in Processing Web Scraping Data
 
-As a worker in the Masa Oracle Node network, your primary function is to process web scraping data requests sent by clients. This involves extracting data from websites based on specified parameters and returning the data to the network. Here's a brief overview of the workflow:
+As a worker in the Masa Protocol Node network, your primary function is to process web scraping data requests sent by clients. This involves extracting data from websites based on specified parameters and returning the data to the network. Here's a brief overview of the workflow:
 
 ### Worker's Workflow
 
@@ -23,15 +23,15 @@ As a worker in the Masa Oracle Node network, your primary function is to process
 
 To become a worker focused on web scraping data requests, you need to:
 
-- Have your Masa Oracle Node staked as per the [Staking Guide for Masa Oracle Node](staking-guide.md).
+- Have your Masa Protocol Node staked as per the [Staking Guide for Masa Protocol Node](staking-guide.md).
 - Install web scraping tools and libraries on your node.
-- Ensure your Masa Oracle Node is operational, with network accessibility for receiving and processing requests.
+- Ensure your Masa Protocol Node is operational, with network accessibility for receiving and processing requests.
 
 ## Setting Up Your Node for Web Scraping Requests
 
 ### Edit .env file
 
-1. Locate your `.env` file in your Masa Oracle Node's directory.
+1. Locate your `.env` file in your Masa Protocol Node's directory.
 2. Add the following entry:
 
 ```shell
@@ -68,9 +68,9 @@ Is WebScraper:          true
 As a worker, maintaining optimal performance and reliability is key. Here are some guidelines:
 
 - **Monitor Your Node**: Regularly check your node's health and log files to identify and resolve any issues promptly.
-- **Update Regularly**: Keep your node and its dependencies up to date to ensure compatibility with the latest oracle node changes and network protocols.
+- **Update Regularly**: Keep your node and its dependencies up to date to ensure compatibility with the latest protocol node changes and network protocols.
 - **Secure Your Credentials**: Protect your node's access keys to prevent unauthorized access.
 
 ## Conclusion
 
-By contributing compute resources as a worker in the Masa Oracle Node network, you're at the forefront of providing real-time Web data to a wide array of decentralized applications. Your participation not only supports the network's operational efficiency but also enables the development of innovative solutions that leverage social media data for insightful analysis and decision-making. Follow this guide to ensure your node is properly set up and ready to fulfill Web data requests effectively.
+By contributing compute resources as a worker in the Masa Protocol Node network, you're at the forefront of providing real-time Web data to a wide array of decentralized applications. Your participation not only supports the network's operational efficiency but also enables the development of innovative solutions that leverage social media data for insightful analysis and decision-making. Follow this guide to ensure your node is properly set up and ready to fulfill Web data requests effectively.
