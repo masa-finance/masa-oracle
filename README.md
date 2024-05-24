@@ -48,7 +48,7 @@ go build -v -o masa-node ./cmd/masa-node
 
 ```shell
 cd contracts/ 
-npm install
+yarn install
 cd ../
 ```
 
