@@ -22,7 +22,6 @@ import (
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 )
 
 type LLMChat struct {
@@ -265,22 +264,33 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 	// @todo add to workers
 	return func(c *gin.Context) {
-		userID := c.Param("userID")
+		var reqBody struct {
+			UserID   string `json:"userID"`
+			BotToken string `json:"botToken"`
+		}
 
-		if userID == "" {
+		reqBody.UserID = c.Param("userID")
+		reqBody.BotToken = os.Getenv("DISCORD_BOT_TOKEN")
+
+		if reqBody.UserID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
 			return
 		}
 
-		// Assuming you have a way to access your bot token here. It might be stored in an environment variable or a config file.
-		botToken := os.Getenv("DISCORD_BOT_TOKEN")
-
-		profile, err := discord.GetUserProfile(userID, botToken)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get Discord profile", "details": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, profile)
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.Discord, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 
