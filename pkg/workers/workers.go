@@ -418,7 +418,6 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
 			updateRecords(node, validatorData, key, data.ID)
-
 		case <-ctx.Done():
 			return
 		}

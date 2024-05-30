@@ -102,7 +102,6 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 			return
 		}
 		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
-		ctx.Poison(ctx.Self())
 		return
 	}
 
@@ -120,5 +119,4 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 		return
 	}
 	ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
-	ctx.Poison(ctx.Self())
 }
