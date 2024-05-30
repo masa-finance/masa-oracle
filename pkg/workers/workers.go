@@ -405,6 +405,16 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 					logrus.Errorf("Error processing data.ValidatorData: %v", data.ValidatorData)
 				}
 			}
+			if validatorDataMap, ok := data.ValidatorData.(map[string]interface{}); ok {
+				if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
+					if errorMessage, ok := response["error"].(string); ok {
+						if errorMessage == "there was an error authenticating with your Twitter credentials" {
+							logrus.Infof("[+] Work failed %s", errorMessage)
+							return
+						}
+					}
+				}
+			}
 			key, _ := computeCid(string(validatorData))
 			logrus.Infof("[+] Work done %s", key)
 			updateRecords(node, validatorData, key, data.ID)
