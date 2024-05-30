@@ -16,14 +16,10 @@ import (
 func (a *Worker) HandleConnect(ctx actor.Context, m *messages.Connect) {
 	logrus.Infof("[+] Worker %v connected", m.Sender)
 	clients.Add(m.Sender)
-	return
-	// @todo fire event to masa sdk
 }
 
 func (a *Worker) HandleLog(ctx actor.Context, l string) {
 	logrus.Info(l)
-	return
-	// @todo fire event to masa sdk
 }
 
 func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
