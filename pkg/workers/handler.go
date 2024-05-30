@@ -88,6 +88,20 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 
 	if err != nil {
 		logrus.Errorf("Error processing request: %v", err)
+		chanResponse := ChanResponse{
+			Response:  map[string]interface{}{"data": err.Error()},
+			ChannelId: workData["request_id"],
+		}
+		val := &pubsub2.Message{
+			ValidatorData: chanResponse,
+			ID:            m.Id,
+		}
+		jsn, err := json.Marshal(val)
+		if err != nil {
+			logrus.Errorf("Error marshalling response: %v", err)
+			return
+		}
+		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 		return
 	}
 
