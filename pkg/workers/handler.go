@@ -102,21 +102,21 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 			return
 		}
 		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
-		return
+	} else {
+		chanResponse := ChanResponse{
+			Response:  map[string]interface{}{"data": resp},
+			ChannelId: workData["request_id"],
+		}
+		val := &pubsub2.Message{
+			ValidatorData: chanResponse,
+			ID:            m.Id,
+		}
+		jsn, err := json.Marshal(val)
+		if err != nil {
+			logrus.Errorf("Error marshalling response: %v", err)
+			return
+		}
+		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 	}
-
-	chanResponse := ChanResponse{
-		Response:  map[string]interface{}{"data": resp},
-		ChannelId: workData["request_id"],
-	}
-	val := &pubsub2.Message{
-		ValidatorData: chanResponse,
-		ID:            m.Id,
-	}
-	jsn, err := json.Marshal(val)
-	if err != nil {
-		logrus.Errorf("Error marshalling response: %v", err)
-		return
-	}
-	ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+	ctx.Poison(ctx.Self())
 }
