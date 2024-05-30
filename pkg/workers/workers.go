@@ -79,7 +79,8 @@ type ChanResponse struct {
 	ChannelId string
 }
 
-type Worker struct{}
+type Worker struct {
+}
 
 // NewWorker creates a new instance of the Worker actor.
 // It implements the actor.Receiver interface, allowing it to receive and handle messages.
