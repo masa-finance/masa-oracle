@@ -41,9 +41,11 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 	}
 
 	var bodyData map[string]interface{}
-	if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
-		logrus.Errorf("Error unmarshalling body: %v", err)
-		return
+	if workData["body"] != "" {
+		if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
+			logrus.Errorf("Error unmarshalling body: %v", err)
+			return
+		}
 	}
 
 	switch workData["request"] {
@@ -82,12 +84,13 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 		depth := int(bodyData["depth"].(float64))
 		_, resp, err = web.ScrapeWebDataForSentiment([]string{bodyData["url"].(string)}, depth, bodyData["model"].(string))
 	default:
-		ctx.Poison(ctx.Self())
+		logrus.Warningf("[+] Received unknown message: %T", m)
 		return
 	}
 
 	if err != nil {
 		logrus.Errorf("Error processing request: %v", err)
+		// return
 		chanResponse := ChanResponse{
 			Response:  map[string]interface{}{"error": err.Error()},
 			ChannelId: workData["request_id"],

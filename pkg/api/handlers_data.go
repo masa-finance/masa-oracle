@@ -375,6 +375,7 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 // On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		logrus.Info(c)
 		// worker handler implementation
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
