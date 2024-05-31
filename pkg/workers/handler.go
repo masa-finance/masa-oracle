@@ -90,7 +90,6 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 
 	if err != nil {
 		logrus.Errorf("Error processing request: %v", err)
-		// return
 		chanResponse := ChanResponse{
 			Response:  map[string]interface{}{"error": err.Error()},
 			ChannelId: workData["request_id"],

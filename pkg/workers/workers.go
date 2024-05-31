@@ -23,8 +23,7 @@ import (
 
 	"github.com/ipfs/go-cid"
 
-	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
-	mpubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	pubsub2 "github.com/libp2p/go-libp2p-pubsub" // mpubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
@@ -264,7 +263,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	if node.IsStaked && node.IsTwitterScraper && node.IsWebScraper {
+	if node.IsStaked { //  && node.IsTwitterScraper && node.IsWebScraper
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -363,7 +362,7 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 
 	// Register self as a remote node for the network
-	// node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
+	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -376,14 +375,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			logrus.Debug("tick")
 		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
-			fmt.Printf("%v", work)
-
 			var workData map[string]string
-			err := json.Unmarshal([]byte(work.Data), &workData)
+			err := json.Unmarshal(work.Data, &workData)
 			if err != nil {
 				logrus.Error(err)
 			}
-			_ = mpubsub.GetResponseChannelMap().CreateChannel(workData["request_id"])
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
 			if _, ok := data.ValidatorData.([]byte); ok {
