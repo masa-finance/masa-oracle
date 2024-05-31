@@ -77,8 +77,11 @@ func main() {
 	go db.InitResolverCache(node, keyManager)
 
 	// Subscribe and if actor start monitoring actor workers
-	go workers.SubscribeToWorkers(node)
-	if node.IsActor() {
+	// considering all that matters is if the node is staked
+	// and other peers can do work we only need to check this here
+	// if this peer can or cannot scrape or write that is checked in other places
+	if node.IsStaked {
+		go workers.SubscribeToWorkers(node)
 		go workers.MonitorWorkers(ctx, node)
 	}
 

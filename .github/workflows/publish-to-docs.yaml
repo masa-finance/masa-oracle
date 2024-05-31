@@ -16,8 +16,9 @@ jobs:
         run: |
             mkdir pub-docs
             cp -r docs/welcome-to-masa pub-docs/
-            cp -r docs/ai-worker-node pub-docs/
-            cp -r docs/ai-oracle-node pub-docs/
+            cp -r docs/worker-node pub-docs/
+            cp -r docs/oracle-node pub-docs/
+            cp -r docs/validator-node pub-docs/
             cp -r docs/guides-and-tutorials pub-docs/
             cp RELEASE_NOTES.md pub-docs/
       - name: Pushes to another repository
