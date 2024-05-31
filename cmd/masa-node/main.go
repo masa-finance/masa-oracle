@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
 	"github.com/google/uuid"
-
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	"github.com/sirupsen/logrus"
 

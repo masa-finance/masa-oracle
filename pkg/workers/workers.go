@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +24,7 @@ import (
 	"github.com/ipfs/go-cid"
 
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
+	mpubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
@@ -59,7 +59,6 @@ var WORKER = struct {
 
 var (
 	clients        = actor.NewPIDSet()
-	dataLengthCh   = make(chan int)
 	workerStatusCh = make(chan *pubsub2.Message)
 	workerDoneCh   = make(chan *pubsub2.Message)
 )
@@ -157,23 +156,23 @@ func isBootnode(ipAddr string) bool {
 // Parameters:
 //   - node: A pointer to the OracleNode instance whose participation metrics need to be updated.
 //   - totalBytes: The total number of bytes processed by the node which will be added to its current metrics.
-func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
-	if totalBytes == 0 {
-		return
-	}
-	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-	sharedData := db.SharedData{}
-	nodeVal := db.ReadData(node, nodeData.PeerId.String())
-	_ = json.Unmarshal(nodeVal, &sharedData)
-	bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
-	nodeData.BytesScraped += bytesScraped + totalBytes
-	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
-	if err != nil {
-		logrus.Error(err)
-	}
-	jsonData, _ := json.Marshal(nodeData)
-	_ = db.WriteData(node, peerId, jsonData)
-}
+// func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
+// 	if totalBytes == 0 {
+// 		return
+// 	}
+// 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+// 	sharedData := db.SharedData{}
+// 	nodeVal := db.ReadData(node, nodeData.PeerId.String())
+// 	_ = json.Unmarshal(nodeVal, &sharedData)
+// 	bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
+// 	nodeData.BytesScraped += bytesScraped + totalBytes
+// 	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+// 	if err != nil {
+// 		logrus.Error(err)
+// 	}
+// 	jsonData, _ := json.Marshal(nodeData)
+// 	_ = db.WriteData(node, peerId, jsonData)
+// }
 
 // updateRecords updates the records for a given node and key with the provided data.
 //
@@ -265,7 +264,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker())
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	if node.IsStaked {
+	if node.IsStaked && node.IsTwitterScraper && node.IsWebScraper {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -364,7 +363,7 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 
 	// Register self as a remote node for the network
-	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
+	// node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -375,10 +374,16 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		select {
 		case <-ticker.C:
 			logrus.Debug("tick")
-		case totalBytes := <-dataLengthCh:
-			go updateParticipation(node, totalBytes, node.Host.ID().String())
 		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
+			fmt.Printf("%v", work)
+
+			var workData map[string]string
+			err := json.Unmarshal([]byte(work.Data), &workData)
+			if err != nil {
+				logrus.Error(err)
+			}
+			_ = mpubsub.GetResponseChannelMap().CreateChannel(workData["request_id"])
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
 			if _, ok := data.ValidatorData.([]byte); ok {
