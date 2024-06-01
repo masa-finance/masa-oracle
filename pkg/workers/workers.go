@@ -414,7 +414,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 					logrus.Infof("[+] Work failed %s", response["error"])
 				} else if w, ok := response["data"].(string); ok {
 					key, _ := computeCid(w)
-					logrus.Infof("[+] Work done %s %s", key)
+					logrus.Infof("[+] Work done %s", key)
 					updateRecords(node, []byte(w), key, data.ID)
 				}
 			}
