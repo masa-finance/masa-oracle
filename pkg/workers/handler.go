@@ -83,6 +83,11 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 	case string(WORKER.WebSentiment):
 		depth := int(bodyData["depth"].(float64))
 		_, resp, err = web.ScrapeWebDataForSentiment([]string{bodyData["url"].(string)}, depth, bodyData["model"].(string))
+	case string(WORKER.Test):
+		count := int(bodyData["count"].(float64))
+		resp, err = func(count int) (interface{}, error) {
+			return count, err
+		}(count)
 	default:
 		logrus.Warningf("[+] Received unknown message: %T", m)
 		return

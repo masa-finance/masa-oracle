@@ -40,10 +40,11 @@ const (
 	TwitterTrends    WorkerType = "twitter-trends"
 	Web              WorkerType = "web"
 	WebSentiment     WorkerType = "web-sentiment"
+	Test             WorkerType = "test"
 )
 
 var WORKER = struct {
-	Discord, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment WorkerType
+	Discord, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
 }{
 	Discord:          Discord,
 	LLMChat:          LLMChat,
@@ -54,6 +55,7 @@ var WORKER = struct {
 	TwitterTrends:    TwitterTrends,
 	Web:              Web,
 	WebSentiment:     WebSentiment,
+	Test:             Test,
 }
 
 var (
@@ -105,6 +107,8 @@ func (a *Worker) Receive(ctx actor.Context) {
 		a.HandleLog(ctx, "[+] Actor stopped")
 	case *messages.Work:
 		a.HandleWork(ctx, m)
+	case *messages.Response:
+		logrus.Info("[+] Received response", m.RequestId, m.Value)
 	default:
 		logrus.Warningf("[+] Received unknown message: %T", m)
 	}

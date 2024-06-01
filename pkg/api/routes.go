@@ -406,6 +406,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 		// @note a test route for worker topics
 		v1.GET("/test/:i", API.GetTest())
+
+		v1.GET("/test", API.Test())
 	}
 
 	// @Summary Node Status Page
