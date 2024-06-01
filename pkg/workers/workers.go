@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +22,7 @@ import (
 
 	"github.com/ipfs/go-cid"
 
-	pubsub2 "github.com/libp2p/go-libp2p-pubsub" // mpubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 )
@@ -80,6 +79,7 @@ type ChanResponse struct {
 }
 
 type Worker struct {
+	Node *masa.OracleNode
 }
 
 // NewWorker creates a new instance of the Worker actor.
@@ -87,9 +87,9 @@ type Worker struct {
 //
 // Returns:
 //   - An instance of the Worker struct that implements the actor.Receiver interface.
-func NewWorker() actor.Producer {
+func NewWorker(node *masa.OracleNode) actor.Producer {
 	return func() actor.Actor {
-		return &Worker{}
+		return &Worker{Node: node}
 	}
 }
 
@@ -106,9 +106,22 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.HandleLog(ctx, "[+] Actor stopped")
 	case *messages.Work:
-		a.HandleWork(ctx, m)
+		cfg := config.GetInstance()
+		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+			a.HandleWork(ctx, m, a.Node)
+		}
 	case *messages.Response:
-		logrus.Info("[+] Received response", m.RequestId, m.Value)
+		msg := &pubsub2.Message{}
+		err := json.Unmarshal([]byte(m.Value), msg)
+		if err != nil {
+			msg, err = getResponseMessage(m)
+			if err != nil {
+				logrus.Errorf("Error getting response message: %v", err)
+				return
+			}
+		}
+		workerDoneCh <- msg
+		ctx.Poison(ctx.Self())
 	default:
 		logrus.Warningf("[+] Received unknown message: %T", m)
 	}
@@ -144,7 +157,7 @@ func computeCid(str string) (string, error) {
 func isBootnode(ipAddr string) bool {
 	for _, bn := range config.GetInstance().Bootnodes {
 		if bn == "" {
-			return true
+			return false
 		}
 		bootNodeAddr := strings.Split(bn, "/")[2]
 		if bootNodeAddr == ipAddr {
@@ -264,10 +277,11 @@ func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
 
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	var wg sync.WaitGroup
-	props := actor.PropsFromProducer(NewWorker())
+	props := actor.PropsFromProducer(NewWorker(node))
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	if node.IsStaked { //  && node.IsTwitterScraper && node.IsWebScraper
+	// local
+	if node.IsStaked && node.IsTwitterScraper && node.IsWebScraper {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -290,6 +304,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			workerDoneCh <- msg
 		}()
 	}
+	// remote
 	peers := node.Host.Network().Peers()
 	for _, p := range peers {
 		conns := node.Host.Network().ConnsToPeer(p)
@@ -316,16 +331,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 							return
 						}
 						response := result.(*messages.Response)
-						msg := &pubsub2.Message{}
-						err = json.Unmarshal([]byte(response.Value), msg)
-						if err != nil {
-							msg, err = getResponseMessage(result.(*messages.Response))
-							if err != nil {
-								logrus.Errorf("Error getting response message: %v", err)
-								return
-							}
-						}
-						workerDoneCh <- msg
+						node.ActorEngine.Send(spawnedPID, response)
 					}
 				}()
 			}
@@ -364,14 +370,12 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
-
 	// Register self as a remote node for the network
-	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker()))
+	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 	rcm := pubsub.GetResponseChannelMap()
-	var validatorData []byte
 
 	for {
 		select {
@@ -383,44 +387,35 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			err := json.Unmarshal(work.Data, &workData)
 			if err != nil {
 				logrus.Error(err)
+				continue
 			}
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
-			if _, ok := data.ValidatorData.([]byte); ok {
-				validatorData = data.ValidatorData.([]byte)
-			} else if _, ok := data.ValidatorData.(string); ok {
-				validatorData = []byte(data.ValidatorData.(string))
-			} else {
-				switch reflect.TypeOf(data.ValidatorData).Kind() {
-				case reflect.Map:
-					validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
-					if !ok {
-						logrus.Errorf("Error asserting type: %v", ok)
-					}
-
-					if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
-						validatorData, err := json.Marshal(validatorDataMap["Response"])
-						if err != nil {
-							logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
-						}
-						ch <- validatorData
-						close(ch)
-					}
-				default:
-					logrus.Errorf("Error processing data.ValidatorData: %v", data.ValidatorData)
-				}
+			validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
+			if !ok {
+				logrus.Errorf("Error asserting type: %v", ok)
+				continue
 			}
-			if validatorDataMap, ok := data.ValidatorData.(map[string]interface{}); ok {
-				if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
-					if errorMessage, ok := response["error"].(string); ok {
-						if errorMessage == "there was an error authenticating with your Twitter credentials" {
-							logrus.Infof("[+] Work failed %s", errorMessage)
-						}
-					} else {
-						key, _ := computeCid(string(validatorData))
-						logrus.Infof("[+] Work done %s", key)
-						updateRecords(node, validatorData, key, data.ID)
-					}
+
+			if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
+				validatorData, err := json.Marshal(validatorDataMap["Response"])
+				if err != nil {
+					logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+					continue
+				}
+				ch <- validatorData
+				close(ch)
+			} else {
+				logrus.Errorf("Error processing data.ValidatorData: %v", data.ValidatorData)
+			}
+
+			if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
+				if _, ok := response["error"].(string); ok {
+					logrus.Infof("[+] Work failed %s", response["error"])
+				} else if w, ok := response["data"].(string); ok {
+					key, _ := computeCid(w)
+					logrus.Infof("[+] Work done %s %s", key)
+					updateRecords(node, []byte(w), key, data.ID)
 				}
 			}
 		case <-ctx.Done():

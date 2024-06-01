@@ -2,16 +2,40 @@ package workers
 
 import (
 	"encoding/json"
-
+	"fmt"
 	"github.com/asynkron/protoactor-go/actor"
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
+	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
+
+func getPeers(node *masa.OracleNode) []*actor.PID {
+	var actors []*actor.PID
+	peers := node.Host.Network().Peers()
+	for _, p := range peers {
+		conns := node.Host.Network().ConnsToPeer(p)
+		for _, conn := range conns {
+			addr := conn.RemoteMultiaddr()
+			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			if !isBootnode(ipAddr) {
+				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+				if err != nil {
+					logrus.Debugf("Spawned error %v", err)
+					return actors
+				} else {
+					actors = append(actors, spawned.Pid)
+				}
+			}
+		}
+	}
+	return actors
+}
 
 // HandleConnect is a method of the Worker struct that handles the connection of a worker.
 // It takes in an actor context and a Connect message as parameters.
@@ -29,7 +53,7 @@ func (a *Worker) HandleLog(ctx actor.Context, l string) {
 // HandleWork is a method of the Worker struct that handles the work assigned to a worker.
 // It takes in an actor context and a Work message as parameters.
 // @todo fire data to masa sdk
-func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
+func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.OracleNode) {
 	var resp interface{}
 	var err error
 
@@ -123,7 +147,10 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work) {
 			logrus.Errorf("Error marshalling response: %v", err)
 			return
 		}
-		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+
+		for _, pid := range getPeers(node) {
+			ctx.Send(pid, &messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		}
 	}
 	ctx.Poison(ctx.Self())
 }
