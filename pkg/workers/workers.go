@@ -288,7 +288,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
 			result, err := future.Result()
 			if err != nil {
-				logrus.Errorf("Error receiving response: %v", err)
+				logrus.Debugf("Error receiving response: %v", err)
 				return
 			}
 			response := result.(*messages.Response)
@@ -297,7 +297,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			if err != nil {
 				msg, err = getResponseMessage(result.(*messages.Response))
 				if err != nil {
-					logrus.Errorf("Error getting response message: %v", err)
+					logrus.Debugf("Error getting response message: %v", err)
 					return
 				}
 			}
@@ -327,7 +327,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 						result, err := future.Result()
 						if err != nil {
-							logrus.Errorf("Error receiving response: %v", err)
+							logrus.Debugf("Error receiving response: %v", err)
 							return
 						}
 						response := result.(*messages.Response)
