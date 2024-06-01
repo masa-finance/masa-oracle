@@ -406,16 +406,18 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				ch <- validatorData
 				close(ch)
 			} else {
-				logrus.Errorf("Error processing data.ValidatorData: %v", data.ValidatorData)
+				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)
 			}
 
-			if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
-				if _, ok := response["error"].(string); ok {
-					logrus.Infof("[+] Work failed %s", response["error"])
-				} else if w, ok := response["data"].(string); ok {
-					key, _ := computeCid(w)
-					logrus.Infof("[+] Work done %s", key)
-					updateRecords(node, []byte(w), key, data.ID)
+			if validatorDataMap, ok := data.ValidatorData.(map[string]interface{}); ok {
+				if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
+					if _, ok := response["error"].(string); ok {
+						logrus.Infof("[+] Work failed %s", response["error"])
+					} else if w, ok := response["data"].(string); ok {
+						key, _ := computeCid(w)
+						logrus.Infof("[+] Work done %s", key)
+						updateRecords(node, []byte(w), key, data.ID)
+					}
 				}
 			}
 		case <-ctx.Done():
