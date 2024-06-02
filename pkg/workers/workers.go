@@ -111,6 +111,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
+		// @note assumption - requires this node to have ports open 4001 tcp/udp
 		msg := &pubsub2.Message{}
 		err := json.Unmarshal([]byte(m.Value), msg)
 		if err != nil {
