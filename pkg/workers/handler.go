@@ -16,6 +16,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// getPeers is a function that takes an OracleNode as an argument and returns a slice of actor.PID pointers.
+// These actor.PID pointers represent the peers of the given OracleNode in the network.
 func getPeers(node *masa.OracleNode) []*actor.PID {
 	var actors []*actor.PID
 	peers := node.Host.Network().Peers()
@@ -150,9 +152,10 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 			logrus.Errorf("Error marshalling response: %v", err)
 			return
 		}
-
+		// cfg := config.GetInstance()
+		// if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
 		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
-
+		// }
 		for _, pid := range getPeers(node) {
 			ctx.Send(pid, &messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 		}

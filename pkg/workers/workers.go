@@ -306,12 +306,11 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		}()
 	}
 	// remote
-	peers := node.Host.Network().Peers()
+	peers := node.NodeTracker.GetAllNodeData()
 	for _, p := range peers {
-		conns := node.Host.Network().ConnsToPeer(p)
-		for _, conn := range conns {
-			addr := conn.RemoteMultiaddr()
+		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			logrus.Infof("[+] Node Ip Address: %s", ipAddr)
 			if !isBootnode(ipAddr) {
 				wg.Add(1)
 				go func() {
@@ -338,6 +337,40 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			}
 		}
 	}
+
+	//peers := node.Host.Network().Peers()
+	//logrus.Infof("[+] Sending message to %s peers", peers)
+	//for _, p := range peers {
+	//	conns := node.Host.Network().ConnsToPeer(p)
+	//	for _, conn := range conns {
+	//		addr := conn.RemoteMultiaddr()
+	//		ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+	//		if !isBootnode(ipAddr) {
+	//			wg.Add(1)
+	//			go func() {
+	//				defer wg.Done()
+	//				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+	//				if err != nil {
+	//					logrus.Debugf("Spawned error %v", err)
+	//				} else {
+	//					spawnedPID := spawned.Pid
+	//					client := node.ActorEngine.Spawn(props)
+	//					node.ActorEngine.Send(spawnedPID, &messages.Connect{
+	//						Sender: client,
+	//					})
+	//					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
+	//					result, err := future.Result()
+	//					if err != nil {
+	//						logrus.Debugf("Error receiving response: %v", err)
+	//						return
+	//					}
+	//					response := result.(*messages.Response)
+	//					node.ActorEngine.Send(spawnedPID, response)
+	//				}
+	//			}()
+	//		}
+	//	}
+	//}
 	wg.Wait()
 }
 
