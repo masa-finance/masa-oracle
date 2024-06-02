@@ -341,7 +341,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 }
 
 // SubscribeToWorkers subscribes the given OracleNode to worker events.
-// @note need to add this even if not participating to send messages ....
 //
 // Parameters:
 //   - node: A pointer to the OracleNode instance that will be subscribed to worker events.

@@ -3,6 +3,7 @@ package workers
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/asynkron/protoactor-go/actor"
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -39,6 +40,7 @@ func getPeers(node *masa.OracleNode) []*actor.PID {
 
 // HandleConnect is a method of the Worker struct that handles the connection of a worker.
 // It takes in an actor context and a Connect message as parameters.
+// @todo fire event to masa sdk
 func (a *Worker) HandleConnect(ctx actor.Context, m *messages.Connect) {
 	logrus.Infof("[+] Worker %v connected", m.Sender)
 	clients.Add(m.Sender)
@@ -46,6 +48,7 @@ func (a *Worker) HandleConnect(ctx actor.Context, m *messages.Connect) {
 
 // HandleLog is a method of the Worker struct that handles logging.
 // It takes in an actor context and a string message as parameters.
+// @todo fire event to masa sdk
 func (a *Worker) HandleLog(ctx actor.Context, l string) {
 	logrus.Info(l)
 }

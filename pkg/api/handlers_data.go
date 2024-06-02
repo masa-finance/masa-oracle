@@ -263,7 +263,6 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 // If the request is valid, it attempts to fetch the user's profile.
 // On success, it returns the fetched profile information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchDiscordProfile() gin.HandlerFunc {
-	// @todo add to workers
 	return func(c *gin.Context) {
 		var reqBody struct {
 			UserID   string `json:"userID"`
