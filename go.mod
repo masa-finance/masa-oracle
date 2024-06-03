@@ -9,7 +9,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.26.3
-	github.com/charmbracelet/lipgloss v0.10.0
+	github.com/charmbracelet/lipgloss v0.11.0
 	github.com/chyeh/pubip v0.0.0-20170203095919-b7e679cf541c
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ethereum/go-ethereum v1.14.3
@@ -167,7 +167,6 @@ require (
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
