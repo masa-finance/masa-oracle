@@ -30,7 +30,6 @@ func getPeers(node *masa.OracleNode) []*actor.PID {
 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 				if err != nil {
 					logrus.Debugf("Spawned error %v", err)
-					return actors
 				} else {
 					actors = append(actors, spawned.Pid)
 				}
