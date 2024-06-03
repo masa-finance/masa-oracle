@@ -152,10 +152,10 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 			logrus.Errorf("Error marshalling response: %v", err)
 			return
 		}
-		// cfg := config.GetInstance()
-		// if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
-		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
-		// }
+		cfg := config.GetInstance()
+		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
+		}
 		for _, pid := range getPeers(node) {
 			ctx.Send(pid, &messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 		}
