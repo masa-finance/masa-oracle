@@ -14,7 +14,6 @@
 
 ### Performance Improvements
 
-
 ### ChangeLog
 
 * version 0.0.5-beta
