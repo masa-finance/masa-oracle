@@ -33,7 +33,7 @@ func Login(scraper *twitterscraper.Scraper, credentials ...string) error {
 		return fmt.Errorf("invalid number of login credentials provided")
 	}
 	if err != nil {
-		return fmt.Errorf("login failed: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 	return nil
 }

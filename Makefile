@@ -18,7 +18,7 @@ test:
 
 clean:
 	@rm -rf bin
-	@rm masa_oracle_node.log
+	@rm masa_node.log
 
 wp:
 	@pdflatex whitepaper.tex

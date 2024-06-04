@@ -129,7 +129,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	//	@Title			Masa API
 	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
 	//	@Host			https://api.masa.ai
-	//	@Version		0.0.4-beta
+	//	@Version		0.0.5-beta
 	//	@contact.name	Masa API Support
 	//	@contact.url	https://masa.ai
 	//	@contact.email	support@masa.ai
@@ -405,7 +405,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		v1.POST("/chat/cf", API.CfLlmChat())
 
 		// @note a test route for worker topics
-		v1.GET("/test/:i", API.GetTest())
+		v1.GET("/test", API.Test())
 	}
 
 	// @Summary Node Status Page
