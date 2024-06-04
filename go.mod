@@ -31,12 +31,12 @@ require (
 	github.com/masa-finance/masa-twitter-scraper v0.0.0-20240515201201-b83fa3597a31
 	github.com/multiformats/go-multiaddr v0.12.4
 	github.com/multiformats/go-multihash v0.2.3
-	github.com/ollama/ollama v0.1.39
+	github.com/ollama/ollama v0.1.41
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.24.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.18.2
+	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
@@ -63,7 +63,7 @@ require (
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/charmbracelet/x/ansi v0.1.1 // indirect
+	github.com/charmbracelet/x/ansi v0.1.2 // indirect
 	github.com/charmbracelet/x/input v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.1.0 // indirect
