@@ -1,6 +1,6 @@
 # Masa Oracle Release Notes
 
-## [0.0.5-beta](https://github.com/masa-finance/masa-oracle/releases) (2024)
+## [0.0.6-beta](https://github.com/masa-finance/masa-oracle/releases) (2024)
 
 > Masa Oracle Node Release
 
@@ -8,12 +8,14 @@
 
 ### New Features
 
-### Bug Fixes
+* Worker storage metrics #314
 
-* Fixed Worker response issues - note requires ingress 4001 tcp and udp open publicly
+### Bug Fixes
 
 ### Performance Improvements
 
+* Focuses on enhancing the storage metrics for workers on the network
+
 ### ChangeLog
 
-* version 0.0.5-beta
+* version 0.0.6-beta

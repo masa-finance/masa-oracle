@@ -122,7 +122,7 @@ const logo = `
 const (
 	subtitle   = `masa oracle client`
 	navigation = `[yellow]use keys or mouse to navigate`
-	mouse      = `[green]v0.0.5-beta`
+	mouse      = `[green]v0.0.6-beta`
 )
 
 // Splash shows the app info
