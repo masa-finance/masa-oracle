@@ -236,7 +236,6 @@ func handleMenu(app *tview.Application, output *tview.TextView) *tview.List {
 
 // handleOption triggers actions based on user selection.
 func handleOption(app *tview.Application, option string, output *tview.TextView) {
-
 	switch option {
 	case "1":
 		modalFlex := tview.NewFlex().SetDirection(tview.FlexRow)

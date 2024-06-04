@@ -91,6 +91,63 @@ func applyMigrations(database *sql.DB) error {
 	return nil
 }
 
+// WIP oracle work data example
+
+// type OracleData struct {
+// 	Id        string `json:"id"`
+// 	PeerId    string `json:"peer_id"`
+// 	Request   string `json:"request"`
+// 	ModelName string `json:"model_name,omitempty"`
+// 	Steps     []struct {
+// 		Idx               int    `json:"idx"`
+// 		RawContent        string `json:"raw_content,omitempty"`
+// 		StructuredContent string `json:"structured_content,omitempty"`
+// 		SystemPrompt      string `json:"system_prompt,omitempty"`
+// 		Timestamp         string `json:"timestamp"`
+// 		UserPrompt        string `json:"user_prompt,omitempty"`
+// 	} `json:"steps"`
+// }
+
+//id := uuid.New().String()
+//oracleData := OracleData{
+//	Id:        id,
+//	PeerId:    m.Id,
+//	Request:   workData["request"],
+//	ModelName: workData["model"],
+//	Steps: []struct {
+//		Idx               int    `json:"idx"`
+//		RawContent        string `json:"raw_content,omitempty"`
+//		StructuredContent string `json:"structured_content,omitempty"`
+//		SystemPrompt      string `json:"system_prompt,omitempty"`
+//		Timestamp         string `json:"timestamp"`
+//		UserPrompt        string `json:"user_prompt,omitempty"`
+//	}{
+//		{
+//			Idx:        0,
+//			Timestamp:  time.Now().String(),
+//			RawContent: `Actor Started`,
+//		},
+//		{
+//			Idx:        1,
+//			RawContent: workData["request"],
+//			Timestamp:  time.Now().String(),
+//		},
+//		{
+//			Idx:        2,
+//			Timestamp:  time.Now().String(),
+//			RawContent: `Actor Stopped`,
+//		},
+//	},
+//}
+//jsonOD, _ := json.Marshal(oracleData)
+//jsonPayload := map[string]string{
+//	"raw": string(jsonOD),
+//}
+//err = db.SendToS3(id, jsonPayload)
+//if err != nil {
+//	logrus.Errorf("[-] Failed to send oracle data: %v", err)
+//}
+
 func FireData(uid string, payload []byte, response []byte) error {
 	database, err := ConnectToPostgres(false)
 	if err != nil {

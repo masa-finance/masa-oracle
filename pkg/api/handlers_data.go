@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 
@@ -22,7 +23,6 @@ import (
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 )
 
 type LLMChat struct {
@@ -263,24 +263,34 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 // If the request is valid, it attempts to fetch the user's profile.
 // On success, it returns the fetched profile information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchDiscordProfile() gin.HandlerFunc {
-	// @todo add to workers
 	return func(c *gin.Context) {
-		userID := c.Param("userID")
+		var reqBody struct {
+			UserID   string `json:"userID"`
+			BotToken string `json:"botToken"`
+		}
 
-		if userID == "" {
+		reqBody.UserID = c.Param("userID")
+		reqBody.BotToken = os.Getenv("DISCORD_BOT_TOKEN")
+
+		if reqBody.UserID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
 			return
 		}
 
-		// Assuming you have a way to access your bot token here. It might be stored in an environment variable or a config file.
-		botToken := os.Getenv("DISCORD_BOT_TOKEN")
-
-		profile, err := discord.GetUserProfile(userID, botToken)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get Discord profile", "details": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, profile)
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.Discord, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
 	}
 }
 
@@ -365,6 +375,7 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 // On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		logrus.Info(c)
 		// worker handler implementation
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
@@ -421,14 +432,6 @@ func (api *API) WebData() gin.HandlerFunc {
 		}
 		handleWorkResponse(c, responseCh)
 		// worker handler implementation
-
-		// collectedData, err := web.ScrapeWebData([]string{reqBody.Url}, reqBody.Depth)
-		// if err != nil {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "could not scrape web data"})
-		// 	return
-		// }
-		// sanitizedData := llmbridge.SanitizeResponse(collectedData)
-		// c.JSON(http.StatusOK, gin.H{"data": sanitizedData})
 	}
 }
 
@@ -573,5 +576,34 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
+	}
+}
+
+func (api *API) Test() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		var reqBody struct {
+			Count int `json:"count"`
+		}
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			reqBody.Count = rand.Intn(100)
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.Test, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+		// worker handler implementation
+
 	}
 }

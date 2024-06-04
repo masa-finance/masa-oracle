@@ -123,7 +123,7 @@ The test command runs all the tests in the project using the go test command. It
 
 ### make clean
 
-The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_oracle_node.log file, which may contain log output from previous runs.
+The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_node.log file, which may contain log output from previous runs.
 
 To execute any of these commands, simply run make in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
 
