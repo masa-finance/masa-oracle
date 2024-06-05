@@ -426,7 +426,14 @@ const docTemplate = `{
 							"description": "Discord User ID",
 							"required": true,
 							"type": "string"
-						}
+						},
+						{
+							"name": "accessToken",
+							"in": "query",
+							"description": "Access Token",
+							"required": true,
+							"type": "string"
+						  }
 					],
 					"responses": {
 						"200": {
@@ -449,6 +456,171 @@ const docTemplate = `{
 					]
 				}
 			},
+			"/data/discord/exchangetoken/{code}": {
+				"get": {
+					"summary": "Exchange Discord OAuth2 Code",
+					"description": "Exchanges a Discord OAuth2 authorization code for an access token.",
+					"operationId": "exchangeDiscordCode",
+					"produces": ["application/json"],
+					"parameters": [
+						{
+							"name": "code",
+							"in": "path",
+							"description": "OAuth2 authorization code received from Discord after user authorization.",
+							"required": true,
+							"type": "string"
+						},
+					],
+					"responses": {
+						"200": {
+							"description": "Access token details",
+							"schema": {
+								"$ref": "#/definitions/OAuthTokenResponse"
+							}
+						},
+						"400": {
+							"description": "Bad request when the 'code' is not provided or invalid",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						},
+						"500": {
+							"description": "Internal server error when the exchange fails",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/data/discord/channels/{channelID}/{accessToken}/messages": {
+				"get": {
+				  "description": "Retrieves messages from a specified Discord channel.",
+				  "tags": ["Discord"],
+				  "summary": "Get messages from a Discord channel",
+				  "parameters": [
+					{
+					  "name": "channelID",
+					  "in": "path",
+					  "description": "Discord Channel ID",
+					  "required": true,
+					  "type": "string"
+					},
+					{
+						"name": "accessToken",
+						"in": "path",
+						"description": "Access Token",
+						"required": true,
+						"type": "string"
+					  }
+				  ],
+				  "responses": {
+					"200": {
+					  "description": "Successfully retrieved messages from the Discord channel",
+					  "schema": {
+						"type": "array",
+						"items": {
+						  "$ref": "#/definitions/ChannelMessage"
+						}
+					  }
+					},
+					"400": {
+					  "description": "Invalid channel ID or error fetching messages",
+					  "schema": {
+						"$ref": "#/definitions/ErrorResponse"
+					  }
+					}
+				  },
+				  "security": [
+					{
+					  "Bearer": []
+					}
+				  ]
+				}
+			  },
+			  "/data/discord/guilds/{guildID}/{accessToken}/channels": {
+				"get": {
+				  "description": "Retrieves channels from a specified Discord guild.",
+				  "tags": ["Discord"],
+				  "summary": "Get channels from a Discord guild",
+				  "parameters": [
+					{
+					  "name": "guildID",
+					  "in": "path",
+					  "description": "Discord Guild ID",
+					  "required": true,
+					  "type": "string"
+					},
+					{
+						"name": "accessToken",
+						"in": "path",
+						"description": "Access Token",
+						"required": true,
+						"type": "string"
+					  }
+				  ],
+				  "responses": {
+					"200": {
+					  "description": "Successfully retrieved channels from the Discord guild",
+					  "schema": {
+						"type": "array",
+						"items": {
+						  "$ref": "#/definitions/GuildChannel"
+						}
+					  }
+					},
+					"400": {
+					  "description": "Invalid guild ID or error fetching channels",
+					  "schema": {
+						"$ref": "#/definitions/ErrorResponse"
+					  }
+					}
+				  },
+				  "security": [
+					{
+					  "Bearer": []
+					}
+				  ]
+				}
+			  },
+			  "/data/discord/user/{accessToken}/guilds": {
+				"get": {
+				  "description": "Retrieves guilds that the authorized Discord user is part of.",
+				  "tags": ["Discord"],
+				  "summary": "Get guilds for a Discord user",
+				  "parameters": [
+					{
+						"name": "accessToken",
+						"in": "path",
+						"description": "Access Token",
+						"required": true,
+						"type": "string"
+					  }
+				  ],
+				  "responses": {
+					"200": {
+					  "description": "Successfully retrieved guilds for the Discord user",
+					  "schema": {
+						"type": "array",
+						"items": {
+						  "$ref": "#/definitions/Guild"
+						}
+					  }
+					},
+					"400": {
+					  "description": "Error fetching guilds",
+					  "schema": {
+						"$ref": "#/definitions/ErrorResponse"
+					  }
+					}
+				  },
+				  "security": [
+					{
+					  "Bearer": []
+					}
+				  ]
+				}
+			  },
 			"/data/web": {
 				"post": {
 					"description": "Retrieves data from the web",
@@ -823,6 +995,35 @@ const docTemplate = `{
 					}
 				}
 			},
+			"/auth": {
+				"get": {
+					"description": "Retrieves the API key for the node",
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Authentication"
+					],
+					"summary": "Get Node API Key",
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved API key",
+							"schema": {
+								"type": "object",
+								"additionalProperties": {
+									"type": "string"
+								}
+							}
+						},
+						"500": {
+							"description": "Error generating API key",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
 			"/sentiment/web": {
 				"post": {
 					"description": "Searches for web content and analyzes its sentiment",
@@ -992,6 +1193,77 @@ const docTemplate = `{
 					}
 				}
 			},
+			"ChannelMessage": {
+				"type": "object",
+				"properties": {
+				  "id": {
+					"type": "string"
+				  },
+				  "channelID": {
+					"type": "string"
+				  },
+				  "author": {
+					"type": "object",
+					"properties": {
+					  "id": {
+						"type": "string"
+					  },
+					  "username": {
+						"type": "string"
+					  },
+					  "discriminator": {
+						"type": "string"
+					  },
+					  "avatar": {
+						"type": "string"
+					  }
+					}
+				  },
+				  "content": {
+					"type": "string"
+				  },
+				  "timestamp": {
+					"type": "string"
+				  }
+				}
+			  },
+			  "GuildChannel": {
+				"type": "object",
+				"properties": {
+				  "id": {
+					"type": "string"
+				  },
+				  "guildID": {
+					"type": "string"
+				  },
+				  "name": {
+					"type": "string"
+				  },
+				  "type": {
+					"type": "integer"
+				  }
+				}
+			  },
+			  "Guild": {
+				"type": "object",
+				"properties": {
+				  "id": {
+					"type": "string"
+				  },
+				  "name": {
+					"type": "string"
+				  },
+				  "icon": {
+					"type": "string"
+				  },
+				  "owner": {
+					"type": "boolean"
+				  },
+				  "permissions": {
+					"type": "string"
+				  }
+				}
+			  },
 			"Trend": {
 				"type": "object",
 				"properties": {

@@ -23,6 +23,7 @@ import (
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 )
 
 type LLMChat struct {
@@ -291,6 +292,79 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 		}
 		handleWorkResponse(c, responseCh)
 		// worker handler implementation
+	}
+}
+
+// SearchChannelMessages returns a gin.HandlerFunc that processes a request to search for messages in a Discord channel.
+func (api *API) SearchChannelMessages() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		channelID := c.Param("channelID")
+		accessToken := c.Param("accessToken") // Assumes the access token is passed in the Authorization header
+
+		if channelID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID must be provided"})
+			return
+		}
+
+		messages, err := discord.GetChannelMessages(channelID, accessToken)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, messages)
+	}
+}
+
+// SearchGuildChannels returns a gin.HandlerFunc that processes a request to search for channels in a Discord guild.
+func (api *API) SearchGuildChannels() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		guildID := c.Param("guildID")
+		accessToken := c.Param("accessToken") // Assumes the access token is passed in the Authorization header
+
+		if guildID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "GuildID must be provided"})
+			return
+		}
+
+		channels, err := discord.GetGuildChannels(guildID, accessToken)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, channels)
+	}
+}
+
+// SearchUserGuilds returns a gin.HandlerFunc that processes a request to search for guilds associated with a Discord user.
+func (api *API) SearchUserGuilds() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		accessToken := c.Param("accessToken") // Assumes the access token is passed in the Authorization header
+
+		guilds, err := discord.GetUserGuilds(accessToken)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, guilds)
+	}
+}
+
+// ExchangeDiscordTokenHandler returns a gin.HandlerFunc that exchanges a Discord OAuth2 authorization code for an access token.
+func (api *API) ExchangeDiscordTokenHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		code := c.Param("code")
+		if code == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code must be provided"})
+			return
+		}
+
+		tokenResponse, err := discord.ExchangeCode(code)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code for access token", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, tokenResponse)
 	}
 }
 
