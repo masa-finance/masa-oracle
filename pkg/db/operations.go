@@ -11,16 +11,10 @@ import (
 )
 
 type WorkEvent struct {
-	ID      int64           `json:"id"`
-	WorkId  string          `json:"work_id"`
-	Payload json.RawMessage `json:"payload"`
-}
-type Work struct {
-	ID       int64           `json:"id"`
-	Uuid     string          `json:"uuid"`
-	Payload  json.RawMessage `json:"payload"`
-	Response json.RawMessage `json:"response"`
-	Event    json.RawMessage `json:"event"`
+	CID       string          `json:"cid"`
+	PeerId    string          `json:"peer_id"`
+	Payload   json.RawMessage `json:"payload"`
+	Timestamp time.Time       `json:"timestamp"`
 }
 
 // WriteData encapsulates the logic for writing data to the database,

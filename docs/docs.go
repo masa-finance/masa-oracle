@@ -97,125 +97,6 @@ const docTemplate = `{
 					]
 				}
 			},
-			"/ads": {
-				"get": {
-					"description": "Retrieves a list of ads from the network",
-					"consumes": [
-						"application/json"
-					],
-					"produces": [
-						"application/json"
-					],
-					"tags": [
-						"Ads"
-					],
-					"summary": "Get ads",
-					"responses": {
-						"200": {
-							"description": "List of ads",
-							"schema": {
-								"type": "array",
-								"items": {
-									"$ref": "#/definitions/Ad"
-								}
-							}
-						}
-					},
-					"security": [
-						{
-							"Bearer": []
-						}
-					]
-				},
-				"post": {
-					"description": "Adds a new ad to the network",
-					"consumes": [
-						"application/json"
-					],
-					"produces": [
-						"application/json"
-					],
-					"tags": [
-						"Ads"
-					],
-					"summary": "Post an ad",
-					"parameters": [
-						{
-							"description": "Ad Content",
-							"name": "ad",
-							"in": "body",
-							"required": true,
-							"schema": {
-								"$ref": "#/definitions/Ad"
-							}
-						}
-					],
-					"responses": {
-						"200": {
-							"description": "Ad successfully posted",
-							"schema": {
-								"$ref": "#/definitions/AdResponse"
-							}
-						},
-						"400": {
-							"description": "Invalid ad data",
-							"schema": {
-								"$ref": "#/definitions/ErrorResponse"
-							}
-						}
-					},
-					"security": [
-						{
-							"Bearer": []
-						}
-					]
-				}
-			},
-			"/ads/subscribe": {
-				"post": {
-					"description": "Subscribes the user to receive ad notifications",
-					"consumes": [
-						"application/json"
-					],
-					"produces": [
-						"application/json"
-					],
-					"tags": [
-						"Ads"
-					],
-					"summary": "Subscribe to ads",
-					"parameters": [
-						{
-							"description": "Subscription details",
-							"name": "subscription",
-							"in": "body",
-							"required": true,
-							"schema": {
-								"$ref": "#/definitions/Subscription"
-							}
-						}
-					],
-					"responses": {
-						"200": {
-							"description": "Successfully subscribed to ads",
-							"schema": {
-								"$ref": "#/definitions/SubscriptionResponse"
-							}
-						},
-						"400": {
-							"description": "Invalid subscription data",
-							"schema": {
-								"$ref": "#/definitions/ErrorResponse"
-							}
-						}
-					},
-					"security": [
-						{
-							"Bearer": []
-						}
-					]
-				}
-			},
 			"/data/twitter/profile/{username}": {
 				"get": {
 					"description": "Retrieves tweets from a specific Twitter profile",
@@ -878,14 +759,6 @@ const docTemplate = `{
 				}
 			},
 		},
-		"ChatResponse": {
-			"type": "object",
-			"properties": {
-				"message": {
-					"type": "string"
-				}
-			}
-		},
 		"DHTResponse": {
 			"type": "object",
 			"properties": {
@@ -939,6 +812,25 @@ const docTemplate = `{
 			}
 		},
 		"definitions": {
+			"ChatResponse": {
+				"type": "object",
+				"properties": {
+					"message": {
+						"type": "string"
+					}
+				}
+			},	
+			"DHTResponse": {
+				"type": "object",
+				"properties": {
+					"key": {
+						"type": "string"
+					},
+					"value": {
+						"type": "string"
+					}
+				}
+			},
 			"UserProfile": {
 				"type": "object",
 				"properties": {

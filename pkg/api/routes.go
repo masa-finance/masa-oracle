@@ -157,37 +157,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /peer/addresses [get]
 		v1.GET("/peer/addresses", API.GetPeerAddresses())
 
-		// @Summary Post an ad
-		// @Description Adds a new ad to the network
-		// @Tags Ads
-		// @Accept  json
-		// @Produce  json
-		// @Param   ad   body    Ad   true  "Ad Content"
-		// @Success 200 {object} AdResponse "Ad successfully posted"
-		// @Failure 400 {object} ErrorResponse "Invalid ad data"
-		// @Router /ads [post]
-		v1.POST("/ads", API.PostAd())
-
-		// @Summary Get ads
-		// @Description Retrieves a list of ads from the network
-		// @Tags Ads
-		// @Accept  json
-		// @Produce  json
-		// @Success 200 {array} Ad "List of ads"
-		// @Router /ads [get]
-		v1.GET("/ads", API.GetAds())
-
-		// @Summary Subscribe to ads
-		// @Description Subscribes the user to receive ad notifications
-		// @Tags Ads
-		// @Accept  json
-		// @Produce  json
-		// @Param   subscription body    Subscription   true  "Subscription details"
-		// @Success 200 {object} SubscriptionResponse "Successfully subscribed to ads"
-		// @Failure 400 {object} ErrorResponse "Invalid subscription data"
-		// @Router /ads/subscribe [post]
-		v1.POST("/ads/subscribe", API.SubscribeToAds())
-
 		// @Summary Search Followers by Twitter Username
 		// @Description Retrieves followers from a specific Twitter profile.
 		// @Tags Twitter

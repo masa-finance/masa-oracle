@@ -197,13 +197,13 @@ func isBootnode(ipAddr string) bool {
 //   - node: A pointer to the OracleNode instance whose records need to be updated.
 //   - data: The data to be written for the specified key.
 //   - key: The key under which the data should be stored.
-func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string) {
-	_ = db.WriteData(node, key, data)
+func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
+	_ = db.WriteData(node, workEvent.CID, workEvent.Payload)
 
 	var nodeData pubsub.NodeData
-	nodeDataBytes, err := db.GetCache(context.Background(), peerId)
+	nodeDataBytes, err := db.GetCache(context.Background(), workEvent.PeerId)
 	if err != nil {
-		nd := node.NodeTracker.GetNodeData(peerId)
+		nd := node.NodeTracker.GetNodeData(workEvent.PeerId)
 		nodeData = *nd
 	} else {
 		err = json.Unmarshal(nodeDataBytes, &nodeData)
@@ -214,7 +214,7 @@ func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string
 	}
 
 	newCID := CID{
-		RecordId:  key,
+		RecordId:  workEvent.CID,
 		Timestamp: time.Now(),
 	}
 
@@ -247,8 +247,8 @@ func updateRecords(node *masa.OracleNode, data []byte, key string, peerId string
 		logrus.Error(err)
 		return
 	}
-	_ = db.WriteData(node, peerId, jsonData)
-	logrus.Infof("[+] Updated records key %s for node %s", key, peerId)
+	_ = db.WriteData(node, workEvent.PeerId, jsonData)
+	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)
 }
 
 // getResponseMessage converts a messages.Response object into a pubsub2.Message object.
@@ -413,10 +413,37 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
 					if _, ok := response["error"].(string); ok {
 						logrus.Infof("[+] Work failed %s", response["error"])
-					} else if w, ok := response["data"].(string); ok {
-						key, _ := computeCid(w)
+					} else if work, ok := response["data"].(string); ok {
+						key, _ := computeCid(work)
 						logrus.Infof("[+] Work done %s", key)
-						updateRecords(node, []byte(w), key, data.ID)
+
+						workEvent := db.WorkEvent{
+							CID:       key,
+							PeerId:    data.ID,
+							Payload:   []byte(work),
+							Timestamp: time.Now(),
+						}
+
+						//logrus.Infof("[+] Writing work event to db %s", workEvent)
+						updateRecords(node, workEvent)
+					} else if w, ok := response["data"].(map[string]interface{}); ok {
+						work, err := json.Marshal(w)
+						if err != nil {
+							logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+							continue
+						}
+						key, _ := computeCid(string(work))
+						logrus.Infof("[+] Work done %s", key)
+
+						workEvent := db.WorkEvent{
+							CID:       key,
+							PeerId:    data.ID,
+							Payload:   work,
+							Timestamp: time.Now(),
+						}
+
+						//logrus.Infof("[+] Writing work event to db %s", workEvent)
+						updateRecords(node, workEvent)
 					}
 				}
 			}

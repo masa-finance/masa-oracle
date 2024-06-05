@@ -29,7 +29,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/ad"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
@@ -37,28 +36,27 @@ import (
 )
 
 type OracleNode struct {
-	Host                  host.Host
-	PrivKey               *ecdsa.PrivateKey
-	Protocol              protocol.ID
-	priorityAddrs         multiaddr.Multiaddr
-	multiAddrs            []multiaddr.Multiaddr
-	DHT                   *dht.IpfsDHT
-	Context               context.Context
-	PeerChan              chan myNetwork.PeerEvent
-	NodeTracker           *pubsub2.NodeEventTracker
-	PubSubManager         *pubsub2.Manager
-	Signature             string
-	IsStaked              bool
-	IsWriter              bool
-	IsTwitterScraper      bool
-	IsDiscordScraper      bool
-	IsWebScraper          bool
-	IsLlmServer           bool
-	StartTime             time.Time
-	AdSubscriptionHandler *ad.SubscriptionHandler
-	WorkerTracker         *pubsub2.WorkerEventTracker
-	ActorEngine           *actor.RootContext
-	ActorRemote           *remote.Remote
+	Host             host.Host
+	PrivKey          *ecdsa.PrivateKey
+	Protocol         protocol.ID
+	priorityAddrs    multiaddr.Multiaddr
+	multiAddrs       []multiaddr.Multiaddr
+	DHT              *dht.IpfsDHT
+	Context          context.Context
+	PeerChan         chan myNetwork.PeerEvent
+	NodeTracker      *pubsub2.NodeEventTracker
+	PubSubManager    *pubsub2.Manager
+	Signature        string
+	IsStaked         bool
+	IsWriter         bool
+	IsTwitterScraper bool
+	IsDiscordScraper bool
+	IsWebScraper     bool
+	IsLlmServer      bool
+	StartTime        time.Time
+	WorkerTracker    *pubsub2.WorkerEventTracker
+	ActorEngine      *actor.RootContext
+	ActorRemote      *remote.Remote
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
