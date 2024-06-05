@@ -96,6 +96,7 @@ func NewWorker(node *masa.OracleNode) actor.Producer {
 // Receive is the message handling method for the Worker actor.
 // It receives messages through the actor context and processes them based on their type.
 func (a *Worker) Receive(ctx actor.Context) {
+	cfg := config.GetInstance()
 	switch m := ctx.Message().(type) {
 	case *messages.Connect:
 		a.HandleConnect(ctx, m)
@@ -106,12 +107,10 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.HandleLog(ctx, "[+] Actor stopped")
 	case *messages.Work:
-		cfg := config.GetInstance()
 		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
-		// @note assumption - requires this node to have ports open 4001 tcp/udp
 		msg := &pubsub2.Message{}
 		err := json.Unmarshal([]byte(m.Value), msg)
 		if err != nil {
@@ -260,6 +259,9 @@ func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
 	return msg, nil
 }
 
+// SendWork is a function that sends work to a node. It takes two parameters:
+// node: A pointer to a masa.OracleNode object. This is the node to which the work will be sent.
+// m: A pointer to a pubsub2.Message object. This is the message that contains the work to be sent.
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	var wg sync.WaitGroup
 	props := actor.PropsFromProducer(NewWorker(node))
