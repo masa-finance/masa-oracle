@@ -168,29 +168,6 @@ func isBootnode(ipAddr string) bool {
 	return false
 }
 
-// updateParticipation updates the participation metrics for a given node based on the total bytes processed.
-//
-// Parameters:
-//   - node: A pointer to the OracleNode instance whose participation metrics need to be updated.
-//   - totalBytes: The total number of bytes processed by the node which will be added to its current metrics.
-// func updateParticipation(node *masa.OracleNode, totalBytes int, peerId string) {
-// 	if totalBytes == 0 {
-// 		return
-// 	}
-// 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
-// 	sharedData := db.SharedData{}
-// 	nodeVal := db.ReadData(node, nodeData.PeerId.String())
-// 	_ = json.Unmarshal(nodeVal, &sharedData)
-// 	bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
-// 	nodeData.BytesScraped += bytesScraped + totalBytes
-// 	err := node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
-// 	if err != nil {
-// 		logrus.Error(err)
-// 	}
-// 	jsonData, _ := json.Marshal(nodeData)
-// 	_ = db.WriteData(node, peerId, jsonData)
-// }
-
 // updateRecords updates the records for a given node and key with the provided data.
 //
 // Parameters:
@@ -198,7 +175,11 @@ func isBootnode(ipAddr string) bool {
 //   - data: The data to be written for the specified key.
 //   - key: The key under which the data should be stored.
 func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
-	_ = db.WriteData(node, workEvent.CID, workEvent.Payload)
+
+	exists := db.ReadData(node, workEvent.CID)
+	if exists == nil {
+		_ = db.WriteData(node, workEvent.CID, workEvent.Payload)
+	}
 
 	var nodeData pubsub.NodeData
 	nodeDataBytes, err := db.GetCache(context.Background(), workEvent.PeerId)
@@ -212,6 +193,8 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 			return
 		}
 	}
+
+	nodeData.BytesScraped = nodeData.BytesScraped + len(workEvent.Payload)
 
 	newCID := CID{
 		RecordId:  workEvent.CID,
@@ -424,7 +407,6 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 							Timestamp: time.Now(),
 						}
 
-						//logrus.Infof("[+] Writing work event to db %s", workEvent)
 						updateRecords(node, workEvent)
 					} else if w, ok := response["data"].(map[string]interface{}); ok {
 						work, err := json.Marshal(w)
@@ -442,7 +424,6 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 							Timestamp: time.Now(),
 						}
 
-						//logrus.Infof("[+] Writing work event to db %s", workEvent)
 						updateRecords(node, workEvent)
 					}
 				}
