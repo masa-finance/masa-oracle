@@ -183,7 +183,6 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 	nodeDataBytes, err := db.GetCache(context.Background(), workEvent.PeerId)
 	if err != nil {
 		nodeData = *node.NodeTracker.GetNodeData(workEvent.PeerId)
-		// nodeData = *nd
 	} else {
 		err = json.Unmarshal(nodeDataBytes, &nodeData)
 		if err != nil {
@@ -214,12 +213,14 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 			return
 		}
 	} else {
-		records = append(nodeData.Records.([]interface{}), newCID)
-		nodeData.Records = records
-		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
-		if err != nil {
-			logrus.Error(err)
-			return
+		if exists == nil {
+			records = append(nodeData.Records.([]interface{}), newCID)
+			nodeData.Records = records
+			err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
 		}
 	}
 
