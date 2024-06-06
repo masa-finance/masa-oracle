@@ -39,4 +39,5 @@ This release of the Masa Oracle Node introduces new features, performance improv
 
 ## Change Log
 
+* Removed GCP IP address lookup for simpler option
 * Version: 0.0.6-beta
