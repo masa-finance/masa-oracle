@@ -14,6 +14,7 @@ type WorkEvent struct {
 	CID       string          `json:"cid"`
 	PeerId    string          `json:"peer_id"`
 	Payload   json.RawMessage `json:"payload"`
+	Duration  float64         `json:"duration"`
 	Timestamp time.Time       `json:"timestamp"`
 }
 

@@ -64,6 +64,7 @@ var (
 )
 
 type CID struct {
+	Duration  float64   `json:"duration"`
 	RecordId  string    `json:"cid"`
 	Timestamp time.Time `json:"timestamp"`
 }
@@ -195,6 +196,7 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 
 	newCID := CID{
 		RecordId:  workEvent.CID,
+		Duration:  workEvent.Duration,
 		Timestamp: time.Now(),
 	}
 
@@ -361,6 +363,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 	rcm := pubsub.GetResponseChannelMap()
+	var startTime time.Time
 
 	for {
 		select {
@@ -374,6 +377,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				logrus.Error(err)
 				continue
 			}
+			startTime = time.Now()
 			go SendWork(node, work)
 		case data := <-workerDoneCh:
 			validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
@@ -402,10 +406,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 						key, _ := computeCid(work)
 						logrus.Infof("[+] Work done %s", key)
 
+						endTime := time.Now()
+						duration := endTime.Sub(startTime)
+
 						workEvent := db.WorkEvent{
 							CID:       key,
 							PeerId:    data.ID,
 							Payload:   []byte(work),
+							Duration:  duration.Seconds(),
 							Timestamp: time.Now(),
 						}
 
@@ -419,10 +427,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 						key, _ := computeCid(string(work))
 						logrus.Infof("[+] Work done %s", key)
 
+						endTime := time.Now()
+						duration := endTime.Sub(startTime)
+
 						workEvent := db.WorkEvent{
 							CID:       key,
 							PeerId:    data.ID,
 							Payload:   work,
+							Duration:  duration.Seconds(),
 							Timestamp: time.Now(),
 						}
 
