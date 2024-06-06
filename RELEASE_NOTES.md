@@ -15,6 +15,9 @@
 * Store CID in DHT for Availability
 * Store CID and Underlying Data in LevelDB for Persistence
 * Metrics to Track
+  * Who/What/Where/BytesScraped/Time Took: Track detailed metrics for each worker.
+  * Incentivize Time and BytesScraped Totals: Provide incentives based on the total time taken and bytes scraped.
+  * Number of Scrapes Per Peer: Keep a record of the number of scrapes performed by each peer.
 * Storage of BytesScraped by Peer
 * PeerID Selection and Response
 
