@@ -367,6 +367,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.IsDiscordScraper = nodeData.IsDiscordScraper
 		nd.IsTwitterScraper = nodeData.IsTwitterScraper
 		nd.IsWebScraper = nodeData.IsWebScraper
+		nd.Records = nodeData.Records
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),
 		}).Info("Connected")

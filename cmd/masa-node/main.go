@@ -63,6 +63,14 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	//exists, _ := db.GetCache(node.Context, node.Host.ID().String())
+	//nd, err := json.Marshal(exists)
+	//if err != nil {
+	//	logrus.Error(err)
+	//}
+	//logrus.Infof("%v", nd)
+	// nodeData.Records
+
 	if cfg.AllowedPeer {
 		cfg.AllowedPeerId = node.Host.ID().String()
 		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
