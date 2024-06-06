@@ -6,16 +6,27 @@
 
 ### Breaking Changes
 
+* None
+
 ### New Features
 
-* Worker storage metrics #314
+#### Worker storage metrics #314
+
+* Store CID in DHT for Availability
+* Store CID and Underlying Data in LevelDB for Persistence
+* Metrics to Track
+* Storage of BytesScraped by Peer
+* PeerID Selection and Response
 
 ### Bug Fixes
 
+* Fixed error response handling from workers
+
 ### Performance Improvements
 
-* Focuses on enhancing the storage metrics for workers on the network
+* Added protobuf message.Response for worker responses
+* REQUIREMENT: Port 4001 TCP inbound needs to be open
 
 ### ChangeLog
 
-* version 0.0.6-beta
+* version string 0.0.6-beta
