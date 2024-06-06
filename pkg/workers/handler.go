@@ -16,6 +16,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type LLMChatBody struct {
+	Model    string `json:"model,omitempty"`
+	Messages []struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"messages,omitempty"`
+	Stream bool `json:"stream"`
+}
+
 // getPeers is a function that takes an OracleNode as an argument and returns a slice of actor.PID pointers.
 // These actor.PID pointers represent the peers of the given OracleNode in the network.
 func getPeers(node *masa.OracleNode) []*actor.PID {
@@ -79,17 +88,20 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		userID := bodyData["userID"].(string)
 		botToken := bodyData["botToken"].(string)
 		resp, err = discord.GetUserProfile(userID, botToken)
+	case string(WORKER.Twitter):
+		count := int(bodyData["count"].(float64))
+		resp, err = twitter.ScrapeTweetsByQuery(bodyData["query"].(string), count)
 	case string(WORKER.LLMChat):
-		logrus.Infof("[+] LLM Chat %s %s", m.Data, m.Sender)
 		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
 			logrus.Error("missing env variable LLM_CHAT_URL")
 			return
 		}
-		resp, err = Post(uri, []byte(workData["body"]), nil)
-	case string(WORKER.Twitter):
-		count := int(bodyData["count"].(float64))
-		resp, err = twitter.ScrapeTweetsByQuery(bodyData["query"].(string), count)
+		bodyBytes, _ := json.Marshal(bodyData)
+		headers := map[string]string{
+			"Content-Type": "application/json",
+		}
+		resp, _ = Post(uri, bodyBytes, headers)
 	case string(WORKER.TwitterFollowers):
 		username := bodyData["username"].(string)
 		count := int(bodyData["count"].(float64))

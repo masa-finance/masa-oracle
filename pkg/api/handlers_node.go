@@ -159,7 +159,7 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 		for i, peer := range peers {
 			data[i] = map[string]interface{}{
 				"peerId":      peer.PeerId.String(),
-				"peerAddress": fmt.Sprintf("%s", peer.Multiaddrs[0].String()),
+				"peerAddress": peer.Multiaddrs[0].String(),
 			}
 		}
 
