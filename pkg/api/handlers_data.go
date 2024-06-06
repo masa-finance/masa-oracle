@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,6 +33,11 @@ type LLMChat struct {
 		Content string `json:"content"`
 	} `json:"messages,omitempty"`
 	Stream bool `json:"stream"`
+}
+
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }
 
 // publishWorkRequest sends a work request to the PubSubManager for processing by a worker.
@@ -75,6 +81,22 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 				return
 			}
+
+			if data, ok := result["data"].(string); ok && IsBase64(data) {
+				decodedData, err := base64.StdEncoding.DecodeString(result["data"].(string))
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode base64 data"})
+					return
+				}
+				var jsonData map[string]interface{}
+				err = json.Unmarshal(decodedData, &jsonData)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON data"})
+					return
+				}
+				result["data"] = jsonData
+			}
+
 			c.JSON(http.StatusOK, result)
 			return
 		case <-time.After(60 * time.Second):
