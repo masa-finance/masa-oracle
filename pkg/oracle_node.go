@@ -217,7 +217,6 @@ func (node *OracleNode) Start() (err error) {
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
 
-	// if config.GetInstance().HasBootnodes() {
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
 		publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
@@ -234,7 +233,7 @@ func (node *OracleNode) Start() (err error) {
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
-	// }
+
 	// call SubscribeToTopics on startup
 	if err := SubscribeToTopics(node); err != nil {
 		return err
