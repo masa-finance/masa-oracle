@@ -292,6 +292,15 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
 }
 
+func (node *OracleNode) IsActor() bool {
+	// need to get this by node data
+	cfg := config.GetInstance()
+	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+		return true
+	}
+	return false
+}
+
 // IsPublisher returns true if this node is a publisher node.
 // A publisher node is one that has a non-empty signature.
 func (node *OracleNode) IsPublisher() bool {

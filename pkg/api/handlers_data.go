@@ -77,8 +77,9 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 			}
 			c.JSON(http.StatusOK, result)
 			return
-		case <-time.After(60 * time.Second):
+		case <-time.After(30 * time.Second):
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+			return
 		case <-c.Done():
 			return
 		}
@@ -110,7 +111,7 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 			string(config.Models.CloudflareLlama38bInstruct),
 			string(config.Models.CloudflareMistral7bInstruct),
 			string(config.Models.CloudflareMistral7bInstructV01),
-			string(config.Models.CloudflareOpenchat35_0106),
+			string(config.Models.CloudflareOpenchat350106),
 			string(config.Models.CloudflareMicrosoftPhi2),
 			string(config.Models.HuggingFaceGoogleGemma7bIt),
 			string(config.Models.HuggingFaceNousresearchHermes2ProMistral7b),

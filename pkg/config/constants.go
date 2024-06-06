@@ -40,13 +40,13 @@ const (
 	HuggingFaceNousresearchHermes2ProMistral7b ModelType = "@hf/nousresearch/hermes-2-pro-mistral-7b"
 	HuggingFaceTheblokeLlama213bChatAwq        ModelType = "@hf/thebloke/llama-2-13b-chat-awq"
 	HuggingFaceTheblokeNeuralChat7bV31Awq      ModelType = "@hf/thebloke/neural-chat-7b-v3-1-awq"
-	CloudflareOpenchat35_0106                  ModelType = "@cf/openchat/openchat-3.5-0106"
+	CloudflareOpenchat350106                   ModelType = "@cf/openchat/openchat-3.5-0106"
 	CloudflareMicrosoftPhi2                    ModelType = "@cf/microsoft/phi-2"
 )
 
 // Models holds the available models for easy access and iteration.
 var Models = struct {
-	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4o, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat, CloudflareQwen15Chat, CloudflareLlama27bChatFp16, CloudflareLlama38bInstruct, CloudflareMistral7bInstruct, CloudflareMistral7bInstructV01, HuggingFaceGoogleGemma7bIt, HuggingFaceNousresearchHermes2ProMistral7b, HuggingFaceTheblokeLlama213bChatAwq, HuggingFaceTheblokeNeuralChat7bV31Awq, CloudflareOpenchat35_0106, CloudflareMicrosoftPhi2 ModelType
+	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4o, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat, CloudflareQwen15Chat, CloudflareLlama27bChatFp16, CloudflareLlama38bInstruct, CloudflareMistral7bInstruct, CloudflareMistral7bInstructV01, HuggingFaceGoogleGemma7bIt, HuggingFaceNousresearchHermes2ProMistral7b, HuggingFaceTheblokeLlama213bChatAwq, HuggingFaceTheblokeNeuralChat7bV31Awq, CloudflareOpenchat350106, CloudflareMicrosoftPhi2 ModelType
 }{
 	ClaudeOpus:                     ClaudeOpus,
 	ClaudeOpus20240229:             ClaudeOpus20240229,
@@ -72,7 +72,7 @@ var Models = struct {
 	HuggingFaceNousresearchHermes2ProMistral7b: HuggingFaceNousresearchHermes2ProMistral7b,
 	HuggingFaceTheblokeLlama213bChatAwq:        HuggingFaceTheblokeLlama213bChatAwq,
 	HuggingFaceTheblokeNeuralChat7bV31Awq:      HuggingFaceTheblokeNeuralChat7bV31Awq,
-	CloudflareOpenchat35_0106:                  CloudflareOpenchat35_0106,
+	CloudflareOpenchat350106:                   CloudflareOpenchat350106,
 	CloudflareMicrosoftPhi2:                    CloudflareMicrosoftPhi2,
 }
 
@@ -101,7 +101,6 @@ const (
 	OracleProtocol       = "oracle_protocol"
 	NodeDataSyncProtocol = "nodeDataSync"
 	NodeGossipTopic      = "gossip"
-	AdTopic              = "ad"
 	PublicKeyTopic       = "bootNodePublicKey"
 	WorkerTopic          = "workerTopic"
 	Rendezvous           = "masa-mdns"

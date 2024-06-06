@@ -96,7 +96,6 @@ func NewWorker(node *masa.OracleNode) actor.Producer {
 // Receive is the message handling method for the Worker actor.
 // It receives messages through the actor context and processes them based on their type.
 func (a *Worker) Receive(ctx actor.Context) {
-	cfg := config.GetInstance()
 	switch m := ctx.Message().(type) {
 	case *messages.Connect:
 		a.HandleConnect(ctx, m)
@@ -107,7 +106,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.HandleLog(ctx, "[+] Actor stopped")
 	case *messages.Work:
-		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+		if a.Node.IsActor() {
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
@@ -268,7 +267,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	// local
-	if node.IsStaked && node.IsTwitterScraper && node.IsWebScraper {
+	if node.IsStaked && node.IsActor() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -297,7 +296,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			logrus.Infof("[+] Node Ip Address: %s", ipAddr)
-			if !isBootnode(ipAddr) {
+			if !isBootnode(ipAddr) && p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
