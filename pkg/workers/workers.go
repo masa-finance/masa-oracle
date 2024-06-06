@@ -182,8 +182,8 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 	var nodeData pubsub.NodeData
 	nodeDataBytes, err := db.GetCache(context.Background(), workEvent.PeerId)
 	if err != nil {
-		nd := node.NodeTracker.GetNodeData(workEvent.PeerId)
-		nodeData = *nd
+		nodeData = *node.NodeTracker.GetNodeData(workEvent.PeerId)
+		// nodeData = *nd
 	} else {
 		err = json.Unmarshal(nodeDataBytes, &nodeData)
 		if err != nil {

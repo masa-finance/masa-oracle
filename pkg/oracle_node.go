@@ -225,6 +225,13 @@ func (node *OracleNode) Start() (err error) {
 		nodeData.IsStaked = node.IsStaked
 		nodeData.SelfIdentified = true
 	}
+
+	cfg := config.GetInstance()
+	nodeData.IsDiscordScraper = cfg.DiscordScraper
+	nodeData.IsTwitterScraper = cfg.TwitterScraper
+	nodeData.IsWebScraper = cfg.WebScraper
+	nodeData.IsWriterNode = cfg.WriterNode == "true"
+
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
 	// }
