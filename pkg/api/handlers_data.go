@@ -223,7 +223,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 		if reqBody.Depth <= 0 {
-			reqBody.Depth = 10 // Default count
+			reqBody.Depth = 1 // Default count
 		}
 		if reqBody.Model == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing. Available models are claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307, gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo"})
@@ -438,7 +438,7 @@ func (api *API) WebData() gin.HandlerFunc {
 			return
 		}
 		if reqBody.Depth <= 0 {
-			reqBody.Depth = 10 // Default count
+			reqBody.Depth = 1 // Default count
 		}
 
 		// worker handler implementation
