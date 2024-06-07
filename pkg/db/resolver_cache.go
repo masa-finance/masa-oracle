@@ -218,7 +218,20 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	for {
 		select {
 		case <-ticker.C:
-			nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+			// if dht does not have data check cache and update if exists
+			var nodeData *pubsub.NodeData
+			nodeDataBytes, err := GetCache(context.Background(), node.Host.ID().String())
+			if err != nil {
+				nodeData = node.NodeTracker.GetNodeData(node.Host.ID().String())
+			} else {
+				err = json.Unmarshal(nodeDataBytes, &nodeData)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+			_ = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+			// if dht does not have data check cache and update if exists
+
 			jsonData, _ := json.Marshal(nodeData)
 			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
 			if e != nil {

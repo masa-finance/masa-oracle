@@ -361,14 +361,16 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.SelfIdentified = true
 		}
-		// IsStaked
-		// if !nd.IsStaked && nodeData.IsStaked {
 		dataChanged = true
+		nd.BytesScraped = nodeData.BytesScraped
 		nd.IsStaked = nodeData.IsStaked
+		nd.IsDiscordScraper = nodeData.IsDiscordScraper
+		nd.IsTwitterScraper = nodeData.IsTwitterScraper
+		nd.IsWebScraper = nodeData.IsWebScraper
+		nd.Records = nodeData.Records
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),
 		}).Info("Connected")
-		// }
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress

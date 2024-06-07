@@ -29,7 +29,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/ad"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
@@ -37,28 +36,27 @@ import (
 )
 
 type OracleNode struct {
-	Host                  host.Host
-	PrivKey               *ecdsa.PrivateKey
-	Protocol              protocol.ID
-	priorityAddrs         multiaddr.Multiaddr
-	multiAddrs            []multiaddr.Multiaddr
-	DHT                   *dht.IpfsDHT
-	Context               context.Context
-	PeerChan              chan myNetwork.PeerEvent
-	NodeTracker           *pubsub2.NodeEventTracker
-	PubSubManager         *pubsub2.Manager
-	Signature             string
-	IsStaked              bool
-	IsWriter              bool
-	IsTwitterScraper      bool
-	IsDiscordScraper      bool
-	IsWebScraper          bool
-	IsLlmServer           bool
-	StartTime             time.Time
-	AdSubscriptionHandler *ad.SubscriptionHandler
-	WorkerTracker         *pubsub2.WorkerEventTracker
-	ActorEngine           *actor.RootContext
-	ActorRemote           *remote.Remote
+	Host             host.Host
+	PrivKey          *ecdsa.PrivateKey
+	Protocol         protocol.ID
+	priorityAddrs    multiaddr.Multiaddr
+	multiAddrs       []multiaddr.Multiaddr
+	DHT              *dht.IpfsDHT
+	Context          context.Context
+	PeerChan         chan myNetwork.PeerEvent
+	NodeTracker      *pubsub2.NodeEventTracker
+	PubSubManager    *pubsub2.Manager
+	Signature        string
+	IsStaked         bool
+	IsWriter         bool
+	IsTwitterScraper bool
+	IsDiscordScraper bool
+	IsWebScraper     bool
+	IsLlmServer      bool
+	StartTime        time.Time
+	WorkerTracker    *pubsub2.WorkerEventTracker
+	ActorEngine      *actor.RootContext
+	ActorRemote      *remote.Remote
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -219,7 +217,6 @@ func (node *OracleNode) Start() (err error) {
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
 
-	// if config.GetInstance().HasBootnodes() {
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
 		publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
@@ -227,9 +224,16 @@ func (node *OracleNode) Start() (err error) {
 		nodeData.IsStaked = node.IsStaked
 		nodeData.SelfIdentified = true
 	}
+
+	cfg := config.GetInstance()
+	nodeData.IsDiscordScraper = cfg.DiscordScraper
+	nodeData.IsTwitterScraper = cfg.TwitterScraper
+	nodeData.IsWebScraper = cfg.WebScraper
+	nodeData.IsWriterNode = cfg.WriterNode == "true"
+
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
-	// }
+
 	// call SubscribeToTopics on startup
 	if err := SubscribeToTopics(node); err != nil {
 		return err
@@ -292,6 +296,15 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		return
 	}
 	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
+}
+
+func (node *OracleNode) IsActor() bool {
+	// need to get this by node data
+	cfg := config.GetInstance()
+	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+		return true
+	}
+	return false
 }
 
 // IsPublisher returns true if this node is a publisher node.

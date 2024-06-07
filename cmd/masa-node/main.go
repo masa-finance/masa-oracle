@@ -2,15 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
-	"github.com/google/uuid"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	"github.com/sirupsen/logrus"
 
@@ -83,40 +81,6 @@ func main() {
 		go workers.SubscribeToWorkers(node)
 		go workers.MonitorWorkers(ctx, node)
 	}
-
-	// WIP
-	if os.Getenv("PG_URL") != "" {
-		// run migrations
-		_, err = db.ConnectToPostgres(true)
-		if err != nil {
-			logrus.Error(err)
-		} else {
-			uid := uuid.New().String()
-			err := db.FireData(uid, []byte(`{"request":"twitter", "query":"$MASA", "count":5, "model": "gpt-4"}`), []byte(`{"tweets": ["twit", "twit"]}`))
-			if err != nil {
-				logrus.Error(err)
-			}
-			fErr := db.FireEvent(uid, []byte(`{"event":"Actor Started"}`))
-			if fErr != nil {
-				logrus.Error(fErr)
-			}
-
-			work, gErr := db.GetData(uid)
-			if gErr != nil {
-				logrus.Error(gErr)
-			}
-
-			for _, w := range work {
-				jsonData, err := json.Marshal(w)
-				if err != nil {
-					logrus.Error("Failed to parse work into JSON: ", err)
-				} else {
-					logrus.Info(string(jsonData))
-				}
-			}
-		}
-	}
-	// WIP
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
