@@ -500,25 +500,6 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 
-		// test
-		//headers := map[string]string{
-		//	"Content-Type": "application/json",
-		//}
-		//r, err := workers.Post(os.Getenv("LLM_CHAT_URL"), bodyBytes, headers)
-		//if err != nil {
-		//	logrus.Error(err)
-		//}
-		//var result map[string]interface{}
-		//if err = json.Unmarshal(r, &result); err != nil {
-		//	logrus.Error(err)
-		//}
-		//if err != nil {
-		//	logrus.Error(err)
-		//}
-		//logrus.Infof("%v", result)
-		//c.JSON(http.StatusOK, result)
-		// test
-
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
