@@ -266,22 +266,21 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 		}
 		sharedData := db.SharedData{}
 		nv := db.ReadData(api.Node, keyStr)
-		if IsBase64(string(nv)) {
-			decodedData, err := base64.StdEncoding.DecodeString(string(nv))
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode base64 data"})
+		err := json.Unmarshal(nv, &sharedData)
+		if err != nil {
+			if IsBase64(string(nv)) {
+				decodedString, _ := base64.StdEncoding.DecodeString(string(nv))
+				_ = json.Unmarshal(decodedString, &sharedData)
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": sharedData,
+				})
 				return
-			}
-			_ = json.Unmarshal(decodedData, &sharedData)
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"message": sharedData,
-			})
-			return
-		} else {
-			err := json.Unmarshal(nv, &sharedData)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unmarshal data"})
+			} else {
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"message": string(nv),
+				})
 				return
 			}
 		}
