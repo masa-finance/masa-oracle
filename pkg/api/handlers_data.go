@@ -8,8 +8,10 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
 	"strings"
@@ -346,6 +348,72 @@ func (api *API) SearchUserGuilds() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, guilds)
+	}
+}
+
+// SearchAllGuilds returns a gin.HandlerFunc that queries each node for the Discord guilds they are part of.
+func (api *API) SearchAllGuilds() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get all nodes from the tracker
+		peers := api.Node.NodeTracker.GetAllNodeData()
+
+		// Prepare a wait group to wait for all go routines to finish
+		var wg sync.WaitGroup
+		wg.Add(len(peers))
+
+		// This will store the combined list of guilds from all nodes
+		allGuilds := make([]discord.Guild, 0)
+
+		// Mutex to synchronize access to allGuilds slice
+		var mutex sync.Mutex
+
+		for _, p := range peers {
+			go func(peer pubsub2.NodeData) {
+				defer wg.Done()
+
+				// Construct the URL for the GetUserGuilds endpoint
+				// Assuming that the endpoint is exposed at a path like "/api/v1/discord/user/guilds"
+				var ipAddr string
+				var err error
+				for _, addr := range peer.Multiaddrs {
+					ipAddr, err = addr.ValueForProtocol(multiaddr.P_IP4)
+					if err == nil {
+						break
+					}
+				}
+				if ipAddr == "" {
+					logrus.Errorf("No IP4 address found for peer %s", peer.PeerId)
+					return // Use return here instead of continue since this is in a goroutine
+				}
+				url := fmt.Sprintf("http://%s:4001/api/v1/discord/user/guilds", ipAddr)
+
+				// Make the HTTP request
+				resp, err := http.Get(url)
+				if err != nil {
+					logrus.Errorf("Error querying node %s: %v", peer.PeerId, err)
+					return
+				}
+				defer resp.Body.Close()
+
+				// Read and decode the response
+				var guilds []discord.Guild
+				if err := json.NewDecoder(resp.Body).Decode(&guilds); err != nil {
+					logrus.Errorf("Error decoding response from node %s: %v", peer.PeerId, err)
+					return
+				}
+
+				// Safely append the guilds to the allGuilds slice
+				mutex.Lock()
+				allGuilds = append(allGuilds, guilds...)
+				mutex.Unlock()
+			}(p)
+		}
+
+		// Wait for all requests to finish
+		wg.Wait()
+
+		// Return the combined list of guilds
+		c.JSON(http.StatusOK, allGuilds)
 	}
 }
 

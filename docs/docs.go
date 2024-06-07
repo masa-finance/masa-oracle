@@ -621,6 +621,52 @@ const docTemplate = `{
 				  ]
 				}
 			  },
+			  "/discord/guilds/all": {
+				"get": {
+					"description": "Retrieves all guilds that the authorized Discord user is part of.",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Discord"
+					],
+					"summary": "Get all guilds",
+					"parameters": [
+						{
+							"name": "accessToken",
+							"in": "query",
+							"description": "Access Token",
+							"required": true,
+							"type": "string"
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved all guilds for the Discord user",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Guild"
+								}
+							}
+						},
+						"400": {
+							"description": "Error fetching guilds or invalid access token",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
+				}
+			},
 			"/data/web": {
 				"post": {
 					"description": "Retrieves data from the web",
