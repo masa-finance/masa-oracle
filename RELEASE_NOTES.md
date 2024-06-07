@@ -12,6 +12,11 @@ This release of the Masa Oracle Node introduces new features, performance improv
 
 * None
 
+### Bug fixes
+
+* Fixed depth = 0 error in data web scraper
+* Fixed base64 decoding error in node api
+
 ### New Features
 
 * None
