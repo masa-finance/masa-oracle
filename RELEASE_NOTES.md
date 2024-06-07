@@ -38,9 +38,6 @@ This release of the Masa Oracle Node introduces new features, performance improv
 * Error Response Handling: Fixed issues related to error response handling from workers.
 * Performance Improvements
 * Protobuf Message Response: Added protobuf message.
-* Response for more efficient worker responses.
-* Requirements
-* Network Configuration: Ensure that port 4001 TCP inbound is open.
 
 ## Change Log
 
