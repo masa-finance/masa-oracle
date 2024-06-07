@@ -29,17 +29,10 @@ Our Decentralized AI Data Oracle offers a comprehensive suite of high-quality da
 
 4. **Telegram Scraper**
     - Expand your reach and engage with targeted audiences using our Telegram Scraper. Extract member details and profile information from Telegram groups. Leverage competitor audiences to drive growth and enhance your AI-powered marketing strategies.
-<<<<<<< HEAD:docs/oracle-node/data-catalog.md
-    - **Estimated dataset size:** Access to Telegram's 900 million monthly active users (as of March 2024)
-    - **Data volume:** Varies based on the number of accessible groups and user profiles
-
-5. **Google Search Results Scraper**
-=======
 2. **Discord Profile Scraper**
     - Uncover valuable insights from Discord users with our Discord Profile Scraper. Extract comprehensive user profile data, including usernames & roles.
 
 3. **Google Search Results Scraper**
->>>>>>> 7b94252 (removed guild references):docs/ai-oracle-node/data-catalog.md
     - Gain a competitive edge by harnessing the power of Google search data. Our Google Search Results Scraper extracts organic and paid listings, ads, and country or language-specific search features from Google SERPs. Enhance your AI models with this valuable data, accessible through API runs, scheduling, and monitoring.
     - **Estimated dataset size:** Google has over 3.5 billion searches per day
     - **Data volume:** Varies based on search queries and extracted data
