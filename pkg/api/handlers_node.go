@@ -117,9 +117,7 @@ func (api *API) GetPeersHandler() gin.HandlerFunc {
 			})
 			return
 		}
-
-		routingTable := api.Node.DHT.RoutingTable()
-		peers := routingTable.ListPeers()
+		peers := api.Node.NodeTracker.GetAllNodeData()
 
 		// Create a slice to hold the data
 		data := make([]map[string]interface{}, len(peers))
@@ -127,7 +125,7 @@ func (api *API) GetPeersHandler() gin.HandlerFunc {
 		// Populate the data slice
 		for i, peer := range peers {
 			data[i] = map[string]interface{}{
-				"peer": peer.String(),
+				"peerId": peer.PeerId.String(),
 			}
 		}
 
@@ -153,22 +151,15 @@ func (api *API) GetPeerAddresses() gin.HandlerFunc {
 			return
 		}
 
-		peers := api.Node.Host.Network().Peers()
-		peerAddresses := make(map[string][]string)
+		peers := api.Node.NodeTracker.GetAllNodeData()
 
 		// Create a slice to hold the data
 		data := make([]map[string]interface{}, len(peers))
 
 		for i, peer := range peers {
-			conns := api.Node.Host.Network().ConnsToPeer(peer)
-			for _, conn := range conns {
-				addr := conn.RemoteMultiaddr()
-				peerAddresses[peer.String()] = append(peerAddresses[peer.String()], addr.String())
-			}
-
 			data[i] = map[string]interface{}{
-				"peer":        peer.String(),
-				"peerAddress": peerAddresses[peer.String()],
+				"peerId":      peer.PeerId.String(),
+				"peerAddress": peer.Multiaddrs[0].String(),
 			}
 		}
 
@@ -277,18 +268,18 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 		nv := db.ReadData(api.Node, keyStr)
 		err := json.Unmarshal(nv, &sharedData)
 		if err != nil {
-			// Check if base64 encoded
-			if _, err := base64.StdEncoding.DecodeString(string(nv)); err != nil {
-				// If not base64, return the raw val
+			if IsBase64(string(nv)) {
+				decodedString, _ := base64.StdEncoding.DecodeString(string(nv))
+				_ = json.Unmarshal(decodedString, &sharedData)
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
-					"message": string(nv),
+					"message": sharedData,
 				})
 				return
 			} else {
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
-					"message": nv,
+					"message": string(nv),
 				})
 				return
 			}

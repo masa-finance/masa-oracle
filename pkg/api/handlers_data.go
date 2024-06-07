@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,6 +33,11 @@ type LLMChat struct {
 		Content string `json:"content"`
 	} `json:"messages,omitempty"`
 	Stream bool `json:"stream"`
+}
+
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }
 
 // publishWorkRequest sends a work request to the PubSubManager for processing by a worker.
@@ -75,10 +81,27 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 				return
 			}
+
+			if data, ok := result["data"].(string); ok && IsBase64(data) {
+				decodedData, err := base64.StdEncoding.DecodeString(result["data"].(string))
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode base64 data"})
+					return
+				}
+				var jsonData map[string]interface{}
+				err = json.Unmarshal(decodedData, &jsonData)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON data"})
+					return
+				}
+				result["data"] = jsonData
+			}
+
 			c.JSON(http.StatusOK, result)
 			return
 		case <-time.After(60 * time.Second):
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+			return
 		case <-c.Done():
 			return
 		}
@@ -110,7 +133,7 @@ func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
 			string(config.Models.CloudflareLlama38bInstruct),
 			string(config.Models.CloudflareMistral7bInstruct),
 			string(config.Models.CloudflareMistral7bInstructV01),
-			string(config.Models.CloudflareOpenchat35_0106),
+			string(config.Models.CloudflareOpenchat350106),
 			string(config.Models.CloudflareMicrosoftPhi2),
 			string(config.Models.HuggingFaceGoogleGemma7bIt),
 			string(config.Models.HuggingFaceNousresearchHermes2ProMistral7b),
@@ -200,7 +223,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 		if reqBody.Depth <= 0 {
-			reqBody.Depth = 10 // Default count
+			reqBody.Depth = 1 // Default count
 		}
 		if reqBody.Model == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing. Available models are claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307, gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo"})
@@ -415,7 +438,7 @@ func (api *API) WebData() gin.HandlerFunc {
 			return
 		}
 		if reqBody.Depth <= 0 {
-			reqBody.Depth = 10 // Default count
+			reqBody.Depth = 1 // Default count
 		}
 
 		// worker handler implementation
@@ -476,6 +499,7 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)

@@ -2,19 +2,16 @@ package network
 
 import (
 	"fmt"
-	"io"
 	"net"
-	"net/http"
+	"os"
 	"strings"
 
+	"github.com/chyeh/pubip"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
-
-// The URL of the GCP metadata server for the external IP
-const externalIPURL = "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip"
 
 func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	peerInfo := peer.AddrInfo{
@@ -88,10 +85,10 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	}
 	logrus.Debug("Best public address: ", bestPublicAddr)
 	logrus.Debug("Best private address: ", bestPrivateAddr)
-	logrus.Debug("Base address: ", baseAddr)
-	gcpAddr := replaceGCPAddress(baseAddr)
-	if gcpAddr != nil {
-		baseAddr = gcpAddr
+	logrus.Infof("Base address: %s", baseAddr)
+	addr := replaceAddress(baseAddr)
+	if addr != nil {
+		baseAddr = addr
 	}
 	return baseAddr
 }
@@ -106,19 +103,35 @@ func isPreferredAddress(addr multiaddr.Multiaddr) bool {
 	return false
 }
 
-func replaceGCPAddress(addr multiaddr.Multiaddr) multiaddr.Multiaddr {
-	// After finding the best address, try to get the GCP external IP
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		fmt.Println("Error getting outbound IP")
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().String()
+	idx := strings.LastIndex(localAddr, ":")
+	return localAddr[0:idx]
+}
+
+func replaceAddress(addr multiaddr.Multiaddr) multiaddr.Multiaddr {
 	var err error
 	var bestAddr multiaddr.Multiaddr
-	gotExternalIP, externalIP := getGCPExternalIP()
-	if gotExternalIP && externalIP != "" {
-		bestAddr, err = replaceIPComponent(addr, externalIP)
+
+	var externalIP net.IP
+	if os.Getenv("ENV") == "local" {
+		externalIP = net.ParseIP(getOutboundIP())
+	} else {
+		externalIP, _ = pubip.Get()
+	}
+
+	if externalIP.String() != "" {
+		bestAddr, err = replaceIPComponent(addr, externalIP.String())
 		if err != nil {
 			logrus.Warnf("Failed to replace IP component: %s", err)
 			return nil
 		}
 	}
-	logrus.Debug("Got external IP: ", gotExternalIP)
 	logrus.Debug("Address after replacing IP component: ", bestAddr)
 	return bestAddr
 }
@@ -140,15 +153,6 @@ func replaceIPComponent(maddr multiaddr.Multiaddr, newIP string) (multiaddr.Mult
 	return multiaddr.Join(components...), nil
 }
 
-//func contains(slice []multiaddr.Multiaddr, item multiaddr.Multiaddr) bool {
-//	for _, a := range slice {
-//		if a.Equal(item) {
-//			return true
-//		}
-//	}
-//	return false
-//}
-
 func GetBootNodesMultiAddress(bootstrapNodes []string) ([]multiaddr.Multiaddr, error) {
 	addrs := make([]multiaddr.Multiaddr, 0)
 	for _, peerAddr := range bootstrapNodes {
@@ -162,48 +166,4 @@ func GetBootNodesMultiAddress(bootstrapNodes []string) ([]multiaddr.Multiaddr, e
 		addrs = append(addrs, addr)
 	}
 	return addrs, nil
-}
-
-func getGCPExternalIP() (bool, string) {
-
-	// Create a new HTTP client with a specific timeout
-	client := &http.Client{}
-
-	// Make a request to the metadata server
-	req, err := http.NewRequest("GET", externalIPURL, nil)
-	if err != nil {
-		return false, ""
-	}
-
-	// GCP metadata server requires this specific header
-	req.Header.Add("Metadata-Flavor", "Google")
-
-	// Perform the request
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, ""
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			logrus.Error(err)
-		}
-	}(resp.Body)
-
-	// Check if the metadata server returns a successful status code
-	if resp.StatusCode != http.StatusOK {
-		logrus.Debug("Metadata server response status: ", resp.StatusCode)
-		return false, ""
-	}
-	//Read the external IP from the response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return true, ""
-	}
-	// Check that the response is a valid IP address
-	if net.ParseIP(string(body)) == nil {
-		return false, ""
-	}
-	logrus.Debug("External IP from metadata server: ", string(body))
-	return true, string(body)
 }
