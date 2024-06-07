@@ -13,6 +13,10 @@ services:
       FILE_PATH: "${FILE_PATH}"
       WRITER_NODE: "${WRITER_NODE}"
       CACHE_PATH: "${CACHE_PATH}"
+      TWITTER_PASS: "${TWITTER_PASS}"
+      TWITTER_USER: "${TWITTER_USER}"
+      TWITTER_2FA_CODE: "${TWITTER_2FA_CODE}"
+      TWITTER_SCRAPER: "${TWITTER_SCRAPER}"
     volumes:
       - .:/app
       - .masa-keys:/home/masa/.masa
