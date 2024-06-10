@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 // UserProfile holds the structure for a Discord user profile response
@@ -17,16 +18,19 @@ type UserProfile struct {
 }
 
 // GetUserProfile fetches a user's profile from Discord API
-func GetUserProfile(userID, botToken string) (*UserProfile, error) {
+func GetUserProfile(userID string) (*UserProfile, error) {
+	botToken := os.Getenv("DISCORD_BOT_TOKEN") // Replace with your actual environment variable name
+	if botToken == "" {
+		return nil, fmt.Errorf("DISCORD_BOT_TOKEN environment variable not set")
+	}
+
 	url := fmt.Sprintf("https://discord.com/api/users/%s", userID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set the authorization header to your bot token
 	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", botToken))
-
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 // ChannelMessage represents a Discord channel message structure
@@ -23,15 +24,19 @@ type ChannelMessage struct {
 }
 
 // GetChannelMessages fetches messages for a specific channel from the Discord API
-func GetChannelMessages(channelID, accessToken string) ([]ChannelMessage, error) {
+func GetChannelMessages(channelID string) ([]ChannelMessage, error) {
+	botToken := os.Getenv("DISCORD_BOT_TOKEN") // Replace with your actual environment variable name
+	if botToken == "" {
+		return nil, fmt.Errorf("DISCORD_BOT_TOKEN environment variable not set")
+	}
+
 	url := fmt.Sprintf("https://discord.com/api/channels/%s/messages", channelID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set the authorization header to your OAuth2 access token
-	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", accessToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", botToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

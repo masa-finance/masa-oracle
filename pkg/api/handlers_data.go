@@ -268,12 +268,10 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
-			UserID   string `json:"userID"`
-			BotToken string `json:"botToken"`
+			UserID string `json:"userID"`
 		}
 
 		reqBody.UserID = c.Param("userID")
-		reqBody.BotToken = os.Getenv("DISCORD_BOT_TOKEN")
 
 		if reqBody.UserID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
@@ -288,7 +286,7 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.Discord, bodyBytes)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordProfile, bodyBytes)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -300,54 +298,90 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 // SearchChannelMessages returns a gin.HandlerFunc that processes a request to search for messages in a Discord channel.
 func (api *API) SearchChannelMessages() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		channelID := c.Param("channelID")
-		accessToken := c.Param("accessToken") // Assumes the access token is passed in the Authorization header
+		var reqBody struct {
+			ChannelID string `json:"channelID"`
+		}
 
-		if channelID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID must be provided"})
+		reqBody.ChannelID = c.Param("channelID")
+
+		if reqBody.ChannelID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
 			return
 		}
 
-		messages, err := discord.GetChannelMessages(channelID, accessToken)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, messages)
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
 	}
 }
 
 // SearchGuildChannels returns a gin.HandlerFunc that processes a request to search for channels in a Discord guild.
 func (api *API) SearchGuildChannels() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		guildID := c.Param("guildID")
-		accessToken := c.Param("accessToken") // Assumes the access token is passed in the Authorization header
+		var reqBody struct {
+			GuildID string `json:"guildID"`
+		}
 
-		if guildID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "GuildID must be provided"})
+		reqBody.GuildID = c.Param("guildID")
+
+		if reqBody.GuildID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
 			return
 		}
 
-		channels, err := discord.GetGuildChannels(guildID, accessToken)
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, channels)
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordGuildChannels, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
 	}
 }
 
 // SearchUserGuilds returns a gin.HandlerFunc that processes a request to search for guilds associated with a Discord user.
 func (api *API) SearchUserGuilds() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		accessToken := c.Param("accessToken") // Assumes the access token is passed in the Authorization header
+		var reqBody struct {
+			GuildID string `json:"guildID"`
+		}
 
-		guilds, err := discord.GetUserGuilds(accessToken)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		reqBody.GuildID = c.Param("guildID")
+
+		if reqBody.GuildID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
 			return
 		}
-		c.JSON(http.StatusOK, guilds)
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordUserGuilds, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
 	}
 }
 

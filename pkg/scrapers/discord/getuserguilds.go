@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 // Guild represents a Discord guild (server) structure
@@ -18,15 +19,19 @@ type Guild struct {
 }
 
 // GetUserGuilds fetches the guilds (servers) that the current user is part of
-func GetUserGuilds(accessToken string) ([]Guild, error) {
+func GetUserGuilds() ([]Guild, error) {
+	botToken := os.Getenv("DISCORD_BOT_TOKEN") // Replace with your actual environment variable name
+	if botToken == "" {
+		return nil, fmt.Errorf("DISCORD_BOT_TOKEN environment variable not set")
+	}
+
 	url := "https://discord.com/api/users/@me/guilds"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set the authorization header to your bot token
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", botToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

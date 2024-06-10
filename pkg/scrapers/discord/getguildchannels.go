@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 // GuildChannel represents a Discord guild channel structure
@@ -17,15 +18,19 @@ type GuildChannel struct {
 }
 
 // GetGuildChannels fetches the channels for a specific guild from the Discord API
-func GetGuildChannels(guildID, accessToken string) ([]GuildChannel, error) {
+func GetGuildChannels(guildID string) ([]GuildChannel, error) {
+	botToken := os.Getenv("DISCORD_BOT_TOKEN") // Replace with your actual environment variable name
+	if botToken == "" {
+		return nil, fmt.Errorf("DISCORD_BOT_TOKEN environment variable not set")
+	}
+
 	url := fmt.Sprintf("https://discord.com/api/guilds/%s/channels", guildID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set the authorization header to your OAuth2 access token
-	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", accessToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", botToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
