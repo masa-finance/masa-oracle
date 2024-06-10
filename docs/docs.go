@@ -426,14 +426,7 @@ const docTemplate = `{
 							"description": "Discord User ID",
 							"required": true,
 							"type": "string"
-						},
-						{
-							"name": "accessToken",
-							"in": "query",
-							"description": "Access Token",
-							"required": true,
-							"type": "string"
-						  }
+						}
 					],
 					"responses": {
 						"200": {
@@ -505,14 +498,7 @@ const docTemplate = `{
 					  "description": "Discord Channel ID",
 					  "required": true,
 					  "type": "string"
-					},
-					{
-						"name": "accessToken",
-						"in": "path",
-						"description": "Access Token",
-						"required": true,
-						"type": "string"
-					  }
+					}
 				  ],
 				  "responses": {
 					"200": {
@@ -550,14 +536,7 @@ const docTemplate = `{
 					  "description": "Discord Guild ID",
 					  "required": true,
 					  "type": "string"
-					},
-					{
-						"name": "accessToken",
-						"in": "path",
-						"description": "Access Token",
-						"required": true,
-						"type": "string"
-					  }
+					}
 				  ],
 				  "responses": {
 					"200": {
@@ -588,15 +567,6 @@ const docTemplate = `{
 				  "description": "Retrieves guilds that the authorized Discord user is part of.",
 				  "tags": ["Discord"],
 				  "summary": "Get guilds for a Discord user",
-				  "parameters": [
-					{
-						"name": "accessToken",
-						"in": "path",
-						"description": "Access Token",
-						"required": true,
-						"type": "string"
-					  }
-				  ],
 				  "responses": {
 					"200": {
 					  "description": "Successfully retrieved guilds for the Discord user",
@@ -634,15 +604,6 @@ const docTemplate = `{
 						"Discord"
 					],
 					"summary": "Get all guilds",
-					"parameters": [
-						{
-							"name": "accessToken",
-							"in": "query",
-							"description": "Access Token",
-							"required": true,
-							"type": "string"
-						}
-					],
 					"responses": {
 						"200": {
 							"description": "Successfully retrieved all guilds for the Discord user",
