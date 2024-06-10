@@ -220,11 +220,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Accept  json
 		// @Produce  json
 		// @Param   channelID   path    string  true  "Discord Channel ID"
-		// @Param   accessToken  path    string  true  "Access Token"
 		// @Success 200 {array} ChannelMessage "Successfully retrieved messages from the Discord channel"
 		// @Failure 400 {object} ErrorResponse "Invalid channel ID or error fetching messages"
 		// @Router /channels/{channelID}/messages [get]
-		v1.GET("data/discord/channels/:channelID/:accessToken/messages", API.SearchChannelMessages())
+		v1.GET("data/discord/channels/:channelID/messages", API.SearchChannelMessages())
 
 		// @Summary Get channels from a Discord guild
 		// @Description Retrieves channels from a specified Discord guild.
@@ -232,18 +231,16 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Accept  json
 		// @Produce  json
 		// @Param   guildID   path    string  true  "Discord Guild ID"
-		// @Param   accessToken  path    string  true  "Access Token"
 		// @Success 200 {array} GuildChannel "Successfully retrieved channels from the Discord guild"
 		// @Failure 400 {object} ErrorResponse "Invalid guild ID or error fetching channels"
 		// @Router /guilds/{guildID}/channels [get]
-		v1.GET("/data/discord/guilds/:guildID/:accessToken/channels", API.SearchGuildChannels())
+		v1.GET("/data/discord/guilds/:guildID/channels", API.SearchGuildChannels())
 
 		// @Summary Get all guilds
 		// @Description Retrieves all guilds that the Discord Bots are apart of.
 		// @Tags Discord
 		// @Accept  json
 		// @Produce  json
-		// @Param   accessToken  query    string  true  "Access Token"
 		// @Success 200 {array} Guild "Successfully retrieved all guilds for the Discord user"
 		// @Failure 400 {object} ErrorResponse "Error fetching guilds or invalid access token"
 		// @Router /discord/guilds/all [get]
@@ -254,11 +251,10 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Tags Discord
 		// @Accept  json
 		// @Produce  json
-		// @Param   accessToken  path    string  true  "Access Token"
 		// @Success 200 {array} Guild "Successfully retrieved guilds for the Discord user"
 		// @Failure 400 {object} ErrorResponse "Error fetching guilds"
 		// @Router /user/guilds [get]
-		v1.GET("/data/discord/user/:accessToken/guilds", API.SearchUserGuilds())
+		v1.GET("/data/discord/user/guilds", API.SearchUserGuilds())
 
 		// @Summary Web Data
 		// @Description Retrieves data from the web
