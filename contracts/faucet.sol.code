@@ -25,7 +25,7 @@ contract MasaFaucet {
     event TokensWithdrawn(address indexed admin, uint256 amount);
     event EtherWithdrawn(address indexed admin, uint256 amount);
 
-    address public owner;
+    address owner;
 
     modifier onlyOwner {
         require(msg.sender == owner);
@@ -39,22 +39,33 @@ contract MasaFaucet {
     }
 
     function faucet() public {
-        require(nextRequestAt[msg.sender] <= block.timestamp, "Please wait before requesting tokens again");
-
         uint256 currentDay = block.timestamp / 1 days;
-        if (dailyTokenReceived[msg.sender] / 1 days < currentDay) {
+        uint256 lastClaimDay = nextRequestAt[msg.sender] / 1 days;
+
+        // Reset dailyTokenReceived if a new day has started since the last claim
+        if (lastClaimDay < currentDay) {
             dailyTokenReceived[msg.sender] = 0;
         }
-        
-        require(dailyTokenReceived[msg.sender] >= dailyLimit, "Daily limit reached"); // TODO: check this
+
+        // Check if the user has to wait more before requesting tokens again
+        require(nextRequestAt[msg.sender] <= block.timestamp, "Please wait before requesting tokens again");
+
+        // Check if the daily limit has been reached
+        require(dailyTokenReceived[msg.sender] + tokenAmount <= dailyLimit, "Daily limit reached");
 
         IERC20 token = IERC20(tokenAddress);
         require(token.balanceOf(address(this)) >= tokenAmount, "Faucet is empty");
 
+        // Update the nextRequestAt to the current timestamp plus the wait time
         nextRequestAt[msg.sender] = block.timestamp + waitTime;
+
+        // Update the amount of tokens received today
         dailyTokenReceived[msg.sender] += tokenAmount;
+
+        // Transfer the tokens to the requester
         token.transfer(msg.sender, tokenAmount);
     }
+
     // Function to withdraw remaining tokens (if needed)
     function withdrawTokens(uint256 amount) onlyOwner public {
         IERC20 token = IERC20(tokenAddress);
