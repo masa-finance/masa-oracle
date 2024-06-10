@@ -93,8 +93,8 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		resp, err = discord.GetChannelMessages(channelID)
 	case string(WORKER.DiscordGuildChannels):
 		logrus.Infof("[+] Discord Guild Channels %s %s", m.Data, m.Sender)
-		channelID := bodyData["channelID"].(string)
-		resp, err = discord.GetChannelMessages(channelID)
+		guildID := bodyData["guildID"].(string)
+		resp, err = discord.GetGuildChannels(guildID)
 	case string(WORKER.DiscordUserGuilds):
 		logrus.Infof("[+] Discord User Guilds %s %s", m.Data, m.Sender)
 		resp, err = discord.GetUserGuilds()

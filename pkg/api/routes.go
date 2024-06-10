@@ -244,7 +244,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Success 200 {array} Guild "Successfully retrieved all guilds for the Discord user"
 		// @Failure 400 {object} ErrorResponse "Error fetching guilds or invalid access token"
 		// @Router /discord/guilds/all [get]
-		v1.GET("/discord/guilds/all", API.SearchAllGuilds())
+		v1.GET("/data/discord/guilds/all", API.SearchAllGuilds())
 
 		// @Summary Get guilds for a Discord user
 		// @Description Retrieves guilds that the authorized Discord user is part of.

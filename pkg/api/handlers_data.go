@@ -381,16 +381,7 @@ func (api *API) SearchGuildChannels() gin.HandlerFunc {
 // SearchUserGuilds returns a gin.HandlerFunc that processes a request to search for guilds associated with a Discord user.
 func (api *API) SearchUserGuilds() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody struct {
-			GuildID string `json:"guildID"`
-		}
-
-		reqBody.GuildID = c.Param("guildID")
-
-		if reqBody.GuildID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
-			return
-		}
+		var reqBody struct{}
 
 		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
