@@ -593,7 +593,7 @@ const docTemplate = `{
 			  },
 			  "/discord/guilds/all": {
 				"get": {
-					"description": "Retrieves all guilds that the authorized Discord user is part of.",
+					"description": "Retrieves all guilds that all the Discord workers are apart of.",
 					"consumes": [
 						"application/json"
 					],
