@@ -26,7 +26,7 @@ func LoadContractAddresses() (*ContractAddresses, error) {
 		return nil, err
 	}
 	// used until we get someone to make a proper npm package
-	addresses.Sepolia.MasaFaucet = "0x244813DaABFd59483fe34d1FdB3598AF06fE6c63"
+	addresses.Sepolia.MasaFaucet = "0x0d4EB0fb79c5A2E1A939251ba1645CF8384b5B8C"
 	// used until we get someone to make a proper npm package
 	addresses.Sepolia.MasaToken = tokenAddresses["sepolia"]["MasaToken"]
 	err = json.Unmarshal(masaOracleTokensData, &tokenAddresses)
