@@ -73,8 +73,9 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	FilePath             string   `mapstructure:"filePath"`
-	WriterNode           string   `mapstructure:"writerNode"`
+	WriterNode           string   `mapstructure:"validator"`
 	CachePath            string   `mapstructure:"cachePath"`
+	Faucet               bool     `mapstructure:"faucet"`
 
 	// These may be moved to a separate struct
 	TwitterCookiesPath string `mapstructure:"twitterCookiesPath"`
@@ -188,7 +189,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 		viper.SetDefault(Environment, os.Getenv("ENV"))
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
-		viper.SetDefault(WriterNode, os.Getenv("WRITER_NODE"))
+		viper.SetDefault(WriterNode, os.Getenv("VALIDATOR"))
 		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
 		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
 		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
@@ -219,6 +220,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
+	viper.SetDefault(Faucet, false)
 	viper.SetDefault(AllowedPeer, true)
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_node.log")
@@ -276,7 +278,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, "logLevel", viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, "logFilePath", viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, "filePath", viper.GetString(FilePath), "The node file path")
-	pflag.StringVar(&c.WriterNode, "writerNode", viper.GetString(WriterNode), "Approved writer node boolean")
+	pflag.StringVar(&c.WriterNode, "validator", viper.GetString(WriterNode), "Approved validator node boolean")
 	pflag.StringVar(&c.CachePath, "cachePath", viper.GetString(CachePath), "The cache path")
 	pflag.StringVar(&c.TwitterUsername, "twitterUsername", viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")
@@ -292,6 +294,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
 	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
+	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)

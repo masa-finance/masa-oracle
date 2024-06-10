@@ -85,3 +85,55 @@ func handleStaking(privateKey *ecdsa.PrivateKey) error {
 
 	return nil
 }
+
+func handleFaucet(privateKey *ecdsa.PrivateKey) error {
+	faucetClient, err := staking.NewClient(privateKey)
+	if err != nil {
+		logrus.Error("Failed to create staking client:", err)
+		return err
+	}
+
+	startSpinner := func(msg string, txHashChan <-chan string, done chan bool) {
+		spinner := []string{"|", "/", "-", "\\"}
+		i := 0
+		var txHash string
+		for {
+			select {
+			case txHash = <-txHashChan: // Receive the transaction hash
+				// Do not print anything here, just update the txHash variable
+			case <-done:
+				fmt.Printf("\r%s\n", msg) // Print final message when done
+				if txHash != "" {
+					fmt.Println(txHash) // Print the transaction hash on a new line
+				}
+				return
+			default:
+				// Use carriage return `\r` to overwrite the spinner animation on the same line
+				// Remove the newline character `\n` from the print statement
+				if txHash != "" {
+					fmt.Printf("\r%s %s - %s", spinner[i], msg, txHash)
+				} else {
+					fmt.Printf("\r%s %s", spinner[i], msg)
+				}
+				i = (i + 1) % len(spinner)
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}
+
+	// Run the faucet
+	var faucetTxHash string
+	done := make(chan bool)
+	txHashChan := make(chan string, 1) // Buffer of 1 to prevent blocking
+	go startSpinner("Requesting tokens from faucet...", txHashChan, done)
+	faucetTxHash, err = faucetClient.RunFaucet()
+	if err != nil {
+		logrus.Error("Failed to request tokens from faucet:", err)
+		return err
+	}
+	txHashChan <- faucetTxHash // Send the transaction hash to the spinner
+	done <- true               // Stop the spinner
+	color.Green("Faucet transaction hash: %s", faucetTxHash)
+
+	return nil
+}

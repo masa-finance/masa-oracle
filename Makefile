@@ -10,6 +10,12 @@ install:
 run: build
 	@./bin/masa-node
 
+faucet: build
+	./bin/masa-node --faucet
+
+stake: build
+	./bin/masa-node --stake 1000
+
 client: build	
 	@./bin/masa-cli
 

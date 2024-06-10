@@ -60,7 +60,7 @@ type NodeData struct {
 	IsActive             bool            `json:"isActive"`
 	IsStaked             bool            `json:"isStaked"`
 	SelfIdentified       bool            `json:"-"`
-	IsWriterNode         bool            `json:"isWriterNode"`
+	IsValidator          bool            `json:"isValidator"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsDiscordScraper     bool            `json:"isDiscordScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
@@ -88,7 +88,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
-		IsWriterNode:      wn,
+		IsValidator:       wn,
 		IsTwitterScraper:  ts,
 		IsDiscordScraper:  ds,
 		IsWebScraper:      ws,

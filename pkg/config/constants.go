@@ -92,10 +92,11 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.6-beta"
+	Version     = "v0.0.7-beta"
 	FilePath    = "FILE_PATH"
-	WriterNode  = "WRITER_NODE"
+	WriterNode  = "VALIDATOR"
 	CachePath   = "CACHE_PATH"
+	Faucet      = "FAUCET"
 
 	MasaPrefix           = "/masa"
 	OracleProtocol       = "oracle_protocol"

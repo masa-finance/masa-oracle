@@ -83,14 +83,21 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	}
 
 	switch workData["request"] {
-	case string(WORKER.Discord):
-		logrus.Infof("[+] Discord %s %s", m.Data, m.Sender)
+	case string(WORKER.DiscordProfile):
+		logrus.Infof("[+] Discord Profile %s %s", m.Data, m.Sender)
 		userID := bodyData["userID"].(string)
-		botToken := bodyData["botToken"].(string)
-		resp, err = discord.GetUserProfile(userID, botToken)
-	case string(WORKER.Twitter):
-		count := int(bodyData["count"].(float64))
-		resp, err = twitter.ScrapeTweetsByQuery(bodyData["query"].(string), count)
+		resp, err = discord.GetUserProfile(userID)
+	case string(WORKER.DiscordChannelMessages):
+		logrus.Infof("[+] Discord Channel Messages %s %s", m.Data, m.Sender)
+		channelID := bodyData["channelID"].(string)
+		resp, err = discord.GetChannelMessages(channelID)
+	case string(WORKER.DiscordGuildChannels):
+		logrus.Infof("[+] Discord Guild Channels %s %s", m.Data, m.Sender)
+		channelID := bodyData["channelID"].(string)
+		resp, err = discord.GetChannelMessages(channelID)
+	case string(WORKER.DiscordUserGuilds):
+		logrus.Infof("[+] Discord User Guilds %s %s", m.Data, m.Sender)
+		resp, err = discord.GetUserGuilds()
 	case string(WORKER.LLMChat):
 		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {

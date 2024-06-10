@@ -30,31 +30,39 @@ import (
 type WorkerType string
 
 const (
-	Discord          WorkerType = "discord"
-	LLMChat          WorkerType = "llm-chat"
-	Twitter          WorkerType = "twitter"
-	TwitterFollowers WorkerType = "twitter-followers"
-	TwitterProfile   WorkerType = "twitter-profile"
-	TwitterSentiment WorkerType = "twitter-sentiment"
-	TwitterTrends    WorkerType = "twitter-trends"
-	Web              WorkerType = "web"
-	WebSentiment     WorkerType = "web-sentiment"
-	Test             WorkerType = "test"
+	Discord                WorkerType = "discord"
+	DiscordProfile         WorkerType = "discord-profile"
+	DiscordChannelMessages WorkerType = "discord-channel-messages"
+	DiscordGuildChannels   WorkerType = "discord-guild-channels"
+	DiscordUserGuilds      WorkerType = "discord-user-guilds"
+	LLMChat                WorkerType = "llm-chat"
+	Twitter                WorkerType = "twitter"
+	TwitterFollowers       WorkerType = "twitter-followers"
+	TwitterProfile         WorkerType = "twitter-profile"
+	TwitterSentiment       WorkerType = "twitter-sentiment"
+	TwitterTrends          WorkerType = "twitter-trends"
+	Web                    WorkerType = "web"
+	WebSentiment           WorkerType = "web-sentiment"
+	Test                   WorkerType = "test"
 )
 
 var WORKER = struct {
-	Discord, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
+	Discord, DiscordProfile, DiscordChannelMessages, DiscordGuildChannels, DiscordUserGuilds, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
 }{
-	Discord:          Discord,
-	LLMChat:          LLMChat,
-	Twitter:          Twitter,
-	TwitterFollowers: TwitterFollowers,
-	TwitterProfile:   TwitterProfile,
-	TwitterSentiment: TwitterSentiment,
-	TwitterTrends:    TwitterTrends,
-	Web:              Web,
-	WebSentiment:     WebSentiment,
-	Test:             Test,
+	Discord:                Discord,
+	DiscordProfile:         DiscordProfile,
+	DiscordChannelMessages: DiscordChannelMessages,
+	DiscordGuildChannels:   DiscordGuildChannels,
+	DiscordUserGuilds:      DiscordUserGuilds,
+	LLMChat:                LLMChat,
+	Twitter:                Twitter,
+	TwitterFollowers:       TwitterFollowers,
+	TwitterProfile:         TwitterProfile,
+	TwitterSentiment:       TwitterSentiment,
+	TwitterTrends:          TwitterTrends,
+	Web:                    Web,
+	WebSentiment:           WebSentiment,
+	Test:                   Test,
 }
 
 var (

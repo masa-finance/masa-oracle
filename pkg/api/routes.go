@@ -129,7 +129,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	//	@Title			Masa API
 	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
 	//	@Host			https://api.masa.ai
-	//	@Version		0.0.6-beta
+	//	@Version		0.0.7-beta
 	//	@contact.name	Masa API Support
 	//	@contact.url	https://masa.ai
 	//	@contact.email	support@masa.ai
@@ -211,6 +211,54 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Invalid user ID or error fetching profile"
 		// @Router /discord/profile/{userID} [get]
 		v1.GET("/data/discord/profile/:userID", API.SearchDiscordProfile())
+
+		v1.GET("/data/discord/exchangetoken/:code", API.ExchangeDiscordTokenHandler())
+
+		// @Summary Get messages from a Discord channel
+		// @Description Retrieves messages from a specified Discord channel.
+		// @Tags Discord
+		// @Accept  json
+		// @Produce  json
+		// @Param   channelID   path    string  true  "Discord Channel ID"
+		// @Param   accessToken  path    string  true  "Access Token"
+		// @Success 200 {array} ChannelMessage "Successfully retrieved messages from the Discord channel"
+		// @Failure 400 {object} ErrorResponse "Invalid channel ID or error fetching messages"
+		// @Router /channels/{channelID}/messages [get]
+		v1.GET("data/discord/channels/:channelID/:accessToken/messages", API.SearchChannelMessages())
+
+		// @Summary Get channels from a Discord guild
+		// @Description Retrieves channels from a specified Discord guild.
+		// @Tags Discord
+		// @Accept  json
+		// @Produce  json
+		// @Param   guildID   path    string  true  "Discord Guild ID"
+		// @Param   accessToken  path    string  true  "Access Token"
+		// @Success 200 {array} GuildChannel "Successfully retrieved channels from the Discord guild"
+		// @Failure 400 {object} ErrorResponse "Invalid guild ID or error fetching channels"
+		// @Router /guilds/{guildID}/channels [get]
+		v1.GET("/data/discord/guilds/:guildID/:accessToken/channels", API.SearchGuildChannels())
+
+		// @Summary Get all guilds
+		// @Description Retrieves all guilds that the Discord Bots are apart of.
+		// @Tags Discord
+		// @Accept  json
+		// @Produce  json
+		// @Param   accessToken  query    string  true  "Access Token"
+		// @Success 200 {array} Guild "Successfully retrieved all guilds for the Discord user"
+		// @Failure 400 {object} ErrorResponse "Error fetching guilds or invalid access token"
+		// @Router /discord/guilds/all [get]
+		v1.GET("/discord/guilds/all", API.SearchAllGuilds())
+
+		// @Summary Get guilds for a Discord user
+		// @Description Retrieves guilds that the authorized Discord user is part of.
+		// @Tags Discord
+		// @Accept  json
+		// @Produce  json
+		// @Param   accessToken  path    string  true  "Access Token"
+		// @Success 200 {array} Guild "Successfully retrieved guilds for the Discord user"
+		// @Failure 400 {object} ErrorResponse "Error fetching guilds"
+		// @Router /user/guilds [get]
+		v1.GET("/data/discord/user/:accessToken/guilds", API.SearchUserGuilds())
 
 		// @Summary Web Data
 		// @Description Retrieves data from the web
