@@ -433,7 +433,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 					logrus.Errorf("No IP4 address found for peer %s", peer.PeerId)
 					return // Use return here instead of continue since this is in a goroutine
 				}
-				url := fmt.Sprintf("http://%s:4001/api/v1/discord/user/guilds", ipAddr)
+				url := fmt.Sprintf("http://%s:4001/api/v1/data/discord/user/guilds", ipAddr)
 
 				// Make the HTTP request
 				resp, err := http.Get(url)
