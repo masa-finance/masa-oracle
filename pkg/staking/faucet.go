@@ -2,11 +2,7 @@ package staking
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -23,15 +19,7 @@ func (sc *Client) RunFaucet() (string, error) {
 		return "", fmt.Errorf("failed to load contract addresses: %v", err)
 	}
 
-	// used until we get someone to make a proper npm package
-	var contract struct {
-		ABI json.RawMessage `json:"abi"`
-	}
-	_ = json.Unmarshal([]byte(MasaFaucetABIPath), &contract)
-	parsedABI, err := abi.JSON(strings.NewReader(string(contract.ABI)))
-	// used until we get someone to make a proper npm package
-
-	//parsedABI, err := GetABI(MasaFaucetABIPath)
+	parsedABI, err := GetABI(MasaFaucetABIPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get ABI: %v", err)
 	}

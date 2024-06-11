@@ -10,13 +10,14 @@ This release of the Masa Oracle Node introduces new features, masa node will exi
 
 ### Breaking Changes
 
-* None
+* Updated the masa-contracts-oracle to 0.4.5
+  * cd contracts && yarn
 
 ### Bug fixes
 
 ### New Features
 
-* Added test Discord Bot Token to example.env for beta use
+* Added Discord scrapers
 * Added masa token faucet with cli param --faucet
 
 > compile and build the masa-node
