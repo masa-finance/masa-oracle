@@ -465,23 +465,23 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 }
 
 // ExchangeDiscordTokenHandler returns a gin.HandlerFunc that exchanges a Discord OAuth2 authorization code for an access token.
-func (api *API) ExchangeDiscordTokenHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		code := c.Param("code")
-		if code == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code must be provided"})
-			return
-		}
-
-		tokenResponse, err := discord.ExchangeCode(code)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code for access token", "details": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, tokenResponse)
-	}
-}
+//func (api *API) ExchangeDiscordTokenHandler() gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		code := c.Param("code")
+//		if code == "" {
+//			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code must be provided"})
+//			return
+//		}
+//
+//		tokenResponse, err := discord.ExchangeCode(code)
+//		if err != nil {
+//			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code for access token", "details": err.Error()})
+//			return
+//		}
+//
+//		c.JSON(http.StatusOK, tokenResponse)
+//	}
+//}
 
 // SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
 func (api *API) SearchTwitterFollowers() gin.HandlerFunc {

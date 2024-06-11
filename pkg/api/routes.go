@@ -212,7 +212,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /discord/profile/{userID} [get]
 		v1.GET("/data/discord/profile/:userID", API.SearchDiscordProfile())
 
-		v1.GET("/data/discord/exchangetoken/:code", API.ExchangeDiscordTokenHandler())
+		// oauth tests
+		// v1.GET("/data/discord/exchangetoken/:code", API.ExchangeDiscordTokenHandler())
 
 		// @Summary Get messages from a Discord channel
 		// @Description Retrieves messages from a specified Discord channel.
