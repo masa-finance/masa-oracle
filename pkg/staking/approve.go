@@ -12,7 +12,7 @@ import (
 )
 
 // Approve approves the specified amount of MASA tokens for transfer from the
-// caller's account to the OracleNodeStakingContractAddress. It constructs an
+// caller's account to the ProtocolStakingContractAddress. It constructs an
 // Ethereum transaction with the approve call, signs it, sends it to the network,
 // waits for confirmation, and returns the transaction hash if successful.
 func (sc *Client) Approve(amount *big.Int) (string, error) {
@@ -28,7 +28,7 @@ func (sc *Client) Approve(amount *big.Int) (string, error) {
 	}
 
 	value := big.NewInt(0)
-	data, err := parsedABI.Pack("approve", OracleNodeStakingContractAddress, amount)
+	data, err := parsedABI.Pack("approve", ProtocolStakingContractAddress, amount)
 	if err != nil {
 		return "", fmt.Errorf("failed to pack data for approve: %v", err)
 	}

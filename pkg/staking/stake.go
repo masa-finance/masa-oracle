@@ -23,12 +23,12 @@ func (sc *Client) Stake(amount *big.Int) (string, error) {
 		return "", fmt.Errorf("failed to create keyed transactor: %v", err)
 	}
 
-	parsedABI, err := GetABI(OracleNodeStakingABIPath)
+	parsedABI, err := GetABI(ProtocolStakingABIPath)
 	if err != nil {
 		return "", err
 	}
 
-	stakingContract := bind.NewBoundContract(OracleNodeStakingContractAddress, parsedABI, sc.EthClient, sc.EthClient, sc.EthClient)
+	stakingContract := bind.NewBoundContract(ProtocolStakingContractAddress, parsedABI, sc.EthClient, sc.EthClient, sc.EthClient)
 
 	tx, err := stakingContract.Transact(auth, "stake", amount)
 	if err != nil {

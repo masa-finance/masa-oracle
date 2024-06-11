@@ -229,7 +229,7 @@ func (node *OracleNode) Start() (err error) {
 	nodeData.IsDiscordScraper = cfg.DiscordScraper
 	nodeData.IsTwitterScraper = cfg.TwitterScraper
 	nodeData.IsWebScraper = cfg.WebScraper
-	nodeData.IsWriterNode = cfg.WriterNode == "true"
+	nodeData.IsValidator = cfg.WriterNode == "true"
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)

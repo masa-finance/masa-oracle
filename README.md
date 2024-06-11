@@ -78,16 +78,16 @@ cd ../
 ##### 4. Set env vars using the following template
 
 ```plaintext
-# Default .env configuration
+# Node Configuration
+
 BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
 
 API_KEY=
-RPC_URL=https://ethereum-sepolia.publicnode.com
 ENV=test
 FILE_PATH=.
-WRITER_NODE=false
-CACHE_PATH=CACHE
 PORT=8080
+RPC_URL=https://ethereum-sepolia.publicnode.com
+VALIDATOR=false
 
 # AI LLM
 CLAUDE_API_KEY=
@@ -98,18 +98,15 @@ ELAB_KEY=
 OPENAI_API_KEY=
 PROMPT="You are a helpful assistant."
 
-# X
+# Bring your own Twitter credentials
 TWITTER_USER="yourusername"
 TWITTER_PASS="yourpassword"
 TWITTER_2FA_CODE="your2fa"
 
-# Worker node config; default = false
+# Worker participation
 TWITTER_SCRAPER=true
 DISCORD_SCRAPER=true
 WEB_SCRAPER=true
-
-# PG
-PG_URL=
 ```
 
 ##### 5. Start up masa-node. Be sure to include your bootnodes list with the --bootnodes flag
@@ -126,7 +123,9 @@ PG_URL=
 
 The Makefile provides several commands to build, install, run, test, and clean the Masa Node project. Here's a description of each command:
 
-### make build
+```shell
+make build
+```
 
 The build command compiles the Masa Node binary and places it in the ./bin directory. It uses the go build command with the following flags:
 
@@ -136,21 +135,33 @@ The build command compiles the Masa Node binary and places it in the ./bin direc
 make install
 The install command runs the node_install.sh script to install any necessary dependencies or perform additional setup steps required by the Masa Node.
 
-### make run
+```shell
+make run
+```
 
 The run command first builds the Masa Node binary using the build command and then executes the binary located at ./bin/masa-node. This command allows you to compile and run the Masa Node in a single step.
 
-### make test
+```shell
+make test
+```
 
 The test command runs all the tests in the project using the go test command. It recursively searches for test files in all subdirectories and runs them.
 
-### make clean
+```shell
+make clean
+```
 
 The clean command performs cleanup tasks for the project. It removes the bin directory, which contains the compiled binary, and deletes the masa_node.log file, which may contain log output from previous runs.
 
 To execute any of these commands, simply run make in your terminal from the project's root directory. For example, make build will compile the Masa Node binary, make test will run the tests, and make clean will remove the binary and log file.
 
 ## Funding the Node (in order to Stake)
+
+```shell
+  ./bin/masa-node --faucet
+  ```
+
+>OR
 
 Find the public key of your node in the logs.
 
@@ -203,7 +214,7 @@ For more detailed documentation, please refer to the [LLM.md](md/LLM.md) file.
 ## API Swagger Docs
 
 ```shell
-http://<masa-node>:8080/swagger/index.html
+http://<masa-node-ip>:8080/swagger/index.html
 ```
 
 ## LLM Endpoint examples
@@ -211,28 +222,5 @@ http://<masa-node>:8080/swagger/index.html
 ollama
 
 ```shell
-curl https://llm-dev.masa.finance/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
+curl http://localhost:8080/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
 ```
-
-## Consensus
-
-> options WIP
-
-- node must be staked ✓
-- un-staked / staked participate and infer the quality of their requests
-- node uptime ie epoch/period
-- staked / un-staked
-- how much staked
-- participation rate
-- let staked nodes rate each other
-- let un-staked nodes rate each other
-- totalBytes scraped
-
-## Rewards
-
-> assumptions WIP
-
-- node must be staked ✓
-- node must have n number of staked tokens / n = ?
-- do we want to offer scaled rewards based on how many tokens were staked?
-- how are the rewards distributed - offchain for now MVP

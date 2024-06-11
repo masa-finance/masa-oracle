@@ -129,8 +129,6 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	if buffered.NodeData != nil {
 		buffered.NodeData.Left()
 		delete(net.ConnectBuffer, peerID)
-		// net.nodeData.Delete(peerID)
-		// Now process the buffered connect
 		buffered.NodeData.Joined()
 		net.NodeDataChan <- buffered.NodeData
 	} else {
@@ -368,6 +366,18 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.IsTwitterScraper = nodeData.IsTwitterScraper
 		nd.IsWebScraper = nodeData.IsWebScraper
 		nd.Records = nodeData.Records
+		nd.LastLeft = nodeData.LastLeft
+		nd.Multiaddrs = nodeData.Multiaddrs
+		nd.EthAddress = nodeData.EthAddress
+		nd.IsActive = nodeData.IsActive
+		nd.FirstJoined = nodeData.FirstJoined
+		nd.LastJoined = nodeData.LastJoined
+		nd.LastUpdated = nodeData.LastUpdated
+		nd.AccumulatedUptime = nodeData.AccumulatedUptime
+		nd.AccumulatedUptimeStr = nodeData.AccumulatedUptimeStr
+		nd.CurrentUptime = nodeData.CurrentUptime
+		nd.CurrentUptimeStr = nodeData.CurrentUptimeStr
+
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),
 		}).Info("Connected")

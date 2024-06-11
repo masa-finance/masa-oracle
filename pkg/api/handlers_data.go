@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
 	"strings"
@@ -24,6 +25,7 @@ import (
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 )
 
 type LLMChat struct {
@@ -288,12 +290,10 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
-			UserID   string `json:"userID"`
-			BotToken string `json:"botToken"`
+			UserID string `json:"userID"`
 		}
 
 		reqBody.UserID = c.Param("userID")
-		reqBody.BotToken = os.Getenv("DISCORD_BOT_TOKEN")
 
 		if reqBody.UserID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
@@ -308,7 +308,7 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.Discord, bodyBytes)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordProfile, bodyBytes)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -316,6 +316,172 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 		// worker handler implementation
 	}
 }
+
+// SearchChannelMessages returns a gin.HandlerFunc that processes a request to search for messages in a Discord channel.
+func (api *API) SearchChannelMessages() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			ChannelID string `json:"channelID"`
+		}
+
+		reqBody.ChannelID = c.Param("channelID")
+
+		if reqBody.ChannelID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
+			return
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
+// SearchGuildChannels returns a gin.HandlerFunc that processes a request to search for channels in a Discord guild.
+func (api *API) SearchGuildChannels() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			GuildID string `json:"guildID"`
+		}
+
+		reqBody.GuildID = c.Param("guildID")
+
+		if reqBody.GuildID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
+			return
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordGuildChannels, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
+// SearchUserGuilds returns a gin.HandlerFunc that processes a request to search for guilds associated with a Discord user.
+func (api *API) SearchUserGuilds() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct{}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordUserGuilds, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
+// SearchAllGuilds returns a gin.HandlerFunc that queries each node for the Discord guilds they are part of.
+func (api *API) SearchAllGuilds() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get all nodes from the tracker
+		peers := api.Node.NodeTracker.GetAllNodeData()
+
+		// Prepare a wait group to wait for all go routines to finish
+		var wg sync.WaitGroup
+		wg.Add(len(peers))
+
+		// This will store the combined list of guilds from all nodes
+		allGuilds := make([]discord.Guild, 0)
+
+		// Mutex to synchronize access to allGuilds slice
+		var mutex sync.Mutex
+
+		for _, p := range peers {
+			go func(peer pubsub2.NodeData) {
+				defer wg.Done()
+
+				// Construct the URL for the GetUserGuilds endpoint
+				// Assuming that the endpoint is exposed at a path like "/api/v1/discord/user/guilds"
+				var ipAddr string
+				var err error
+				for _, addr := range peer.Multiaddrs {
+					ipAddr, err = addr.ValueForProtocol(multiaddr.P_IP4)
+					if err == nil {
+						break
+					}
+				}
+				if ipAddr == "" {
+					logrus.Errorf("No IP4 address found for peer %s", peer.PeerId)
+					return // Use return here instead of continue since this is in a goroutine
+				}
+				url := fmt.Sprintf("http://%s:4001/api/v1/data/discord/user/guilds", ipAddr)
+
+				// Make the HTTP request
+				resp, err := http.Get(url)
+				if err != nil {
+					logrus.Errorf("Error querying node %s: %v", peer.PeerId, err)
+					return
+				}
+				defer resp.Body.Close()
+
+				// Read and decode the response
+				var guilds []discord.Guild
+				if err := json.NewDecoder(resp.Body).Decode(&guilds); err != nil {
+					logrus.Errorf("Error decoding response from node %s: %v", peer.PeerId, err)
+					return
+				}
+
+				// Safely append the guilds to the allGuilds slice
+				mutex.Lock()
+				allGuilds = append(allGuilds, guilds...)
+				mutex.Unlock()
+			}(p)
+		}
+
+		// Wait for all requests to finish
+		wg.Wait()
+
+		// Return the combined list of guilds
+		c.JSON(http.StatusOK, allGuilds)
+	}
+}
+
+// ExchangeDiscordTokenHandler returns a gin.HandlerFunc that exchanges a Discord OAuth2 authorization code for an access token.
+//func (api *API) ExchangeDiscordTokenHandler() gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		code := c.Param("code")
+//		if code == "" {
+//			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code must be provided"})
+//			return
+//		}
+//
+//		tokenResponse, err := discord.ExchangeCode(code)
+//		if err != nil {
+//			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code for access token", "details": err.Error()})
+//			return
+//		}
+//
+//		c.JSON(http.StatusOK, tokenResponse)
+//	}
+//}
 
 // SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
 func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
@@ -600,34 +766,5 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
-	}
-}
-
-func (api *API) Test() gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-		var reqBody struct {
-			Count int `json:"count"`
-		}
-
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			reqBody.Count = rand.Intn(100)
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.Test, bodyBytes)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
-
 	}
 }

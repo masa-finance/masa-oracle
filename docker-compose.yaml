@@ -11,7 +11,7 @@ services:
       ENV: "${ENV}"
       RPC_URL: "${RPC_URL}"
       FILE_PATH: "${FILE_PATH}"
-      WRITER_NODE: "${WRITER_NODE}"
+      VALIDATOR: "${VALIDATOR}"
       CACHE_PATH: "${CACHE_PATH}"
       TWITTER_PASS: "${TWITTER_PASS}"
       TWITTER_USER: "${TWITTER_USER}"

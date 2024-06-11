@@ -30,10 +30,8 @@ func LoadContractAddresses() (*ContractAddresses, error) {
 	if err != nil {
 		return nil, err
 	}
-	addresses.Sepolia.NodeDataMetrics = tokenAddresses["sepolia"]["NodeDataMetrics"]
-	addresses.Sepolia.NodeRewardPool = tokenAddresses["sepolia"]["NodeRewardPool"]
-	addresses.Sepolia.OracleNodeStaking = tokenAddresses["sepolia"]["OracleNodeStaking"]
-	addresses.Sepolia.StakedMasaToken = tokenAddresses["sepolia"]["StakedMasaToken"]
+	addresses.Sepolia.MasaFaucet = tokenAddresses["sepolia"]["MasaFaucet"]
+	addresses.Sepolia.ProtocolStaking = tokenAddresses["sepolia"]["OracleNodeStaking"]
 
 	return &addresses, nil
 }

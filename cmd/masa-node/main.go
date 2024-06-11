@@ -34,10 +34,24 @@ func main() {
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
+	if cfg.Faucet {
+		err := handleFaucet(keyManager.EcdsaPrivKey)
+		if err != nil {
+			logrus.Errorf("%v", err)
+			os.Exit(1)
+		} else {
+			logrus.Info("Faucet event completed for this address")
+			os.Exit(0)
+		}
+	}
+
 	if cfg.StakeAmount != "" {
 		err := handleStaking(keyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Warningf("%v", err)
+		} else {
+			logrus.Info("Staking event completed for this address")
+			os.Exit(0)
 		}
 	}
 
@@ -46,12 +60,13 @@ func main() {
 	if err != nil {
 		logrus.Error(err)
 	}
+
 	if !isStaked {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	var isWriterNode bool
-	isWriterNode, _ = strconv.ParseBool(cfg.WriterNode)
+	var isValidator bool
+	isValidator, _ = strconv.ParseBool(cfg.WriterNode)
 
 	// Create a new OracleNode
 	node, err := masa.NewOracleNode(ctx, isStaked)
@@ -109,7 +124,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isWriterNode, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
 
 	<-ctx.Done()
 }
