@@ -14,7 +14,7 @@ const (
 	MasaFaucetABIPath        = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/MasaFaucet.sol/MasaFaucet.json"
 	NodeDataMetricsABIPath   = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/NodeDataMetrics.sol/NodeDataMetrics.json"
 	NodeRewardPoolABIPath    = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/NodeRewardPool.sol/NodeRewardPool.json"
-	OracleNodeStakingABIPath = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/OracleNodeStaking.sol/OracleNodeStaking.json"
+	OracleNodeStakingABIPath = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/ProtocolStaking.sol/ProtocolStaking.json"
 	StakedMasaTokenABIPath   = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/StakedMasaToken.sol/StakedMasaToken.json"
 )
 
