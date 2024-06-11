@@ -31,7 +31,7 @@ func LoadContractAddresses() (*ContractAddresses, error) {
 		return nil, err
 	}
 	addresses.Sepolia.MasaFaucet = tokenAddresses["sepolia"]["MasaFaucet"]
-	addresses.Sepolia.ProtocolStaking = tokenAddresses["sepolia"]["ProtocolStaking"]
+	addresses.Sepolia.ProtocolStaking = tokenAddresses["sepolia"]["OracleNodeStaking"]
 
 	return &addresses, nil
 }
