@@ -44,6 +44,8 @@ make stake
 make run
 ```
 
+* None
+
 ## Change Log
 
 * Version: 0.0.7-beta
