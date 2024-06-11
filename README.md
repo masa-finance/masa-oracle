@@ -3,11 +3,14 @@
 ## Contents
 
 - [Getting Started](#getting-started)
+  - [Hardware Requirements](#hardware-requirements)
+  - [Network Requirements](#network-requirements)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-  - [Docker Setup](#docker-setup)
-- [Staking Tokens](#staking-tokens)
-- [Running the Node](#running-the-node)
+    - [Quick Start Docker Setup](#quick-start-docker-setup)
+    - [Compile and Run Setup](#compile-and-run-setup)
+  - [Staking Tokens](#staking-tokens)
+  - [Running the Node](#running-the-node)
 - [Updates & Additional Information](#updates--additional-information)
 
 ## Getting Started
@@ -36,11 +39,11 @@ You will need to open the following ports to inbound traffic:
 The quickest and simplest way to set up a Masa Protocol node is with docker.
 For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md)
 
-#### Build and compile Setup
+#### Compile and Run Setup
 
 This local setup guide is for those who wish to compile the code and run directly on your machine, which will give you a more in depth understanding of the Masa Protocol node.
 
-### Prerequisites
+##### Prerequisites
 
 Ensure these prerequisites are installed for a local setup:
 
