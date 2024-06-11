@@ -25,12 +25,14 @@ While a Masa Protocol node itself requires few resources to run on testnet, if y
 
 ### Network Requirements
 
-You will need to open the following ports to inbound traffic:
+If your node will participate in the network as a "Worker," doing data scraping, or providing LLM, etc., you will need to open the following ports to inbound traffic:
 
 - 4001 (both TCP and UDP)
 - 8080 (TCP)
 
-* port 8080 is only required to provide access to the API, and can be changed with environment configuration. Only 4001 is required to be open publicly for participation in the p2p Masa Protocol network.
+* port 8080 is only required to provide access to the API, and can be changed with environment configuration. 
+* Only 4001 is required to be open publicly for participation in the p2p Masa Protocol network as a Worker node.
+* A basic node will still find the bootnodes and register itself as part of the network without any specific inbound ports open.
 
 ### Installation
 
