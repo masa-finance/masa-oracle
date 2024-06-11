@@ -78,13 +78,12 @@ This directory is mapped from `/home/masa/.masa/` inside the Docker container, e
 ## Funding the Node (in order to Stake)
 
 ### Step 1: Find the public key of your node in the logs:
-the logs:
 
 ```bash
 docker-compose logs -f masa-node
 ```
 
-### Step 2: Get some test (sepolia) ETH and test MASA for your node:
+### Step 2: Get sepolia ETH and MASA for your node:
 
 You can obtain sepolia ETH from a faucet such as:
 
@@ -94,21 +93,27 @@ You can obtain test (sepolia) MASA from our faucet:
 
 Like so:
 
-When the transactions have settled, you can stake
+### Step 3: Stake the Node
 
-## Staking the Node
+Once the transactions settle, you can stake your node:
 
-```docker-compose run --build --rm masa-node /usr/bin/masa-node --stake 1000```
+```bash
+docker-compose run --build --rm masa-node /usr/bin/masa-node --stake 1000
+```
 
-## Restart your Node
+### Step 4: Restart your Node
 
 Stop your running daemonized node:
 
-```docker compose down```
+```bash
+docker compose down
+```
 
 Start it up again with the -d flag: (If you have changed settings you may wish to `--force-recreate`)
 
-```docker compose up --build --force-recreate -d```
+```bash
+docker compose up --build --force-recreate -d
+```
 
 ## Updating the Node
 
