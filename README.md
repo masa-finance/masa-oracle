@@ -12,6 +12,34 @@
 
 ## Getting Started
 
+### Hardware Requirements
+
+Nodes can run on any hardware for which you can build a golang application. 
+
+Our smallest nodes are running GCP on e2-standard-2 instances, with 2 vCPUs, 8GB RAM, and 10GB SCSI drives. This works well for running a node to test out the protocol.
+
+While a Masa Protocol node itself requires few resources to run on testnet, if you wish to create a worker node that performs a useful task, such as running an LLM model, your hardware choices should be dictated by the requirements of that task. 
+
+### Network Requirements
+
+You will need to open the following ports to inbound traffic:
+
+- 4001 (both TCP and UDP)
+- 8080 (TCP)
+
+* port 8080 is only required to provide access to the API, and can be changed with environment configuration. Only 4001 is required to be open publicly for participation in the p2p Masa Protocol network.
+
+### Installation
+
+#### Quick Start Docker Setup
+
+The quickest and simplest way to set up a Masa Protocol node is with docker.
+For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md)
+
+#### Build and compile Setup
+
+This local setup guide is for those who wish to compile the code and run directly on your machine, which will give you a more in depth understanding of the Masa Protocol node.
+
 ### Prerequisites
 
 Ensure these prerequisites are installed for a local setup:
@@ -21,16 +49,6 @@ Ensure these prerequisites are installed for a local setup:
 - **Yarn**: Install it via [Yarn's official site](https://classic.yarnpkg.com/en/docs/install/).
 
 - **Git**: Required for cloning the repository.
-
-- For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md)
-
-### Installation
-
-#### Docker Setup
-
-For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md)
-
-#### Local Setup
 
 ##### 1. Clone the repository
 
