@@ -11,7 +11,7 @@ import (
 )
 
 var MasaTokenAddress common.Address
-var OracleNodeStakingContractAddress common.Address
+var ProtocolStakingContractAddress common.Address
 
 type Client struct {
 	EthClient  *ethclient.Client
@@ -28,7 +28,7 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	}
 
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
-	OracleNodeStakingContractAddress = common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
+	ProtocolStakingContractAddress = common.HexToAddress(addresses.Sepolia.ProtocolStaking)
 
 	client, err := ethclient.Dial(config.GetInstance().RpcUrl)
 	if err != nil {

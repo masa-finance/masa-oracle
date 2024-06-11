@@ -14,7 +14,7 @@ import (
 )
 
 // VerifyStakingEvent checks if the given user address has staked tokens by
-// calling the stakes() view function on the OracleNodeStaking contract.
+// calling the stakes() view function on the ProtocolStaking contract.
 // It connects to an Ethereum node, encodes the stakes call, calls the contract,
 // unpacks the result, and returns true if the stakes amount is > 0.
 func VerifyStakingEvent(userAddress string) (bool, error) {
@@ -28,7 +28,7 @@ func VerifyStakingEvent(userAddress string) (bool, error) {
 		return false, fmt.Errorf("failed to connect to the Ethereum client: %v", err)
 	}
 
-	parsedABI, err := GetABI(OracleNodeStakingABIPath) // Use the GetABI function from abi.go
+	parsedABI, err := GetABI(ProtocolStakingABIPath) // Use the GetABI function from abi.go
 	if err != nil {
 		return false, err
 	}
@@ -43,7 +43,7 @@ func VerifyStakingEvent(userAddress string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to load contract addresses: %v", err)
 	}
-	contractAddr := common.HexToAddress(addresses.Sepolia.OracleNodeStaking)
+	contractAddr := common.HexToAddress(addresses.Sepolia.ProtocolStaking)
 
 	callMsg := ethereum.CallMsg{
 		To:   &contractAddr,
