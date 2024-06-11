@@ -416,9 +416,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error communicating with Cloudflare AI"
 		// @Router /chat/cf [post]
 		v1.POST("/chat/cf", API.CfLlmChat())
-
-		// @note a test route for worker topics
-		v1.GET("/test", API.Test())
 	}
 
 	// @Summary Node Status Page

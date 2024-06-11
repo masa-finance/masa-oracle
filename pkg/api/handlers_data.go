@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"sync"
@@ -767,34 +766,5 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
-	}
-}
-
-func (api *API) Test() gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-		var reqBody struct {
-			Count int `json:"count"`
-		}
-
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			reqBody.Count = rand.Intn(100)
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.Test, bodyBytes)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
-
 	}
 }
