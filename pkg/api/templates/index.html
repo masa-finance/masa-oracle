@@ -99,11 +99,10 @@
 
       <div class="row mt-4">
         <div class="col-12">
-          <h5>Peer Metrics</h5>
+          <h5>Session Details</h5>
           <table class="table">
             <thead class="thead-light">
               <tr>
-                <th scope="col">#</th>
                 <th scope="col" hidden>Peer ID</th>
                 <th scope="col" class="text-center">Staked</th>
                 <th scope="col" class="text-center">First Joined</th>
@@ -114,7 +113,6 @@
             </thead>
             <tbody>
               <tr>
-                <th scope="row">1</th>
                 <td hidden>{{.PeerID}}</td>
                 {{if .IsStaked}}
                 <td class="text-center">
