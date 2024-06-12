@@ -460,7 +460,6 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				guildsData, ok := result["data"]
 				if !ok {
 					c.JSON(http.StatusBadRequest, gin.H{"error": "too many requests error 429"})
-					return
 				}
 
 				guildsBytes, err := json.Marshal(guildsData)
