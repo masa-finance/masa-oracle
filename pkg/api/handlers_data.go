@@ -488,17 +488,20 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		wg.Wait()
 		close(errCh)
 
-		// Check if there were any errors
-		if len(errCh) > 0 {
+		if len(allGuilds) > 0 {
+			// Return the combined list of guilds
+			c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
+			return
+		} else if len(errCh) > 0 {
+			// Check if there were any errors
 			for err := range errCh {
 				logrus.Error(err)
 			}
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "429 too many requests"})
 			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
 		}
-
-		// Return the combined list of guilds
-		c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
 	}
 }
 
