@@ -439,34 +439,40 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				resp, err := http.Get(url)
 				if err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
 				}
 
 				defer resp.Body.Close()
 				respBody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
 				}
 
 				// Read and decode the response
 				var result map[string]interface{}
 				if err := json.Unmarshal(respBody, &result); err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
 				}
 
 				// Extract guilds from the result
 				guildsData, ok := result["data"]
 				if !ok {
 					c.JSON(http.StatusBadRequest, gin.H{"error": "too many requests error 429"})
+					return
 				}
 
 				guildsBytes, err := json.Marshal(guildsData)
 				if err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
 				}
 
 				var guilds []discord.Guild
 				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
 					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
 				}
 
 				// Safely append the guilds to the allGuilds slice
