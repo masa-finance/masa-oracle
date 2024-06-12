@@ -137,7 +137,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		return nil, err
 	}
 
-	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
+	isWriter, _ := strconv.ParseBool(cfg.Validator)
 	isTwitterScraper := cfg.TwitterScraper
 	isDiscordScraper := cfg.DiscordScraper
 	isWebScraper := cfg.WebScraper
@@ -229,7 +229,7 @@ func (node *OracleNode) Start() (err error) {
 	nodeData.IsDiscordScraper = cfg.DiscordScraper
 	nodeData.IsTwitterScraper = cfg.TwitterScraper
 	nodeData.IsWebScraper = cfg.WebScraper
-	nodeData.IsValidator = cfg.WriterNode == "true"
+	nodeData.IsValidator = cfg.Validator == "true"
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)

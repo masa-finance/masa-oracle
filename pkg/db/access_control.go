@@ -8,10 +8,11 @@ package db
 
 import (
 	"encoding/hex"
+	"strings"
+
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
-	"strings"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
@@ -82,7 +83,7 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 		return false
 	}
 
-	if strings.ToLower(cfg.WriterNode) == "true" {
+	if strings.ToLower(cfg.Validator) == "true" {
 
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),

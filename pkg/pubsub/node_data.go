@@ -74,7 +74,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
 	cfg := config.GetInstance()
-	wn, _ := strconv.ParseBool(cfg.WriterNode)
+	wn, _ := strconv.ParseBool(cfg.Validator)
 	ts := cfg.TwitterScraper
 	ds := cfg.DiscordScraper
 	ws := cfg.WebScraper

@@ -66,7 +66,7 @@ func main() {
 	}
 
 	var isValidator bool
-	isValidator, _ = strconv.ParseBool(cfg.WriterNode)
+	isValidator, _ = strconv.ParseBool(cfg.Validator)
 
 	// Create a new OracleNode
 	node, err := masa.NewOracleNode(ctx, isStaked)
