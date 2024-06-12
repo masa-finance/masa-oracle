@@ -491,7 +491,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 				// Display the response in the text view.
 				_, _ = fmt.Fprintf(textView, "\n%s\n", r)
 			}
-
 		})
 
 		inputField.Autocomplete().SetFieldWidth(0)

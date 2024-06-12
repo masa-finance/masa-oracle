@@ -330,43 +330,6 @@ const docTemplate = `{
 					]
 				}
 			},
-			"/data/discord/exchangetoken/{code}": {
-				"get": {
-					"summary": "Exchange Discord OAuth2 Code",
-					"description": "Exchanges a Discord OAuth2 authorization code for an access token.",
-					"operationId": "exchangeDiscordCode",
-					"produces": ["application/json"],
-					"parameters": [
-						{
-							"name": "code",
-							"in": "path",
-							"description": "OAuth2 authorization code received from Discord after user authorization.",
-							"required": true,
-							"type": "string"
-						},
-					],
-					"responses": {
-						"200": {
-							"description": "Access token details",
-							"schema": {
-								"$ref": "#/definitions/OAuthTokenResponse"
-							}
-						},
-						"400": {
-							"description": "Bad request when the 'code' is not provided or invalid",
-							"schema": {
-								"$ref": "#/definitions/ErrorResponse"
-							}
-						},
-						"500": {
-							"description": "Internal server error when the exchange fails",
-							"schema": {
-								"$ref": "#/definitions/ErrorResponse"
-							}
-						}
-					}
-				}
-			},
 			"/data/discord/channels/{channelID}/messages": {
 				"get": {
 				  "description": "Retrieves messages from a specified Discord channel.",
@@ -431,6 +394,37 @@ const docTemplate = `{
 					},
 					"400": {
 					  "description": "Invalid guild ID or error fetching channels",
+					  "schema": {
+						"$ref": "#/definitions/ErrorResponse"
+					  }
+					}
+				  },
+				  "security": [
+					{
+					  "Bearer": []
+					}
+				  ]
+				}
+			  },
+			  "/data/discord/user/guilds": {
+				"get": {
+				  "description": "Retrieves guilds from a specified Discord user.",
+				  "tags": ["Discord"],
+				  "summary": "Get guilds from a Discord user",
+				  "parameters": [
+				  ],
+				  "responses": {
+					"200": {
+					  "description": "Successfully retrieved guilds from the Discord user",
+					  "schema": {
+						"type": "array",
+						"items": {
+						  "$ref": "#/definitions/UserGuild"
+						}
+					  }
+					},
+					"400": {
+					  "description": "Invalid user ID or error fetching guilds",
 					  "schema": {
 						"$ref": "#/definitions/ErrorResponse"
 					  }
