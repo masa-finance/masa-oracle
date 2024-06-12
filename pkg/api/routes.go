@@ -89,14 +89,14 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		token := authHeader[len(BearerSchema):]
 
 		// Validate the token against the expected API key stored in environment variables.
-		if os.Getenv("API_KEY") != "" {
-			if token != os.Getenv("API_KEY") {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API token"})
-				return
-			} else {
-				c.Next()
-				return
-			}
+		if os.Getenv("API_KEY") == "" {
+			// if token != os.Getenv("API_KEY") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API token"})
+			// return
+			// } else {
+			// 	c.Next()
+			// 	return
+			// }
 		}
 
 		// Validate the JWT token
