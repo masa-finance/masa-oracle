@@ -404,74 +404,81 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		// Get all nodes from the tracker
 		peers := api.Node.NodeTracker.GetAllNodeData()
 
+		// Prepare a wait group to wait for all go routines to finish
+		var wg sync.WaitGroup
+		wg.Add(len(peers))
+
 		// This will store the combined list of guilds from all nodes
 		allGuilds := make([]discord.Guild, 0)
 
 		// Mutex to synchronize access to allGuilds slice
 		var mutex sync.Mutex
 
-		for _, peer := range peers {
-			// Assuming that the endpoint is exposed at a path like "/api/v1/discord/user/guilds"
-			var ipAddr string
-			var err error
-			for _, addr := range peer.Multiaddrs {
-				ipAddr, err = addr.ValueForProtocol(multiaddr.P_IP4)
-				if err == nil {
-					break
+		for _, p := range peers {
+			go func(peer pubsub2.NodeData) {
+				defer wg.Done()
+
+				// Construct the URL for the GetUserGuilds endpoint
+				// Assuming that the endpoint is exposed at a path like "/api/v1/discord/user/guilds"
+				var ipAddr string
+				var err error
+				for _, addr := range peer.Multiaddrs {
+					ipAddr, err = addr.ValueForProtocol(multiaddr.P_IP4)
+					if err == nil {
+						break
+					}
 				}
-			}
-			if ipAddr == "" {
-				logrus.Errorf("No IP4 address found for peer %s", peer.PeerId)
-				return // Use return here instead of continue since this is in a goroutine
-			}
+				if ipAddr == "" {
+					logrus.Errorf("No IP4 address found for peer %s", peer.PeerId)
+					return
+				}
 
-			url := fmt.Sprintf("http://%s:%s/api/v1/data/discord/user/guilds", ipAddr, os.Getenv("PORT"))
+				url := fmt.Sprintf("http://%s:%s/api/v1/data/discord/user/guilds", ipAddr, os.Getenv("PORT"))
 
-			// Make the HTTP request
-			resp, err := http.Get(url)
-			if err != nil {
-				logrus.Errorf("Error querying node %s: %v", peer.PeerId, err)
-				return
-			}
-			defer resp.Body.Close()
-			respBody, err := io.ReadAll(resp.Body)
-			if err != nil {
-				logrus.Errorf("Error reading response body from node %s: %v", peer.PeerId, err)
-				return
-			}
+				// Make the HTTP request
+				resp, err := http.Get(url)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
 
-			// Read and decode the response
-			var result map[string]interface{}
-			if err := json.Unmarshal(respBody, &result); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
+				defer resp.Body.Close()
+				respBody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
 
-			// Extract guilds from the result
-			guildsData, ok := result["data"]
-			if !ok {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "too many requests error 429"})
-				return
-			}
+				// Read and decode the response
+				var result map[string]interface{}
+				if err := json.Unmarshal(respBody, &result); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
 
-			guildsBytes, err := json.Marshal(guildsData)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
+				// Extract guilds from the result
+				guildsData, ok := result["data"]
+				if !ok {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "too many requests error 429"})
+				}
 
-			var guilds []discord.Guild
-			if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
+				guildsBytes, err := json.Marshal(guildsData)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
 
-			// Safely append the guilds to the allGuilds slice
-			mutex.Lock()
-			allGuilds = append(allGuilds, guilds...)
-			mutex.Unlock()
+				var guilds []discord.Guild
+				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
 
+				// Safely append the guilds to the allGuilds slice
+				mutex.Lock()
+				allGuilds = append(allGuilds, guilds...)
+				mutex.Unlock()
+			}(p)
 		}
+
+		// Wait for all requests to finish
+		wg.Wait()
+
 		// Return the combined list of guilds
 		c.JSON(http.StatusOK, allGuilds)
 	}
