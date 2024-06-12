@@ -71,12 +71,13 @@ The `/data/discord/channels/{channelID}/messages` endpoint retrieves messages fr
 - **URL Parameters:**
   - `channelID`: The Discord channel ID from which you want to retrieve messages.
 
-#### Example Request
+#### Example Request 1
 
 ```bash
 curl -X GET http://localhost:8080/data/discord/channels/123456789012345678/messages \
 -H "Content-Type: application/json" \
 ```
+
 Examples response
 
 ```json
@@ -106,7 +107,7 @@ The `/data/discord/guilds/{guildID}/channels` endpoint retrieves channels from a
 - **URL Parameters:**
   - `guildID`: The Discord guild ID from which you want to retrieve channels.
 
-#### Example Request
+#### Example Request 2
 
 ```bash
 curl -X GET http://localhost:8080/data/discord/guilds/123456789012345678/channels \
@@ -134,12 +135,13 @@ The `/data/discord/guilds/all` endpoint retrieves all available guilds that the 
 - **Method:** GET
 - **Description:** Fetches guilds for the entire Discord Worker network.
 
-#### Example Request
+#### Example Request 3
 
 ```bash
 curl -X GET http://localhost:8080/data/discord/guilds/all \
 -H "Content-Type: application/json" \
 ```
+
 Example response:
 
 ```json
