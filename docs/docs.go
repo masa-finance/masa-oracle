@@ -443,36 +443,7 @@ const docTemplate = `{
 				  ]
 				}
 			  },
-			  "/data/discord/user/guilds": {
-				"get": {
-				  "description": "Retrieves guilds that the authorized Discord user is part of.",
-				  "tags": ["Discord"],
-				  "summary": "Get guilds for a Discord user",
-				  "responses": {
-					"200": {
-					  "description": "Successfully retrieved guilds for the Discord user",
-					  "schema": {
-						"type": "array",
-						"items": {
-						  "$ref": "#/definitions/Guild"
-						}
-					  }
-					},
-					"400": {
-					  "description": "Error fetching guilds",
-					  "schema": {
-						"$ref": "#/definitions/ErrorResponse"
-					  }
-					}
-				  },
-				  "security": [
-					{
-					  "Bearer": []
-					}
-				  ]
-				}
-			  },
-			  "/discord/guilds/all": {
+			  "/data/discord/guilds/all": {
 				"get": {
 					"description": "Retrieves all guilds that all the Discord workers are apart of.",
 					"consumes": [
