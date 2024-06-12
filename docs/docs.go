@@ -367,7 +367,7 @@ const docTemplate = `{
 					}
 				}
 			},
-			"/data/discord/channels/{channelID}/{accessToken}/messages": {
+			"/data/discord/channels/{channelID}/messages": {
 				"get": {
 				  "description": "Retrieves messages from a specified Discord channel.",
 				  "tags": ["Discord"],
@@ -405,7 +405,7 @@ const docTemplate = `{
 				  ]
 				}
 			  },
-			  "/data/discord/guilds/{guildID}/{accessToken}/channels": {
+			  "/data/discord/guilds/{guildID}/channels": {
 				"get": {
 				  "description": "Retrieves channels from a specified Discord guild.",
 				  "tags": ["Discord"],
@@ -443,7 +443,7 @@ const docTemplate = `{
 				  ]
 				}
 			  },
-			  "/data/discord/user/{accessToken}/guilds": {
+			  "/data/discord/user/guilds": {
 				"get": {
 				  "description": "Retrieves guilds that the authorized Discord user is part of.",
 				  "tags": ["Discord"],
