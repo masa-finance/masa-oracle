@@ -432,7 +432,8 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 					logrus.Errorf("No IP4 address found for peer %s", peer.PeerId)
 					return // Use return here instead of continue since this is in a goroutine
 				}
-				url := fmt.Sprintf("http://%s:4001/api/v1/data/discord/user/guilds", ipAddr)
+
+				url := fmt.Sprintf("http://%s:%s/api/v1/data/discord/user/guilds", ipAddr, os.Getenv("PORT"))
 
 				// Make the HTTP request
 				resp, err := http.Get(url)
@@ -441,11 +442,32 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 					return
 				}
 				defer resp.Body.Close()
+				respBody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					logrus.Errorf("Error reading response body from node %s: %v", peer.PeerId, err)
+					return
+				}
+				logrus.Infof("%s", respBody)
 
 				// Read and decode the response
+				var result map[string]interface{}
+				if err := json.Unmarshal(respBody, &result); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+
+				// Extract guilds from the result
+				guildsData, _ := result["data"]
+
+				guildsBytes, err := json.Marshal(guildsData)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+
 				var guilds []discord.Guild
-				if err := json.NewDecoder(resp.Body).Decode(&guilds); err != nil {
-					logrus.Errorf("Error decoding response from node %s: %v", peer.PeerId, err)
+				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 					return
 				}
 
