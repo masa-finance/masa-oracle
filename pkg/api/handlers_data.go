@@ -414,12 +414,14 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		// Mutex to synchronize access to allGuilds slice
 		var mutex sync.Mutex
 
+		// Channel to collect errors
+		errCh := make(chan error, len(peers))
+
 		for _, p := range peers {
 			go func(peer pubsub2.NodeData) {
 				defer wg.Done()
 
 				// Construct the URL for the GetUserGuilds endpoint
-				// Assuming that the endpoint is exposed at a path like "/api/v1/discord/user/guilds"
 				var ipAddr string
 				var err error
 				for _, addr := range peer.Multiaddrs {
@@ -429,7 +431,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 					}
 				}
 				if ipAddr == "" {
-					logrus.Errorf("No IP4 address found for peer %s", peer.PeerId)
+					errCh <- fmt.Errorf("no IP4 address found for peer %s", peer.PeerId)
 					return
 				}
 
@@ -438,35 +440,40 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				// Make the HTTP request
 				resp, err := http.Get(url)
 				if err != nil {
+					errCh <- fmt.Errorf("failed to make HTTP request: %v", err)
 					return
 				}
 
 				defer resp.Body.Close()
 				respBody, err := io.ReadAll(resp.Body)
 				if err != nil {
+					errCh <- fmt.Errorf("failed to read response body: %v", err)
 					return
 				}
 
 				// Read and decode the response
 				var result map[string]interface{}
 				if err := json.Unmarshal(respBody, &result); err != nil {
+					errCh <- fmt.Errorf("failed to unmarshal response body: %v", err)
 					return
 				}
 
 				// Extract guilds from the result
 				guildsData, ok := result["data"]
 				if !ok {
-					c.JSON(http.StatusOK, gin.H{"error": "429 too many requests"})
+					errCh <- fmt.Errorf("data field not found in response")
 					return
 				}
 
 				guildsBytes, err := json.Marshal(guildsData)
 				if err != nil {
+					errCh <- fmt.Errorf("failed to marshal guilds data: %v", err)
 					return
 				}
 
 				var guilds []discord.Guild
 				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
+					errCh <- fmt.Errorf("failed to unmarshal guilds: %v", err)
 					return
 				}
 
@@ -479,6 +486,16 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 
 		// Wait for all requests to finish
 		wg.Wait()
+		close(errCh)
+
+		// Check if there were any errors
+		if len(errCh) > 0 {
+			for err := range errCh {
+				logrus.Error(err)
+			}
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "429 too many requests"})
+			return
+		}
 
 		// Return the combined list of guilds
 		c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
