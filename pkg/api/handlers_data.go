@@ -438,7 +438,6 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				// Make the HTTP request
 				resp, err := http.Get(url)
 				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 					return
 				}
 
@@ -457,6 +456,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				// Extract guilds from the result
 				guildsData, ok := result["data"]
 				if !ok {
+					c.JSON(http.StatusOK, gin.H{"error": "429 too many requests"})
 					return
 				}
 
@@ -481,7 +481,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		wg.Wait()
 
 		// Return the combined list of guilds
-		c.JSON(http.StatusOK, allGuilds)
+		c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
 	}
 }
 
