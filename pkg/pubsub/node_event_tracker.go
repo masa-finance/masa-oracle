@@ -364,7 +364,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		nd.IsActive = nodeData.IsActive
-		nd.FirstJoined = nodeData.FirstJoined
 
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),
