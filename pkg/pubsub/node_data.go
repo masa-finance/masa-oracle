@@ -125,6 +125,7 @@ func (n *NodeData) WebScraper() bool {
 // It sets the join times, activity, active status, and logs based on stake status.
 func (n *NodeData) Joined() {
 	now := time.Now()
+	logrus.Info("AccumulatedUptime ", now.Add(-n.AccumulatedUptime))
 	n.FirstJoined = now.Add(-n.AccumulatedUptime)
 	n.LastJoined = now
 	n.LastUpdated = now

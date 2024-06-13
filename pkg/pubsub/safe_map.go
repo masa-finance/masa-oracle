@@ -150,18 +150,23 @@ func (sm *SafeMap) LoadNodeData(filePath string) error {
 //   - 2 hours 3 minutes
 //   - 3 minutes
 func PrettyDuration(d time.Duration) string {
+	const (
+		MinutesInHour = 60
+		HoursInDay    = 24
+	)
+
 	d = d.Round(time.Minute)
-	minute := int64(d / time.Minute)
-	h := minute / 60
-	minute %= 60
-	days := h / 24
-	h %= 24
+	totalMinutes := int64(d / time.Minute)
+	hours := totalMinutes / MinutesInHour
+	minutes := totalMinutes % MinutesInHour
+	days := hours / HoursInDay
+	hours %= HoursInDay
 
 	if days > 0 {
-		return fmt.Sprintf("%d days %d hours %d minutes", days, h, minute)
+		return fmt.Sprintf("%d days %d hours %d minutes", days, hours, minutes)
 	}
-	if h > 0 {
-		return fmt.Sprintf("%d hours %d minutes", h, minute)
+	if hours > 0 {
+		return fmt.Sprintf("%d hours %d minutes", hours, minutes)
 	}
-	return fmt.Sprintf("%d minutes", minute)
+	return fmt.Sprintf("%d minutes", minutes)
 }

@@ -364,14 +364,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		nd.IsActive = nodeData.IsActive
-
-		// nd.FirstJoined = nodeData.FirstJoined
-		// nd.LastJoined = nodeData.LastJoined
-		// nd.LastUpdated = nodeData.LastUpdated
-		// nd.AccumulatedUptime = nodeData.AccumulatedUptime
-		// nd.AccumulatedUptimeStr = nodeData.AccumulatedUptimeStr
-		// nd.CurrentUptime = nodeData.CurrentUptime
-		// nd.CurrentUptimeStr = nodeData.CurrentUptimeStr
+		nd.FirstJoined = nodeData.FirstJoined
 
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),
