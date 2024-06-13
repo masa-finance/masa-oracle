@@ -364,6 +364,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		nd.IsActive = nodeData.IsActive
+
 		// nd.FirstJoined = nodeData.FirstJoined
 		// nd.LastJoined = nodeData.LastJoined
 		// nd.LastUpdated = nodeData.LastUpdated

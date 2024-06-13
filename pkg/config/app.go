@@ -54,6 +54,7 @@ var (
 // The fields in this struct are tagged with `mapstructure` to facilitate configuration loading from various sources
 // such as configuration files, environment variables, and command-line flags using the `viper` library.
 type AppConfig struct {
+	Version              string   `mapstructure:"version"`
 	PortNbr              int      `mapstructure:"portNbr"`
 	UDP                  bool     `mapstructure:"udp"`
 	TCP                  bool     `mapstructure:"tcp"`
@@ -216,7 +217,7 @@ func (c *AppConfig) setDefaultConfig() {
 	}
 
 	// Set defaults
-	viper.SetDefault(PortNbr, "4001")
+	viper.SetDefault(PortNbr, "40001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")

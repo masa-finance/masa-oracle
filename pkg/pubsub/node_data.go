@@ -66,6 +66,7 @@ type NodeData struct {
 	IsWebScraper         bool            `json:"isWebScraper"`
 	BytesScraped         int             `json:"bytesScraped"`
 	Records              any             `json:"records,omitempty"`
+	Version              string          `json:"version"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
@@ -78,6 +79,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	ts := cfg.TwitterScraper
 	ds := cfg.DiscordScraper
 	ws := cfg.WebScraper
+	ver := cfg.Version
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -93,6 +95,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		IsDiscordScraper:  ds,
 		IsWebScraper:      ws,
 		BytesScraped:      0,
+		Version:           ver,
 	}
 }
 
@@ -127,10 +130,12 @@ func (n *NodeData) Joined() {
 	n.LastUpdated = now
 	n.Activity = ActivityJoined
 	n.IsActive = true
+
+	logMessage := fmt.Sprintf("%s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
 	if n.IsStaked {
-		logrus.Info("Staked node joined: ", n.Address())
+		logrus.Info(logMessage)
 	} else {
-		logrus.Debug("Unstaked node joined: ", n.Address())
+		logrus.Debug(logMessage)
 	}
 }
 
@@ -139,24 +144,25 @@ func (n *NodeData) Joined() {
 // sets node as inactive, and logs based on stake status.
 func (n *NodeData) Left() {
 	if n.Activity == ActivityLeft {
+		logMessage := fmt.Sprintf("Node %s is already marked as left", n.Address())
 		if n.IsStaked {
-			logrus.Warnf("Node %s is already marked as left", n.Address())
+			logrus.Warn(logMessage)
 		} else {
-			logrus.Debugf("Node %s is already marked as left", n.Address())
+			logrus.Debug(logMessage)
 		}
 		return
 	}
-	now := time.Now()
-	n.LastLeft = now
-	n.LastUpdated = now
+	n.LastLeft = time.Now()
+	n.LastUpdated = n.LastLeft
 	n.AccumulatedUptime += n.GetCurrentUptime()
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
+	logMessage := fmt.Sprintf("Node left: %s", n.Address())
 	if n.IsStaked {
-		logrus.Info("Node left: ", n.Address())
+		logrus.Info(logMessage)
 	} else {
-		logrus.Debug("Node left: ", n.Address())
+		logrus.Debug(logMessage)
 	}
 }
 
@@ -164,20 +170,17 @@ func (n *NodeData) Left() {
 // If the node is active, it calculates the time elapsed since the last joined time.
 // If the node is marked as left, it returns 0.
 func (n *NodeData) GetCurrentUptime() time.Duration {
-	var dur time.Duration
-	// If the node is currently active, return the time since the last joined time
 	if n.Activity == ActivityJoined {
-		dur = time.Since(n.LastJoined)
-	} else if n.Activity == ActivityLeft {
-		dur = 0
+		return time.Since(n.LastJoined)
 	}
-	return dur
+	return 0
 }
 
 // GetAccumulatedUptime returns the total accumulated uptime for the node.
 // It calculates this by adding the current uptime to the stored accumulated uptime.
 func (n *NodeData) GetAccumulatedUptime() time.Duration {
-	return n.AccumulatedUptime + n.GetCurrentUptime()
+	currentUptime := n.GetCurrentUptime()
+	return n.AccumulatedUptime + currentUptime
 }
 
 // UpdateAccumulatedUptime updates the accumulated uptime of the node to account for any
@@ -187,9 +190,9 @@ func (n *NodeData) GetAccumulatedUptime() time.Duration {
 func (n *NodeData) UpdateAccumulatedUptime() {
 	if n.Activity == ActivityLeft {
 		n.AccumulatedUptime += n.LastLeft.Sub(n.LastJoined)
-	} else {
-		n.AccumulatedUptime += time.Since(n.LastJoined)
+		return
 	}
+	n.AccumulatedUptime += time.Since(n.LastJoined)
 }
 
 // GetSelfNodeDataJson converts the local node's data into a JSON byte array.
