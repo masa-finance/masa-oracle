@@ -2,8 +2,8 @@
 
 Welcome to Masa, the network powering Fair AI. We are on a mission to revolutionize the AI landscape by providing an open, permissionless marketplace for specialized AI training data and compute resources. Our vision is to enable any builder, anywhere in the world, to access the tools they need to create innovative and specialized AI applications.
 
-- **[Masa Protocol](docs/protocol/welcome.md):** Learn about the Oracle Nodes, Worker Nodes, and other components that make up the Masa Protocol.
-- **[Masa Bittensor Subnet](docs/masa-subnet/welcome.md):** Discover how the Masa Bittensor Subnet operates, focusing on Twitter data and validator-miner interactions.
+- **[Masa Protocol](https://docs.masa.ai/docs/protocol/welcome.md):** Learn about the Oracle Nodes, Worker Nodes, and other components that make up the Masa Protocol.
+- **[Masa Bittensor Subnet](https://docs.masa.ai/docs/masa-subnet/welcome.md):** Discover how the Masa Bittensor Subnet operates, focusing on Twitter data and validator-miner interactions.
 
 ## The Need for Fair AI
 
@@ -27,7 +27,7 @@ Key features of the Masa network include:
 
 - **Open Marketplace**: Our open, permissionless marketplace democratizes access to AI training data and compute resources. Contributors can earn rewards by contributing data and selling compute, while developers can access the resources they need to build innovative applications.
 
-## [AI Worker Nodes Introduction](docs/worker-node/introduction.md)
+## [AI Worker Nodes Introduction](https://docs.masa.ai/docs/worker-node/introduction.md)
 
 Masa empowers contributors to monetize their data and compute resources by becoming Worker Nodes on the network. As a Worker Node, you can:
 
@@ -38,7 +38,7 @@ Masa empowers contributors to monetize their data and compute resources by becom
 
 By contributing to Masa as a Worker Node, you play a vital role in powering the decentralized AI ecosystem while being rewarded for your efforts.
 
-## [Masa for Developers: AI Oracle Nodes](docs/oracle-node/introduction.md)
+## [Masa for Developers: AI Oracle Nodes](https://docs.masa.ai/docs/oracle-node/introduction.md)
 
 Masa offers developers a decentralized platform to access diverse data sources and powerful LLM services through Oracle Nodes. By running an Oracle Node, you can:
 
