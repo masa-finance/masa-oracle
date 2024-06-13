@@ -1,65 +1,67 @@
-# [Welcome to Masa](https://docs.masa.ai/docs/welcome-to-masa)
+# Masa Oracle: Decentralized Data and LLM Network 🌐
 
-## [Introduction](https://docs.masa.ai/docs/welcome-to-masa#introduction)
+## Contents
 
-Welcome to Masa, the network powering Fair AI. We are on a mission to revolutionize the AI landscape by providing an open, permissionless marketplace for specialized AI training data and compute resources. Our vision is to enable any builder, anywhere in the world, to access the tools they need to create innovative and specialized AI applications.
+- [Getting Started](#getting-started)
+  - [Hardware Requirements](#hardware-requirements)
+  - [Network Requirements](#network-requirements)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+    - [Quick Start Docker Setup](#quick-start-docker-setup)
+    - [Compile and Run Setup](#compile-and-run-setup)
+  - [Staking Tokens](#staking-tokens)
+  - [Running the Node](#running-the-node)
+- [Updates & Additional Information](#updates--additional-information)
 
-- **[Masa Protocol](https://docs.masa.ai/docs/protocol/welcome):** Learn about the Oracle Nodes, Worker Nodes, and other components that make up the Masa Protocol.
-- **[Masa Bittensor Subnet](https://docs.masa.ai/docs/masa-subnet/welcome):** Discover how the Masa Bittensor Subnet operates, focusing on Twitter data and validator-miner interactions.
+## Getting Started
 
-## [The Need for Fair AI](https://docs.masa.ai/docs/welcome-to-masa#the-need-for-fair-ai)
+### Hardware Requirements
 
-Nodes can run on any hardware for which you can build a golang application.
+Nodes can run on any hardware for which you can build a golang application. 
 
-- LLMs are often unfair to people, failing to properly attribute outputs to data sources. This has resulted in lawsuits and risks for companies using these models.
-- As general purpose LLMs become commoditized, the most valuable AI applications will be the most specialized ones. However, building specialized AI requires access to specialized training data, which is not readily available.
-- Leading compute and inference providers charge high prices and can arbitrarily deny service to builders, stifling innovation and limiting access.
+Our smallest nodes are running GCP on e2-standard-2 instances, with 2 vCPUs, 8GB RAM, and 10GB SCSI drives. This works well for running a node to test out the protocol.
 
-While a Masa Protocol node itself requires few resources to run on testnet, if you wish to create a worker node that performs a useful task, such as running an LLM model, your hardware choices should be dictated by the requirements of that task.
+While a Masa Protocol node itself requires few resources to run on testnet, if you wish to create a worker node that performs a useful task, such as running an LLM model, your hardware choices should be dictated by the requirements of that task. 
 
-## [The Masa Solution](https://docs.masa.ai/docs/welcome-to-masa#the-masa-solution)
+### Network Requirements
 
-Masa has built the leading marketplace for data and compute, connecting data and compute contributors with developers. Our platform incentivizes people to contribute specialized data sets and sell compute resources in an open, permissionless manner.
+If your node will participate in the network as a "Worker," doing data scraping, or providing LLM, etc., you will need to open the following ports to inbound traffic:
 
-Key features of the Masa network include:
+- 4001 (TCP; UDP as well if behind NAT)
+- 8080 (TCP)
 
-- port 8080 is only required to provide access to the API, and can be changed with environment configuration.
-- Only 4001 is required to be open publicly for participation in the p2p Masa Protocol network as a Worker node.
-- A basic node will still find the bootnodes and register itself as part of the network without any specific inbound ports open.
+* port 8080 is only required to provide access to the API, and can be changed with environment configuration. 
+* Only 4001 is required to be open publicly for participation in the p2p Masa Protocol network as a Worker node.
+* A basic node will still find the bootnodes and register itself as part of the network without any specific inbound ports open.
 
-- **Specialized Data & Open Source LLMs**: Masa enables the contribution of specialized data sets to train AI models and access to open source LLMs provisioned by workers. This empowers builders to create the most valuable and specialized AI applications by leveraging unique data and powerful open source LLMs, all within a decentralized, permissionless ecosystem.
+### Installation
 
-- **Open Marketplace**: Our open, permissionless marketplace democratizes access to AI training data and compute resources. Contributors can earn rewards by contributing data and selling compute, while developers can access the resources they need to build innovative applications.
+#### Quick Start Docker Setup
 
-## [AI Worker Nodes Introduction](https://docs.masa.ai/docs/worker-node/introduction)
+The quickest and simplest way to set up a Masa Protocol node is with docker.
+For complete instructions on building, staking, and running a node with Docker, please see [here](./DOCKER.md)
 
-Masa empowers contributors to monetize their data and compute resources by becoming Worker Nodes on the network. As a Worker Node, you can:
+#### Compile and Run Setup
 
-- Stake tokens to provide work to the network and earn rewards for your nodes availablity and uptime.
-- Receive and process data requests from Oracle Nodes, servicing data and LLM requests.
-- Earn network emissions and fees for the work you provide, generating a new revenue stream.
-- Access the network's vast dataset and LLM resources to efficiently process requests and deliver accurate results.
+This local setup guide is for those who wish to compile the code and run directly on your machine, which will give you a more in depth understanding of the Masa Protocol node.
 
-By contributing to Masa as a Worker Node, you play a vital role in powering the decentralized AI ecosystem while being rewarded for your efforts.
+##### Prerequisites
 
-## [Masa for Developers: AI Oracle Nodes](https://docs.masa.ai/docs/oracle-node/introduction)
+Ensure these prerequisites are installed for a local setup:
 
-Masa offers developers a decentralized platform to access diverse data sources and powerful LLM services through Oracle Nodes. By running an Oracle Node, you can:
+- **Go**: Grab it from [Go's official site](https://golang.org/dl/).
 
-- Stake tokens to access the network's rich data and powerful open source LLM services, submitting data or LLM requests to Worker Nodes.
-- Submit data or LLM requests to Worker Nodes to power your AI applications.
-- Tap into a wide range of data sources and LLM models to fulfill various data and processing requirements, for example:
-  - **Crypto Sentiment Analysis**: Combine data from our Twitter Scraper and Web Scraper to gather real-time information about cryptocurrency trends, news, and public sentiment.
-  - **Crypto Community Insights**: Leverage our Discord Profile scraper to extract comprehensive data from prominent crypto users on Discord.
-  - **Crypto News Aggregation and Summarization**: Utilize our Web Scraper to collect real-time data from leading crypto news websites and blogs.
+- **Yarn**: Install it via [Yarn's official site](https://classic.yarnpkg.com/en/docs/install/).
 
-By leveraging Masa as a Oracle Node, developers can build innovative AI applications with the power of decentralized data and compute at their fingertips.
+- **Git**: Required for cloning the repository.
 
-## [Join the Fair AI Revolution](https://docs.masa.ai/docs/welcome-to-masa#join-the-fair-ai-revolution)
+##### 1. Clone the repository
 
-Masa is more than just a technology platform - it's a movement to make AI more accessible, equitable, and beneficial for all. By contributing data or compute resources to the Masa network, you can help power the next generation of Fair AI applications and be rewarded for your contributions.
+```shell
+git clone https://github.com/masa-finance/masa-oracle.git
+```
 
-We invite you to join us in building a decentralized future for AI. Explore our documentation to learn more about how Masa works and how you can get involved. Together, let's unlock the true potential of AI - powered by the people, for the people.
+##### 2. Build the go code into the masa-node binary
 
 ```shell
 go build -v -o masa-node ./cmd/masa-node
@@ -156,8 +158,8 @@ To execute any of these commands, simply run make in your terminal from the proj
 ## Funding the Node (in order to Stake)
 
 ```shell
-  make faucet
-```
+  ./bin/masa-node --faucet
+  ```
 
 >OR
 
@@ -222,8 +224,3 @@ ollama
 ```shell
 curl http://localhost:8080/api/chat -d '{"model": "llama2","messages": [{"role": "user", "content": "why is the sky blue?" }], "stream": false}'
 ```
-
-:::info
-**Join our Community on Discord!**  
-Ready to dive deeper into the Masa ecosystem? Connect with our vibrant community on Discord for the latest updates, discussions, and support. [Join us here](https://discord.gg/masafinance)
-:::

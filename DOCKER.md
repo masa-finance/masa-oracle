@@ -77,21 +77,20 @@ This directory is mapped from `/home/masa/.masa/` inside the Docker container, e
 
 ## Funding the Node (in order to Stake)
 
-### Step 1: Find your Node's public key
+### Step 1: Find your Node's public key:
 
 The public key of your new node is shown in the output at the beginning of the logs when it starts up:
-
 ```bash
 docker-compose logs -f masa-node
 ```
 
-### Step 2: Send sepolia ETH and MASA to your node's public key address
+### Step 2: Send sepolia ETH and MASA to your node's public key address:
 
 You can obtain sepolia ETH from a faucet such as:
 
 Like so:
 
-You can obtain test (sepolia) MASA from our faucet:
+You can obtain test (sepolia) MASA from our faucet: 
 
 Like so:
 
