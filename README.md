@@ -1,11 +1,13 @@
-## Introduction
+# [Welcome to Masa](https://docs.masa.ai/docs/welcome-to-masa)
+
+## [Introduction](https://docs.masa.ai/docs/welcome-to-masa#introduction)
 
 Welcome to Masa, the network powering Fair AI. We are on a mission to revolutionize the AI landscape by providing an open, permissionless marketplace for specialized AI training data and compute resources. Our vision is to enable any builder, anywhere in the world, to access the tools they need to create innovative and specialized AI applications.
 
 - **[Masa Protocol](https://docs.masa.ai/docs/protocol/welcome):** Learn about the Oracle Nodes, Worker Nodes, and other components that make up the Masa Protocol.
 - **[Masa Bittensor Subnet](https://docs.masa.ai/docs/masa-subnet/welcome):** Discover how the Masa Bittensor Subnet operates, focusing on Twitter data and validator-miner interactions.
 
-## The Need for Fair AI
+## [The Need for Fair AI](https://docs.masa.ai/docs/welcome-to-masa#the-need-for-fair-ai)
 
 The AI industry is at a critical juncture. A few centralized players currently dominate the landscape, controlling access to large language models (LLMs) and compute resources. This centralization has led to several issues:
 
@@ -15,7 +17,7 @@ The AI industry is at a critical juncture. A few centralized players currently d
 
 Masa believes that the solution to these challenges lies in a decentralized network powering Fair AI.
 
-## The Masa Solution
+## [The Masa Solution](https://docs.masa.ai/docs/welcome-to-masa#the-masa-solution)
 
 Masa has built the leading marketplace for data and compute, connecting data and compute contributors with developers. Our platform incentivizes people to contribute specialized data sets and sell compute resources in an open, permissionless manner.
 
@@ -51,7 +53,7 @@ Masa offers developers a decentralized platform to access diverse data sources a
 
 By leveraging Masa as a Oracle Node, developers can build innovative AI applications with the power of decentralized data and compute at their fingertips.
 
-## Join the Fair AI Revolution
+## [Join the Fair AI Revolution](https://docs.masa.ai/docs/welcome-to-masa#join-the-fair-ai-revolution)
 
 Masa is more than just a technology platform - it's a movement to make AI more accessible, equitable, and beneficial for all. By contributing data or compute resources to the Masa network, you can help power the next generation of Fair AI applications and be rewarded for your contributions.
 
