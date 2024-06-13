@@ -217,7 +217,7 @@ func (c *AppConfig) setDefaultConfig() {
 	}
 
 	// Set defaults
-	viper.SetDefault(PortNbr, "40001")
+	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
