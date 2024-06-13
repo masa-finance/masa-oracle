@@ -29,7 +29,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
 			time.Sleep(1 * time.Second)
 			jsonData, err := json.Marshal(nodeData)
-			if node.IsWriter {
+			if node.IsValidator {
 				_ = json.Unmarshal(jsonData, &nodeData)
 				err = node.DHT.PutValue(context.Background(), "/db/"+nodeData.PeerId.String(), jsonData)
 				if err != nil {
@@ -173,7 +173,7 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 
 		for _, nd := range page.Data {
 
-			if node.IsWriter {
+			if node.IsValidator {
 				for _, p := range page.Data {
 					jsonData, _ := json.Marshal(p)
 					_ = json.Unmarshal(jsonData, &nd)
