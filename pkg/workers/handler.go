@@ -105,6 +105,10 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 			"Content-Type": "application/json",
 		}
 		resp, _ = Post(uri, bodyBytes, headers)
+	case string(WORKER.Twitter):
+		query := bodyData["query"].(string)
+		count := int(bodyData["count"].(float64))
+		resp, err = twitter.ScrapeTweetsByQuery(query, count)
 	case string(WORKER.TwitterFollowers):
 		username := bodyData["username"].(string)
 		count := int(bodyData["count"].(float64))

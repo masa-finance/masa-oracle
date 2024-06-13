@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
+// ScrapeFollowersForProfile scrapes the profile and tweets of a specific Twitter user.
 // It takes the username as a parameter and returns the scraped profile information and an error if any.
 func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Legacy, error) {
 	scraper := auth()
