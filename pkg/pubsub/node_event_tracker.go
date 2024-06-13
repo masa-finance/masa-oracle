@@ -84,7 +84,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	if !exists {
 		return
 	} else {
-		// if nodeData.IsStaked { // IsStaked
 		if nodeData.IsActive {
 			// Node appears already connected, buffer this connect event
 			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
@@ -96,7 +95,6 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 				return
 			}
 		}
-		// }
 	}
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
@@ -121,10 +119,6 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		logrus.Debugf("Node data does not exist for disconnected node: %s", peerID)
 		return
 	}
-	// IsStaked
-	// else if !nodeData.IsStaked {
-	// 	return
-	// }
 	buffered := net.ConnectBuffer[peerID]
 	if buffered.NodeData != nil {
 		buffered.NodeData.Left()
@@ -370,13 +364,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		nd.IsActive = nodeData.IsActive
-		nd.FirstJoined = nodeData.FirstJoined
-		nd.LastJoined = nodeData.LastJoined
-		nd.LastUpdated = nodeData.LastUpdated
-		nd.AccumulatedUptime = nodeData.AccumulatedUptime
-		nd.AccumulatedUptimeStr = nodeData.AccumulatedUptimeStr
-		nd.CurrentUptime = nodeData.CurrentUptime
-		nd.CurrentUptimeStr = nodeData.CurrentUptimeStr
 
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),

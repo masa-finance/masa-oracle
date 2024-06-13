@@ -94,7 +94,7 @@ const (
 	Debug       = "debug"
 	Version     = "v0.0.7-beta"
 	FilePath    = "FILE_PATH"
-	WriterNode  = "VALIDATOR"
+	Validator   = "VALIDATOR"
 	CachePath   = "CACHE_PATH"
 	Faucet      = "FAUCET"
 

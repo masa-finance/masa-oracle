@@ -84,19 +84,15 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 
 	switch workData["request"] {
 	case string(WORKER.DiscordProfile):
-		logrus.Infof("[+] Discord Profile %s %s", m.Data, m.Sender)
 		userID := bodyData["userID"].(string)
 		resp, err = discord.GetUserProfile(userID)
 	case string(WORKER.DiscordChannelMessages):
-		logrus.Infof("[+] Discord Channel Messages %s %s", m.Data, m.Sender)
 		channelID := bodyData["channelID"].(string)
 		resp, err = discord.GetChannelMessages(channelID)
 	case string(WORKER.DiscordGuildChannels):
-		logrus.Infof("[+] Discord Guild Channels %s %s", m.Data, m.Sender)
 		guildID := bodyData["guildID"].(string)
 		resp, err = discord.GetGuildChannels(guildID)
 	case string(WORKER.DiscordUserGuilds):
-		logrus.Infof("[+] Discord User Guilds %s %s", m.Data, m.Sender)
 		resp, err = discord.GetUserGuilds()
 	case string(WORKER.LLMChat):
 		uri := config.GetInstance().LLMChatUrl
@@ -109,6 +105,10 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 			"Content-Type": "application/json",
 		}
 		resp, _ = Post(uri, bodyBytes, headers)
+	case string(WORKER.Twitter):
+		query := bodyData["query"].(string)
+		count := int(bodyData["count"].(float64))
+		resp, err = twitter.ScrapeTweetsByQuery(query, count)
 	case string(WORKER.TwitterFollowers):
 		username := bodyData["username"].(string)
 		count := int(bodyData["count"].(float64))

@@ -48,7 +48,7 @@ type OracleNode struct {
 	PubSubManager    *pubsub2.Manager
 	Signature        string
 	IsStaked         bool
-	IsWriter         bool
+	IsValidator      bool
 	IsTwitterScraper bool
 	IsDiscordScraper bool
 	IsWebScraper     bool
@@ -137,7 +137,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		return nil, err
 	}
 
-	isWriter, _ := strconv.ParseBool(cfg.WriterNode)
+	isValidator, _ := strconv.ParseBool(cfg.Validator)
 	isTwitterScraper := cfg.TwitterScraper
 	isDiscordScraper := cfg.DiscordScraper
 	isWebScraper := cfg.WebScraper
@@ -173,7 +173,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		NodeTracker:      pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
 		PubSubManager:    subscriptionManager,
 		IsStaked:         isStaked,
-		IsWriter:         isWriter,
+		IsValidator:      isValidator,
 		IsTwitterScraper: isTwitterScraper,
 		IsDiscordScraper: isDiscordScraper,
 		IsWebScraper:     isWebScraper,
@@ -229,7 +229,8 @@ func (node *OracleNode) Start() (err error) {
 	nodeData.IsDiscordScraper = cfg.DiscordScraper
 	nodeData.IsTwitterScraper = cfg.TwitterScraper
 	nodeData.IsWebScraper = cfg.WebScraper
-	nodeData.IsValidator = cfg.WriterNode == "true"
+	nodeData.IsValidator = cfg.Validator == "true"
+	nodeData.Version = "0.0.7-beta"
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)

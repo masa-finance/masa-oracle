@@ -54,6 +54,7 @@ var (
 // The fields in this struct are tagged with `mapstructure` to facilitate configuration loading from various sources
 // such as configuration files, environment variables, and command-line flags using the `viper` library.
 type AppConfig struct {
+	Version              string   `mapstructure:"version"`
 	PortNbr              int      `mapstructure:"portNbr"`
 	UDP                  bool     `mapstructure:"udp"`
 	TCP                  bool     `mapstructure:"tcp"`
@@ -73,7 +74,7 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	FilePath             string   `mapstructure:"filePath"`
-	WriterNode           string   `mapstructure:"validator"`
+	Validator            string   `mapstructure:"validator"`
 	CachePath            string   `mapstructure:"cachePath"`
 	Faucet               bool     `mapstructure:"faucet"`
 
@@ -131,7 +132,7 @@ func GetInstance() *AppConfig {
 
 // setDefaultConfig sets the default configuration values for the AppConfig instance.
 // It retrieves the user's home directory and sets default values for various configuration options
-// such as the MasaDir, Bootnodes, RpcUrl, Environment, FilePath, WriterNode, and CachePath.
+// such as the MasaDir, Bootnodes, RpcUrl, Environment, FilePath, Validator, and CachePath.
 // It also fetches bootnode information from a remote URL based on the environment (dev, test, or main).
 func (c *AppConfig) setDefaultConfig() {
 
@@ -189,7 +190,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 		viper.SetDefault(Environment, os.Getenv("ENV"))
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
-		viper.SetDefault(WriterNode, os.Getenv("VALIDATOR"))
+		viper.SetDefault(Validator, os.Getenv("VALIDATOR"))
 		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
 		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
 		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
@@ -204,7 +205,7 @@ func (c *AppConfig) setDefaultConfig() {
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
-		viper.SetDefault(WriterNode, "false")
+		viper.SetDefault(Validator, "false")
 		viper.SetDefault(TwitterScraper, "false")
 		viper.SetDefault(DiscordScraper, "false")
 		viper.SetDefault(WebScraper, "false")
@@ -278,7 +279,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, "logLevel", viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, "logFilePath", viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, "filePath", viper.GetString(FilePath), "The node file path")
-	pflag.StringVar(&c.WriterNode, "validator", viper.GetString(WriterNode), "Approved validator node boolean")
+	pflag.StringVar(&c.Validator, "validator", viper.GetString(Validator), "Approved validator node boolean")
 	pflag.StringVar(&c.CachePath, "cachePath", viper.GetString(CachePath), "The cache path")
 	pflag.StringVar(&c.TwitterUsername, "twitterUsername", viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")

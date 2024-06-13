@@ -491,7 +491,6 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 				// Display the response in the text view.
 				_, _ = fmt.Fprintf(textView, "\n%s\n", r)
 			}
-
 		})
 
 		inputField.Autocomplete().SetFieldWidth(0)
@@ -520,7 +519,7 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 		// Set header titles
 		table.SetCell(0, 0, tview.NewTableCell("Address").SetTextColor(tcell.ColorYellow).SetAlign(tview.AlignCenter))
 		table.SetCell(0, 1, tview.NewTableCell("IsStaked").SetTextColor(tcell.ColorYellow).SetAlign(tview.AlignCenter))
-		table.SetCell(0, 2, tview.NewTableCell("IsWriter").SetTextColor(tcell.ColorYellow).SetAlign(tview.AlignCenter))
+		table.SetCell(0, 2, tview.NewTableCell("IsValidator").SetTextColor(tcell.ColorYellow).SetAlign(tview.AlignCenter))
 
 		// Set cell values for each row
 		for i := 1; i <= 10; i++ {
