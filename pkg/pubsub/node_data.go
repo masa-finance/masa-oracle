@@ -45,32 +45,32 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 }
 
 type NodeData struct {
-	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
-	PeerId               peer.ID         `json:"peerId"`
-	FirstJoined          time.Time       `json:"-"`
-	FirstJoinedUnix      int64           `json:"firstJoined,omitempty"`
-	LastJoined           time.Time       `json:"-"`
-	LastJoinedUnix       int64           `json:"lastJoined,omitempty"`
-	LastLeft             time.Time       `json:"-"`
-	LastLeftUnix         int64           `json:"-"`
-	LastUpdated          time.Time       `json:"-"`
-	LastUpdatedUnix      int64           `json:"lastUpdated,omitempty"`
-	CurrentUptime        time.Duration   `json:"uptime,omitempty"`
-	CurrentUptimeStr     string          `json:"uptimeStr,omitempty"`
-	AccumulatedUptime    time.Duration   `json:"accumulatedUptime,omitempty"`
-	AccumulatedUptimeStr string          `json:"accumulatedUptimeStr,omitempty"`
-	EthAddress           string          `json:"ethAddress,omitempty"`
-	Activity             int             `json:"activity,omitempty"`
-	IsActive             bool            `json:"isActive"`
-	IsStaked             bool            `json:"isStaked"`
-	SelfIdentified       bool            `json:"-"`
-	IsValidator          bool            `json:"isValidator"`
-	IsTwitterScraper     bool            `json:"isTwitterScraper"`
-	IsDiscordScraper     bool            `json:"isDiscordScraper"`
-	IsWebScraper         bool            `json:"isWebScraper"`
-	BytesScraped         int             `json:"bytesScraped"`
-	Records              any             `json:"records,omitempty"`
-	Version              string          `json:"version"`
+	Multiaddrs []JSONMultiaddr `json:"multiaddrs,omitempty"`
+	PeerId     peer.ID         `json:"peerId"`
+	// FirstJoined          time.Time       `json:"-"`
+	FirstJoinedUnix int64 `json:"firstJoined,omitempty"`
+	// LastJoined           time.Time       `json:"-"`
+	LastJoinedUnix int64 `json:"lastJoined,omitempty"`
+	// LastLeft             time.Time       `json:"-"`
+	LastLeftUnix int64 `json:"-"`
+	// LastUpdated          time.Time       `json:"-"`
+	LastUpdatedUnix      int64         `json:"lastUpdated,omitempty"`
+	CurrentUptime        time.Duration `json:"uptime,omitempty"`
+	CurrentUptimeStr     string        `json:"uptimeStr,omitempty"`
+	AccumulatedUptime    time.Duration `json:"accumulatedUptime,omitempty"`
+	AccumulatedUptimeStr string        `json:"accumulatedUptimeStr,omitempty"`
+	EthAddress           string        `json:"ethAddress,omitempty"`
+	Activity             int           `json:"activity,omitempty"`
+	IsActive             bool          `json:"isActive"`
+	IsStaked             bool          `json:"isStaked"`
+	SelfIdentified       bool          `json:"-"`
+	IsValidator          bool          `json:"isValidator"`
+	IsTwitterScraper     bool          `json:"isTwitterScraper"`
+	IsDiscordScraper     bool          `json:"isDiscordScraper"`
+	IsWebScraper         bool          `json:"isWebScraper"`
+	BytesScraped         int           `json:"bytesScraped"`
+	Records              any           `json:"records,omitempty"`
+	Version              string        `json:"version"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
@@ -88,7 +88,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
-		LastUpdated:       time.Now(),
+		LastUpdatedUnix:   time.Now().Unix(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
 		EthAddress:        publicKey,
@@ -104,12 +104,12 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 }
 
 // UpdateUnixTimestamps updates the Unix timestamp fields based on the time fields.
-func (n *NodeData) UpdateUnixTimestamps() {
-	n.FirstJoinedUnix = n.FirstJoined.Unix()
-	n.LastJoinedUnix = n.LastJoined.Unix()
-	n.LastLeftUnix = n.LastLeft.Unix()
-	n.LastUpdatedUnix = n.LastUpdated.Unix()
-}
+// func (n *NodeData) UpdateUnixTimestamps() {
+// n.FirstJoinedUnix = n.FirstJoined.Unix()
+// n.LastJoinedUnix = n.LastJoined.Unix()
+// n.LastLeftUnix = n.LastLeft.Unix()
+// n.LastUpdatedUnix = n.LastUpdated.Unix()
+// }
 
 // CalculateCurrentUptime calculates the current uptime based on Unix timestamps.
 func (n *NodeData) CalculateCurrentUptime() {
@@ -163,14 +163,14 @@ func (n *NodeData) WebScraper() bool {
 // It sets the join times, activity, active status, and logs based on stake status.
 func (n *NodeData) Joined() {
 	now := time.Now()
-	if n.FirstJoined.IsZero() {
-		n.FirstJoined = now
+	if n.FirstJoinedUnix == 0 {
+		n.FirstJoinedUnix = now.Unix()
 	}
-	n.LastJoined = now
-	n.LastUpdated = now
+	n.LastJoinedUnix = now.Unix()
+	n.LastUpdatedUnix = now.Unix()
 	n.Activity = ActivityJoined
 	n.IsActive = true
-	n.UpdateUnixTimestamps()
+	// n.UpdateUnixTimestamps()
 	n.CalculateCurrentUptime()
 	n.CalculateAccumulatedUptime()
 
@@ -191,13 +191,13 @@ func (n *NodeData) Left() {
 	if n.Activity == ActivityLeft {
 		return
 	}
-	n.LastLeft = time.Now()
-	n.LastUpdated = n.LastLeft
+	n.LastLeftUnix = time.Now().Unix()
+	n.LastUpdatedUnix = n.LastLeftUnix
 	n.AccumulatedUptime += n.GetCurrentUptime()
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
-	n.UpdateUnixTimestamps()
+	// n.UpdateUnixTimestamps()
 	n.CalculateCurrentUptime()
 	n.CalculateAccumulatedUptime()
 
@@ -214,7 +214,7 @@ func (n *NodeData) Left() {
 // If the node is marked as left, it returns 0.
 func (n *NodeData) GetCurrentUptime() time.Duration {
 	if n.Activity == ActivityJoined {
-		return time.Since(n.LastJoined)
+		return time.Since(time.Unix(n.LastJoinedUnix, 0))
 	}
 	return 0
 }
@@ -232,10 +232,10 @@ func (n *NodeData) GetAccumulatedUptime() time.Duration {
 // Otherwise, it uses the time since the last joined event.
 func (n *NodeData) UpdateAccumulatedUptime() {
 	if n.Activity == ActivityLeft {
-		n.AccumulatedUptime += n.LastLeft.Sub(n.LastJoined)
+		n.AccumulatedUptime += time.Since(time.Unix(n.LastLeftUnix, 0))
 		return
 	}
-	n.AccumulatedUptime += time.Since(n.LastJoined)
+	n.AccumulatedUptime += time.Since(time.Unix(n.LastJoinedUnix, 0))
 }
 
 // GetSelfNodeDataJson converts the local node's data into a JSON byte array.

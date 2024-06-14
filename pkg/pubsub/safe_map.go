@@ -75,7 +75,7 @@ func (sm *SafeMap) GetStakedNodesSlice() []NodeData {
 	}
 	// Sort the slice based on the timestamp
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].LastUpdated.Before(result[j].LastUpdated)
+		return result[i].LastUpdatedUnix < result[j].LastUpdatedUnix
 	})
 	return result
 }

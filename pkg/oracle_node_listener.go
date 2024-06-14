@@ -134,7 +134,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		nodeData = node.NodeTracker.GetAllNodeData()
 	} else {
 		// set the time to LastLeft minus 5 minutes
-		sinceTime := recipientNodeData.LastLeft.Add(-5 * time.Minute)
+		sinceTime := time.Unix(recipientNodeData.LastLeftUnix, 0).Add(-5 * time.Minute)
 		nodeData = node.NodeTracker.GetUpdatedNodes(sinceTime)
 	}
 	totalRecords := len(nodeData)
