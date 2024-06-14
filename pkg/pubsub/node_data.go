@@ -99,14 +99,6 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	}
 }
 
-// UpdateUnixTimestamps updates the Unix timestamp fields based on the time fields.
-// func (n *NodeData) UpdateUnixTimestamps() {
-// n.FirstJoinedUnix = n.FirstJoined.Unix()
-// n.LastJoinedUnix = n.LastJoined.Unix()
-// n.LastLeftUnix = n.LastLeft.Unix()
-// n.LastUpdatedUnix = n.LastUpdated.Unix()
-// }
-
 // CalculateCurrentUptime calculates the current uptime based on Unix timestamps.
 func (n *NodeData) CalculateCurrentUptime() {
 	if n.Activity == ActivityJoined {
@@ -166,7 +158,7 @@ func (n *NodeData) Joined() {
 	n.LastUpdatedUnix = now.Unix()
 	n.Activity = ActivityJoined
 	n.IsActive = true
-	// n.UpdateUnixTimestamps()
+
 	n.CalculateCurrentUptime()
 	n.CalculateAccumulatedUptime()
 
@@ -193,7 +185,7 @@ func (n *NodeData) Left() {
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
-	// n.UpdateUnixTimestamps()
+
 	n.CalculateCurrentUptime()
 	n.CalculateAccumulatedUptime()
 
