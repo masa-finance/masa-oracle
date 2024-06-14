@@ -208,8 +208,6 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		Timestamp: time.Now().Unix(),
 	}
 
-	logrus.Infof("newCID.Timestamp %s", node.FromUnixTime(newCID.Timestamp))
-
 	records := nodeData.Records
 
 	if records == nil {
