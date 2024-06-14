@@ -72,9 +72,9 @@ var (
 )
 
 type CID struct {
-	Duration  float64   `json:"duration"`
-	RecordId  string    `json:"cid"`
-	Timestamp time.Time `json:"timestamp"`
+	Duration  float64 `json:"duration"`
+	RecordId  string  `json:"cid"`
+	Timestamp int64   `json:"timestamp"`
 }
 
 type Record struct {
@@ -205,8 +205,10 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 	newCID := CID{
 		RecordId:  workEvent.CID,
 		Duration:  workEvent.Duration,
-		Timestamp: time.Now(),
+		Timestamp: time.Now().Unix(),
 	}
+
+	logrus.Infof("newCID.Timestamp %s", time.Unix(newCID.Timestamp, 0).Format("2006-01-02 15:04:05"))
 
 	records := nodeData.Records
 
@@ -422,7 +424,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 							PeerId:    data.ID,
 							Payload:   []byte(work),
 							Duration:  duration.Seconds(),
-							Timestamp: time.Now(),
+							Timestamp: time.Now().Unix(),
 						}
 
 						updateRecords(node, workEvent)
@@ -443,7 +445,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 							PeerId:    data.ID,
 							Payload:   work,
 							Duration:  duration.Seconds(),
-							Timestamp: time.Now(),
+							Timestamp: time.Now().Unix(),
 						}
 
 						updateRecords(node, workEvent)

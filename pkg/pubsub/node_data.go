@@ -132,7 +132,7 @@ func (n *NodeData) Joined() {
 	n.Activity = ActivityJoined
 	n.IsActive = true
 
-	logMessage := fmt.Sprintf("%s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
+	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
 	if n.IsStaked {
 		logrus.Info(logMessage)
 	} else {

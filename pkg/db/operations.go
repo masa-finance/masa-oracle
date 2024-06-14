@@ -15,7 +15,7 @@ type WorkEvent struct {
 	PeerId    string          `json:"peer_id"`
 	Payload   json.RawMessage `json:"payload"`
 	Duration  float64         `json:"duration"`
-	Timestamp time.Time       `json:"timestamp"`
+	Timestamp int64           `json:"timestamp"`
 }
 
 // WriteData encapsulates the logic for writing data to the database,
