@@ -41,10 +41,10 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 		nodeDataFile:  fmt.Sprintf("%s_%s_node_data.json", version, environment),
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
-	err := net.LoadNodeData()
-	if err != nil {
-		logrus.Error("Error loading node data", err)
-	}
+	// err := net.LoadNodeData()
+	// if err != nil {
+	// 	logrus.Error("Error loading node data", err)
+	// }
 	go net.ClearExpiredBufferEntries()
 	return net
 }
@@ -167,7 +167,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {
 		// If the node data does not exist in the cache and the node has left, ignore it
-		if data.LastLeft.After(data.LastJoined) {
+		if data.LastLeftUnix > data.LastJoinedUnix {
 			return
 		}
 		// Otherwise, add it
@@ -176,7 +176,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 		return
 	}
 	// Check for replay attacks using LastUpdated
-	if !data.LastUpdated.After(existingData.LastUpdated) {
+	if data.LastUpdatedUnix < existingData.LastUpdatedUnix {
 		if existingData.IsStaked {
 			logrus.Debugf("Stale or replayed node data received for node: %s", data.PeerId)
 			return
@@ -186,22 +186,22 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 			return
 		}
 	}
-	existingData.LastUpdated = data.LastUpdated
+	existingData.LastUpdatedUnix = data.LastUpdatedUnix
 
 	maxDifference := time.Millisecond * 15
 
 	// Handle discrepancies for existing nodes
-	if !data.LastJoined.IsZero() &&
-		data.LastJoined.Before(existingData.LastJoined) &&
-		data.LastJoined.After(existingData.LastLeft) &&
-		time.Since(data.LastJoined) < maxDifference {
-		existingData.LastJoined = data.LastJoined
+	if data.LastJoinedUnix > 0 &&
+		data.LastJoinedUnix < existingData.LastJoinedUnix &&
+		data.LastJoinedUnix > existingData.LastLeftUnix &&
+		time.Since(time.Unix(data.LastJoinedUnix, 0)) < maxDifference {
+		existingData.LastJoinedUnix = data.LastJoinedUnix
 	}
-	if !data.LastLeft.IsZero() &&
-		data.LastLeft.After(existingData.LastLeft) &&
-		data.LastLeft.Before(existingData.LastJoined) &&
-		time.Since(data.LastLeft) < maxDifference {
-		existingData.LastLeft = data.LastLeft
+	if data.LastLeftUnix > 0 &&
+		data.LastLeftUnix > existingData.LastLeftUnix &&
+		data.LastLeftUnix < existingData.LastJoinedUnix &&
+		time.Since(time.Unix(data.LastLeftUnix, 0)) < maxDifference {
+		existingData.LastLeftUnix = data.LastLeftUnix
 	}
 
 	if existingData.EthAddress == "" && data.EthAddress != "" {
@@ -242,13 +242,13 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 	// Filter allNodeData to only include nodes that have been updated since the given time
 	var updatedNodeData []NodeData
 	for _, nodeData := range net.GetAllNodeData() {
-		if nodeData.LastUpdated.After(since) {
+		if nodeData.LastUpdatedUnix > since.Unix() {
 			updatedNodeData = append(updatedNodeData, nodeData)
 		}
 	}
 	// Sort the slice based on the timestamp
 	sort.Slice(updatedNodeData, func(i, j int) bool {
-		return updatedNodeData[i].LastUpdated.Before(updatedNodeData[j].LastUpdated)
+		return updatedNodeData[i].LastUpdatedUnix < updatedNodeData[j].LastUpdatedUnix
 	})
 	return updatedNodeData
 }
@@ -360,10 +360,10 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.IsTwitterScraper = nodeData.IsTwitterScraper
 		nd.IsWebScraper = nodeData.IsWebScraper
 		nd.Records = nodeData.Records
-		nd.LastLeft = nodeData.LastLeft
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		nd.IsActive = nodeData.IsActive
+		// nd.LastLeft = nodeData.LastLeft
 
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),
@@ -405,7 +405,6 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 				entry.NodeData.Joined()
 				net.NodeDataChan <- entry.NodeData
 				delete(net.ConnectBuffer, peerID)
-				// net.nodeData.Delete(peerID)
 			}
 		}
 	}

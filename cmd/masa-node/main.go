@@ -108,7 +108,7 @@ func main() {
 		if nodeData != nil {
 			nodeData.Left()
 		}
-		node.NodeTracker.DumpNodeData()
+		// node.NodeTracker.DumpNodeData()
 		cancel()
 	}()
 

@@ -360,6 +360,11 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"status": "Message posted to topic successfully"})
 	}
 }
+
+// ChatPageHandler returns a gin.HandlerFunc that renders the chat page.
+// It responds to HTTP GET requests by serving the "chat.html" template.
+// The handler sets the HTTP status to 200 (OK) and provides an empty gin.H map
+// to the template, which can be used to pass data if needed in the future.
 func (api *API) ChatPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "chat.html", gin.H{})
@@ -382,8 +387,8 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"IsTwitterScraper": false,
 				"IsDiscordScraper": false,
 				"IsWebScraper":     false,
-				"FirstJoined":      time.Now().Format("2006-01-02 15:04:05"),
-				"LastJoined":       time.Now().Format("2006-01-02 15:04:05"),
+				"FirstJoined":      api.Node.FromUnixTime(time.Now().Unix()),
+				"LastJoined":       api.Node.FromUnixTime(time.Now().Unix()),
 				"CurrentUptime":    "0",
 				"Rewards":          "Coming Soon!",
 				"BytesScraped":     0,
@@ -408,8 +413,8 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				"IsTwitterScraper": nd.IsTwitterScraper,
 				"IsDiscordScraper": nd.IsDiscordScraper,
 				"IsWebScraper":     nd.IsWebScraper,
-				"FirstJoined":      nd.FirstJoined.Format("2006-01-02 15:04:05"),
-				"LastJoined":       nd.LastJoined.Format("2006-01-02 15:04:05"),
+				"FirstJoined":      api.Node.FromUnixTime(nd.FirstJoinedUnix),
+				"LastJoined":       api.Node.FromUnixTime(nd.LastJoinedUnix),
 				"CurrentUptime":    nd.CurrentUptimeStr,
 				"TotalUptime":      nd.AccumulatedUptimeStr,
 				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
