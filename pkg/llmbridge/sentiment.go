@@ -224,3 +224,38 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		return "", "", errors.New("model not supported")
 	}
 }
+
+// AnalyzeSentimentDiscord analyzes the sentiment of the provided Discord messages by sending them to the sentiment analysis API.
+// It concatenates the messages, creates a payload, sends a request to the sentiment analysis service, parses the response,
+// and returns the concatenated messages content, a sentiment summary, and any error.
+func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (string, string, error) {
+	// Concatenate messages with a newline character
+	messagesContent := strings.Join(messages, "\n")
+
+	// The rest of the code follows the same pattern as AnalyzeSentimentTweets
+	// Replace with the actual logic you have for sending requests to your sentiment analysis service
+	// For example, if you're using the Claude API:
+	if strings.Contains(model, "claude-") {
+		client := NewClaudeClient() // Adjusted to call without arguments
+		payloadBytes, err := CreatePayload(messagesContent, model, prompt)
+		if err != nil {
+			logrus.Errorf("Error creating payload: %v", err)
+			return "", "", err
+		}
+		resp, err := client.SendRequest(payloadBytes)
+		if err != nil {
+			logrus.Errorf("Error sending request to Claude API: %v", err)
+			return "", "", err
+		}
+		defer resp.Body.Close()
+		sentimentSummary, err := ParseResponse(resp)
+		if err != nil {
+			logrus.Errorf("Error parsing response from Claude: %v", err)
+			return "", "", err
+		}
+		return messagesContent, sentimentSummary, nil
+	} else {
+		// Handle other models or return an error
+		return "", "", errors.New("model not supported")
+	}
+}

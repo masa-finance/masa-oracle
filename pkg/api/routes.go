@@ -363,6 +363,17 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /sentiment/tweets [post]
 		v1.POST("/sentiment/tweets", API.SearchTweetsAndAnalyzeSentiment())
 
+		// @Summary Analyze Sentiment of Tweets
+		// @Description Searches for tweets and analyzes their sentiment
+		// @Tags Sentiment
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   body    string  true  "Prompt"
+		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of discord"
+		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of discord"
+		// @Router /sentiment/tweets [post]
+		v1.POST("/sentiment/discord", API.SearchDiscordMessagesAndAnalyzeSentiment())
+
 		// @Summary Analyze Sentiment of Web Content
 		// @Description Searches for web content and analyzes its sentiment
 		// @Tags Sentiment
