@@ -64,19 +64,6 @@ func (sm *SafeMap) Len() int {
 func (sm *SafeMap) GetStakedNodesSlice() []NodeData {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	// result := make([]NodeData, 0)
-	// for _, nodeData := range sm.items {
-	// 	nd := *nodeData
-	// 	nd.CurrentUptime = nodeData.GetCurrentUptime()
-	// 	nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-	// 	nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
-	// 	nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
-	// 	nd.IsTwitterScraper = nodeData.IsTwitterScraper
-	// 	nd.IsDiscordScraper = nodeData.IsDiscordScraper
-	// 	nd.IsWebScraper = nodeData.IsWebScraper
-	// 	nd.BytesScraped = nodeData.BytesScraped
-	// 	result = append(result, nd)
-	// }
 	result := make([]NodeData, 0)
 	for _, nodeData := range sm.items {
 		nd := *nodeData

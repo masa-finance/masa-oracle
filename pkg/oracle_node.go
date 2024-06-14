@@ -299,6 +299,10 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
 }
 
+// IsActor determines if the OracleNode is configured to act as an actor.
+// An actor node is one that has at least one of the following scrapers enabled:
+// TwitterScraper, DiscordScraper, or WebScraper.
+// It returns true if any of these scrapers are enabled, otherwise false.
 func (node *OracleNode) IsActor() bool {
 	// need to get this by node data
 	cfg := config.GetInstance()
@@ -313,6 +317,21 @@ func (node *OracleNode) IsActor() bool {
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
+}
+
+// FromUnixTime converts a Unix timestamp into a formatted string.
+// The Unix timestamp is expected to be in seconds.
+// The returned string is in the format "2006-01-02T15:04:05.000Z".
+func (node *OracleNode) FromUnixTime(unixTime int64) string {
+	return time.Unix(unixTime, 0).Format("2006-01-02T15:04:05.000Z")
+}
+
+// ToUnixTime converts a formatted string time into a Unix timestamp.
+// The input string is expected to be in the format "2006-01-02T15:04:05.000Z".
+// The returned Unix timestamp is in seconds.
+func (node *OracleNode) ToUnixTime(stringTime string) int64 {
+	t, _ := time.Parse("2006-01-02T15:04:05.000Z", stringTime)
+	return t.Unix()
 }
 
 // Version returns the current version string of the oracle node software.

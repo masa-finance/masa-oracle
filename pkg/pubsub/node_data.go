@@ -47,14 +47,18 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 type NodeData struct {
 	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
 	PeerId               peer.ID         `json:"peerId"`
-	FirstJoined          time.Time       `json:"firstJoined,omitempty"`
-	LastJoined           time.Time       `json:"lastJoined,omitempty"`
-	LastLeft             time.Time       `json:"lastLeft,omitempty"`
-	LastUpdated          time.Time       `json:"lastUpdated,omitempty"`
-	CurrentUptime        time.Duration   `json:"currentUptime,omitempty"`
-	CurrentUptimeStr     string          `json:"readableCurrentUptime,omitempty"`
+	FirstJoined          time.Time       `json:"-"`
+	FirstJoinedUnix      int64           `json:"firstJoined,omitempty"`
+	LastJoined           time.Time       `json:"-"`
+	LastJoinedUnix       int64           `json:"lastJoined,omitempty"`
+	LastLeft             time.Time       `json:"-"`
+	LastLeftUnix         int64           `json:"-"`
+	LastUpdated          time.Time       `json:"-"`
+	LastUpdatedUnix      int64           `json:"lastUpdated,omitempty"`
+	CurrentUptime        time.Duration   `json:"uptime,omitempty"`
+	CurrentUptimeStr     string          `json:"uptimeStr,omitempty"`
 	AccumulatedUptime    time.Duration   `json:"accumulatedUptime,omitempty"`
-	AccumulatedUptimeStr string          `json:"readableAccumulatedUptime,omitempty"`
+	AccumulatedUptimeStr string          `json:"accumulatedUptimeStr,omitempty"`
 	EthAddress           string          `json:"ethAddress,omitempty"`
 	Activity             int             `json:"activity,omitempty"`
 	IsActive             bool            `json:"isActive"`
@@ -99,6 +103,34 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	}
 }
 
+// UpdateUnixTimestamps updates the Unix timestamp fields based on the time fields.
+func (n *NodeData) UpdateUnixTimestamps() {
+	n.FirstJoinedUnix = n.FirstJoined.Unix()
+	n.LastJoinedUnix = n.LastJoined.Unix()
+	n.LastLeftUnix = n.LastLeft.Unix()
+	n.LastUpdatedUnix = n.LastUpdated.Unix()
+}
+
+// CalculateCurrentUptime calculates the current uptime based on Unix timestamps.
+func (n *NodeData) CalculateCurrentUptime() {
+	if n.Activity == ActivityJoined {
+		n.CurrentUptime = time.Duration(n.LastUpdatedUnix-n.LastJoinedUnix) * time.Second
+	} else {
+		n.CurrentUptime = 0
+	}
+	n.CurrentUptimeStr = n.CurrentUptime.String()
+}
+
+// CalculateAccumulatedUptime calculates the accumulated uptime based on Unix timestamps.
+func (n *NodeData) CalculateAccumulatedUptime() {
+	if n.FirstJoinedUnix > 0 && n.LastLeftUnix > 0 {
+		n.AccumulatedUptime = time.Duration(n.LastLeftUnix-n.FirstJoinedUnix) * time.Second
+	} else {
+		n.AccumulatedUptime = 0
+	}
+	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
+}
+
 // Address returns a string representation of the NodeData's multiaddress
 // and peer ID in the format "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC".
 // This can be used by other nodes to connect to this node.
@@ -106,16 +138,22 @@ func (n *NodeData) Address() string {
 	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
 }
 
+// TwitterScraper checks if the current node is configured as a Twitter scraper.
+// It retrieves the configuration instance and returns the value of the TwitterScraper field.
 func (n *NodeData) TwitterScraper() bool {
 	cfg := config.GetInstance()
 	return cfg.TwitterScraper
 }
 
+// DiscordScraper checks if the current node is configured as a Discord scraper.
+// It retrieves the configuration instance and returns the value of the DiscordScraper field.
 func (n *NodeData) DiscordScraper() bool {
 	cfg := config.GetInstance()
 	return cfg.DiscordScraper
 }
 
+// WebScraper checks if the current node is configured as a Web scraper.
+// It retrieves the configuration instance and returns the value of the WebScraper field.
 func (n *NodeData) WebScraper() bool {
 	cfg := config.GetInstance()
 	return cfg.WebScraper
@@ -125,12 +163,22 @@ func (n *NodeData) WebScraper() bool {
 // It sets the join times, activity, active status, and logs based on stake status.
 func (n *NodeData) Joined() {
 	now := time.Now()
-	logrus.Info("AccumulatedUptime ", now.Add(-n.AccumulatedUptime))
-	n.FirstJoined = now.Add(-n.AccumulatedUptime)
+	if n.FirstJoined.IsZero() {
+		n.FirstJoined = now
+	}
 	n.LastJoined = now
 	n.LastUpdated = now
 	n.Activity = ActivityJoined
 	n.IsActive = true
+
+	if n.FirstJoinedUnix == 0 {
+		n.FirstJoinedUnix = time.Now().Unix()
+	}
+	n.UpdateUnixTimestamps()
+	n.CalculateCurrentUptime()
+	n.CalculateAccumulatedUptime()
+
+	n.Version = "0.0.7-beta"
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
 	if n.IsStaked {
@@ -145,12 +193,6 @@ func (n *NodeData) Joined() {
 // sets node as inactive, and logs based on stake status.
 func (n *NodeData) Left() {
 	if n.Activity == ActivityLeft {
-		logMessage := fmt.Sprintf("Node %s is already marked as left", n.Address())
-		if n.IsStaked {
-			logrus.Warn(logMessage)
-		} else {
-			logrus.Debug(logMessage)
-		}
 		return
 	}
 	n.LastLeft = time.Now()
@@ -159,6 +201,10 @@ func (n *NodeData) Left() {
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
+	n.UpdateUnixTimestamps()
+	n.CalculateCurrentUptime()
+	n.CalculateAccumulatedUptime()
+
 	logMessage := fmt.Sprintf("Node left: %s", n.Address())
 	if n.IsStaked {
 		logrus.Info(logMessage)

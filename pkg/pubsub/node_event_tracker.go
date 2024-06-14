@@ -41,10 +41,10 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 		nodeDataFile:  fmt.Sprintf("%s_%s_node_data.json", version, environment),
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
-	err := net.LoadNodeData()
-	if err != nil {
-		logrus.Error("Error loading node data", err)
-	}
+	// err := net.LoadNodeData()
+	// if err != nil {
+	// 	logrus.Error("Error loading node data", err)
+	// }
 	go net.ClearExpiredBufferEntries()
 	return net
 }
@@ -360,10 +360,10 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.IsTwitterScraper = nodeData.IsTwitterScraper
 		nd.IsWebScraper = nodeData.IsWebScraper
 		nd.Records = nodeData.Records
-		nd.LastLeft = nodeData.LastLeft
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		nd.IsActive = nodeData.IsActive
+		// nd.LastLeft = nodeData.LastLeft
 
 		logrus.WithFields(logrus.Fields{
 			"Peer": nd.PeerId.String(),
@@ -405,7 +405,6 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 				entry.NodeData.Joined()
 				net.NodeDataChan <- entry.NodeData
 				delete(net.ConnectBuffer, peerID)
-				// net.nodeData.Delete(peerID)
 			}
 		}
 	}
