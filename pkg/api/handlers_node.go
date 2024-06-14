@@ -360,6 +360,11 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"status": "Message posted to topic successfully"})
 	}
 }
+
+// ChatPageHandler returns a gin.HandlerFunc that renders the chat page.
+// It responds to HTTP GET requests by serving the "chat.html" template.
+// The handler sets the HTTP status to 200 (OK) and provides an empty gin.H map
+// to the template, which can be used to pass data if needed in the future.
 func (api *API) ChatPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "chat.html", gin.H{})

@@ -230,7 +230,6 @@ func (node *OracleNode) Start() (err error) {
 	nodeData.IsTwitterScraper = cfg.TwitterScraper
 	nodeData.IsWebScraper = cfg.WebScraper
 	nodeData.IsValidator = cfg.Validator == "true"
-	nodeData.Version = "0.0.7-beta"
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
