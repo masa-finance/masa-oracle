@@ -170,10 +170,6 @@ func (n *NodeData) Joined() {
 	n.LastUpdated = now
 	n.Activity = ActivityJoined
 	n.IsActive = true
-
-	if n.FirstJoinedUnix == 0 {
-		n.FirstJoinedUnix = time.Now().Unix()
-	}
 	n.UpdateUnixTimestamps()
 	n.CalculateCurrentUptime()
 	n.CalculateAccumulatedUptime()
