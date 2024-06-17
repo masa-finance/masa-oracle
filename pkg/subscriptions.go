@@ -20,5 +20,9 @@ func SubscribeToTopics(node *OracleNode) error {
 		return err
 	}
 
+	// if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.BlockTopic), &pubsub2.BlockEventTracker{}, false); err != nil {
+	// 	return err
+	// }
+
 	return nil
 }

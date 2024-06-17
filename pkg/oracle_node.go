@@ -55,6 +55,7 @@ type OracleNode struct {
 	IsLlmServer      bool
 	StartTime        time.Time
 	WorkerTracker    *pubsub2.WorkerEventTracker
+	BlockTracker     *pubsub2.BlockEventTracker
 	ActorEngine      *actor.RootContext
 	ActorRemote      *remote.Remote
 }

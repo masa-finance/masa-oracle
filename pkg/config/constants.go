@@ -104,6 +104,7 @@ const (
 	NodeGossipTopic      = "gossip"
 	PublicKeyTopic       = "bootNodePublicKey"
 	WorkerTopic          = "workerTopic"
+	BlockTopic           = "blockTopic"
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
 
