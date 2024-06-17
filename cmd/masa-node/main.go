@@ -97,28 +97,6 @@ func main() {
 		go workers.MonitorWorkers(ctx, node)
 	}
 
-	// ledger
-
-	// @note Add some data using .Add
-	//data := map[string]interface{}{
-	//	"hey": "mars",
-	//}
-	//node.Ledger.Add("bucket", data)
-
-	// @note Retrieve the data using .GetKey
-	value, exists := node.Ledger.GetKey("bucket", "hey")
-	if exists {
-		fmt.Printf("\nRetrieved value: %v\n", value)
-	} else {
-		fmt.Println("Key does not exist")
-	}
-
-	// @note this is on a timer but only annouces locally ?
-	//node.Ledger.Announce(ctx, time.Second*10, func() {
-	//	fmt.Println("Announcement complete")
-	//})
-	// ledger
-
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/remote"
 	"github.com/chyeh/pubip"
-	"github.com/peterbourgon/diskv"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -31,7 +29,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/blockchain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
@@ -60,7 +57,6 @@ type OracleNode struct {
 	WorkerTracker    *pubsub2.WorkerEventTracker
 	ActorEngine      *actor.RootContext
 	ActorRemote      *remote.Remote
-	Ledger           *blockchain.Ledger
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -167,17 +163,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	r := remote.NewRemote(system, conf)
 	go r.Start()
 
-	// Initialize DiskStore
-	d := diskv.New(diskv.Options{
-		BasePath:     filepath.Join(cfg.MasaDir, "data"),
-		Transform:    func(s string) []string { return []string{} },
-		CacheSizeMax: 1024 * 1024,
-	})
-	store := blockchain.NewDiskStore(d)
-
-	// Create a new Ledger
-	ledger := blockchain.New(io.Discard, store)
-
 	return &OracleNode{
 		Host:             hst,
 		PrivKey:          masacrypto.KeyManagerInstance().EcdsaPrivKey,
@@ -195,7 +180,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsLlmServer:      cfg.LlmServer,
 		ActorEngine:      engine,
 		ActorRemote:      r,
-		Ledger:           ledger,
 	}, nil
 }
 
