@@ -11,6 +11,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.26.4
 	github.com/charmbracelet/lipgloss v0.11.0
 	github.com/chyeh/pubip v0.0.0-20170203095919-b7e679cf541c
+	github.com/creachadair/otp v0.4.2
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ethereum/go-ethereum v1.14.5
 	github.com/fatih/color v1.17.0
@@ -32,6 +33,8 @@ require (
 	github.com/multiformats/go-multiaddr v0.12.4
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/ollama/ollama v0.1.42
+	github.com/peterbourgon/diskv v2.0.1+incompatible
+	github.com/pkg/errors v0.9.1
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.24.1
 	github.com/sirupsen/logrus v1.9.3
@@ -107,6 +110,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
+	github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20240207164012-fb44976bdcd5 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
@@ -198,7 +202,6 @@ require (
 	github.com/pion/transport/v2 v2.2.5 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
 	github.com/pion/webrtc/v3 v3.2.40 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/polydawn/refmt v0.89.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect

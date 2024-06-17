@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
@@ -96,6 +97,27 @@ func main() {
 		go workers.SubscribeToWorkers(node)
 		go workers.MonitorWorkers(ctx, node)
 	}
+
+	// ledger
+
+	// Add some data
+	data := map[string]interface{}{
+		"hey": "mars",
+	}
+	node.Ledger.Add("bucket", data)
+
+	// Retrieve the data using GetKey
+	value, exists := node.Ledger.GetKey("bucket", "hey")
+	if exists {
+		fmt.Printf("\nRetrieved value: %v\n", value)
+	} else {
+		fmt.Println("Key does not exist")
+	}
+
+	node.Ledger.Announce(ctx, time.Second*10, func() {
+		fmt.Println("Announcement complete")
+	})
+	// ledger
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
