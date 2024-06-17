@@ -254,8 +254,55 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 			return "", "", err
 		}
 		return messagesContent, sentimentSummary, nil
+
 	} else {
-		// Handle other models or return an error
-		return "", "", errors.New("model not supported")
+		stream := false
+
+		genReq := api.ChatRequest{
+			Model: model,
+			Messages: []api.Message{
+				{Role: "user", Content: messagesContent},
+				{Role: "assistant", Content: prompt},
+			},
+			Stream: &stream,
+			Options: map[string]interface{}{
+				"temperature": 0.0,
+				"seed":        42,
+				"num_ctx":     4096,
+			},
+		}
+
+		requestJSON, err := json.Marshal(genReq)
+		if err != nil {
+			logrus.Errorf("Error marshaling request JSON: %v", err)
+			return "", "", err
+		}
+		uri := config.GetInstance().LLMChatUrl
+		if uri == "" {
+			errMsg := "ollama api url not set"
+			logrus.Errorf(errMsg)
+			return "", "", errors.New(errMsg)
+		}
+		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))
+		if err != nil {
+			logrus.Errorf("Error sending request to API: %v", err)
+			return "", "", err
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logrus.Errorf("Error reading response body: %v", err)
+			return "", "", err
+		}
+
+		var payload api.ChatResponse
+		err = json.Unmarshal(body, &payload)
+		if err != nil {
+			logrus.Errorf("Error unmarshaling response JSON: %v", err)
+			return "", "", err
+		}
+
+		sentimentSummary := payload.Message.Content
+		return messagesContent, SanitizeResponse(sentimentSummary), nil
 	}
 }

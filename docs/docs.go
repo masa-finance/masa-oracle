@@ -882,14 +882,14 @@ const docTemplate = `{
 									},
 									"prompt": {
 										"type": "string",
-										"description": "Prompt to analyze"
+										"description": "Prompt to enter"
 									},
 									"model": {
 										"type": "string",
 										"description": "Sentiment analysis model to use"
 									}
 								},
-								"required": ["channelID", "model", "prompt]
+								"required": ["channelID", "model"]
 							}
 						}
 					],
