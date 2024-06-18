@@ -364,13 +364,13 @@ var (
 // SubscribeToBlocks is a function that takes in a context and an OracleNode as parameters.
 // It is used to subscribe the given OracleNode to the blockchain blocks.
 func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
-	go node.Blockchain.Init(config.GetInstance().Consensus)
-
 	node.BlockTracker = &pubsub2.BlockEventTracker{BlocksCh: blocksCh}
 	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.BlockTopic), node.BlockTracker, true)
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
+
+	go node.Blockchain.Init(config.GetInstance().Consensus)
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -381,10 +381,11 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 			logrus.Debug("tick")
 		case block := <-node.BlockTracker.BlocksCh:
 			_ = node.Blockchain.AddBlock(block.Data, config.GetInstance().Consensus)
-			b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
-			if e != nil {
-				logrus.Errorf("Blockchain.GetBlock err: %v", e)
-			} else {
+			if node.Blockchain.LastHash != nil {
+				b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
+				if e != nil {
+					logrus.Errorf("Blockchain.GetBlock err: %v", e)
+				}
 				b.Print()
 			}
 

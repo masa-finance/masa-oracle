@@ -43,12 +43,15 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 	currentTime := time.Now().Unix()
 
 	logrus.WithFields(logrus.Fields{"block_content": string(pos.Block.Data)}).Info("Running Proof of Stake...")
+	spinner := []string{"|", "/", "-", "\\"}
+	i := 0
 	for {
 		data := pos.joinData(currentTime)
 		hash = sha256.Sum256(data)
 		hashInt.SetBytes(hash[:])
-		fmt.Printf("\r%x", hash)
-
+		fmt.Printf("\r%s %x", spinner[i%len(spinner)], hash)
+		// time.Sleep(100 * time.Millisecond)
+		i++
 		if hashInt.Cmp(pos.Target) == -1 {
 			break
 		} else {
