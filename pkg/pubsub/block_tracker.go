@@ -19,7 +19,7 @@ type BlockEventTracker struct {
 	BlocksCh   chan *pubsub.Message
 }
 
-// HandleMessage implements subscription WorkerEventTracker handler
+// HandleMessage implements subscription BlockEventTracker handler
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	logrus.Infof("chain -> Received block from: %s", m.ReceivedFrom)
 	var blocks Blocks

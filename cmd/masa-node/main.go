@@ -14,7 +14,6 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/api"
-	chain "github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
@@ -87,7 +86,10 @@ func main() {
 		logrus.Info("This node is not set as the allowed peer")
 	}
 
+	// Init cache resolver
 	go db.InitResolverCache(node, keyManager)
+	// Subscribe to blocks
+	go masa.SubscribeToBlocks(ctx, node)
 
 	// Subscribe and if actor start monitoring actor workers
 	// considering all that matters is if the node is staked
@@ -96,13 +98,6 @@ func main() {
 	if node.IsStaked {
 		go workers.SubscribeToWorkers(node)
 		go workers.MonitorWorkers(ctx, node)
-	}
-
-	chain.SubscribeToBlocks(ctx, node)
-
-	err = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), []byte("hello block"))
-	if err != nil {
-		logrus.Errorf("Error publishing block: %v", err)
 	}
 
 	// Listen for SIGINT (CTRL+C)

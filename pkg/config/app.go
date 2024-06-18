@@ -77,6 +77,7 @@ type AppConfig struct {
 	Validator            string   `mapstructure:"validator"`
 	CachePath            string   `mapstructure:"cachePath"`
 	Faucet               bool     `mapstructure:"faucet"`
+	Consensus            string   `mapstructure:"consensus"`
 
 	// These may be moved to a separate struct
 	TwitterCookiesPath string `mapstructure:"twitterCookiesPath"`
@@ -201,6 +202,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(GPTApiKey, os.Getenv("OPENAI_API_KEY"))
 		viper.SetDefault(LlmChatUrl, os.Getenv(LlmChatUrl))
 		viper.SetDefault(LlmCfUrl, os.Getenv(LlmCfUrl))
+		viper.SetDefault(Consensus, os.Getenv("CONSENSUS"))
 
 	} else {
 		viper.SetDefault(FilePath, ".")
@@ -214,6 +216,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(ClaudeApiVersion, "2023-06-01")
 		viper.SetDefault(LlmChatUrl, "http://localhost:11434/api/chat")
 		viper.SetDefault(LlmCfUrl, "https://gateway.ai.cloudflare.com/v1/a72433aa3bb83aecaca1bc8acecdb166/masa/workers-ai/")
+		viper.SetDefault(Consensus, "PoS")
 	}
 
 	// Set defaults

@@ -858,3 +858,35 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 		c.JSON(http.StatusOK, payload)
 	}
 }
+
+func (api *API) Test() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Hello string `json:"hello"`
+		}
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Hello == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "hello must be provided"})
+			return
+		}
+
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
+		if err != nil {
+			logrus.Errorf("Error publishing block: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "message sent"})
+	}
+}
