@@ -50,14 +50,12 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 		hash = sha256.Sum256(data)
 		hashInt.SetBytes(hash[:])
 		fmt.Printf("\r%s %x", spinner[i%len(spinner)], hash)
-		// time.Sleep(100 * time.Millisecond)
 		i++
 		if hashInt.Cmp(pos.Target) == -1 {
 			break
 		} else {
 			currentTime++
 		}
-
 	}
 	fmt.Println()
 	return currentTime, hash[:]

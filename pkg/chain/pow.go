@@ -10,9 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-/*
-Implementation of the difficulty rate
-*/
+// Difficulty Implementation of the difficulty rate
 const Difficulty = int64(21)
 
 type ProofOfWork struct {

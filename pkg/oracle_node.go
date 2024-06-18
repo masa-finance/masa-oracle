@@ -369,8 +369,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
-	return
-	go node.Blockchain.Init(config.GetInstance().Consensus)
+	// return
 
 	go node.Blockchain.Init(config.GetInstance().Consensus)
 

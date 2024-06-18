@@ -339,15 +339,14 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 // If the node data exists, it updates the staked status, Ethereum address, and multiaddress if needed.
 // It also sends the updated node data to the NodeDataChan if the data changed or forceGossip is true.
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
-	logrus.Debug("Adding self identity")
+	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
 	dataChanged := false
-
-	nd, exists := net.nodeData.Get(nodeData.PeerId.String())
-	if !exists {
+	nd, ok := net.nodeData.Get(nodeData.PeerId.String())
+	if !ok {
 		nodeData.SelfIdentified = true
-		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
 		nodeData.Joined()
 		net.NodeDataChan <- nodeData
+		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
 	} else {
 		if !nd.SelfIdentified {
 			dataChanged = true
@@ -363,11 +362,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		nd.IsActive = nodeData.IsActive
-		// nd.LastLeft = nodeData.LastLeft
 
-		logrus.WithFields(logrus.Fields{
-			"Peer": nd.PeerId.String(),
-		}).Info("Connected")
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
@@ -387,6 +382,9 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		if dataChanged || forceGossip {
 			net.NodeDataChan <- nd
 		}
+
+		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
 	}
 	return nil
 }
