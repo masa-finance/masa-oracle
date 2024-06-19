@@ -862,7 +862,7 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 func (api *API) Test() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
-			Hello string `json:"hello"`
+			Foo string `json:"foo"`
 		}
 
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
@@ -870,8 +870,8 @@ func (api *API) Test() gin.HandlerFunc {
 			return
 		}
 
-		if reqBody.Hello == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "hello must be provided"})
+		if reqBody.Foo == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "foo value must be provided"})
 			return
 		}
 
