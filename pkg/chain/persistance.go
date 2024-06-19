@@ -19,8 +19,8 @@ type Serializable interface {
 }
 
 func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte)) ([]byte, error) {
-	logrus.Info("Initializing the datastore...")
 	dbOptions := badger.DefaultOptions(path)
+	dbOptions.Logger = nil
 	db, err := badger.Open(dbOptions)
 	if err != nil {
 		logrus.Error("Failed to initialize datastore: ", db, err)
@@ -36,7 +36,7 @@ func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte))
 
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				logrus.Warn("Creating masa genesis block...")
+				logrus.Warn("Creating genesis TXN...")
 				genesisBlock, genesisHash := genesisFn()
 				serialData, err := genesisBlock.Serialize()
 				if err != nil {
@@ -94,7 +94,7 @@ func (p *Persistance) Get(key []byte) ([]byte, error) {
 }
 
 func (p *Persistance) GetLastHash() ([]byte, error) {
-	logrus.Info("Getting last hash from the chain...")
+	logrus.Info("Get last TXN...")
 	return p.Get([]byte(KeyLastHash))
 }
 

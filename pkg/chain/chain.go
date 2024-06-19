@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	// masa "github.com/masa-finance/masa-oracle/pkg"
-
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/sirupsen/logrus"
 )
@@ -35,15 +33,15 @@ func (c *Chain) Init(consensus string) error {
 }
 
 func makeGenesisBlock(consensus string) *Block {
-	logrus.Info("Generating genesis block...")
+	logrus.Info("Generating genesis TXN...")
 	newBlock := &Block{}
 	emptyLink := []byte{}
-	newBlock.Build([]byte("Genesis Block!"), emptyLink, consensus, big.NewInt(1))
+	newBlock.Build([]byte("Genesis"), emptyLink, consensus, big.NewInt(1))
 	return newBlock
 }
 
 func (c *Chain) UpdateLastHash() error {
-	logrus.Info("Fetching last stored hash...")
+	logrus.Info("Fetching last TXN...")
 	lastHash, err := c.storage.GetLastHash()
 	if err != nil {
 		logrus.Error("Failed to get last hash from the storage: ", err)
@@ -54,7 +52,7 @@ func (c *Chain) UpdateLastHash() error {
 }
 
 func (c *Chain) AddBlock(data []byte, consensus string) error {
-	logrus.Info("Adding block to the blockchain...")
+	logrus.Info("Adding TXN...")
 	if err := c.UpdateLastHash(); err != nil {
 		return err
 	}
@@ -77,7 +75,6 @@ func (c *Chain) AddBlock(data []byte, consensus string) error {
 }
 
 func (c *Chain) IterateLink(each func(b *Block), pre, post func()) error {
-	logrus.Info("Iterating over the blockchain by link order...")
 	c.UpdateLastHash()
 	currentHash := c.LastHash
 	pre()
@@ -103,7 +100,7 @@ func (c *Chain) GetLastBlock() (*Block, error) {
 }
 
 func (c *Chain) GetBlock(hash []byte) (*Block, error) {
-	logrus.Infof("Getting block %x...", hash)
+	logrus.Infof("TXN %x", hash)
 	data, err := c.storage.Get(hash)
 	if err != nil {
 		return nil, err

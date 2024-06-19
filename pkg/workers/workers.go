@@ -308,7 +308,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Infof("[+] Node Ip Address: %s", ipAddr)
+			logrus.Infof("[+] Worker Address: %s", ipAddr)
 			if !isBootnode(ipAddr) && p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
 				wg.Add(1)
 				go func() {
