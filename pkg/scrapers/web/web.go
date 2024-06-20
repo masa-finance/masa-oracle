@@ -2,9 +2,15 @@ package web
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/gocolly/colly/v2"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
+	"github.com/sirupsen/logrus"
 )
 
 // Section represents a distinct part of a scraped webpage, typically defined by a heading.
@@ -157,11 +163,45 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 	var collectedData CollectedData
 
 	c := colly.NewCollector(
+		colly.Async(true), // Enable asynchronous requests
 		colly.AllowURLRevisit(),
 		colly.IgnoreRobotsTxt(),
 		colly.MaxDepth(depth),
 	)
 
+	// Adjust the parallelism and delay based on your needs and server capacity
+	c.Limit(&colly.LimitRule{
+		DomainGlob:  "*",
+		Parallelism: 4,                      // Increased parallelism
+		Delay:       500 * time.Millisecond, // Reduced delay
+	})
+
+	// Increase the timeout slightly if necessary
+	c.SetRequestTimeout(240 * time.Second) // Increased to 4 minutes
+
+	// Initialize a backoff strategy
+	backoffStrategy := backoff.NewExponentialBackOff()
+
+	c.OnError(func(r *colly.Response, err error) {
+		if r.StatusCode == http.StatusTooManyRequests {
+			// Parse the Retry-After header (in seconds)
+			retryAfter, convErr := strconv.Atoi(r.Headers.Get("Retry-After"))
+			if convErr != nil {
+				// If not in seconds, it might be a date. Handle accordingly.
+			}
+			// Calculate the next delay
+			nextDelay := backoffStrategy.NextBackOff()
+			if retryAfter > 0 {
+				nextDelay = time.Duration(retryAfter) * time.Second
+			}
+			logrus.Warnf("Rate limited. Retrying after %v", nextDelay)
+			time.Sleep(nextDelay)
+			// Retry the request
+			_ = r.Request.Retry()
+		} else {
+			logrus.Errorf("Request URL: %s failed with response: %v and error: %v", r.Request.URL, r, err)
+		}
+	})
 	c.OnHTML("h1, h2", func(e *colly.HTMLElement) {
 		// Directly append a new Section to collectedData.Sections
 		collectedData.Sections = append(collectedData.Sections, Section{Title: e.Text})
@@ -198,8 +238,13 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 
 	c.OnHTML("a", func(e *colly.HTMLElement) {
 		pageURL := e.Request.AbsoluteURL(e.Attr("href"))
-		collectedData.Pages = append(collectedData.Pages, pageURL)
-		_ = e.Request.Visit(pageURL)
+		// Check if the URL protocol is supported (http or https)
+		if strings.HasPrefix(pageURL, "http://") || strings.HasPrefix(pageURL, "https://") {
+			collectedData.Pages = append(collectedData.Pages, pageURL)
+			_ = e.Request.Visit(pageURL)
+		} else {
+			logrus.Warnf("Unsupported URL protocol, skipping: %s", pageURL)
+		}
 	})
 
 	for _, u := range uri {
