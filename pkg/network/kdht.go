@@ -30,6 +30,9 @@ func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr,
 	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
+	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
+	options = append(options, dht.Concurrency(100))                         // Increase concurrency
+	options = append(options, dht.RoutingTableRefreshPeriod(time.Minute*5)) // Set refresh interval
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
 	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
