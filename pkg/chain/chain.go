@@ -33,7 +33,7 @@ func (c *Chain) Init(consensus string) error {
 }
 
 func makeGenesisBlock(consensus string) *Block {
-	logrus.Info("Generating genesis TXN...")
+	logrus.Info("Generating genesis transaction...")
 	newBlock := &Block{}
 	emptyLink := []byte{}
 	newBlock.Build([]byte("Genesis"), emptyLink, consensus, big.NewInt(1))
@@ -41,7 +41,7 @@ func makeGenesisBlock(consensus string) *Block {
 }
 
 func (c *Chain) UpdateLastHash() error {
-	logrus.Info("Fetching last TXN...")
+	logrus.Info("Fetching last transaction...")
 	lastHash, err := c.storage.GetLastHash()
 	if err != nil {
 		logrus.Error("Failed to get last hash from the storage: ", err)
@@ -52,7 +52,7 @@ func (c *Chain) UpdateLastHash() error {
 }
 
 func (c *Chain) AddBlock(data []byte, consensus string) error {
-	logrus.Info("Adding TXN...")
+	logrus.Info("Adding transaction...")
 	if err := c.UpdateLastHash(); err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (c *Chain) GetLastBlock() (*Block, error) {
 }
 
 func (c *Chain) GetBlock(hash []byte) (*Block, error) {
-	logrus.Infof("TXN %x", hash)
+	logrus.Infof("transaction %x", hash)
 	data, err := c.storage.Get(hash)
 	if err != nil {
 		return nil, err

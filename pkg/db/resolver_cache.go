@@ -178,6 +178,10 @@ func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 		select {
 		case <-ticker.C:
 			iterateAndPublish(ctx, node)
+			peers := node.NodeTracker.GetAllNodeData()
+			for _, peerInfo := range peers {
+				node.DHT.RoutingTable().TryAddPeer(peerInfo.PeerId, true, false)
+			}
 		case <-ctx.Done():
 			return
 		}

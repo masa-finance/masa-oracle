@@ -53,8 +53,8 @@ func (b *Block) Deserialize(data []byte) error {
 }
 
 func (b *Block) Print() {
-	fmt.Printf("\t Data:\t%s\n", b.Data)
-	fmt.Printf("\t Hash:\t%x\n", b.Hash)
-	fmt.Printf("\t Link:\t%x\n", b.Link)
-	fmt.Printf("\t Nonce:\t%d\n", b.Nonce)
+	fmt.Printf("\t Input Data:    \t%s\n", b.Data)
+	fmt.Printf("\t Transaction Hash:\t%x\n", b.Hash)
+	fmt.Printf("\t Previous Hash:  \t%x\n", b.Link)
+	fmt.Printf("\t Transaction Nonce:\t%d\n", b.Nonce)
 }

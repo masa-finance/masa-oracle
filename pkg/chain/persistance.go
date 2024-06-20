@@ -36,7 +36,7 @@ func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte))
 
 		if err != nil {
 			if err == badger.ErrKeyNotFound {
-				logrus.Warn("Creating genesis TXN...")
+				logrus.Warn("Creating genesis transaction...")
 				genesisBlock, genesisHash := genesisFn()
 				serialData, err := genesisBlock.Serialize()
 				if err != nil {
@@ -94,7 +94,7 @@ func (p *Persistance) Get(key []byte) ([]byte, error) {
 }
 
 func (p *Persistance) GetLastHash() ([]byte, error) {
-	logrus.Info("Get last TXN...")
+	logrus.Info("Get last transaction...")
 	return p.Get([]byte(KeyLastHash))
 }
 
