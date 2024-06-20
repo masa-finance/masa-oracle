@@ -149,7 +149,6 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 //	logrus.Infof("%+v", res)
 //	}()
 func ScrapeWebData(uri []string, depth int) (string, error) {
-
 	// Set default depth to 1 if 0 is provided
 	if depth <= 0 {
 		depth = 1
