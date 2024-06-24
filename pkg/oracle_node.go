@@ -303,11 +303,11 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
 }
 
-// IsActor determines if the OracleNode is configured to act as an actor.
+// IsWorker determines if the OracleNode is configured to act as an actor.
 // An actor node is one that has at least one of the following scrapers enabled:
 // TwitterScraper, DiscordScraper, or WebScraper.
 // It returns true if any of these scrapers are enabled, otherwise false.
-func (node *OracleNode) IsActor() bool {
+func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data
 	cfg := config.GetInstance()
 	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {

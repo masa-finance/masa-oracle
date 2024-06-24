@@ -117,7 +117,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.HandleLog(ctx, "[+] Actor stopped")
 	case *messages.Work:
-		if a.Node.IsActor() {
+		if a.Node.IsWorker() {
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
@@ -280,7 +280,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	// local
-	if node.IsStaked && node.IsActor() {
+	if node.IsStaked && node.IsWorker() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

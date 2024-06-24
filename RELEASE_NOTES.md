@@ -6,15 +6,15 @@
 
 ## Overview
 
-This release of the Masa Oracle Node introduces new features, masa node will exit after running cli commands --stake n and --faucet
+This release of the Masa Oracle Node introduces the following new features and changes.
 
 ### Breaking Changes
 
-*
+* None
 
 ### Bug fixes
 
-*
+* None
 
 ### New Features
 
