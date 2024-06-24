@@ -162,7 +162,7 @@ func (n *NodeData) Joined() {
 	n.CalculateCurrentUptime()
 	n.CalculateAccumulatedUptime()
 
-	n.Version = "0.0.7-beta"
+	n.Version = "0.0.8-beta"
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
 	if n.IsStaked {
