@@ -10,15 +10,24 @@ This release of the Masa Oracle Node introduces the following new features and c
 
 ### Breaking Changes
 
-* None
+* Protocol verion change to 0.0.8
 
 ### Bug fixes
 
-* None
+* Better bootnode nodedata handling
+* Webscraper depth fixed
 
 ### New Features
 
-* None
+* Added claude sonnet 3.5 LLM
+* Discord scraper integrated with workers
+* Blockchain Distributed Ledger PoC
+* Validator nodes can write to chain, all nodes can read from chain
+* Block event tracking for validator nodes
+
+### Enhancements
+
+* Added dht clustering options for optimization
 
 ## Change Log
 
