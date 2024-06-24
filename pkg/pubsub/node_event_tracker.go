@@ -257,6 +257,7 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 // based on the configured data directory, defaulting to nodeDataFile if not set.
 // It logs any errors writing the file. This allows periodically persisting the
 // node data.
+// @note Obsoleted
 func (net *NodeEventTracker) DumpNodeData() {
 	// Write the JSON data to a file
 	var filePath string
@@ -277,6 +278,7 @@ func (net *NodeEventTracker) DumpNodeData() {
 // based on the configured data directory, defaulting to nodeDataFile if not set.
 // It logs any errors reading or parsing the file. This allows initializing the
 // node data tracker from persisted data.
+// @note Obsoleted
 func (net *NodeEventTracker) LoadNodeData() error {
 	// Read the JSON data from a file
 	var filePath string
