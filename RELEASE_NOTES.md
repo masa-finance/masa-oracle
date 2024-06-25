@@ -14,8 +14,7 @@ This release of the Masa Oracle Node introduces the following new features and c
 
 ### Bug fixes
 
-* Better bootnode nodedata handling
-* Webscraper depth fixed
+* Webscraper page depth fixed
 
 ### New Features
 
@@ -28,6 +27,7 @@ This release of the Masa Oracle Node introduces the following new features and c
 ### Enhancements
 
 * Added dht clustering options for optimization
+* Improved bootnode nodedata handling
 
 ## Change Log
 
