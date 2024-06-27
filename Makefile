@@ -25,9 +25,6 @@ clean:
 	@rm -rf bin
 	@rm masa_node.log
 
-wp:
-	@pdflatex whitepaper.tex
-
 proto:
 	sh pkg/workers/messages/build.sh
 
