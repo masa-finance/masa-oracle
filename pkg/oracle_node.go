@@ -374,7 +374,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		return
 	}
 
-	go node.Blockchain.Init(config.GetInstance().Consensus)
+	go node.Blockchain.Init()
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -384,7 +384,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		case <-ticker.C:
 			logrus.Debug("tick")
 		case block := <-node.BlockTracker.BlocksCh:
-			_ = node.Blockchain.AddBlock(block.Data, config.GetInstance().Consensus)
+			_ = node.Blockchain.AddBlock(block.Data)
 			if node.Blockchain.LastHash != nil {
 				b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
 				if e != nil {

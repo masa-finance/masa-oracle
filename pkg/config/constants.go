@@ -124,7 +124,6 @@ const (
 	LlmServer        = "LLM_SERVER"
 	LlmChatUrl       = "LLM_CHAT_URL"
 	LlmCfUrl         = "LLM_CF_URL"
-	Consensus        = "CONSENSUS"
 )
 
 // ProtocolWithVersion returns a libp2p protocol ID string

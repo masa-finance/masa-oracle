@@ -15,7 +15,7 @@ type Chain struct {
 	storage  *Persistance
 }
 
-func (c *Chain) Init(consensus string) error {
+func (c *Chain) Init() error {
 	dataDir := filepath.Join(config.GetInstance().MasaDir, "./blocks")
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		err = os.MkdirAll(dataDir, 0755)
@@ -23,20 +23,20 @@ func (c *Chain) Init(consensus string) error {
 			logrus.Fatal("Failed to create directory: ", err)
 		}
 	}
-	logrus.WithFields(logrus.Fields{"difficulty": Difficulty}).Info("Initializing blockchain...")
+	logrus.WithFields(logrus.Fields{"block": Difficulty}).Info("Initializing blockchain...")
 	c.storage = &Persistance{}
 	c.storage.Init(dataDir, func() (Serializable, []byte) {
-		genesisBlock := makeGenesisBlock(consensus)
+		genesisBlock := makeGenesisBlock()
 		return genesisBlock, genesisBlock.Hash
 	})
 	return nil
 }
 
-func makeGenesisBlock(consensus string) *Block {
+func makeGenesisBlock() *Block {
 	logrus.Info("Generating genesis transaction...")
 	newBlock := &Block{}
 	emptyLink := []byte{}
-	newBlock.Build([]byte("Genesis"), emptyLink, consensus, big.NewInt(1))
+	newBlock.Build([]byte("Genesis"), emptyLink, big.NewInt(1))
 	return newBlock
 }
 
@@ -51,16 +51,15 @@ func (c *Chain) UpdateLastHash() error {
 	return nil
 }
 
-func (c *Chain) AddBlock(data []byte, consensus string) error {
+func (c *Chain) AddBlock(data []byte) error {
 	logrus.Info("Adding transaction...")
 	if err := c.UpdateLastHash(); err != nil {
 		return err
 	}
 	newBlock := &Block{}
-	newBlock.Build(data, c.LastHash, consensus, big.NewInt(1))
+	newBlock.Build(data, c.LastHash, big.NewInt(1))
 
-	// Validate the block if using PoS
-	if consensus == "PoS" && !IsValidPoS(newBlock, big.NewInt(1)) {
+	if !IsValidPoS(newBlock, big.NewInt(1)) {
 		logrus.Error("Invalid PoS block")
 		return fmt.Errorf("invalid PoS block")
 	}

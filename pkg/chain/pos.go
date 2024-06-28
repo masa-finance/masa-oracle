@@ -10,6 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Difficulty Implementation of the difficulty rate
+const Difficulty = int64(21)
+
 type ProofOfStake struct {
 	Block  *Block
 	Target *big.Int
@@ -17,6 +20,7 @@ type ProofOfStake struct {
 }
 
 func getProofOfStakeTarget(stake *big.Int) *big.Int {
+	logrus.WithFields(logrus.Fields{"stake": stake}).Info("Staked amount")
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-Difficulty))
 	// adjustment := new(big.Int).Div(target, stake)
