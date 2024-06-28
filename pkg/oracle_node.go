@@ -29,6 +29,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	chain "github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
@@ -55,8 +57,10 @@ type OracleNode struct {
 	IsLlmServer      bool
 	StartTime        time.Time
 	WorkerTracker    *pubsub2.WorkerEventTracker
+	BlockTracker     *pubsub2.BlockEventTracker
 	ActorEngine      *actor.RootContext
 	ActorRemote      *remote.Remote
+	Blockchain       *chain.Chain
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -180,6 +184,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsLlmServer:      cfg.LlmServer,
 		ActorEngine:      engine,
 		ActorRemote:      r,
+		Blockchain:       &chain.Chain{},
 	}, nil
 }
 
@@ -298,11 +303,11 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
 }
 
-// IsActor determines if the OracleNode is configured to act as an actor.
+// IsWorker determines if the OracleNode is configured to act as an actor.
 // An actor node is one that has at least one of the following scrapers enabled:
 // TwitterScraper, DiscordScraper, or WebScraper.
 // It returns true if any of these scrapers are enabled, otherwise false.
-func (node *OracleNode) IsActor() bool {
+func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data
 	cfg := config.GetInstance()
 	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
@@ -348,5 +353,48 @@ func (node *OracleNode) LogActiveTopics() {
 		logrus.Infof("Active topics: %v", topicNames)
 	} else {
 		logrus.Info("No active topics.")
+	}
+}
+
+// Blockchain Implementation
+var (
+	blocksCh = make(chan *pubsub.Message)
+)
+
+// SubscribeToBlocks is a function that takes in a context and an OracleNode as parameters.
+// It is used to subscribe the given OracleNode to the blockchain blocks.
+func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
+	node.BlockTracker = &pubsub2.BlockEventTracker{BlocksCh: blocksCh}
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.BlockTopic), node.BlockTracker, true)
+	if err != nil {
+		logrus.Errorf("Subscribe error %v", err)
+	}
+
+	if !node.IsValidator {
+		return
+	}
+
+	go node.Blockchain.Init()
+
+	ticker := time.NewTicker(time.Second * 10)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			logrus.Debug("tick")
+		case block := <-node.BlockTracker.BlocksCh:
+			_ = node.Blockchain.AddBlock(block.Data)
+			if node.Blockchain.LastHash != nil {
+				b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
+				if e != nil {
+					logrus.Errorf("Blockchain.GetBlock err: %v", e)
+				}
+				b.Print()
+			}
+
+		case <-ctx.Done():
+			return
+		}
 	}
 }

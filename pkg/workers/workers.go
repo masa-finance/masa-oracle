@@ -33,6 +33,7 @@ const (
 	Discord                WorkerType = "discord"
 	DiscordProfile         WorkerType = "discord-profile"
 	DiscordChannelMessages WorkerType = "discord-channel-messages"
+	DiscordSentiment       WorkerType = "discord-sentiment"
 	DiscordGuildChannels   WorkerType = "discord-guild-channels"
 	DiscordUserGuilds      WorkerType = "discord-user-guilds"
 	LLMChat                WorkerType = "llm-chat"
@@ -47,11 +48,12 @@ const (
 )
 
 var WORKER = struct {
-	Discord, DiscordProfile, DiscordChannelMessages, DiscordGuildChannels, DiscordUserGuilds, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
+	Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
 }{
 	Discord:                Discord,
 	DiscordProfile:         DiscordProfile,
 	DiscordChannelMessages: DiscordChannelMessages,
+	DiscordSentiment:       DiscordSentiment,
 	DiscordGuildChannels:   DiscordGuildChannels,
 	DiscordUserGuilds:      DiscordUserGuilds,
 	LLMChat:                LLMChat,
@@ -115,7 +117,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.HandleLog(ctx, "[+] Actor stopped")
 	case *messages.Work:
-		if a.Node.IsActor() {
+		if a.Node.IsWorker() {
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
@@ -278,7 +280,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 	// local
-	if node.IsStaked && node.IsActor() {
+	if node.IsStaked && node.IsWorker() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -306,7 +308,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Infof("[+] Node Ip Address: %s", ipAddr)
+			logrus.Infof("[+] Worker Address: %s", ipAddr)
 			if !isBootnode(ipAddr) && p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
 				wg.Add(1)
 				go func() {

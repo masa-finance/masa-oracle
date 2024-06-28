@@ -134,7 +134,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	//	@Title			Masa API
 	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
 	//	@Host			https://api.masa.ai
-	//	@Version		0.0.7-beta
+	//	@Version		0.0.8-beta
 	//	@contact.name	Masa API Support
 	//	@contact.url	https://masa.ai
 	//	@contact.email	support@masa.ai
@@ -368,6 +368,17 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /sentiment/tweets [post]
 		v1.POST("/sentiment/tweets", API.SearchTweetsAndAnalyzeSentiment())
 
+		// @Summary Analyze Sentiment of Tweets
+		// @Description Searches for tweets and analyzes their sentiment
+		// @Tags Sentiment
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   body    string  true  "Prompt"
+		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of discord"
+		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of discord"
+		// @Router /sentiment/tweets [post]
+		v1.POST("/sentiment/discord", API.SearchDiscordMessagesAndAnalyzeSentiment())
+
 		// @Summary Analyze Sentiment of Web Content
 		// @Description Searches for web content and analyzes its sentiment
 		// @Tags Sentiment
@@ -422,6 +433,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error communicating with Cloudflare AI"
 		// @Router /chat/cf [post]
 		v1.POST("/chat/cf", API.CfLlmChat())
+
+		// @note a test route
+		v1.POST("/test", API.Test())
 	}
 
 	// @Summary Node Status Page

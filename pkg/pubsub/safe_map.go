@@ -95,6 +95,7 @@ func (sm *SafeMap) UnmarshalJSON(b []byte) error {
 }
 
 // DumpNodeData writes the entire nodeData map to a file in JSON format.
+// @note Obsoleted
 func (sm *SafeMap) DumpNodeData(filePath string) error {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
@@ -113,6 +114,7 @@ func (sm *SafeMap) DumpNodeData(filePath string) error {
 }
 
 // LoadNodeData reads nodeData from a file in JSON format and loads it into the map.
+// @note Obsoleted
 func (sm *SafeMap) LoadNodeData(filePath string) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()

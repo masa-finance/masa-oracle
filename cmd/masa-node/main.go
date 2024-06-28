@@ -86,7 +86,10 @@ func main() {
 		logrus.Info("This node is not set as the allowed peer")
 	}
 
+	// Init cache resolver
 	go db.InitResolverCache(node, keyManager)
+	// Subscribe to blocks -- moving to new ticket
+	// go masa.SubscribeToBlocks(ctx, node)
 
 	// Subscribe and if actor start monitoring actor workers
 	// considering all that matters is if the node is staked

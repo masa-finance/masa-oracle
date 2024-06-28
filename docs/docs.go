@@ -848,6 +848,61 @@ const docTemplate = `{
 					}
 				}
 			},
+			"/sentiment/discord": {
+				"post": {
+					"description": "Searches for Discord messages and analyzes their sentiment",
+					"consumes": [
+						"application/json"
+					],
+					"produces": [
+						"application/json"
+					],
+					"tags": [
+						"Sentiment"
+					],
+					"summary": "Analyze Sentiment of Discord Messages",
+					"parameters": [
+						{
+							"in": "body",
+							"name": "body",
+							"description": "Sentiment analysis request body for Discord messages",
+							"required": true,
+							"schema": {
+								"type": "object",
+								"properties": {
+									"channelID": {
+										"type": "string",
+										"description": "Discord Channel ID"
+									},
+									"prompt": {
+										"type": "string",
+										"description": "Prompt to enter"
+									},
+									"model": {
+										"type": "string",
+										"description": "Sentiment analysis model to use"
+									}
+								},
+								"required": ["channelID", "model"]
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully analyzed sentiment of Discord messages",
+							"schema": {
+								"$ref": "#/definitions/SentimentAnalysisResponse"
+							}
+						},
+						"400": {
+							"description": "Error analyzing sentiment of Discord messages",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
 			"/auth": {
 				"get": {
 					"description": "Retrieves the API key for the node",
@@ -1188,7 +1243,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.0.7-beta",
+	Version:          "0.0.8-beta",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},

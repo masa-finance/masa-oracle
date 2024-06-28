@@ -196,6 +196,56 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 	}
 }
 
+// SearchDiscordMessagesAndAnalyzeSentiment processes a request to search Discord messages and analyze sentiment.
+func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !api.Node.IsStaked {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
+			return
+		}
+
+		var reqBody struct {
+			ChannelID string `json:"channelID"`
+			Prompt    string `json:"prompt"`
+			Model     string `json:"model"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.ChannelID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID parameter is missing"})
+			return
+		}
+
+		if reqBody.Prompt == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID parameter is missing"})
+			return
+		}
+
+		if reqBody.Model == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing"})
+			return
+		}
+
+		bodyBytes, wErr := json.Marshal(reqBody)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		wErr = publishWorkRequest(api, requestID, workers.WORKER.DiscordSentiment, bodyBytes)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
 // SearchWebAndAnalyzeSentiment returns a gin.HandlerFunc that processes web search requests and performs sentiment analysis.
 // It first validates the request body for required fields such as URL, Depth, and Model. If the Model is set to "all",
 // it iterates through all available models to perform sentiment analysis on the web content fetched from the specified URL.
@@ -806,5 +856,37 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
+	}
+}
+
+func (api *API) Test() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Foo string `json:"foo"`
+		}
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Foo == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "foo value must be provided"})
+			return
+		}
+
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
+		if err != nil {
+			logrus.Errorf("Error publishing block: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "message sent"})
 	}
 }

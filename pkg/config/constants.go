@@ -16,6 +16,7 @@ type ModelType string
 
 // Define model constants.
 const (
+	ClaudeSonnet35                             ModelType = "claude-3-5-sonnet-20240620"
 	ClaudeOpus                                 ModelType = "claude-3-opus"
 	ClaudeOpus20240229                         ModelType = "claude-3-opus-20240229"
 	ClaudeSonnet20240229                       ModelType = "claude-3-sonnet-20240229"
@@ -46,8 +47,9 @@ const (
 
 // Models holds the available models for easy access and iteration.
 var Models = struct {
-	ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4o, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat, CloudflareQwen15Chat, CloudflareLlama27bChatFp16, CloudflareLlama38bInstruct, CloudflareMistral7bInstruct, CloudflareMistral7bInstructV01, HuggingFaceGoogleGemma7bIt, HuggingFaceNousresearchHermes2ProMistral7b, HuggingFaceTheblokeLlama213bChatAwq, HuggingFaceTheblokeNeuralChat7bV31Awq, CloudflareOpenchat350106, CloudflareMicrosoftPhi2 ModelType
+	ClaudeSonnet35, ClaudeOpus, ClaudeOpus20240229, ClaudeSonnet, ClaudeHaiku, GPT4, GPT4o, GPT4Turbo, GPT35Turbo, LLama2, LLama3, Mistral, Gemma, Mixtral, OpenChat, NeuralChat, CloudflareQwen15Chat, CloudflareLlama27bChatFp16, CloudflareLlama38bInstruct, CloudflareMistral7bInstruct, CloudflareMistral7bInstructV01, HuggingFaceGoogleGemma7bIt, HuggingFaceNousresearchHermes2ProMistral7b, HuggingFaceTheblokeLlama213bChatAwq, HuggingFaceTheblokeNeuralChat7bV31Awq, CloudflareOpenchat350106, CloudflareMicrosoftPhi2 ModelType
 }{
+	ClaudeSonnet35:                 ClaudeSonnet35,
 	ClaudeOpus:                     ClaudeOpus,
 	ClaudeOpus20240229:             ClaudeOpus20240229,
 	ClaudeSonnet:                   ClaudeSonnet20240229,
@@ -92,7 +94,7 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.7-beta"
+	Version     = "v0.0.8-beta"
 	FilePath    = "FILE_PATH"
 	Validator   = "VALIDATOR"
 	CachePath   = "CACHE_PATH"
@@ -104,6 +106,7 @@ const (
 	NodeGossipTopic      = "gossip"
 	PublicKeyTopic       = "bootNodePublicKey"
 	WorkerTopic          = "workerTopic"
+	BlockTopic           = "blockTopic"
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
 
