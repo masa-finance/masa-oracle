@@ -20,9 +20,6 @@ This release of the Masa Oracle Node introduces the following new features and c
 
 * Added claude sonnet 3.5 LLM
 * Discord scraper integrated with workers
-* Blockchain Distributed Ledger PoC
-* Validator nodes can write to chain, all nodes can read from chain
-* Block event tracking for validator nodes
 
 ### Enhancements
 
