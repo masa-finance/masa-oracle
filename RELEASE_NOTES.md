@@ -2,7 +2,7 @@
 
 [All Releases](https://github.com/masa-finance/masa-oracle/releases)
 
-## [0.0.8-beta](https://github.com/masa-finance/masa-oracle/releases) (2024)
+## [0.0.9-beta](https://github.com/masa-finance/masa-oracle/releases) (2024)
 
 ## Overview
 
