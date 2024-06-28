@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://docs.masa.ai/docs/welcome-to-masa#introduction
+    about: New and not sure where to start? have a look at our docs!
+  - name: Community Support
+    url: https://github.com/masa-finance/masa-oracle/discussions
+    about: Please ask and answer generic questions here.
+  - name: Discord
+    url: https://discord.com/invite/masafinance
+    about: Join our community on Discord!
