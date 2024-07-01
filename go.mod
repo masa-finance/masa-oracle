@@ -27,7 +27,7 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.25.2
 	github.com/libp2p/go-libp2p-pubsub v0.11.0
 	github.com/masa-finance/masa-twitter-scraper v0.0.0-20240515201201-b83fa3597a31
-	github.com/multiformats/go-multiaddr v0.12.4
+	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/ollama/ollama v0.1.46
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
