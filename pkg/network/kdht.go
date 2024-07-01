@@ -111,7 +111,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 				stream, err := host.NewStream(ctxWithTimeout, peerInfo.ID, protocolId)
 				if err != nil {
 					if strings.Contains(err.Error(), "protocols not supported") {
-						logrus.Fatalf("%s Please update to the latest version.", err.Error())
+						logrus.Fatalf("%s Please update to the latest version and make sure you are connecting to the correct network.", err.Error())
 					} else {
 						logrus.Error("Error opening stream:", err)
 					}
