@@ -89,7 +89,7 @@ func main() {
 	// Init cache resolver
 	go db.InitResolverCache(node, keyManager)
 	// Subscribe to blocks -- moving to new ticket
-	// go masa.SubscribeToBlocks(ctx, node)
+	go masa.SubscribeToBlocks(ctx, node)
 
 	// Subscribe and if actor start monitoring actor workers
 	// considering all that matters is if the node is staked
