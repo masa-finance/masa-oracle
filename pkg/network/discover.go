@@ -97,8 +97,9 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					Addrs: availPeer.Addrs,
 				}
 				hostAddrInfo := peer.AddrInfo{
-					ID:    host.ID(),
-					Addrs: []multiaddr.Multiaddr{},
+					ID: host.ID(),
+					//Addrs: []multiaddr.Multiaddr{},
+					Addrs: host.Addrs(),
 				}
 				if availPeerAddrInfo.ID.String() == hostAddrInfo.ID.String() {
 					logrus.Debugf("Skipping connect to self: %s", availPeerAddrInfo.ID.String())
