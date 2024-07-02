@@ -5,6 +5,6 @@
   "license": "MIT",
   "dependencies": {
     "@masa-finance/masa-contracts-oracle": "^0.4.5",
-    "@masa-finance/masa-token": "^2.7.1"
+    "@masa-finance/masa-token": "^2.10.0"
   }
 }
