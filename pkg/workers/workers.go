@@ -443,7 +443,54 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)
 			}
 
+<<<<<<< HEAD
 			processValidatorData(data, validatorDataMap, &startTime, node)
+=======
+			if validatorDataMap, ok := data.ValidatorData.(map[string]interface{}); ok {
+				if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
+					if _, ok := response["error"].(string); ok {
+						logrus.Infof("[+] Work failed %s", response["error"])
+					} else if work, ok := response["data"].(string); ok {
+						key, _ := computeCid(work)
+						logrus.Infof("[+] Work completed -> %s", key)
+
+						endTime := time.Now()
+						duration := endTime.Sub(startTime)
+
+						workEvent := db.WorkEvent{
+							CID:       key,
+							PeerId:    data.ID,
+							Payload:   []byte(work),
+							Duration:  duration.Seconds(),
+							Timestamp: time.Now().Unix(),
+						}
+
+						updateRecords(node, workEvent)
+					} else if w, ok := response["data"].(map[string]interface{}); ok {
+						work, err := json.Marshal(w)
+						if err != nil {
+							logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+							continue
+						}
+						key, _ := computeCid(string(work))
+						logrus.Infof("[+] Work done %s", key)
+
+						endTime := time.Now()
+						duration := endTime.Sub(startTime)
+
+						workEvent := db.WorkEvent{
+							CID:       key,
+							PeerId:    data.ID,
+							Payload:   work,
+							Duration:  duration.Seconds(),
+							Timestamp: time.Now().Unix(),
+						}
+
+						updateRecords(node, workEvent)
+					}
+				}
+			}
+>>>>>>> 22b5207 (bugfix #46)
 		case <-ctx.Done():
 			return
 		}
