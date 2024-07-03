@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: "weekly"
     reviewers:
-      - "masa-finance/core-team"
+      - "masa-finance/protocol"
   - package-ecosystem: "npm" # See documentation for possible values
     directory: "/contracts" # Location of package manifests
     schedule:
