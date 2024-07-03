@@ -38,7 +38,6 @@ To start processing Discord data requests, you need to retrieve your Discord bot
 5 . Confirm the creation of the bot user.
 6 . Under the "TOKEN" section, click on "Copy" to get your bot token.
 
-## Setting Up Your Node for Discord Requests
 
 ### Adding Discord Credentials
 
@@ -53,7 +52,7 @@ DISCORD_SCRAPER=true
 
 3 . Save the `.env` file and restart your node to apply the changes.
 
-### Verifying Node Configuration
+### 3) Verifying Node Configuration
 
 Ensure your node is correctly configured to handle Discord data requests by checkint the initialization message:
 
