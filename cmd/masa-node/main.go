@@ -87,9 +87,7 @@ func main() {
 	}
 
 	// Init cache resolver
-	go db.InitResolverCache(node, keyManager)
-	// Subscribe to blocks
-	go masa.SubscribeToBlocks(ctx, node)
+	db.InitResolverCache(node, keyManager)
 
 	// Subscribe and if actor start monitoring actor workers
 	// considering all that matters is if the node is staked
@@ -127,6 +125,9 @@ func main() {
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
 	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
+
+	// Subscribe to blocks
+	masa.SubscribeToBlocks(ctx, node)
 
 	<-ctx.Done()
 }
