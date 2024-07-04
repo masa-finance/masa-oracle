@@ -1,0 +1,13 @@
+name: Commitlint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    name: Commitlint
+    steps:
+      - name: Run commitlint
+        uses: opensource-nepal/commitlint@v1
