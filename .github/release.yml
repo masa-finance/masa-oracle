@@ -21,7 +21,7 @@ changelog:
         - roadmap
     - title: 📖 Documentation and examples
       labels:
-        - kind/documentation
+        - documentation
         - examples
     - title: 👒 Dependencies
       labels:
