@@ -1,0 +1,31 @@
+# .github/release.yml
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: Breaking Changes 🛠
+      labels:
+        - Semver-Major
+        - breaking-change
+    - title: "Bug fixes :bug:"
+      labels:
+        - bug
+        - regression
+    - title: Exciting New Features 🎉
+      labels:
+        - Semver-Minor
+        - enhancement
+        - ux
+        - roadmap
+    - title: 📖 Documentation and examples
+      labels:
+        - documentation
+        - examples
+    - title: 👒 Dependencies
+      labels:
+        - dependencies
+    - title: Other Changes
+      labels:
+        - "*"
