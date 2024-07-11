@@ -63,7 +63,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 			"success":      true,
 			"data":         nodeDataPage.Data,
 			"pageNbr":      nodeDataPage.PageNumber,
-			"total":        nodeDataPage.TotalRecords,
+			"total":        nodeDataPage.TotalPages,
 			"totalRecords": nodeDataPage.TotalRecords,
 		})
 	}
