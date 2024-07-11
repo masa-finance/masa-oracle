@@ -63,12 +63,12 @@ func WriteData(node *masa.OracleNode, key string, value []byte) error {
 
 // ReadData reads the value for the given key from the database.
 // It requires the host for access control verification before reading.
-func ReadData(node *masa.OracleNode, key string) []byte {
+func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 	logrus.WithFields(logrus.Fields{
 		"nodeID":       node.Host.ID().String(),
 		"isAuthorized": true,
 		"ReadData":     true,
-	})
+	}).Info("Attempting to read data")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
@@ -91,9 +91,9 @@ func ReadData(node *masa.OracleNode, key string) []byte {
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Debug("Failed to read from the database")
-		return val
+		}).Error("Failed to read from the database")
+		return nil, err
 	}
 
-	return val
+	return val, nil
 }

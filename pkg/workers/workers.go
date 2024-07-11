@@ -193,11 +193,15 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		return
 	}
 
-	exists := db.ReadData(node, workEvent.CID)
+	exists, err := db.ReadData(node, workEvent.CID)
+	if err != nil {
+		logrus.Errorf("Failed to read data for CID %s: %v", workEvent.CID, err)
+		return
+	}
 	if exists == nil {
 		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
 		if err != nil {
-			logrus.Errorf("Failed to write data: %v", err)
+			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
 			return
 		}
 	}
@@ -214,7 +218,7 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 	} else {
 		err = json.Unmarshal(nodeDataBytes, &nodeData)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Failed to unmarshal node data bytes: %v", err)
 			return
 		}
 	}
@@ -233,19 +237,19 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		nodeData.Records = append(nodeData.Records.([]CID), newCID)
 		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Failed to update node data: %v", err)
 			return
 		}
 	}
 
 	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Failed to marshal node data: %v", err)
 		return
 	}
 	err = db.WriteData(node, workEvent.PeerId, jsonData)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
 		return
 	}
 	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)
