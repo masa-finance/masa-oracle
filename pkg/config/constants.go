@@ -94,7 +94,7 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.9-beta"
+	Version     = "v0.5.0"
 	FilePath    = "FILE_PATH"
 	Validator   = "VALIDATOR"
 	CachePath   = "CACHE_PATH"

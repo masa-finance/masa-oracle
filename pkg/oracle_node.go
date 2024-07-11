@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
+	shell "github.com/ipfs/go-ipfs-api"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	chain "github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -373,6 +375,70 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 	if !node.IsValidator {
 		return
 	}
+
+	// if validator=true
+	// do i have the block?
+	// am i the validator that creates the block
+	// how do i sync the blocks to others or from others
+
+	// save block to ipfs
+	// get from ipfs
+	// cid -> stored in node data, chain data, txns [] base58 0x...
+
+	// timestamp := time.Now()
+	// formattedTimestamp := timestamp.UnixNano()
+	// filename := fmt.Sprintf("%v", formattedTimestamp)
+
+	// file, err := os.Create(filename)
+	// if err != nil {
+	// 	logrus.Info("Error opening file:", err)
+	// 	return
+	// }
+	// defer file.Close()
+
+	// _, err = file.WriteString("masa protocol")
+	// if err != nil {
+	// 	logrus.Info("Error writing to file:", err)
+	// 	return
+	// }
+
+	// err = file.Sync()
+	// if err != nil {
+	// 	logrus.Info("Error flushing file:", err)
+	// }
+
+	projectID := "2K3UB2DxNThAJ7fYiFMeOBnaCiC"
+	projectSecret := "cca72847ab42243af3f2691018046bb3"
+	infuraURL := fmt.Sprintf("https://%s:%s@dwn.infura-ipfs.io:5001", projectID, projectSecret)
+
+	sh := shell.NewShell(infuraURL)
+
+	file, err := os.Open("README.md")
+	if err != nil {
+		logrus.Errorf("Error opening file: %s", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	hash, err := sh.AddWithOpts(file, true, true)
+	if err != nil {
+		logrus.Errorf("Error adding file to IPFS: %s", err)
+		os.Exit(1)
+	}
+
+	// err = sh.Pin(hash)
+	// if err != nil {
+	// 	logrus.Errorf("Error pinning file to IPFS: %s", err)
+	// 	os.Exit(1)
+	// }
+
+	// err = sh.FilesCp(ctx, "/ipfs/"+hash, "/"+filename)
+	// if err != nil {
+	// 	logrus.Errorf("Error copying file to MFS: %s", err)
+	// 	os.Exit(1)
+	// }
+
+	logrus.Printf("File added successfully. IPFS hash: %s\n", hash)
 
 	go node.Blockchain.Init()
 
