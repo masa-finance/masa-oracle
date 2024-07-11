@@ -1,8 +1,10 @@
 package masa
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -363,6 +365,36 @@ var (
 	blocksCh = make(chan *pubsub.Message)
 )
 
+// func (node *OracleNode) QueryAllDHTObjects(ctx context.Context) (map[string][]byte, error) {
+// 	results := make(map[string][]byte)
+
+// 	// Get all peers from the DHT
+// 	peers, err := node.DHT.GetClosestPeers(ctx, "/db")
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to get peers: %v", err)
+// 	}
+
+// 	// Iterate through all peers
+// 	for peer := range peers {
+// 		// Get all providers for this peer
+// 		providers := node.DHT.FindProvidersAsync(ctx, peer, 0)
+
+// 		// Iterate through all providers
+// 		for provider := range providers {
+// 			// Get the value for this provider
+// 			value, err := node.DHT.GetValue(ctx, fmt.Sprintf("/db/%s", provider.ID.String()))
+// 			if err != nil {
+// 				logrus.Warnf("Failed to get value for peer %s: %v", provider.ID.String(), err)
+// 				continue
+// 			}
+
+// 			results[provider.ID.String()] = value
+// 		}
+// 	}
+
+// 	return results, nil
+// }
+
 // SubscribeToBlocks is a function that takes in a context and an OracleNode as parameters.
 // It is used to subscribe the given OracleNode to the blockchain blocks.
 func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
@@ -376,69 +408,39 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		return
 	}
 
-	// if validator=true
-	// do i have the block?
-	// am i the validator that creates the block
-	// how do i sync the blocks to others or from others
+	if os.Getenv("IPFS_URL") != "" {
 
-	// save block to ipfs
-	// get from ipfs
-	// cid -> stored in node data, chain data, txns [] base58 0x...
+		infuraURL := fmt.Sprintf("https://%s:%s@%s", os.Getenv("PID"), os.Getenv("PS"), os.Getenv("IPFS_URL"))
+		sh := shell.NewShell(infuraURL)
 
-	// timestamp := time.Now()
-	// formattedTimestamp := timestamp.UnixNano()
-	// filename := fmt.Sprintf("%v", formattedTimestamp)
+		type MyJSONObject struct {
+			Name string `json:"name"`
+			Age  int    `json:"age"`
+		}
+		jsonObj := MyJSONObject{
+			Name: "Jane Doe",
+			Age:  56,
+		}
+		jsonBytes, err := json.Marshal(jsonObj)
+		if err != nil {
+			logrus.Errorf("Error marshalling JSON: %s", err)
+		}
 
-	// file, err := os.Create(filename)
-	// if err != nil {
-	// 	logrus.Info("Error opening file:", err)
-	// 	return
-	// }
-	// defer file.Close()
+		reader := bytes.NewReader(jsonBytes)
 
-	// _, err = file.WriteString("masa protocol")
-	// if err != nil {
-	// 	logrus.Info("Error writing to file:", err)
-	// 	return
-	// }
+		hash, err := sh.AddWithOpts(reader, true, true)
+		if err != nil {
+			logrus.Errorf("Error adding file to IPFS: %s", err)
+			os.Exit(1)
+		}
 
-	// err = file.Sync()
-	// if err != nil {
-	// 	logrus.Info("Error flushing file:", err)
-	// }
+		logrus.Printf("File added successfully. IPFS hash: %s\n", hash)
 
-	projectID := "2K3UB2DxNThAJ7fYiFMeOBnaCiC"
-	projectSecret := "cca72847ab42243af3f2691018046bb3"
-	infuraURL := fmt.Sprintf("https://%s:%s@dwn.infura-ipfs.io:5001", projectID, projectSecret)
-
-	sh := shell.NewShell(infuraURL)
-
-	file, err := os.Open("README.md")
-	if err != nil {
-		logrus.Errorf("Error opening file: %s", err)
-		os.Exit(1)
+		e := sh.Get(hash, "testo.txt")
+		if e != nil {
+			logrus.Errorf("Error getting file from IPFS: %s", e)
+		}
 	}
-	defer file.Close()
-
-	hash, err := sh.AddWithOpts(file, true, true)
-	if err != nil {
-		logrus.Errorf("Error adding file to IPFS: %s", err)
-		os.Exit(1)
-	}
-
-	// err = sh.Pin(hash)
-	// if err != nil {
-	// 	logrus.Errorf("Error pinning file to IPFS: %s", err)
-	// 	os.Exit(1)
-	// }
-
-	// err = sh.FilesCp(ctx, "/ipfs/"+hash, "/"+filename)
-	// if err != nil {
-	// 	logrus.Errorf("Error copying file to MFS: %s", err)
-	// 	os.Exit(1)
-	// }
-
-	logrus.Printf("File added successfully. IPFS hash: %s\n", hash)
 
 	go node.Blockchain.Init()
 
@@ -449,6 +451,47 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		select {
 		case <-ticker.C:
 			logrus.Debug("tick")
+
+			// peerInfos := node.DHT.RoutingTable().GetPeerInfos()
+			// if len(peerInfos) > 0 {
+			// 	for i, peerInfo := range peerInfos {
+			// 		fmt.Printf("Peer %d:\n", i+1)
+			// 		fmt.Printf("  PeerID: %s\n", peerInfo.Id)
+			// 		fmt.Printf("  Last Success: %v\n", peerInfo.LastSuccessfulOutboundQueryAt)
+			// 		fmt.Printf("  Added At: %v\n", peerInfo.AddedAt)
+			// 		fmt.Println("---")
+			// 	}
+			// } else {
+			// 	fmt.Println("No peers in the routing table")
+			// }
+
+			// var routingDiscovery *routing.RoutingDiscovery
+			// protocolString := string(node.Protocol)
+			// logrus.Infof("Discovering peers for protocol: %s", protocolString)
+
+			// routingDiscovery = routing.NewRoutingDiscovery(node.DHT)
+
+			// peerChan, _ := routingDiscovery.FindPeers(ctx, protocolString)
+			// p := <-peerChan
+			// fmt.Println("peerChan", p.ID.String())
+
+			// v, _ := node.DHT.GetValue(ctx, "/db/"+p.ID.String())
+			// fmt.Println("value", string(v))
+
+			// select {
+			// case availPeer, ok := <-peerChan:
+			// 	if ok {
+			// 		fmt.Println("availPeer", availPeer)
+			// 	}
+			// }
+
+			// peers, _ := node.DHT.GetClosestPeers(ctx, "/db/"+p.ID.String())
+			// peers := node.NodeTracker.GetAllNodeData()
+			// peers := node.Host.Network().Peers()
+			// for peer := range peers {
+			// 	logrus.Info("peer -->", peer)
+			// }
+
 		case block := <-node.BlockTracker.BlocksCh:
 			_ = node.Blockchain.AddBlock(block.Data)
 			if node.Blockchain.LastHash != nil {
@@ -457,6 +500,30 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 					logrus.Errorf("Blockchain.GetBlock err: %v", e)
 				}
 				b.Print()
+
+				// type BlockData struct {
+				// 	InputData        string `json:"input_data"`
+				// 	TransactionHash  string `json:"transaction_hash"`
+				// 	PreviousHash     string `json:"previous_hash"`
+				// 	TransactionNonce int    `json:"transaction_nonce"`
+				// }
+
+				// blockData := BlockData{
+				// 	InputData:        string(b.Data),
+				// 	TransactionHash:  fmt.Sprintf("%x", b.Hash),
+				// 	PreviousHash:     fmt.Sprintf("%x", b.Link),
+				// 	TransactionNonce: int(b.Nonce),
+				// }
+
+				// blockDataJSON, err := json.Marshal(blockData)
+				// if err != nil {
+				// 	logrus.Errorf("Error marshalling block data: %v", err)
+				// }
+
+				// err = node.DHT.PutValue(ctx, "/db/"+blockData.TransactionHash, blockDataJSON)
+				// if err != nil {
+				// 	logrus.Errorf("Error storing block on DHT: %v", err)
+				// }
 			}
 
 		case <-ctx.Done():
