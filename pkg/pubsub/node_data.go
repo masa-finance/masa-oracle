@@ -220,10 +220,20 @@ func (n *NodeData) GetAccumulatedUptime() time.Duration {
 // Otherwise, it uses the time since the last joined event.
 func (n *NodeData) UpdateAccumulatedUptime() {
 	if n.Activity == ActivityLeft {
-		n.AccumulatedUptime += time.Since(time.Unix(n.LastLeftUnix, 0))
-		return
+		// Calculate the uptime for the most recent active period
+		recentUptime := n.LastLeftUnix - n.LastJoinedUnix
+		// Add this to the accumulated uptime
+		n.AccumulatedUptime += time.Duration(recentUptime) * time.Second
+	} else if n.Activity == ActivityJoined {
+		// If the node is currently active, calculate the uptime since it first joined
+		// This should only be done if the node is active and hasn't been updated yet
+		currentUptime := time.Now().Unix() - n.FirstJoinedUnix
+		// Update the accumulated uptime only if it's less than the current uptime
+		if currentUptime > int64(n.AccumulatedUptime.Seconds()) {
+			n.AccumulatedUptime = time.Duration(currentUptime) * time.Second
+		}
 	}
-	n.AccumulatedUptime += time.Since(time.Unix(n.LastJoinedUnix, 0))
+	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
 }
 
 // GetSelfNodeDataJson converts the local node's data into a JSON byte array.
