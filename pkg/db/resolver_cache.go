@@ -206,13 +206,13 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		var blockData map[string]interface{}
 		err := json.Unmarshal(blocks, &blockData)
 		if err != nil {
-			logrus.Errorf("Error unmarshalling block data: %v", err)
+			logrus.Debugf("Error unmarshalling block data: %v", err)
 		} else {
 			if message, ok := blockData["message"].(map[string]interface{}); ok {
 				if blockData, ok := message["block_data"].([]interface{}); ok {
 					blockDataBytes, err := json.Marshal(blockData)
 					if err != nil {
-						logrus.Errorf("Error marshalling block data: %v", err)
+						logrus.Debugf("Error marshalling block data: %v", err)
 					} else {
 						_ = WriteData(node, "blocks", blockDataBytes)
 					}
@@ -228,7 +228,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		var ipfsData map[string]interface{}
 		err = json.Unmarshal(ipfs, &ipfsData)
 		if err != nil {
-			logrus.Errorf("Error unmarshalling IPFS data: %v", err)
+			logrus.Debugf("Error unmarshalling IPFS data: %v", err)
 		} else {
 			if message, ok := ipfsData["message"].(string); ok {
 				_ = WriteData(node, "ipfs", []byte(message))
