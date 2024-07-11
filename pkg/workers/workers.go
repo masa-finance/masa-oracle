@@ -377,6 +377,18 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
+	if node == nil {
+		logrus.Error("MonitorWorkers: node is nil")
+		return
+	}
+	if node.ActorRemote == nil {
+		logrus.Error("MonitorWorkers: node.ActorRemote is nil")
+		return
+	}
+	if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
+		logrus.Error("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
+		return
+	}
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
@@ -389,7 +401,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		select {
 		case <-ticker.C:
 			logrus.Debug("tick")
-		case work := <-node.WorkerTracker.WorkerStatusCh:
+		case work, ok := <-node.WorkerTracker.WorkerStatusCh:
+			if !ok {
+				logrus.Error("WorkerStatusCh channel was closed")
+				return
+			}
 			logrus.Info("[+] Sending work to network")
 			var workData map[string]string
 			err := json.Unmarshal(work.Data, &workData)
@@ -399,7 +415,11 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			}
 			startTime = time.Now()
 			go SendWork(node, work)
-		case data := <-workerDoneCh:
+		case data, ok := <-workerDoneCh:
+			if !ok {
+				logrus.Error("workerDoneCh channel was closed")
+				return
+			}
 			validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
 			if !ok {
 				logrus.Errorf("Error asserting type: %v", ok)
@@ -418,52 +438,44 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)
 			}
 
-			if validatorDataMap, ok := data.ValidatorData.(map[string]interface{}); ok {
-				if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
-					if _, ok := response["error"].(string); ok {
-						logrus.Infof("[+] Work failed %s", response["error"])
-					} else if work, ok := response["data"].(string); ok {
-						key, _ := computeCid(work)
-						logrus.Infof("[+] Work done %s", key)
-
-						endTime := time.Now()
-						duration := endTime.Sub(startTime)
-
-						workEvent := db.WorkEvent{
-							CID:       key,
-							PeerId:    data.ID,
-							Payload:   []byte(work),
-							Duration:  duration.Seconds(),
-							Timestamp: time.Now().Unix(),
-						}
-
-						updateRecords(node, workEvent)
-					} else if w, ok := response["data"].(map[string]interface{}); ok {
-						work, err := json.Marshal(w)
-						if err != nil {
-							logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
-							continue
-						}
-						key, _ := computeCid(string(work))
-						logrus.Infof("[+] Work done %s", key)
-
-						endTime := time.Now()
-						duration := endTime.Sub(startTime)
-
-						workEvent := db.WorkEvent{
-							CID:       key,
-							PeerId:    data.ID,
-							Payload:   work,
-							Duration:  duration.Seconds(),
-							Timestamp: time.Now().Unix(),
-						}
-
-						updateRecords(node, workEvent)
-					}
-				}
-			}
+			processValidatorData(data, validatorDataMap, &startTime, node)
 		case <-ctx.Done():
 			return
 		}
 	}
+}
+
+func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
+	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
+		if _, ok := response["error"].(string); ok {
+			logrus.Infof("[+] Work failed %s", response["error"])
+		} else if work, ok := response["data"].(string); ok {
+			processWork(data, work, startTime, node)
+		} else if w, ok := response["data"].(map[string]interface{}); ok {
+			work, err := json.Marshal(w)
+			if err != nil {
+				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+				return
+			}
+			processWork(data, string(work), startTime, node)
+		}
+	}
+}
+
+func processWork(data *pubsub2.Message, work string, startTime *time.Time, node *masa.OracleNode) {
+	key, _ := computeCid(work)
+	logrus.Infof("[+] Work done %s", key)
+
+	endTime := time.Now()
+	duration := endTime.Sub(*startTime)
+
+	workEvent := db.WorkEvent{
+		CID:       key,
+		PeerId:    data.ID,
+		Payload:   []byte(work),
+		Duration:  duration.Seconds(),
+		Timestamp: time.Now().Unix(),
+	}
+
+	updateRecords(node, workEvent)
 }
