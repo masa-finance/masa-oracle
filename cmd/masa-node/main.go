@@ -127,7 +127,7 @@ func main() {
 	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
 
 	// Subscribe to blocks
-	masa.SubscribeToBlocks(ctx, node)
+	// masa.SubscribeToBlocks(ctx, node)
 
 	<-ctx.Done()
 }
