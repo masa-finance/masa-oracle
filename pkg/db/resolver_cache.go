@@ -202,23 +202,34 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		_ = WriteData(node, key, record.Value)
 
 		// sync blocks
-		blocks, _ := node.DHT.GetValue(ctx, "/db/blocks")
-		var blockData map[string]interface{}
-		err = json.Unmarshal(blocks, &blockData)
+		blocks, err := node.DHT.GetValue(ctx, "/db/blocks")
 		if err != nil {
-			logrus.Debugf("Error unmarshalling block data: %v", err)
-		} else {
-			if blockData, ok := blockData["block_data"].([]interface{}); ok {
-				blockDataBytes, err := json.Marshal(blockData)
-				if err != nil {
-					logrus.Debugf("Error marshalling block data: %v", err)
-				} else {
-					_ = WriteData(node, "blocks", blockDataBytes)
-				}
-			} else {
-				logrus.Errorf("Block data is not in the expected format")
-			}
+			logrus.Debugf("Error getting block data: %v", err)
+			continue
 		}
+
+		var blockData map[string]interface{}
+		if err := json.Unmarshal(blocks, &blockData); err != nil {
+			logrus.Debugf("Error unmarshalling block data: %v", err)
+			continue
+		}
+
+		blockDataList, ok := blockData["block_data"].([]interface{})
+		if !ok {
+			logrus.Errorf("Block data is not in the expected format")
+			continue
+		}
+
+		blockDataBytes, err := json.Marshal(blockDataList)
+		if err != nil {
+			logrus.Debugf("Error marshalling block data: %v", err)
+			continue
+		}
+
+		if err := WriteData(node, "blocks", blockDataBytes); err != nil {
+			logrus.Debugf("Error writing block data: %v", err)
+		}
+
 		// sync ipfs
 		ipfs, e := node.DHT.GetValue(ctx, "/db/ipfs")
 		if e != nil {
