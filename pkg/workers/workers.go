@@ -199,12 +199,15 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		return
 	}
 
-	exists, _ := db.ReadData(node, workEvent.CID)
-	// we don't need to check for err since exists gives an err also - we only need to know if the record exists or not in this context
+	exists, err := db.ReadData(node, workEvent.CID)
+	if err != nil {
+		logrus.Errorf("Failed to read data for CID %s: %v", workEvent.CID, err)
+		return
+	}
 	if exists == nil {
 		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
 		if err != nil {
-			logrus.Errorf("Failed to write data: %v", err)
+			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
 			return
 		}
 		err = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
@@ -263,11 +266,6 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		if node.IsValidator {
 			logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
 		}
-		return
-	}
-	err = db.WriteData(node, workEvent.PeerId, jsonData)
-	if err != nil {
-		logrus.Error(err)
 		return
 	}
 	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)

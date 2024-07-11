@@ -95,8 +95,7 @@ func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Debug("Failed to read from the database")
-		// we don't need to present this to the user since it's OK to not find a record during other flows and that generates an err as well
+		}).Error("Failed to read from the database")
 		return nil, err
 	}
 
