@@ -188,6 +188,11 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 	exists := db.ReadData(node, workEvent.CID)
 	if exists == nil {
 		_ = db.WriteData(node, workEvent.CID, workEvent.Payload)
+		err := node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
+		if err != nil {
+			logrus.Errorf("Error publishing block: %v", err)
+		}
+
 	}
 
 	var nodeData pubsub.NodeData
