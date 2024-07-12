@@ -148,11 +148,7 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 		// Use the provided code and phoneCodeHash to authenticate
 		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
 		if err != nil {
-			// Handle the specific error if password authentication is needed
-			if err == errors.New("2FA required") {
-				// Here you would handle the second factor authentication (2FA)
-				// This usually involves prompting the user for their password.
-			}
+			log.Printf("Error during SignIn: %v", err)
 			return err
 		}
 
