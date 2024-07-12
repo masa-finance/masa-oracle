@@ -455,30 +455,3 @@ func (api *API) GetNodeApiKey() gin.HandlerFunc {
 		})
 	}
 }
-
-// wip
-// peerInfos := node.DHT.RoutingTable().GetPeerInfos()
-// if len(peerInfos) > 0 {
-// 	for i, peerInfo := range peerInfos {
-// 		fmt.Printf("Peer %d:\n", i+1)
-// 		fmt.Printf("  PeerID: %s\n", peerInfo.Id)
-// 		fmt.Printf("  Last Success: %v\n", peerInfo.LastSuccessfulOutboundQueryAt)
-// 		fmt.Printf("  Added At: %v\n", peerInfo.AddedAt)
-// 		fmt.Println("---")
-// 	}
-// } else {
-// 	fmt.Println("No peers in the routing table")
-// }
-
-// var routingDiscovery *routing.RoutingDiscovery
-// protocolString := string(node.Protocol)
-// logrus.Infof("Discovering peers for protocol: %s", protocolString)
-
-// routingDiscovery = routing.NewRoutingDiscovery(node.DHT)
-
-// peerChan, _ := routingDiscovery.FindPeers(ctx, protocolString)
-// p := <-peerChan
-// fmt.Println("peerChan", p.ID.String())
-
-// v, _ := node.DHT.GetValue(ctx, "/db/"+p.ID.String())
-// fmt.Println("value", string(v))
