@@ -103,6 +103,11 @@ func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 	return val, nil
 }
 
+// SendToS3 sends a payload to an S3-compatible API.
+//
+// @param {string} uid - The unique identifier for the payload.
+// @param {map[string]string} payload - The payload to be sent, represented as a map of key-value pairs.
+// @returns {error} - Returns an error if the operation fails, otherwise returns nil.
 func SendToS3(uid string, payload map[string]string) error {
 
 	apiURL := os.Getenv("API_URL")
