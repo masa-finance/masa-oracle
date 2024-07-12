@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -711,6 +712,67 @@ func (api *API) WebData() gin.HandlerFunc {
 		}
 		handleWorkResponse(c, responseCh)
 		// worker handler implementation
+	}
+}
+
+// StartAuth starts the authentication process with Telegram.
+func (api *API) StartAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			PhoneNumber string `json:"phone_number"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		client, err := telegram.InitializeClient()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize Telegram client"})
+			return
+		}
+
+		phoneCodeHash, err := telegram.StartAuthentication(c.Request.Context(), client, reqBody.PhoneNumber)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start authentication"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Code sent to Telegram app", "phone_code_hash": phoneCodeHash})
+	}
+}
+
+// CompleteAuth completes the authentication process with Telegram.
+func (api *API) CompleteAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			PhoneNumber   string `json:"phone_number"`
+			Code          string `json:"code"`
+			PhoneCodeHash string `json:"phone_code_hash"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		client, err := telegram.InitializeClient()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize Telegram client"})
+			return
+		}
+
+		auth, err := telegram.CompleteAuthentication(c.Request.Context(), client, reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
+		if err != nil {
+			// Check if 2FA is required
+			if err.Error() == "2FA required" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Two-factor authentication is required"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete authentication"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Authentication successful", "auth": auth})
 	}
 }
 

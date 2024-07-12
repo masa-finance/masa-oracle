@@ -217,6 +217,33 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /discord/profile/{userID} [get]
 		v1.GET("/data/discord/profile/:userID", API.SearchDiscordProfile())
 
+		// @Summary Start Telegram Authentication
+		// @Description Initiates the authentication process with Telegram by sending a code to the provided phone number.
+		// @Tags Authentication
+		// @Accept  json
+		// @Produce  json
+		// @Param   phone_number   body    string  true  "Phone Number"
+		// @Success 200 {object} map[string]interface{} "Successfully sent authentication code"
+		// @Failure 400 {object} ErrorResponse "Invalid request body"
+		// @Failure 500 {object} ErrorResponse "Failed to initialize Telegram client or to start authentication"
+		// @Router /auth/telegram/start [post]
+		v1.POST("/auth/telegram/start", API.StartAuth())
+
+		// @Summary Complete Telegram Authentication
+		// @Description Completes the authentication process with Telegram using the code sent to the phone number.
+		// @Tags Authentication
+		// @Accept  json
+		// @Produce  json
+		// @Param   phone_number   body    string  true  "Phone Number"
+		// @Param   code           body    string  true  "Authentication Code"
+		// @Param   phone_code_hash body   string  true  "Phone Code Hash"
+		// @Success 200 {object} map[string]interface{} "Successfully authenticated"
+		// @Failure 400 {object} ErrorResponse "Invalid request body"
+		// @Failure 401 {object} ErrorResponse "Two-factor authentication is required"
+		// @Failure 500 {object} ErrorResponse "Failed to initialize Telegram client or to complete authentication"
+		// @Router /auth/telegram/complete [post]
+		v1.POST("/auth/telegram/complete", API.CompleteAuth())
+
 		// oauth tests
 		// v1.GET("/data/discord/exchangetoken/:code", API.ExchangeDiscordTokenHandler())
 
