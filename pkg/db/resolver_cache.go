@@ -202,33 +202,15 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		_ = WriteData(node, key, record.Value)
 
 		// sync blocks
-		//blocks, err := node.DHT.GetValue(ctx, "/db/blocks")
-		//if err != nil {
-		//	logrus.Debugf("Error getting block data: %v", err)
-		//	continue
-		//}
-		//
-		//var blockData map[string]interface{}
-		//if err := json.Unmarshal(blocks, &blockData); err != nil {
-		//	logrus.Debugf("Error unmarshalling block data: %v", err)
-		//	continue
-		//}
-		//
-		//blockDataList, ok := blockData["block_data"].([]interface{})
-		//if !ok {
-		//	logrus.Errorf("Block data is not in the expected format")
-		//	continue
-		//}
-		//
-		//blockDataBytes, err := json.Marshal(blockDataList)
-		//if err != nil {
-		//	logrus.Debugf("Error marshalling block data: %v", err)
-		//	continue
-		//}
-		//
-		//if err := WriteData(node, "blocks", blockDataBytes); err != nil {
-		//	logrus.Debugf("Error writing block data: %v", err)
-		//}
+		blocks, err := node.DHT.GetValue(ctx, "/db/blocks")
+		if err != nil {
+			logrus.Debugf("Error getting block data: %v", err)
+			continue
+		}
+
+		if err := WriteData(node, "blocks", blocks); err != nil {
+			logrus.Debugf("Error writing block data: %v", err)
+		}
 
 		// sync ipfs
 		ipfs, e := node.DHT.GetValue(ctx, "/db/ipfs")
