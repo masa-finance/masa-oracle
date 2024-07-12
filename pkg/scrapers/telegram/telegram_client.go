@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -84,43 +85,90 @@ func InitializeClient() (*telegram.Client, error) {
 // }
 
 // StartAuthentication sends the phone number to Telegram and requests a code.
-func StartAuthentication(ctx context.Context, client *telegram.Client, phoneNumber string) (string, error) {
-	// Call the SendCode method of the client to send the code to the user's Telegram app
-	sentCode, err := client.Auth().SendCode(ctx, phoneNumber, auth.SendCodeOptions{})
+func StartAuthentication(ctx context.Context, phoneNumber string) (string, error) {
+	// Initialize the Telegram client (if not already initialized)
+	client, err := InitializeClient()
 	if err != nil {
+		log.Printf("Failed to initialize Telegram client: %v", err)
 		return "", err
 	}
 
-	// Extract the phoneCodeHash from the sentCode object
+	// Define a variable to hold the phoneCodeHash
 	var phoneCodeHash string
-	switch code := sentCode.(type) {
-	case *tg.AuthSentCode:
-		phoneCodeHash = code.PhoneCodeHash
-	default:
-		return "", errors.New("unexpected type of AuthSentCode")
+
+	// Use client.Run to start the client and execute the SendCode method
+	err = client.Run(ctx, func(ctx context.Context) error {
+		// Call the SendCode method of the client to send the code to the user's Telegram app
+		sentCode, err := client.Auth().SendCode(ctx, phoneNumber, auth.SendCodeOptions{
+			AllowFlashCall: true,
+			CurrentNumber:  true,
+		})
+		if err != nil {
+			log.Printf("Error sending code: %v", err)
+			return err
+		}
+
+		log.Printf("Code sent successfully to: %s", phoneNumber)
+
+		// Extract the phoneCodeHash from the sentCode object
+		switch code := sentCode.(type) {
+		case *tg.AuthSentCode:
+			phoneCodeHash = code.PhoneCodeHash
+		default:
+			return errors.New("unexpected type of AuthSentCode")
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("Failed to run client or send code: %v", err)
+		return "", err
 	}
 
 	// Return the phoneCodeHash to be used in the next step
+	log.Printf("Authentication process started successfully for: %s", phoneNumber)
 	return phoneCodeHash, nil
 }
 
 // CompleteAuthentication uses the provided code to authenticate with Telegram.
-func CompleteAuthentication(ctx context.Context, client *telegram.Client, phoneNumber, code, phoneCodeHash string) (*tg.AuthAuthorization, error) {
-	// Use the provided code and phoneCodeHash to authenticate
-	auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
+func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHash string) (*tg.AuthAuthorization, error) {
+	// Initialize the Telegram client (if not already initialized)
+	client, err := InitializeClient()
 	if err != nil {
-		// Handle the specific error if password authentication is needed
-		if err == errors.New("2FA required") {
-			// Here you would handle the second factor authentication (2FA)
-			// This usually involves prompting the user for their password.
-		}
+		log.Printf("Failed to initialize Telegram client: %v", err)
 		return nil, err
 	}
 
-	// At this point, authentication was successful, and you have the user's Telegram auth data.
-	// You can now create a session for the user or perform other post-authentication tasks.
+	// Define a variable to hold the authentication result
+	var authResult *tg.AuthAuthorization
 
-	return auth, nil
+	// Use client.Run to start the client and execute the SignIn method
+	err = client.Run(ctx, func(ctx context.Context) error {
+		// Use the provided code and phoneCodeHash to authenticate
+		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
+		if err != nil {
+			// Handle the specific error if password authentication is needed
+			if err == errors.New("2FA required") {
+				// Here you would handle the second factor authentication (2FA)
+				// This usually involves prompting the user for their password.
+			}
+			return err
+		}
+
+		// At this point, authentication was successful, and you have the user's Telegram auth data.
+		authResult = auth
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("Failed to run client or sign in: %v", err)
+		return nil, err
+	}
+
+	// You can now create a session for the user or perform other post-authentication tasks.
+	log.Printf("Authentication successful for: %s", phoneNumber)
+	return authResult, nil
 }
 
 func GetClient() *telegram.Client {
