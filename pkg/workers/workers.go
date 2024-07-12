@@ -319,29 +319,34 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			logrus.Infof("[+] Worker Address: %s", ipAddr)
-			if !isBootnode(ipAddr) && p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
+			if !isBootnode(ipAddr) && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
 				wg.Add(1)
-				go func() {
+				go func(p pubsub.NodeData) {
 					defer wg.Done()
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
 						logrus.Debugf("Spawned error %v", err)
-					} else {
-						spawnedPID := spawned.Pid
-						client := node.ActorEngine.Spawn(props)
-						node.ActorEngine.Send(spawnedPID, &messages.Connect{
-							Sender: client,
-						})
-						future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
-						result, err := future.Result()
-						if err != nil {
-							logrus.Debugf("Error receiving response: %v", err)
-							return
-						}
-						response := result.(*messages.Response)
-						node.ActorEngine.Send(spawnedPID, response)
+						return
 					}
-				}()
+					spawnedPID := spawned.Pid
+					// Check if spawnedPID is nil
+					if spawnedPID == nil {
+						logrus.Errorf("spawnedPID is nil for IP: %s", ipAddr)
+						return
+					}
+					client := node.ActorEngine.Spawn(props)
+					node.ActorEngine.Send(spawnedPID, &messages.Connect{
+						Sender: client,
+					})
+					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
+					result, err := future.Result()
+					if err != nil {
+						logrus.Debugf("Error receiving response: %v", err)
+						return
+					}
+					response := result.(*messages.Response)
+					node.ActorEngine.Send(spawnedPID, response)
+				}(p)
 			}
 		}
 	}
