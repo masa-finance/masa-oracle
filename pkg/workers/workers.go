@@ -193,11 +193,8 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		return
 	}
 
-	exists, err := db.ReadData(node, workEvent.CID)
-	if err != nil {
-		logrus.Errorf("Failed to read data for CID %s: %v", workEvent.CID, err)
-		return
-	}
+	exists, _ := db.ReadData(node, workEvent.CID)
+	// we don't need to check for err since exists gives an err also - we only need to know if the record exists or not in this context
 	if exists == nil {
 		_ = db.WriteData(node, workEvent.CID, workEvent.Payload)
 		err := node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
