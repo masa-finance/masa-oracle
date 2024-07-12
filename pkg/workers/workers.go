@@ -183,65 +183,75 @@ func isBootnode(ipAddr string) bool {
 //   - node: A pointer to the OracleNode instance whose records need to be updated.
 //   - data: The data to be written for the specified key.
 //   - key: The key under which the data should be stored.
+//
+// The function checks if the data already exists in the database. If it does not, it writes the new data.
+// It then retrieves the node data from the cache or the node tracker. If the node data is not found, it logs an error.
+// The function updates the node data with the new CID and bytes scraped, and writes the updated node data back to the database.
 func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
+	if node == nil {
+		logrus.Error("Node is nil")
+		return
+	}
 
-	exists := db.ReadData(node, workEvent.CID)
+	exists, err := db.ReadData(node, workEvent.CID)
+	if err != nil {
+		logrus.Errorf("Failed to read data for CID %s: %v", workEvent.CID, err)
+		return
+	}
 	if exists == nil {
-		_ = db.WriteData(node, workEvent.CID, workEvent.Payload)
+		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
+		if err != nil {
+			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
+			return
+		}
 	}
 
 	var nodeData pubsub.NodeData
 	nodeDataBytes, err := db.GetCache(context.Background(), workEvent.PeerId)
-	if err != nil {
-		nodeData = *node.NodeTracker.GetNodeData(workEvent.PeerId)
+	if err != nil || nodeDataBytes == nil {
+		nodeDataPtr := node.NodeTracker.GetNodeData(workEvent.PeerId)
+		if nodeDataPtr == nil {
+			logrus.Errorf("Node data not found for peer ID: %s", workEvent.PeerId)
+			return
+		}
+		nodeData = *nodeDataPtr
 	} else {
 		err = json.Unmarshal(nodeDataBytes, &nodeData)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Failed to unmarshal node data bytes: %v", err)
 			return
 		}
 	}
 
-	nodeData.BytesScraped = nodeData.BytesScraped + len(workEvent.Payload)
-
-	newCID := CID{
-		RecordId:  workEvent.CID,
-		Duration:  workEvent.Duration,
-		Timestamp: time.Now().Unix(),
+	if nodeData.Records == nil {
+		nodeData.Records = []CID{}
 	}
 
-	records := nodeData.Records
-
-	if records == nil {
-		recordsSlice, ok := records.([]CID)
-		if !ok {
-			recordsSlice = []CID{}
+	if exists == nil {
+		nodeData.BytesScraped += len(workEvent.Payload)
+		newCID := CID{
+			RecordId:  workEvent.CID,
+			Duration:  workEvent.Duration,
+			Timestamp: time.Now().Unix(),
 		}
-		recordsSlice = append(recordsSlice, newCID)
-		nodeData.Records = recordsSlice
+		nodeData.Records = append(nodeData.Records.([]CID), newCID)
 		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Failed to update node data: %v", err)
 			return
-		}
-	} else {
-		if exists == nil {
-			records = append(nodeData.Records.([]interface{}), newCID)
-			nodeData.Records = records
-			err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
 		}
 	}
 
 	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Failed to marshal node data: %v", err)
 		return
 	}
-	_ = db.WriteData(node, workEvent.PeerId, jsonData)
+	err = db.WriteData(node, workEvent.PeerId, jsonData)
+	if err != nil {
+		logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
+		return
+	}
 	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)
 }
 
