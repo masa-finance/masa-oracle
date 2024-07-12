@@ -111,11 +111,17 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *messages.Connect:
 		a.HandleConnect(ctx, m)
 	case *actor.Started:
-		a.HandleLog(ctx, "[+] Actor started")
+		if a.Node.IsWorker() {
+			a.HandleLog(ctx, "[+] Actor started")
+		}
 	case *actor.Stopping:
-		a.HandleLog(ctx, "[+] Actor stopping")
+		if a.Node.IsWorker() {
+			a.HandleLog(ctx, "[+] Actor stopping")
+		}
 	case *actor.Stopped:
-		a.HandleLog(ctx, "[+] Actor stopped")
+		if a.Node.IsWorker() {
+			a.HandleLog(ctx, "[+] Actor stopped")
+		}
 	case *messages.Work:
 		if a.Node.IsWorker() {
 			a.HandleWork(ctx, m, a.Node)
@@ -315,8 +321,8 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Infof("[+] Worker Address: %s", ipAddr)
 			if !isBootnode(ipAddr) && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
+				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()

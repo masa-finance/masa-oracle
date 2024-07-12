@@ -273,7 +273,7 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			}).Error("Failed to read data from DHT")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": "failed to read data",
+				"message": "no data",
 			})
 			return
 		}
