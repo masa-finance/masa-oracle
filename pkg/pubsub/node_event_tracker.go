@@ -401,6 +401,8 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {
+				// first force a leave event so that timestamps are updated properly
+				entry.NodeData.Left()
 				// Buffer period expired without a disconnect, process connect
 				entry.NodeData.Joined()
 				net.NodeDataChan <- entry.NodeData
