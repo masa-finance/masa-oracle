@@ -96,6 +96,7 @@ func main() {
 	if node.IsStaked {
 		go workers.SubscribeToWorkers(node)
 		go workers.MonitorWorkers(ctx, node)
+		go masa.SubscribeToBlocks(ctx, node)
 	}
 
 	// Listen for SIGINT (CTRL+C)
@@ -125,9 +126,6 @@ func main() {
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
 	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
-
-	// Subscribe to blocks
-	masa.SubscribeToBlocks(ctx, node)
 
 	<-ctx.Done()
 }

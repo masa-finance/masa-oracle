@@ -237,9 +237,13 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 			Duration:  workEvent.Duration,
 			Timestamp: time.Now().Unix(),
 		}
-		nodeData.Records = append(nodeData.Records.([]CID), newCID)
-		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
-		if err != nil {
+		if records, ok := nodeData.Records.([]CID); ok {
+			nodeData.Records = append(records, newCID)
+		} else {
+			logrus.Errorf("Failed to assert type of nodeData.Records")
+			return
+		}
+		if err := node.NodeTracker.AddOrUpdateNodeData(&nodeData, true); err != nil {
 			logrus.Errorf("Failed to update node data: %v", err)
 			return
 		}
