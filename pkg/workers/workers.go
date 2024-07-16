@@ -34,6 +34,7 @@ const (
 	DiscordProfile         WorkerType = "discord-profile"
 	DiscordChannelMessages WorkerType = "discord-channel-messages"
 	DiscordSentiment       WorkerType = "discord-sentiment"
+	TelegramSentiment      WorkerType = "telegram-sentiment"
 	DiscordGuildChannels   WorkerType = "discord-guild-channels"
 	DiscordUserGuilds      WorkerType = "discord-user-guilds"
 	LLMChat                WorkerType = "llm-chat"
@@ -48,12 +49,13 @@ const (
 )
 
 var WORKER = struct {
-	Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
+	Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, TelegramSentiment, DiscordGuildChannels, DiscordUserGuilds, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
 }{
 	Discord:                Discord,
 	DiscordProfile:         DiscordProfile,
 	DiscordChannelMessages: DiscordChannelMessages,
 	DiscordSentiment:       DiscordSentiment,
+	TelegramSentiment:      TelegramSentiment,
 	DiscordGuildChannels:   DiscordGuildChannels,
 	DiscordUserGuilds:      DiscordUserGuilds,
 	LLMChat:                LLMChat,

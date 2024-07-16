@@ -4,25 +4,44 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gotd/td/tg"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 // Fetch messages from a group
-func fetchChannelMessages(ctx context.Context, username string) ([]*tg.Message, error) {
-	client, err := InitializeClient()
-	if err != nil {
-		log.Printf("Failed to initialize Telegram client: %v", err)
-		return nil, err
+func FetchChannelMessages(ctx context.Context, username string) ([]*tg.Message, error) {
+	// Initialize the Telegram client (if not already initialized)
+	client = GetClient()
+
+	if client == nil {
+		var err error
+		client, err = InitializeClient()
+		if err != nil {
+			log.Printf("Failed to initialize Telegram client: %v", err)
+			return nil, err
+		}
 	}
 
-	channel, err := resolveChannelUsername(ctx, username) // Edit: Assign the second value to err
-	if err != nil {
-		return nil, err // Handle the error if resolveChannelUsername fails
-	}
 	var messagesSlice []*tg.Message // Define a slice to hold the messages
 
-	err = client.Run(ctx, func(ctx context.Context) error {
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	// defer cancel() // Make sure to cancel when you are done to free resources.
+
+	err := client.Run(ctx, func(ctx context.Context) error {
+		resolved, err := client.API().ContactsResolveUsername(ctx, username)
+		if err != nil {
+			return err
+		}
+
+		channel := &tg.InputChannel{
+			ChannelID:  resolved.Chats[0].GetID(),
+			AccessHash: resolved.Chats[0].(*tg.Channel).AccessHash,
+		}
+
+		fmt.Printf("Channel ID: %d, Access Hash: %d\n", channel.ChannelID, channel.AccessHash)
+
 		inputPeer := &tg.InputPeerChannel{ // Use InputPeerChannel instead of InputChannel
 			ChannelID:  channel.ChannelID,
 			AccessHash: channel.AccessHash,
@@ -57,27 +76,22 @@ func fetchChannelMessages(ctx context.Context, username string) ([]*tg.Message, 
 	return messagesSlice, err // Return the slice of messages and any error
 }
 
-func resolveChannelUsername(ctx context.Context, username string) (*tg.InputChannel, error) {
-	client, err := InitializeClient()
+// ScrapeTelegramMessagesForSentiment scrapes messages from a Telegram channel and analyzes their sentiment.
+func ScrapeTelegramMessagesForSentiment(ctx context.Context, username string, model string, prompt string) (string, string, error) {
+	// Create a context with a timeout if needed
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	// Fetch messages from the Telegram channel
+	messages, err := FetchChannelMessages(ctx, username)
 	if err != nil {
-		log.Printf("Failed to initialize Telegram client: %v", err)
-		return nil, err
+		return "", "", fmt.Errorf("error fetching messages from Telegram channel: %v", err)
 	}
 
-	var channel *tg.InputChannel
-	err = client.Run(ctx, func(ctx context.Context) error {
-		resolved, err := client.API().ContactsResolveUsername(ctx, username)
-		if err != nil {
-			return err
-		}
-
-		channel = &tg.InputChannel{
-			ChannelID:  resolved.Chats[0].GetID(),
-			AccessHash: resolved.Chats[0].(*tg.Channel).AccessHash,
-		}
-
-		fmt.Printf("Channel ID: %d, Access Hash: %d\n", channel.ChannelID, channel.AccessHash)
-		return nil
-	})
-	return channel, err
+	// Analyze the sentiment of the fetched messages
+	// Note: Ensure that llmbridge.AnalyzeSentimentTelegram is implemented and can handle the analysis
+	analysisPrompt, sentiment, err := llmbridge.AnalyzeSentimentTelegram(messages, model, prompt)
+	if err != nil {
+		return "", "", fmt.Errorf("error analyzing sentiment of Telegram messages: %v", err)
+	}
+	return analysisPrompt, sentiment, nil
 }

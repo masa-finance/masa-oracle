@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -239,6 +240,56 @@ func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
 		wErr = publishWorkRequest(api, requestID, workers.WORKER.DiscordSentiment, bodyBytes)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
+// SearchTelegramMessagesAndAnalyzeSentiment processes a request to search Telegram messages and analyze sentiment.
+func (api *API) SearchTelegramMessagesAndAnalyzeSentiment() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !api.Node.IsStaked {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
+			return
+		}
+
+		var reqBody struct {
+			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
+			Prompt   string `json:"prompt"`
+			Model    string `json:"model"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		if reqBody.Prompt == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Prompt parameter is missing"})
+			return
+		}
+
+		if reqBody.Model == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing"})
+			return
+		}
+
+		bodyBytes, wErr := json.Marshal(reqBody)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		wErr = publishWorkRequest(api, requestID, workers.WORKER.TelegramSentiment, bodyBytes)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
@@ -762,7 +813,7 @@ func (api *API) CompleteAuth() gin.HandlerFunc {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Two-factor authentication is required"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete authentication"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete authentication", "details": err.Error()})
 			return
 		}
 
@@ -770,19 +821,22 @@ func (api *API) CompleteAuth() gin.HandlerFunc {
 	}
 }
 
-func GetChannelMessagesHandler() gin.HandlerFunc {
+func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		username := c.Param("username") // Assuming "username" is a URL parameter
+		username := c.Param("username")
 		if username == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Username must be provided"})
 			return
 		}
 
-		messages, err := telegram.fetchChannelMessages(c.Request.Context(), username)
+		log.Printf("Starting to fetch messages for username: %s", username)
+		messages, err := telegram.FetchChannelMessages(c.Request.Context(), username)
 		if err != nil {
+			log.Printf("Error fetching messages for username: %s, error: %v", username, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		log.Printf("Finished fetching messages for username: %s", username)
 
 		c.JSON(http.StatusOK, gin.H{"messages": messages})
 	}

@@ -101,17 +101,21 @@ func StartAuthentication(ctx context.Context, phoneNumber string) (string, error
 // CompleteAuthentication uses the provided code to authenticate with Telegram.
 func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHash string) (*tg.AuthAuthorization, error) {
 	// Initialize the Telegram client (if not already initialized)
-	client, err := InitializeClient()
-	if err != nil {
-		log.Printf("Failed to initialize Telegram client: %v", err)
-		return nil, err
+	client = GetClient()
+
+	if client == nil {
+		var err error
+		client, err = InitializeClient()
+		if err != nil {
+			log.Printf("Failed to initialize Telegram client: %v", err)
+			return nil, err
+		}
 	}
 
 	// Define a variable to hold the authentication result
 	var authResult *tg.AuthAuthorization
-
 	// Use client.Run to start the client and execute the SignIn method
-	err = client.Run(ctx, func(ctx context.Context) error {
+	err := client.Run(ctx, func(ctx context.Context) error {
 		// Use the provided code and phoneCodeHash to authenticate
 		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
 		if err != nil {

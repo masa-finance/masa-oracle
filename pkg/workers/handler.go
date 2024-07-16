@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,6 +10,7 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
@@ -82,6 +84,8 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 	}
 
+	opCtx := context.Background() // or ctx.Context if actor.Context provides it
+
 	switch workData["request"] {
 	case string(WORKER.DiscordProfile):
 		userID := bodyData["userID"].(string)
@@ -93,6 +97,10 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		logrus.Infof("[+] Discord Channel Messages %s %s", m.Data, m.Sender)
 		channelID := bodyData["channelID"].(string)
 		_, resp, err = discord.ScrapeDiscordMessagesForSentiment(channelID, bodyData["model"].(string), bodyData["prompt"].(string))
+	case string(WORKER.TelegramSentiment):
+		logrus.Infof("[+] Telegram Channel Messages %s %s", m.Data, m.Sender)
+		username := bodyData["username"].(string)
+		_, resp, err = telegram.ScrapeTelegramMessagesForSentiment(opCtx, username, bodyData["model"].(string), bodyData["prompt"].(string))
 	case string(WORKER.DiscordGuildChannels):
 		guildID := bodyData["guildID"].(string)
 		resp, err = discord.GetGuildChannels(guildID)
