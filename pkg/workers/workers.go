@@ -256,7 +256,9 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 	}
 	err = db.WriteData(node, workEvent.PeerId, jsonData)
 	if err != nil {
-		logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
+		if node.IsValidator {
+			logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
+		}
 		return
 	}
 	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)
