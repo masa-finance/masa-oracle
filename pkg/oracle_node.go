@@ -373,7 +373,7 @@ type BlockData struct {
 }
 
 type Blocks struct {
-	TransactionHash string      `json:"transaction_hash"`
+	TransactionHash string      `json:"last_transaction_hash"`
 	BlockData       []BlockData `json:"block_data"`
 }
 

@@ -199,11 +199,8 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		return
 	}
 
-	exists, err := db.ReadData(node, workEvent.CID)
-	if err != nil {
-		logrus.Errorf("Failed to read data for CID %s: %v", workEvent.CID, err)
-		return
-	}
+	exists, _ := db.ReadData(node, workEvent.CID)
+	// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
 	if exists == nil {
 		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
 		if err != nil {
@@ -513,7 +510,6 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
-
 	// @todo handle mutliple block publishes issue
 	// _ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 
