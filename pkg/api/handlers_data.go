@@ -770,6 +770,24 @@ func (api *API) CompleteAuth() gin.HandlerFunc {
 	}
 }
 
+func GetChannelMessagesHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.Param("username") // Assuming "username" is a URL parameter
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username must be provided"})
+			return
+		}
+
+		messages, err := telegram.fetchChannelMessages(c.Request.Context(), username)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"messages": messages})
+	}
+}
+
 // LocalLlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //

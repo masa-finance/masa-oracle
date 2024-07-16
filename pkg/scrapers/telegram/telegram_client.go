@@ -51,39 +51,6 @@ func InitializeClient() (*telegram.Client, error) {
 	return client, err
 }
 
-// func AuthenticateUser(ctx context.Context, phoneNumber string) error {
-// 	// Check if the session file already exists and has content
-// 	sessionExists := false
-// 	if info, err := os.Stat(filepath.Join(sessionDir, "session.json")); err == nil && info.Size() > 0 {
-// 		sessionExists = true
-// 	}
-
-// 	if !sessionExists {
-// 		// Define the code prompt function
-// 		codePrompt := func(ctx context.Context, sentCode *tg.AuthSentCode) (string, error) {
-// 			fmt.Print("Enter code: ")
-// 			code, err := bufio.NewReader(os.Stdin).ReadString('\n')
-// 			if err != nil {
-// 				return "", err
-// 			}
-// 			return strings.TrimSpace(code), nil
-// 		}
-
-// 		// Set up and perform the authentication flow
-// 		authFlow := auth.NewFlow(
-// 			auth.Constant(phoneNumber, "", auth.CodeAuthenticatorFunc(codePrompt)), // Empty password for simplicity
-// 			auth.SendCodeOptions{},
-// 		)
-// 		if err := client.Run(ctx, func(ctx context.Context) error {
-// 			return authFlow.Run(ctx, client.Auth())
-// 		}); err != nil {
-// 			return fmt.Errorf("authentication failed: %v", err)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 // StartAuthentication sends the phone number to Telegram and requests a code.
 func StartAuthentication(ctx context.Context, phoneNumber string) (string, error) {
 	// Initialize the Telegram client (if not already initialized)
