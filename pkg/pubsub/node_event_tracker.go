@@ -386,7 +386,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		}
 
 		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
+		net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
