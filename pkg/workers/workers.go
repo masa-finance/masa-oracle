@@ -504,6 +504,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	}
 }
 
+/**
+ * Processes the validator data received from the network.
+ *
+ * @param {pubsub2.Message} data - The message data received from the network.
+ * @param {map[string]interface{}} validatorDataMap - The map containing validator data.
+ * @param {time.Time} startTime - The start time of the work.
+ * @param {masa.OracleNode} node - The OracleNode instance.
+ */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
 		if _, ok := response["error"].(string); ok {
@@ -521,6 +529,14 @@ func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]int
 	}
 }
 
+/**
+ * Processes the work received from the network.
+ *
+ * @param {pubsub2.Message} data - The message data received from the network.
+ * @param {string} work - The work data as a string.
+ * @param {time.Time} startTime - The start time of the work.
+ * @param {masa.OracleNode} node - The OracleNode instance.
+ */
 func processWork(data *pubsub2.Message, work string, startTime *time.Time, node *masa.OracleNode) {
 	key, _ := computeCid(work)
 	logrus.Infof("[+] Work done %s", key)
