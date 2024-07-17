@@ -99,25 +99,25 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	}
 }
 
-// CalculateCurrentUptime calculates the current uptime based on Unix timestamps.
-func (n *NodeData) CalculateCurrentUptime() {
-	if n.Activity == ActivityJoined {
-		n.CurrentUptime = time.Duration(n.LastUpdatedUnix-n.LastJoinedUnix) * time.Second
-	} else {
-		n.CurrentUptime = 0
-	}
-	n.CurrentUptimeStr = n.CurrentUptime.String()
-}
+//// CalculateCurrentUptime calculates the current uptime based on Unix timestamps.
+//func (n *NodeData) CalculateCurrentUptime() {
+//	if n.Activity == ActivityJoined {
+//		n.CurrentUptime = time.Duration(n.LastUpdatedUnix-n.LastJoinedUnix) * time.Second
+//	} else {
+//		n.CurrentUptime = 0
+//	}
+//	n.CurrentUptimeStr = n.CurrentUptime.String()
+//}
 
-// CalculateAccumulatedUptime calculates the accumulated uptime based on Unix timestamps.
-func (n *NodeData) CalculateAccumulatedUptime() {
-	if n.FirstJoinedUnix > 0 && n.LastLeftUnix > 0 {
-		n.AccumulatedUptime = time.Duration(n.LastLeftUnix-n.FirstJoinedUnix) * time.Second
-	} else {
-		n.AccumulatedUptime = 0
-	}
-	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
-}
+//// CalculateAccumulatedUptime calculates the accumulated uptime based on Unix timestamps.
+//func (n *NodeData) CalculateAccumulatedUptime() {
+//	if n.FirstJoinedUnix > 0 && n.LastLeftUnix > 0 {
+//		n.AccumulatedUptime = time.Duration(n.LastLeftUnix-n.FirstJoinedUnix) * time.Second
+//	} else {
+//		n.AccumulatedUptime = 0
+//	}
+//	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
+//}
 
 // Address returns a string representation of the NodeData's multiaddress
 // and peer ID in the format "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC".
@@ -159,9 +159,6 @@ func (n *NodeData) Joined() {
 	n.Activity = ActivityJoined
 	n.IsActive = true
 
-	n.CalculateCurrentUptime()
-	n.CalculateAccumulatedUptime()
-
 	n.Version = config.Version[1:]
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
@@ -181,13 +178,14 @@ func (n *NodeData) Left() {
 	}
 	n.LastLeftUnix = time.Now().Unix()
 	n.LastUpdatedUnix = n.LastLeftUnix
-	n.AccumulatedUptime += n.GetCurrentUptime()
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
+	// call this after setting activity flags
+	n.UpdateAccumulatedUptime()
 
-	n.CalculateCurrentUptime()
-	n.CalculateAccumulatedUptime()
+	//n.CalculateCurrentUptime()
+	//n.CalculateAccumulatedUptime()
 
 	logMessage := fmt.Sprintf("Node left: %s", n.Address())
 	if n.IsStaked {
@@ -220,10 +218,27 @@ func (n *NodeData) GetAccumulatedUptime() time.Duration {
 // Otherwise, it uses the time since the last joined event.
 func (n *NodeData) UpdateAccumulatedUptime() {
 	if n.Activity == ActivityLeft {
-		n.AccumulatedUptime += time.Since(time.Unix(n.LastLeftUnix, 0))
-		return
+		// Calculate the uptime for the most recent active period
+		recentUptime := n.LastLeftUnix - n.LastJoinedUnix
+		// Add this to the accumulated uptime
+		n.AccumulatedUptime += time.Duration(recentUptime) * time.Second
+	} else if n.Activity == ActivityJoined {
+		// If the node is currently active, calculate the uptime since it first joined
+		// This should only be done if the node is active and hasn't been updated yet
+		currentUptime := time.Now().Unix() - n.FirstJoinedUnix
+		// Update the accumulated uptime only if it's less than the current uptime
+		if currentUptime > int64(n.AccumulatedUptime.Seconds()) {
+			n.AccumulatedUptime = time.Duration(currentUptime) * time.Second
+		}
 	}
-	n.AccumulatedUptime += time.Since(time.Unix(n.LastJoinedUnix, 0))
+	// Ensure the accumulated uptime does not exceed the maximum possible uptime
+	if n.FirstJoinedUnix > 0 && n.LastLeftUnix > 0 {
+		maxAccumulatedUptime := time.Duration(n.LastLeftUnix-n.FirstJoinedUnix) * time.Second
+		if n.AccumulatedUptime > maxAccumulatedUptime {
+			n.AccumulatedUptime = maxAccumulatedUptime
+		}
+	}
+	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
 }
 
 // GetSelfNodeDataJson converts the local node's data into a JSON byte array.
