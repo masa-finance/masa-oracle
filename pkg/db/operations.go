@@ -1,9 +1,13 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"time"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -96,4 +100,49 @@ func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 	}
 
 	return val, nil
+}
+
+// SendToS3 sends a payload to an S3-compatible API.
+//
+// @param {string} uid - The unique identifier for the payload.
+// @param {map[string]string} payload - The payload to be sent, represented as a map of key-value pairs.
+// @returns {error} - Returns an error if the operation fails, otherwise returns nil.
+func SendToS3(uid string, payload map[string]string) error {
+
+	apiURL := os.Getenv("API_URL")
+	authToken := "your-secret-token"
+
+	// Creating the JSON payload
+	// payload := map[string]string{
+	// 	"key1": "value1",
+	// 	"key2": "value2",
+	// }
+
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON payload: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authToken)
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("received non-OK response: %s, body: %s", resp.Status, string(bodyBytes))
+	}
+
+	return nil
 }

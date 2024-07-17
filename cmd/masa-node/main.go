@@ -87,9 +87,7 @@ func main() {
 	}
 
 	// Init cache resolver
-	go db.InitResolverCache(node, keyManager)
-	// Subscribe to blocks -- moving to new ticket
-	// go masa.SubscribeToBlocks(ctx, node)
+	db.InitResolverCache(node, keyManager)
 
 	// Subscribe and if actor start monitoring actor workers
 	// considering all that matters is if the node is staked
@@ -98,6 +96,7 @@ func main() {
 	if node.IsStaked {
 		go workers.SubscribeToWorkers(node)
 		go workers.MonitorWorkers(ctx, node)
+		go masa.SubscribeToBlocks(ctx, node)
 	}
 
 	// Listen for SIGINT (CTRL+C)
@@ -111,7 +110,6 @@ func main() {
 		if nodeData != nil {
 			nodeData.Left()
 		}
-		// node.NodeTracker.DumpNodeData()
 		cancel()
 	}()
 

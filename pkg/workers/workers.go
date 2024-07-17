@@ -111,11 +111,17 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *messages.Connect:
 		a.HandleConnect(ctx, m)
 	case *actor.Started:
-		a.HandleLog(ctx, "[+] Actor started")
+		if a.Node.IsWorker() {
+			a.HandleLog(ctx, "[+] Actor started")
+		}
 	case *actor.Stopping:
-		a.HandleLog(ctx, "[+] Actor stopping")
+		if a.Node.IsWorker() {
+			a.HandleLog(ctx, "[+] Actor stopping")
+		}
 	case *actor.Stopped:
-		a.HandleLog(ctx, "[+] Actor stopped")
+		if a.Node.IsWorker() {
+			a.HandleLog(ctx, "[+] Actor stopped")
+		}
 	case *messages.Work:
 		if a.Node.IsWorker() {
 			a.HandleWork(ctx, m, a.Node)
@@ -193,17 +199,18 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		return
 	}
 
-	exists, err := db.ReadData(node, workEvent.CID)
-	if err != nil {
-		logrus.Errorf("Failed to read data for CID %s: %v", workEvent.CID, err)
-		return
-	}
+	exists, _ := db.ReadData(node, workEvent.CID)
+	// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
 	if exists == nil {
 		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
 		if err != nil {
 			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
 			return
 		}
+		//err = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
+		//if err != nil {
+		//	logrus.Errorf("Error publishing block: %v", err)
+		//}
 	}
 
 	var nodeData pubsub.NodeData
@@ -234,9 +241,13 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 			Duration:  workEvent.Duration,
 			Timestamp: time.Now().Unix(),
 		}
-		nodeData.Records = append(nodeData.Records.([]CID), newCID)
-		err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, true)
-		if err != nil {
+		if records, ok := nodeData.Records.([]CID); ok {
+			nodeData.Records = append(records, newCID)
+		} else {
+			logrus.Errorf("Failed to assert type of nodeData.Records")
+			return
+		}
+		if err := node.NodeTracker.AddOrUpdateNodeData(&nodeData, true); err != nil {
 			logrus.Errorf("Failed to update node data: %v", err)
 			return
 		}
@@ -249,7 +260,9 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 	}
 	err = db.WriteData(node, workEvent.PeerId, jsonData)
 	if err != nil {
-		logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
+		if node.IsValidator {
+			logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
+		}
 		return
 	}
 	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)
@@ -318,8 +331,8 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Infof("[+] Worker Address: %s", ipAddr)
 			if !isBootnode(ipAddr) && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
+				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()
@@ -450,6 +463,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	}
 }
 
+/**
+ * Processes the validator data received from the network.
+ *
+ * @param {pubsub2.Message} data - The message data received from the network.
+ * @param {map[string]interface{}} validatorDataMap - The map containing validator data.
+ * @param {time.Time} startTime - The start time of the work.
+ * @param {masa.OracleNode} node - The OracleNode instance.
+ */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
 		if _, ok := response["error"].(string); ok {
@@ -467,6 +488,14 @@ func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]int
 	}
 }
 
+/**
+ * Processes the work received from the network.
+ *
+ * @param {pubsub2.Message} data - The message data received from the network.
+ * @param {string} work - The work data as a string.
+ * @param {time.Time} startTime - The start time of the work.
+ * @param {masa.OracleNode} node - The OracleNode instance.
+ */
 func processWork(data *pubsub2.Message, work string, startTime *time.Time, node *masa.OracleNode) {
 	key, _ := computeCid(work)
 	logrus.Infof("[+] Work done %s", key)
@@ -481,6 +510,8 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
+	// @todo handle mutliple block publishes issue
+	// _ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 
 	updateRecords(node, workEvent)
 }

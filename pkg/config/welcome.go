@@ -6,10 +6,8 @@ import (
 
 func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool, isValidator bool, isTwitterScraper bool, isDiscordScraper bool, isWebScraper bool, version string) {
 	// ANSI escape code for yellow text
-	green := "\033[32m"
 	yellow := "\033[33m"
 	blue := "\033[34m"
-	// red := "\033[31m"
 	reset := "\033[0m"
 
 	fmt.Println("")
@@ -24,15 +22,15 @@ func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool
 	fmt.Println(yellow + "#                                     #" + reset)
 	fmt.Println(yellow + borderLine + reset)
 	fmt.Println("")
-	fmt.Printf(green+"Version:		%s\n"+reset, version)
-	// Displaying the multi-address and IP address in blue
-	fmt.Printf(blue+"Multiaddress:		%s\n"+reset, multiAddr)
-	fmt.Printf(blue+"IP Address:		%s\n"+reset, ipAddr)
-	fmt.Printf(blue+"Public Key:   		%s\n"+reset, publicKeyHex)
-	fmt.Printf(blue+"Is Staked:    		%t\n"+reset, isStaked)
-	fmt.Printf(blue+"Is Validator:    	%t\n"+reset, isValidator)
-	fmt.Printf(blue+"Is TwitterScraper:	%t\n"+reset, isTwitterScraper)
-	fmt.Printf(blue+"Is DiscordScraper:	%t\n"+reset, isDiscordScraper)
-	fmt.Printf(blue+"Is WebScraper:   	%t\n"+reset, isWebScraper)
+
+	fmt.Printf(blue+"%-20s %s\n"+reset, "Version:", yellow+version)
+	fmt.Printf(blue+"%-20s %s\n"+reset, "Multiaddress:", multiAddr)
+	fmt.Printf(blue+"%-20s %s\n"+reset, "IP Address:", ipAddr)
+	fmt.Printf(blue+"%-20s %s\n"+reset, "Public Key:", publicKeyHex)
+	fmt.Printf(blue+"%-20s %t\n"+reset, "Is Staked:", isStaked)
+	fmt.Printf(blue+"%-20s %t\n"+reset, "Is Validator:", isValidator)
+	fmt.Printf(blue+"%-20s %t\n"+reset, "Is TwitterScraper:", isTwitterScraper)
+	fmt.Printf(blue+"%-20s %t\n"+reset, "Is DiscordScraper:", isDiscordScraper)
+	fmt.Printf(blue+"%-20s %t\n"+reset, "Is WebScraper:", isWebScraper)
 	fmt.Println("")
 }

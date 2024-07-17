@@ -198,8 +198,27 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		if len(key) > 0 && key[0] == '/' {
 			key = key[1:]
 		}
-		logrus.Printf("syncing record %s", key)
+		logrus.Printf("syncing %s", key)
 		_ = WriteData(node, key, record.Value)
+
+		// sync blocks
+		blocks, err := node.DHT.GetValue(ctx, "/db/blocks")
+		if err != nil {
+			logrus.Debugf("Error getting block data: %v", err)
+			continue
+		}
+
+		if err := WriteData(node, "blocks", blocks); err != nil {
+			logrus.Debugf("Error writing block data: %v", err)
+		}
+
+		// sync ipfs
+		ipfs, e := node.DHT.GetValue(ctx, "/db/ipfs")
+		if e != nil {
+			logrus.Debugf("Error unmarshalling IPFS data: %v", err)
+		} else {
+			_ = WriteData(node, "ipfs", ipfs)
+		}
 	}
 }
 
