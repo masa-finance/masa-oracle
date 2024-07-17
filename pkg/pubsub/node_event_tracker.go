@@ -363,7 +363,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
-		nd.IsActive = nodeData.IsActive
 
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
