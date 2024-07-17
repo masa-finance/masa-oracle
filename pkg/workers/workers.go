@@ -207,10 +207,6 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
 			return
 		}
-		//err = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
-		//if err != nil {
-		//	logrus.Errorf("Error publishing block: %v", err)
-		//}
 	}
 
 	var nodeData pubsub.NodeData
@@ -342,9 +338,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						return
 					}
 					spawnedPID := spawned.Pid
-					// Check if spawnedPID is nil
+					// Check if spawnedPID is nil we dont need to show this to the user
 					if spawnedPID == nil {
-						logrus.Errorf("spawnedPID is nil for IP: %s", ipAddr)
+						logrus.Debugf("spawned pid is not a worker for IP: %s", ipAddr)
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
@@ -510,6 +506,7 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
+
 	// @todo handle mutliple block publishes issue
 	// _ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 

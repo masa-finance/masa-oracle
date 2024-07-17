@@ -95,7 +95,8 @@ func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Error("Failed to read from the database")
+			// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
+		}).Debug("Failed to read from the database")
 		return nil, err
 	}
 
