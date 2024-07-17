@@ -207,10 +207,10 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
 			return
 		}
-		err = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
-		if err != nil {
-			logrus.Errorf("Error publishing block: %v", err)
-		}
+		//err = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
+		//if err != nil {
+		//	logrus.Errorf("Error publishing block: %v", err)
+		//}
 	}
 
 	var nodeData pubsub.NodeData
