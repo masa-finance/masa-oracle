@@ -13,11 +13,11 @@ As a worker in the Masa Oracle Node network, your primary function is to process
 
 ### Worker's Workflow
 
-1. **Initialization**: Your node, acting as a Worker, is part of a pool managed by a Manager actor. This setup ensures efficient distribution and handling of incoming Discord data requests.
+1 . **Initialization**: Your node, acting as a Worker, is part of a pool managed by a Manager actor. This setup ensures efficient distribution and handling of incoming Discord data requests.
 
-2. **Receiving Requests**: When a request for Discord data is received, the Manager actor delegates the task to you, the Worker, based on availability and capability.
+2 . **Receiving Requests**: When a request for Discord data is received, the Manager actor delegates the task to you, the Worker, based on availability and capability.
 
-3. **Processing Requests**: You then fetch the requested data from Discord using the specified criteria and prepare the data for return to the network.
+3 . **Processing Requests**: You then fetch the requested data from Discord using the specified criteria and prepare the data for return to the network.
 
 ## Prerequisites for Workers
 
@@ -31,12 +31,12 @@ To become a worker focused on Discord data requests, you need to:
 
 To start processing Discord data requests, you need to retrieve your Discord bot token, which is essential for authenticating with the Discord API. This token will allow your bot to collect data on your guild. Here's how to get your token:
 
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
-2. Log in with your Discord account credentials.
-3. Click on the "New Application" button. Give your application a name and confirm the creation.
-4. Navigate to the "Bot" tab on the left-hand side and click on "Add Bot".
-5. Confirm the creation of the bot user.
-6. Under the "TOKEN" section, click on "Copy" to get your bot token.
+1 . Go to the [Discord Developer Portal](https://discord.com/developers/applications).
+2 . Log in with your Discord account credentials.
+3 . Click on the "New Application" button. Give your application a name and confirm the creation.
+4 . Navigate to the "Bot" tab on the left-hand side and click on "Add Bot".
+5 . Confirm the creation of the bot user.
+6 . Under the "TOKEN" section, click on "Copy" to get your bot token.
 
 ## 2) Setting Up Your Node for Discord Requests
 
