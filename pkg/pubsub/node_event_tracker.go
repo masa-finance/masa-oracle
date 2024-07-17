@@ -363,7 +363,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
-		nd.IsActive = nodeData.IsActive
 
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
@@ -386,7 +385,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		}
 
 		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
+		net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
@@ -401,6 +400,8 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {
+				// first force a leave event so that timestamps are updated properly
+				entry.NodeData.Left()
 				// Buffer period expired without a disconnect, process connect
 				entry.NodeData.Joined()
 				net.NodeDataChan <- entry.NodeData
