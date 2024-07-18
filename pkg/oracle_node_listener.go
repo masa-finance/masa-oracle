@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"time"
@@ -213,6 +214,145 @@ func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	if err != nil {
 		logrus.Errorf("Failed to close stream: %v", err)
 	}
+}
+
+func (node *OracleNode) BlockData(stream network.Stream) {
+	logrus.Info("BlockData")
+
+	// Read from the stream
+	//  data, err := io.ReadAll(stream)
+	//  if err != nil {
+	// 		 logrus.Errorf("Failed to read stream: %v", err)
+	// 		 return
+	//  }
+
+	remotePeerId, nodeData, err := node.handleStreamData(stream)
+	if err != nil {
+		logrus.Errorf("Failed to read stream: %v", err)
+		return
+	}
+	// Only allow create blocks from other nodes ?
+	if remotePeerId.String() != nodeData.PeerId.String() {
+		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+		// go readData(node, rw)
+		// go writeData(node, rw)
+		logrus.Info("BlockData to be ledgered", rw)
+	}
+	err = stream.Close()
+	if err != nil {
+		logrus.Errorf("Failed to close stream: %v", err)
+	}
+}
+
+func readData(node *OracleNode, rw *bufio.ReadWriter) {
+
+	for {
+		str, err := rw.ReadString('\n')
+		if err != nil {
+
+			logrus.Fatal(err)
+		}
+
+		if str == "" {
+			return
+		}
+		if str != "\n" {
+
+			logrus.Info("readData", node.multiAddrs, str)
+
+			// chain := make([]Block, 0)
+			// if err := json.Unmarshal([]byte(str), &chain); err != nil {
+			// 	log.Fatal(err)
+			// }
+
+			// mutex.Lock()
+			// if len(chain) > len(Blockchain) {
+			// 	Blockchain = chain
+			// 	bytes, err := json.MarshalIndent(Blockchain, "", "  ")
+			// 	if err != nil {
+
+			// 		log.Fatal(err)
+			// 	}
+			// 	// Green console color: 	\x1b[32m
+			// 	// Reset console color: 	\x1b[0m
+			// 	fmt.Printf("\x1b[32m%s\x1b[0m> ", string(bytes))
+			// }
+			// mutex.Unlock()
+		}
+	}
+}
+
+func writeData(node *OracleNode, rw *bufio.ReadWriter) {
+	for {
+		sendData := fmt.Sprintf("peer connected %s", node.multiAddrs)
+
+		_, err := rw.WriteString(sendData)
+		if err != nil {
+			logrus.Error("Error writing to buffer:", err)
+			return
+		}
+		err = rw.Flush()
+		if err != nil {
+			logrus.Error("Error flushing buffer:", err)
+			return
+		}
+
+		time.Sleep(time.Second * 10)
+	}
+
+	// go func() {
+	// 	for {
+	// 		time.Sleep(5 * time.Second)
+	// 		mutex.Lock()
+	// 		bytes, err := json.Marshal(Blockchain)
+	// 		if err != nil {
+	// 			log.Println(err)
+	// 		}
+	// 		mutex.Unlock()
+
+	// 		mutex.Lock()
+	// 		rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+	// 		rw.Flush()
+	// 		mutex.Unlock()
+
+	// 	}
+	// }()
+
+	// stdReader := bufio.NewReader(os.Stdin)
+
+	// for {
+	// 	fmt.Print("> ")
+	// 	sendData, err := stdReader.ReadString('\n')
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+
+	// 	sendData = strings.Replace(sendData, "\n", "", -1)
+	// 	bpm, err := strconv.Atoi(sendData)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	newBlock := generateBlock(Blockchain[len(Blockchain)-1], bpm)
+
+	// 	if isBlockValid(newBlock, Blockchain[len(Blockchain)-1]) {
+	// 		mutex.Lock()
+	// 		Blockchain = append(Blockchain, newBlock)
+	// 		mutex.Unlock()
+	// 	}
+
+	// 	bytes, err := json.Marshal(Blockchain)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+
+	// 	spew.Dump(Blockchain)
+
+	// 	mutex.Lock()
+	// 	rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+	// 	rw.Flush()
+	// 	mutex.Unlock()
+	// }
+
 }
 
 // handleStreamData reads a network stream to get the remote peer ID

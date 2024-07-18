@@ -22,6 +22,22 @@ type BlockEventTracker struct {
 // HandleMessage implements subscription BlockEventTracker handler
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	logrus.Infof("chain -> Received block from: %s", m.ReceivedFrom)
+
+	// Create a new stream to handle the block data
+	// stream, err := b.Node.Host.NewStream(context.Background(), m.ReceivedFrom, config.ProtocolWithVersion(config.BlockTopic))
+	// if err != nil {
+	// 	logrus.Errorf("Failed to open stream: %v", err)
+	// 	return
+	// }
+	// defer stream.Close()
+
+	// // Write the message data to the stream
+	// _, err = stream.Write(m.Data)
+	// if err != nil {
+	// 	logrus.Errorf("Failed to write to stream: %v", err)
+	// 	return
+	// }
+
 	var blocks Blocks
 	err := json.Unmarshal(m.Data, &blocks)
 	if err != nil {

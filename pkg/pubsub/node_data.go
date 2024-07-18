@@ -99,26 +99,6 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	}
 }
 
-//// CalculateCurrentUptime calculates the current uptime based on Unix timestamps.
-//func (n *NodeData) CalculateCurrentUptime() {
-//	if n.Activity == ActivityJoined {
-//		n.CurrentUptime = time.Duration(n.LastUpdatedUnix-n.LastJoinedUnix) * time.Second
-//	} else {
-//		n.CurrentUptime = 0
-//	}
-//	n.CurrentUptimeStr = n.CurrentUptime.String()
-//}
-
-//// CalculateAccumulatedUptime calculates the accumulated uptime based on Unix timestamps.
-//func (n *NodeData) CalculateAccumulatedUptime() {
-//	if n.FirstJoinedUnix > 0 && n.LastLeftUnix > 0 {
-//		n.AccumulatedUptime = time.Duration(n.LastLeftUnix-n.FirstJoinedUnix) * time.Second
-//	} else {
-//		n.AccumulatedUptime = 0
-//	}
-//	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
-//}
-
 // Address returns a string representation of the NodeData's multiaddress
 // and peer ID in the format "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC".
 // This can be used by other nodes to connect to this node.
