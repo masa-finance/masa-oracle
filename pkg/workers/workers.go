@@ -317,6 +317,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 				if err != nil {
 					logrus.Debugf("Error getting response message: %v", err)
 					return
+				} else {
+					// don't send back failed messages here
+					return
 				}
 			}
 			workerDoneCh <- msg
