@@ -194,12 +194,10 @@ func isBootnode(ipAddr string) bool {
 // It then retrieves the node data from the cache or the node tracker. If the node data is not found, it logs an error.
 // The function updates the node data with the new CID and bytes scraped, and writes the updated node data back to the database.
 func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
-	if node == nil {
-		logrus.Error("Node is nil")
-		return
-	}
 
-	exists, _ := db.ReadData(node, workEvent.CID) // this is the timeout
+	ctx := context.Background()
+	exists, _ := db.GetCache(ctx, workEvent.CID)
+	// exists, _ := db.ReadData(node, workEvent.CID) // this is the timeout
 	// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
 	if exists == nil {
 		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
@@ -500,9 +498,9 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
-	logrus.Infof("[+] Work event for : %s", workEvent.PeerId)
+	logrus.Infof("[+] Work event for : %v", workEvent.PeerId)
 
 	_ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 
-	// updateRecords(node, workEvent)
+	updateRecords(node, workEvent)
 }
