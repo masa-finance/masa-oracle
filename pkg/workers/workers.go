@@ -199,7 +199,7 @@ func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 		return
 	}
 
-	exists, _ := db.ReadData(node, workEvent.CID)
+	exists, _ := db.ReadData(node, workEvent.CID) // this is the timeout
 	// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
 	if exists == nil {
 		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
@@ -406,6 +406,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		logrus.Error("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
 		return
 	}
+
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
@@ -510,8 +511,22 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Timestamp: time.Now().Unix(),
 	}
 
-	// @todo handle mutliple block publishes issue
-	// _ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
+	// @todo
+	// Create a new stream to handle the block data
+	stream, err := node.Host.NewStream(context.Background(), peer.ID(workEvent.PeerId), config.ProtocolWithVersion(config.BlockTopic))
+	if err != nil {
+		logrus.Errorf("Failed to open stream: %v", err)
+		return
+	}
+	defer stream.Close()
+
+	// Write the message data to the stream
+	_, err = stream.Write(workEvent.Payload)
+	if err != nil {
+		logrus.Errorf("Failed to write to stream: %v", err)
+		return
+	}
+	// @todo
 
 	updateRecords(node, workEvent)
 }

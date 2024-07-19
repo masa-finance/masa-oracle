@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -61,7 +62,7 @@ type OracleNode struct {
 	IsLlmServer      bool
 	StartTime        time.Time
 	WorkerTracker    *pubsub2.WorkerEventTracker
-	BlockTracker     *pubsub2.BlockEventTracker
+	BlockTracker     *BlockEventTracker
 	ActorEngine      *actor.RootContext
 	ActorRemote      *remote.Remote
 	Blockchain       *chain.Chain
@@ -206,7 +207,7 @@ func (node *OracleNode) Start() (err error) {
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
-	// IsStaked
+
 	if node.IsStaked {
 		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
 		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.BlockTopic), node.BlockData)
@@ -378,6 +379,30 @@ type Blocks struct {
 	BlockData       []BlockData `json:"block_data"`
 }
 
+type BlockEvents struct{}
+
+type BlockEventTracker struct {
+	BlockEvents []BlockEvents
+	BlockTopic  *pubsub.Topic
+	mu          sync.Mutex
+	BlocksCh    chan *pubsub.Message
+}
+
+func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
+	logrus.Infof("chain -> Received block from: %s", m.ReceivedFrom)
+
+	var blockEvents BlockEvents
+	err := json.Unmarshal(m.Data, &blockEvents)
+	if err != nil {
+		logrus.Errorf("Failed to unmarshal message: %v", err)
+		return
+	}
+	b.mu.Lock()
+	b.BlockEvents = append(b.BlockEvents, blockEvents)
+	b.mu.Unlock()
+	b.BlocksCh <- m
+}
+
 func updateBlocks(ctx context.Context, node *OracleNode, block *chain.Block) {
 
 	blockData := BlockData{
@@ -440,11 +465,6 @@ func updateBlocks(ctx context.Context, node *OracleNode, block *chain.Block) {
 // SubscribeToBlocks is a function that takes in a context and an OracleNode as parameters.
 // It is used to subscribe the given OracleNode to the blockchain blocks.
 func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
-	node.BlockTracker = &pubsub2.BlockEventTracker{BlocksCh: blocksCh}
-	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.BlockTopic), node.BlockTracker, true)
-	if err != nil {
-		logrus.Errorf("Subscribe error %v", err)
-	}
 
 	if !node.IsValidator {
 		return

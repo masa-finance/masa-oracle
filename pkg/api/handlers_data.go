@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -881,28 +880,12 @@ func (api *API) Test() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 
-		/// test
-		stream, err := api.Node.Host.NewStream(context.Background(), api.Node.Host.ID(), config.ProtocolWithVersion(config.BlockTopic))
+		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
 		if err != nil {
-			logrus.Errorf("Failed to open stream: %v", err)
+			logrus.Errorf("Error publishing block: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		defer stream.Close()
-
-		// Write the message data to the stream
-		_, err = stream.Write(bodyBytes)
-		if err != nil {
-			logrus.Errorf("Failed to write to stream: %v", err)
-			return
-		}
-		/// test
-
-		// err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
-		// if err != nil {
-		// 	logrus.Errorf("Error publishing block: %v", err)
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		// 	return
-		// }
 
 		c.JSON(http.StatusOK, gin.H{"message": "message sent"})
 	}

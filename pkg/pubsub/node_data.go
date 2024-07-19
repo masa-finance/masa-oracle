@@ -161,12 +161,8 @@ func (n *NodeData) Left() {
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
-	// call this after setting activity flags
+
 	n.UpdateAccumulatedUptime()
-
-	//n.CalculateCurrentUptime()
-	//n.CalculateAccumulatedUptime()
-
 	logMessage := fmt.Sprintf("Node left: %s", n.Address())
 	if n.IsStaked {
 		logrus.Info(logMessage)
