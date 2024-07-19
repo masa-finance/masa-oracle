@@ -475,21 +475,24 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		case block := <-node.BlockTracker.BlocksCh:
 
 			blocks := chain.GetBlockchain(node.Blockchain)
+			shouldAddBlock := true
 			for _, b := range blocks {
 				if string(b.Data) == string(block.Data) {
-					return
+					shouldAddBlock = false
+					break
 				}
 			}
 
-			_ = node.Blockchain.AddBlock(block.Data)
-			if node.Blockchain.LastHash != nil {
-				b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
-				if e != nil {
-					logrus.Errorf("Blockchain.GetBlock err: %v", e)
+			if shouldAddBlock {
+				_ = node.Blockchain.AddBlock(block.Data)
+				if node.Blockchain.LastHash != nil {
+					b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
+					if e != nil {
+						logrus.Errorf("Blockchain.GetBlock err: %v", e)
+					}
+					b.Print()
+					updateBlocks(ctx, node)
 				}
-				b.Print()
-
-				updateBlocks(ctx, node)
 			}
 
 		case <-ctx.Done():
