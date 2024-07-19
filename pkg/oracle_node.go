@@ -391,7 +391,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	var blockEvents BlockEvents
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal message: %v", err)
+		logrus.Errorf("Failed to unmarshal message: %v", err) // ERRO[1128] Failed to unmarshal message: json: cannot unmarshal array into Go value of type masa.BlockEvents
 		return
 	}
 	b.mu.Lock()
