@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -856,6 +857,54 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
+	}
+}
+
+func (api *API) GetBlocks() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		type BlockData struct {
+			InputData        interface{} `json:"input_data"`
+			TransactionHash  string      `json:"transaction_hash"`
+			PreviousHash     string      `json:"previous_hash"`
+			TransactionNonce int         `json:"transaction_nonce"`
+		}
+
+		type Blocks struct {
+			BlockData []BlockData `json:"block_data"`
+		}
+		var existingBlocks Blocks
+		blocks := chain.GetBlockchain(api.Node.Blockchain)
+
+		for _, block := range blocks {
+			var inputData interface{}
+			err := json.Unmarshal(block.Data, &inputData)
+			if err != nil {
+				inputData = string(block.Data) // Fallback to string if unmarshal fails
+			}
+
+			blockData := BlockData{
+				InputData:        inputData,
+				TransactionHash:  fmt.Sprintf("%x", block.Hash),
+				PreviousHash:     fmt.Sprintf("%x", block.Link),
+				TransactionNonce: int(block.Nonce),
+			}
+			existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
+		}
+
+		jsonData, err := json.Marshal(existingBlocks)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		var blocksResponse Blocks
+		err = json.Unmarshal(jsonData, &blocksResponse)
+		if err != nil {
+			logrus.Error(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, blocksResponse)
 	}
 }
 

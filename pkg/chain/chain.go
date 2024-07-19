@@ -110,3 +110,19 @@ func (c *Chain) GetBlock(hash []byte) (*Block, error) {
 	}
 	return block, nil
 }
+
+func GetBlockchain(c *Chain) []*Block {
+	var blockchain []*Block
+
+	each := func(b *Block) {
+		blockchain = append(blockchain, b)
+	}
+
+	err := c.IterateLink(each, func() {}, func() {})
+	if err != nil {
+		logrus.Errorf("Error iterating through blockchain: %v", err)
+		return nil
+	}
+
+	return blockchain
+}

@@ -210,7 +210,6 @@ func (node *OracleNode) Start() (err error) {
 
 	if node.IsStaked {
 		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
-		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.BlockTopic), node.BlockData)
 	}
 	node.Host.Network().Notify(node.NodeTracker)
 
@@ -368,15 +367,14 @@ var (
 )
 
 type BlockData struct {
-	InputData        string `json:"input_data"`
-	TransactionHash  string `json:"transaction_hash"`
-	PreviousHash     string `json:"previous_hash"`
-	TransactionNonce int    `json:"transaction_nonce"`
+	InputData        interface{} `json:"input_data"`
+	TransactionHash  string      `json:"transaction_hash"`
+	PreviousHash     string      `json:"previous_hash"`
+	TransactionNonce int         `json:"transaction_nonce"`
 }
 
 type Blocks struct {
-	TransactionHash string      `json:"last_transaction_hash"`
-	BlockData       []BlockData `json:"block_data"`
+	BlockData []BlockData `json:"block_data"`
 }
 
 type BlockEvents struct{}
@@ -389,8 +387,6 @@ type BlockEventTracker struct {
 }
 
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
-	logrus.Infof("chain -> Received block from: %s", m.ReceivedFrom)
-
 	var blockEvents BlockEvents
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
@@ -403,37 +399,26 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	b.BlocksCh <- m
 }
 
-func updateBlocks(ctx context.Context, node *OracleNode, block *chain.Block) {
-
-	blockData := BlockData{
-		InputData:        string(block.Data),
-		TransactionHash:  fmt.Sprintf("%x", block.Hash),
-		PreviousHash:     fmt.Sprintf("%x", block.Link),
-		TransactionNonce: int(block.Nonce),
-	}
+func updateBlocks(ctx context.Context, node *OracleNode) {
 
 	var existingBlocks Blocks
-	existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
-	existingBlocks = Blocks{
-		TransactionHash: blockData.TransactionHash,
-		BlockData:       []BlockData{blockData},
+	blocks := chain.GetBlockchain(node.Blockchain)
+
+	for _, block := range blocks {
+		var inputData interface{}
+		err := json.Unmarshal(block.Data, &inputData)
+		if err != nil {
+			inputData = string(block.Data) // Fallback to string if unmarshal fails
+		}
+
+		blockData := BlockData{
+			InputData:        inputData,
+			TransactionHash:  fmt.Sprintf("%x", block.Hash),
+			PreviousHash:     fmt.Sprintf("%x", block.Link),
+			TransactionNonce: int(block.Nonce),
+		}
+		existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
 	}
-
-	// exists, _ := node.DHT.GetValue(ctx, "/db/blocks")
-	// var existingBlocks Blocks
-	// if exists != nil {
-	// 	err := json.Unmarshal(exists, &existingBlocks)
-	// 	if err != nil {
-	// 		logrus.Errorf("Error unmarshalling existing block data: %v", err)
-	// 	}
-	// 	existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
-	// } else {
-	// 	existingBlocks = Blocks{
-	// 		TransactionHash: blockData.TransactionHash,
-	// 		BlockData:       []BlockData{blockData},
-	// 	}
-	// }
-
 	jsonData, err := json.Marshal(existingBlocks)
 	if err != nil {
 		logrus.Error(err)
@@ -495,7 +480,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 				}
 				b.Print()
 
-				updateBlocks(ctx, node, b)
+				updateBlocks(ctx, node)
 			}
 
 		case <-ctx.Done():

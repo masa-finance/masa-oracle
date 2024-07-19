@@ -434,8 +434,19 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /chat/cf [post]
 		v1.POST("/chat/cf", API.CfLlmChat())
 
+		// @Summary Get Blocks
+		// @Description Retrieves the list of blocks from the blockchain
+		// @Tags Blocks
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} Blocks "Successfully retrieved blocks"
+		// @Failure 400 {object} ErrorResponse "Error retrieving blocks"
+		// @Router /blocks [get]
+		v1.GET("/blocks", API.GetBlocks())
+
 		// @note a test route
 		v1.POST("/test", API.Test())
+
 	}
 
 	// @Summary Node Status Page

@@ -313,7 +313,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			msg := &pubsub2.Message{}
 			err = json.Unmarshal([]byte(response.Value), msg)
 			if err != nil {
-				msg, err = getResponseMessage(result.(*messages.Response))
+				_, err = getResponseMessage(result.(*messages.Response))
 				if err != nil {
 					logrus.Debugf("Error getting response message: %v", err)
 					return
@@ -510,23 +510,9 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
+	logrus.Infof("[+] Work event: %v", workEvent)
 
-	// @todo
-	// Create a new stream to handle the block data
-	stream, err := node.Host.NewStream(context.Background(), peer.ID(workEvent.PeerId), config.ProtocolWithVersion(config.BlockTopic))
-	if err != nil {
-		logrus.Errorf("Failed to open stream: %v", err)
-		return
-	}
-	defer stream.Close()
-
-	// Write the message data to the stream
-	_, err = stream.Write(workEvent.Payload)
-	if err != nil {
-		logrus.Errorf("Failed to write to stream: %v", err)
-		return
-	}
-	// @todo
+	_ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 
 	// updateRecords(node, workEvent)
 }
