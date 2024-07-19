@@ -412,21 +412,27 @@ func updateBlocks(ctx context.Context, node *OracleNode, block *chain.Block) {
 		TransactionNonce: int(block.Nonce),
 	}
 
-	exists, _ := node.DHT.GetValue(ctx, "/db/blocks")
-
 	var existingBlocks Blocks
-	if exists != nil {
-		err := json.Unmarshal(exists, &existingBlocks)
-		if err != nil {
-			logrus.Errorf("Error unmarshalling existing block data: %v", err)
-		}
-		existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
-	} else {
-		existingBlocks = Blocks{
-			TransactionHash: blockData.TransactionHash,
-			BlockData:       []BlockData{blockData},
-		}
+	existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
+	existingBlocks = Blocks{
+		TransactionHash: blockData.TransactionHash,
+		BlockData:       []BlockData{blockData},
 	}
+
+	// exists, _ := node.DHT.GetValue(ctx, "/db/blocks")
+	// var existingBlocks Blocks
+	// if exists != nil {
+	// 	err := json.Unmarshal(exists, &existingBlocks)
+	// 	if err != nil {
+	// 		logrus.Errorf("Error unmarshalling existing block data: %v", err)
+	// 	}
+	// 	existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
+	// } else {
+	// 	existingBlocks = Blocks{
+	// 		TransactionHash: blockData.TransactionHash,
+	// 		BlockData:       []BlockData{blockData},
+	// 	}
+	// }
 
 	jsonData, err := json.Marshal(existingBlocks)
 	if err != nil {

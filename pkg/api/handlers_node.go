@@ -270,10 +270,10 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			logrus.WithFields(logrus.Fields{
 				"key":   keyStr,
 				"error": err,
-			}).Error("Failed to read data from DHT")
+			}).Debug("Failed to read data from DHT")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": "failed to read data",
+				"message": "no data",
 			})
 			return
 		}

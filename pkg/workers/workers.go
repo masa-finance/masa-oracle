@@ -403,7 +403,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		return
 	}
 	if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
-		logrus.Error("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
+		logrus.Debug("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
 		return
 	}
 
@@ -528,5 +528,5 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 	}
 	// @todo
 
-	updateRecords(node, workEvent)
+	// updateRecords(node, workEvent)
 }
