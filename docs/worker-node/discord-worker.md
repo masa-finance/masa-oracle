@@ -27,7 +27,7 @@ To become a worker focused on Discord data requests, you need to:
 - Add your Discord bot token to your node's `.env` file. This is crucial for authenticating with the Discord API and fetching data.
 - Ensure your Masa Oracle Node is up and running, with network accessibility for receiving and processing requests.
 
-## 1) Retrieving Your Discord Bot Token
+## Retrieving Your Discord Bot Token
 
 To start processing Discord data requests, you need to retrieve your Discord bot token, which is essential for authenticating with the Discord API. This token will allow your bot to collect data on your guild. Here's how to get your token:
 
@@ -38,12 +38,10 @@ To start processing Discord data requests, you need to retrieve your Discord bot
 5 . Confirm the creation of the bot user.
 6 . Under the "TOKEN" section, click on "Copy" to get your bot token.
 
-## 2) Setting Up Your Node for Discord Requests
-
 ### Adding Discord Credentials
 
-1. Locate your `.env` file in your Masa Oracle Node's directory.
-2. Add the following entries, replacing `DISCORD_BOT_TOKEN` with your actual Discord bot token. You must set `DISCORD_WORKER=true` to start your node as a Discord Worker. When you start your node, ensure that it can communicate with the Discord API:
+1 . Locate your `.env` file in your Masa Oracle Node's directory.
+2 . Add the following entries, replacing `DISCORD_BOT_TOKEN` with your actual Discord bot token. You must set `DISCORD_WORKER=true` to start your node as a Discord Worker. When you start your node, ensure that it can communicate with the Discord API:
 
 ```shell
 #env
@@ -51,7 +49,7 @@ DISCORD_BOT_TOKEN='your_discord_bot_token'
 DISCORD_SCRAPER=true
 ```
 
-3.Save the `.env` file and restart your node to apply the changes.
+3 . Save the `.env` file and restart your node to apply the changes.
 
 ### 3) Verifying Node Configuration
 

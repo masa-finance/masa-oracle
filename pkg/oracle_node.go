@@ -1,12 +1,15 @@
 package masa
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +32,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
+	shell "github.com/ipfs/go-ipfs-api"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	chain "github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -361,6 +365,77 @@ var (
 	blocksCh = make(chan *pubsub.Message)
 )
 
+type BlockData struct {
+	InputData        string `json:"input_data"`
+	TransactionHash  string `json:"transaction_hash"`
+	PreviousHash     string `json:"previous_hash"`
+	TransactionNonce int    `json:"transaction_nonce"`
+}
+
+type Blocks struct {
+	TransactionHash string      `json:"last_transaction_hash"`
+	BlockData       []BlockData `json:"block_data"`
+}
+
+func updateBlocks(ctx context.Context, node *OracleNode, block *chain.Block) {
+
+	blockData := BlockData{
+		InputData:        string(block.Data),
+		TransactionHash:  fmt.Sprintf("%x", block.Hash),
+		PreviousHash:     fmt.Sprintf("%x", block.Link),
+		TransactionNonce: int(block.Nonce),
+	}
+
+	exists, _ := node.DHT.GetValue(ctx, "/db/blocks")
+
+	var existingBlocks Blocks
+	if exists != nil {
+		err := json.Unmarshal(exists, &existingBlocks)
+		if err != nil {
+			logrus.Errorf("Error unmarshalling existing block data: %v", err)
+		}
+		existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
+	} else {
+		existingBlocks = Blocks{
+			TransactionHash: blockData.TransactionHash,
+			BlockData:       []BlockData{blockData},
+		}
+	}
+
+	jsonData, err := json.Marshal(existingBlocks)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
+	if err != nil {
+		logrus.Errorf("Error storing block on DHT: %v", err)
+	}
+
+	if os.Getenv("IPFS_URL") != "" {
+
+		infuraURL := fmt.Sprintf("https://%s:%s@%s", os.Getenv("PID"), os.Getenv("PS"), os.Getenv("IPFS_URL"))
+		sh := shell.NewShell(infuraURL)
+
+		jsonBytes, err := json.Marshal(jsonData)
+		if err != nil {
+			logrus.Errorf("Error marshalling JSON: %s", err)
+		}
+
+		reader := bytes.NewReader(jsonBytes)
+
+		hash, err := sh.AddWithOpts(reader, true, true)
+		if err != nil {
+			logrus.Errorf("Error persisting to IPFS: %s", err)
+			os.Exit(1)
+		}
+
+		logrus.Printf("Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
+		_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
+	}
+}
+
 // SubscribeToBlocks is a function that takes in a context and an OracleNode as parameters.
 // It is used to subscribe the given OracleNode to the blockchain blocks.
 func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
@@ -383,6 +458,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		select {
 		case <-ticker.C:
 			logrus.Debug("tick")
+
 		case block := <-node.BlockTracker.BlocksCh:
 			_ = node.Blockchain.AddBlock(block.Data)
 			if node.Blockchain.LastHash != nil {
@@ -391,6 +467,8 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 					logrus.Errorf("Blockchain.GetBlock err: %v", e)
 				}
 				b.Print()
+
+				updateBlocks(ctx, node, b)
 			}
 
 		case <-ctx.Done():

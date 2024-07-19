@@ -24,7 +24,8 @@ test:
 clean:
 	@rm -rf bin
 	@rm masa_node.log
-
+	@rm -rf ~/.masa/cache
+	
 proto:
 	sh pkg/workers/messages/build.sh
 

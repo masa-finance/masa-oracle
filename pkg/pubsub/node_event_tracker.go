@@ -3,8 +3,6 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 	"time"
 
@@ -14,7 +12,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
@@ -41,10 +38,6 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 		nodeDataFile:  fmt.Sprintf("%s_%s_node_data.json", version, environment),
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
-	// err := net.LoadNodeData()
-	// if err != nil {
-	// 	logrus.Error("Error loading node data", err)
-	// }
 	go net.ClearExpiredBufferEntries()
 	return net
 }
@@ -253,54 +246,6 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 	return updatedNodeData
 }
 
-// DumpNodeData writes the NodeData map to a JSON file. It determines the file path
-// based on the configured data directory, defaulting to nodeDataFile if not set.
-// It logs any errors writing the file. This allows periodically persisting the
-// node data.
-// @note Obsoleted
-func (net *NodeEventTracker) DumpNodeData() {
-	// Write the JSON data to a file
-	var filePath string
-	dataDir := config.GetInstance().MasaDir
-	if dataDir == "" {
-		filePath = net.nodeDataFile
-	} else {
-		filePath = filepath.Join(dataDir, net.nodeDataFile)
-	}
-	logrus.Infof("writing node data to file: %s", filePath)
-	err := net.nodeData.DumpNodeData(filePath)
-	if err != nil {
-		logrus.Error("could not dump node data", err)
-	}
-}
-
-// LoadNodeData loads the node data from a JSON file. It determines the file path
-// based on the configured data directory, defaulting to nodeDataFile if not set.
-// It logs any errors reading or parsing the file. This allows initializing the
-// node data tracker from persisted data.
-// @note Obsoleted
-func (net *NodeEventTracker) LoadNodeData() error {
-	// Read the JSON data from a file
-	var filePath string
-	dataDir := config.GetInstance().MasaDir
-	if dataDir == "" {
-		filePath = net.nodeDataFile
-	} else {
-		filePath = filepath.Join(dataDir, net.nodeDataFile)
-	}
-	// Check if the file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		logrus.Warn(fmt.Sprintf("file does not exist: %s", filePath))
-		return nil
-	}
-	err := net.nodeData.LoadNodeData(filePath)
-	if err != nil {
-		logrus.Error("could not load node data", err)
-		return err
-	}
-	return nil
-}
-
 // GetEthAddress returns the Ethereum address for the given remote peer.
 // It gets the peer's public key from the network's peerstore, converts
 // it to a hex string, and converts that to an Ethereum address.
@@ -363,7 +308,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
-		nd.IsActive = nodeData.IsActive
 
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
@@ -386,7 +330,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		}
 
 		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
+		net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
@@ -401,6 +345,8 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {
+				// first force a leave event so that timestamps are updated properly
+				entry.NodeData.Left()
 				// Buffer period expired without a disconnect, process connect
 				entry.NodeData.Joined()
 				net.NodeDataChan <- entry.NodeData

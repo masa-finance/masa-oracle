@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,9 +11,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 const (
@@ -108,7 +110,11 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 				logrus.Info("Connection established with node:", *peerInfo)
 				stream, err := host.NewStream(ctxWithTimeout, peerInfo.ID, protocolId)
 				if err != nil {
-					logrus.Error("Error opening stream:", err)
+					if strings.Contains(err.Error(), "protocols not supported") {
+						logrus.Fatalf("%s Please update to the latest version and make sure you are connecting to the correct network.", err.Error())
+					} else {
+						logrus.Error("Error opening stream:", err)
+					}
 					return
 				}
 				peerConnectionCount++

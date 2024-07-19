@@ -63,7 +63,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 			"success":      true,
 			"data":         nodeDataPage.Data,
 			"pageNbr":      nodeDataPage.PageNumber,
-			"total":        nodeDataPage.TotalRecords,
+			"total":        nodeDataPage.TotalPages,
 			"totalRecords": nodeDataPage.TotalRecords,
 		})
 	}
@@ -264,26 +264,38 @@ func (api *API) GetFromDHT() gin.HandlerFunc {
 			})
 			return
 		}
-		sharedData := db.SharedData{}
-		nv := db.ReadData(api.Node, keyStr)
-		err := json.Unmarshal(nv, &sharedData)
+
+		nv, err := db.ReadData(api.Node, keyStr)
 		if err != nil {
-			if IsBase64(string(nv)) {
-				decodedString, _ := base64.StdEncoding.DecodeString(string(nv))
-				_ = json.Unmarshal(decodedString, &sharedData)
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-					"message": sharedData,
-				})
-				return
-			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-					"message": string(nv),
-				})
-				return
-			}
+			logrus.WithFields(logrus.Fields{
+				"key":   keyStr,
+				"error": err,
+			}).Error("Failed to read data from DHT")
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "failed to read data",
+			})
+			return
 		}
+
+		var sharedData db.SharedData
+		if err := json.Unmarshal(nv, &sharedData); err != nil {
+			if decodedString, decodeErr := base64.StdEncoding.DecodeString(string(nv)); decodeErr == nil {
+				if json.Unmarshal(decodedString, &sharedData) == nil {
+					c.JSON(http.StatusOK, gin.H{
+						"success": true,
+						"message": sharedData,
+					})
+					return
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"message": string(nv),
+			})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": sharedData,
@@ -376,50 +388,50 @@ func (api *API) ChatPageHandler() gin.HandlerFunc {
 // an HTML page displaying the node's status and uptime info.
 func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		peers := api.Node.Host.Network().Peers()
-		nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String())
-		if nodeData == nil {
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"TotalPeers":       0,
-				"Name":             "Masa Status Page",
-				"PeerID":           api.Node.Host.ID().String(),
-				"IsStaked":         false,
-				"IsTwitterScraper": false,
-				"IsDiscordScraper": false,
-				"IsWebScraper":     false,
-				"FirstJoined":      api.Node.FromUnixTime(time.Now().Unix()),
-				"LastJoined":       api.Node.FromUnixTime(time.Now().Unix()),
-				"CurrentUptime":    "0",
-				"Rewards":          "Coming Soon!",
-				"BytesScraped":     0,
-			})
-			return
-		} else {
-			nd := *nodeData
-			nd.CurrentUptime = nodeData.GetCurrentUptime()
-			nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
-			nd.CurrentUptimeStr = pubsub.PrettyDuration(nd.CurrentUptime)
-			nd.AccumulatedUptimeStr = pubsub.PrettyDuration(nd.AccumulatedUptime)
-
-			sharedData := db.SharedData{}
-			nv := db.ReadData(api.Node, api.Node.Host.ID().String())
-			_ = json.Unmarshal(nv, &sharedData)
-			bytesScraped, _ := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"]))
-			c.HTML(http.StatusOK, "index.html", gin.H{
-				"TotalPeers":       len(peers),
-				"Name":             "Masa Status Page",
-				"PeerID":           api.Node.Host.ID().String(),
-				"IsStaked":         nd.IsStaked,
-				"IsTwitterScraper": nd.IsTwitterScraper,
-				"IsDiscordScraper": nd.IsDiscordScraper,
-				"IsWebScraper":     nd.IsWebScraper,
-				"FirstJoined":      api.Node.FromUnixTime(nd.FirstJoinedUnix),
-				"LastJoined":       api.Node.FromUnixTime(nd.LastJoinedUnix),
-				"CurrentUptime":    nd.CurrentUptimeStr,
-				"TotalUptime":      nd.AccumulatedUptimeStr,
-				"BytesScraped":     fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024)),
-			})
+		// Initialize default values for the template data
+		templateData := gin.H{
+			"TotalPeers":       0,
+			"Name":             "Masa Status Page",
+			"PeerID":           api.Node.Host.ID().String(),
+			"IsStaked":         false,
+			"IsTwitterScraper": false,
+			"IsDiscordScraper": false,
+			"IsWebScraper":     false,
+			"FirstJoined":      api.Node.FromUnixTime(time.Now().Unix()),
+			"LastJoined":       api.Node.FromUnixTime(time.Now().Unix()),
+			"CurrentUptime":    "0",
+			"TotalUptime":      "0",
+			"Rewards":          "Coming Soon!",
+			"BytesScraped":     "0 MB",
 		}
+
+		if api.Node != nil && api.Node.Host != nil {
+			peers := api.Node.Host.Network().Peers()
+			templateData["TotalPeers"] = len(peers)
+
+			if nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String()); nodeData != nil {
+				nd := *nodeData
+				templateData["IsStaked"] = nd.IsStaked
+				templateData["IsTwitterScraper"] = nd.IsTwitterScraper
+				templateData["IsDiscordScraper"] = nd.IsDiscordScraper
+				templateData["IsWebScraper"] = nd.IsWebScraper
+				templateData["FirstJoined"] = api.Node.FromUnixTime(nd.FirstJoinedUnix)
+				templateData["LastJoined"] = api.Node.FromUnixTime(nd.LastJoinedUnix)
+				templateData["CurrentUptime"] = pubsub.PrettyDuration(nd.GetCurrentUptime())
+				templateData["TotalUptime"] = pubsub.PrettyDuration(nd.GetAccumulatedUptime())
+
+				if nv, err := db.ReadData(api.Node, api.Node.Host.ID().String()); err == nil {
+					var sharedData db.SharedData
+					if json.Unmarshal(nv, &sharedData) == nil {
+						if bytesScraped, err := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"])); err == nil {
+							templateData["BytesScraped"] = fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024))
+						}
+					}
+				}
+			}
+		}
+
+		c.HTML(http.StatusOK, "index.html", templateData)
 	}
 }
 
