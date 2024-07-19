@@ -94,7 +94,6 @@ func (p *Persistance) Get(key []byte) ([]byte, error) {
 }
 
 func (p *Persistance) GetLastHash() ([]byte, error) {
-	logrus.Info("Get last transaction...")
 	return p.Get([]byte(KeyLastHash))
 }
 

@@ -33,7 +33,7 @@ func (c *Chain) Init() error {
 }
 
 func makeGenesisBlock() *Block {
-	logrus.Info("Generating genesis transaction...")
+	logrus.Info("Generating genesis block...")
 	newBlock := &Block{}
 	emptyLink := []byte{}
 	newBlock.Build([]byte("Genesis"), emptyLink, big.NewInt(1))
@@ -41,7 +41,6 @@ func makeGenesisBlock() *Block {
 }
 
 func (c *Chain) UpdateLastHash() error {
-	logrus.Info("Fetching last transaction...")
 	lastHash, err := c.storage.GetLastHash()
 	if err != nil {
 		logrus.Error("Failed to get last hash from the storage: ", err)
@@ -52,7 +51,7 @@ func (c *Chain) UpdateLastHash() error {
 }
 
 func (c *Chain) AddBlock(data []byte) error {
-	logrus.Info("Adding transaction...")
+	logrus.Info("Adding block...")
 	if err := c.UpdateLastHash(); err != nil {
 		return err
 	}

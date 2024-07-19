@@ -498,7 +498,7 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
-	logrus.Infof("[+] Work event for : %v", workEvent.PeerId)
+	logrus.Infof("[+] Publishing work event for : %v", workEvent.PeerId)
 
 	_ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 
