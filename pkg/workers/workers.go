@@ -502,5 +502,6 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 
 	_ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 
-	updateRecords(node, workEvent)
+	// @todo wip removing this for the chain leger and content addressable store task
+	// updateRecords(node, workEvent)
 }
