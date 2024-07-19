@@ -400,7 +400,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	b.BlocksCh <- m
 }
 
-func updateBlocks(ctx context.Context, node *OracleNode) {
+func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 	var existingBlocks Blocks
 	blocks := chain.GetBlockchain(node.Blockchain)
@@ -422,8 +422,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) {
 	}
 	jsonData, err := json.Marshal(existingBlocks)
 	if err != nil {
-		logrus.Error(err)
-		return
+		return err
 	}
 
 	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
@@ -452,51 +451,105 @@ func updateBlocks(ctx context.Context, node *OracleNode) {
 		logrus.Printf("Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
 		_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
 	}
+
+	return nil
 }
 
 // SubscribeToBlocks is a function that takes in a context and an OracleNode as parameters.
 // It is used to subscribe the given OracleNode to the blockchain blocks.
-func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
+// func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 
+// 	if !node.IsValidator {
+// 		return
+// 	}
+
+// 	go node.Blockchain.Init()
+
+// 	ticker := time.NewTicker(time.Second * 10)
+// 	defer ticker.Stop()
+
+// 	for {
+// 		select {
+// 		case <-ticker.C:
+// 			logrus.Info("tick")
+
+// 		case block := <-node.BlockTracker.BlocksCh:
+
+// 			blocks := chain.GetBlockchain(node.Blockchain)
+// 			shouldAddBlock := true
+// 			for _, b := range blocks {
+// 				if string(b.Data) == string(block.Data) {
+// 					shouldAddBlock = false
+// 					break
+// 				}
+// 			}
+
+// 			if shouldAddBlock {
+// 				_ = node.Blockchain.AddBlock(block.Data)
+// 				if node.Blockchain.LastHash != nil {
+// 					b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
+// 					if e != nil {
+// 						logrus.Errorf("Blockchain.GetBlock err: %v", e)
+// 					}
+// 					b.Print()
+// 					updateBlocks(ctx, node)
+// 				}
+// 			}
+
+// 		case <-ctx.Done():
+// 			return
+// 		}
+// 	}
+// }
+
+func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 	if !node.IsValidator {
 		return
 	}
 
 	go node.Blockchain.Init()
 
-	ticker := time.NewTicker(time.Second * 10)
-	defer ticker.Stop()
+	updateTicker := time.NewTicker(time.Minute)
+	defer updateTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
-			logrus.Info("tick")
-
 		case block := <-node.BlockTracker.BlocksCh:
-
-			blocks := chain.GetBlockchain(node.Blockchain)
-			shouldAddBlock := true
-			for _, b := range blocks {
-				if string(b.Data) == string(block.Data) {
-					shouldAddBlock = false
-					break
-				}
+			if err := processBlock(node, block); err != nil {
+				logrus.Errorf("Error processing block: %v", err)
 			}
 
-			if shouldAddBlock {
-				_ = node.Blockchain.AddBlock(block.Data)
-				if node.Blockchain.LastHash != nil {
-					b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
-					if e != nil {
-						logrus.Errorf("Blockchain.GetBlock err: %v", e)
-					}
-					b.Print()
-					updateBlocks(ctx, node)
-				}
+		case <-updateTicker.C:
+			logrus.Info("tick")
+			if err := updateBlocks(ctx, node); err != nil {
+				logrus.Errorf("Error updating blocks: %v", err)
 			}
 
 		case <-ctx.Done():
 			return
 		}
 	}
+}
+
+func processBlock(node *OracleNode, block *pubsub.Message) error {
+	blocks := chain.GetBlockchain(node.Blockchain)
+	for _, b := range blocks {
+		if string(b.Data) == string(block.Data) {
+			return nil // Block already exists
+		}
+	}
+
+	if err := node.Blockchain.AddBlock(block.Data); err != nil {
+		return fmt.Errorf("failed to add block: %w", err)
+	}
+
+	if node.Blockchain.LastHash != nil {
+		b, err := node.Blockchain.GetBlock(node.Blockchain.LastHash)
+		if err != nil {
+			return fmt.Errorf("failed to get last block: %w", err)
+		}
+		b.Print()
+	}
+
+	return nil
 }
