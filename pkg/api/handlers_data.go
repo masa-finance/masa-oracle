@@ -863,6 +863,11 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 func (api *API) GetBlocks() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		if !api.Node.IsValidator {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node is not a validator and cannot access this endpoint"})
+			return
+		}
+
 		type BlockData struct {
 			InputData        interface{} `json:"input_data"`
 			TransactionHash  string      `json:"transaction_hash"`
