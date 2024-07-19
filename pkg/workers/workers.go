@@ -371,7 +371,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 // it logs the error.
 func SubscribeToWorkers(node *masa.OracleNode) {
 	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, node.IsValidator)
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
