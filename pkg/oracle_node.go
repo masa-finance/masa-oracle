@@ -478,8 +478,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 			shouldAddBlock := true
 			for _, b := range blocks {
 				if string(b.Data) == string(block.Data) {
-					shouldAddBlock = false
-					break
+					continue
 				}
 			}
 
