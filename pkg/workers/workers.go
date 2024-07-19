@@ -461,17 +461,31 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
  */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
+
 		if _, ok := response["error"].(string); ok {
 			logrus.Infof("[+] Work failed %s", response["error"])
+
 		} else if work, ok := response["data"].(string); ok {
 			processWork(data, work, startTime, node)
+
 		} else if w, ok := response["data"].(map[string]interface{}); ok {
 			work, err := json.Marshal(w)
+
 			if err != nil {
 				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
 				return
 			}
+
 			processWork(data, string(work), startTime, node)
+		} else {
+			work, err := json.Marshal(response["data"])
+			if err != nil {
+				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+				return
+			}
+
+			processWork(data, string(work), startTime, node)
+
 		}
 	}
 }

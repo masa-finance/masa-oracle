@@ -470,9 +470,17 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 	for {
 		select {
 		case <-ticker.C:
-			logrus.Debug("tick")
+			logrus.Info("tick")
 
 		case block := <-node.BlockTracker.BlocksCh:
+
+			blocks := chain.GetBlockchain(node.Blockchain)
+			for _, b := range blocks {
+				if string(b.Data) == string(block.Data) {
+					return
+				}
+			}
+
 			_ = node.Blockchain.AddBlock(block.Data)
 			if node.Blockchain.LastHash != nil {
 				b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
