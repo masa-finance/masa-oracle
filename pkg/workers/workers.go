@@ -314,7 +314,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 				msg, err = getResponseMessage(result.(*messages.Response))
 				if err != nil {
 					logrus.Debugf("Error getting response message: %v", err)
-					workerDoneCh <- &pubsub2.Message{ValidatorData: err.Error()}
+					workerDoneCh <- &pubsub2.Message{}
 					return
 				}
 			}
