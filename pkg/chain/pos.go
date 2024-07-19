@@ -46,7 +46,7 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 	var hashInt big.Int
 	currentTime := time.Now().Unix()
 
-	logrus.WithFields(logrus.Fields{"block_content": string(pos.Block.Data)}).Info("Running Proof of Stake...")
+	logrus.WithFields(logrus.Fields{"timestamp": currentTime}).Info("Running Proof of Stake...")
 	spinner := []string{"|", "/", "-", "\\"}
 	i := 0
 	for {

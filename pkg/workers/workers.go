@@ -313,12 +313,10 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			msg := &pubsub2.Message{}
 			err = json.Unmarshal([]byte(response.Value), msg)
 			if err != nil {
-				_, err = getResponseMessage(result.(*messages.Response))
+				msg, err = getResponseMessage(result.(*messages.Response))
 				if err != nil {
 					logrus.Debugf("Error getting response message: %v", err)
-					return
-				} else {
-					// don't send back failed messages here
+					workerDoneCh <- &pubsub2.Message{ValidatorData: err.Error()}
 					return
 				}
 			}
@@ -394,21 +392,13 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
-	if node == nil {
-		logrus.Error("MonitorWorkers: node is nil")
-		return
-	}
-	if node.ActorRemote == nil {
-		logrus.Error("MonitorWorkers: node.ActorRemote is nil")
-		return
-	}
+	// Register self as a remote node for the network
+	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
+
 	if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
 		logrus.Debug("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
 		return
 	}
-
-	// Register self as a remote node for the network
-	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -510,7 +500,7 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
-	logrus.Infof("[+] Work event: %v", workEvent)
+	logrus.Infof("[+] Work event for : %s", workEvent.PeerId)
 
 	_ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 

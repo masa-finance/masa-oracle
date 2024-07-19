@@ -867,11 +867,11 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 			InputData        interface{} `json:"input_data"`
 			TransactionHash  string      `json:"transaction_hash"`
 			PreviousHash     string      `json:"previous_hash"`
-			TransactionNonce int         `json:"transaction_nonce"`
+			TransactionNonce int         `json:"nonce"`
 		}
 
 		type Blocks struct {
-			BlockData []BlockData `json:"block_data"`
+			BlockData []BlockData `json:"blocks"`
 		}
 		var existingBlocks Blocks
 		blocks := chain.GetBlockchain(api.Node.Blockchain)
@@ -884,7 +884,7 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 			}
 
 			blockData := BlockData{
-				InputData:        inputData,
+				InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
 				TransactionHash:  fmt.Sprintf("%x", block.Hash),
 				PreviousHash:     fmt.Sprintf("%x", block.Link),
 				TransactionNonce: int(block.Nonce),
