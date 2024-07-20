@@ -397,7 +397,8 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	b.mu.Lock()
 	b.BlockEvents = append(b.BlockEvents, blockEvents)
 	b.mu.Unlock()
-	b.BlocksCh <- m
+	// b.BlocksCh <- m
+	blocksCh <- m
 }
 
 func updateBlocks(ctx context.Context, node *OracleNode) error {
@@ -462,12 +463,13 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 
 	go node.Blockchain.Init()
 
-	updateTicker := time.NewTicker(time.Minute)
+	updateTicker := time.NewTicker(time.Second * 15)
 	defer updateTicker.Stop()
 
 	for {
 		select {
-		case block, ok := <-node.BlockTracker.BlocksCh:
+		case block, ok := <-blocksCh:
+			// case block, ok := <-node.BlockTracker.BlocksCh:
 			if !ok {
 				logrus.Error("Block channel closed")
 				return
@@ -478,7 +480,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 			}
 
 		case <-updateTicker.C:
-			logrus.Info("Updating blockchain")
+			logrus.Info("blockchain tick")
 			if err := updateBlocks(ctx, node); err != nil {
 				logrus.Errorf("Error updating blocks: %v", err)
 				// Consider adding a retry mechanism or circuit breaker here

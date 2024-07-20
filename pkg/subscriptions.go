@@ -16,8 +16,8 @@ func SubscribeToTopics(node *OracleNode) error {
 	}
 
 	// Subscribe to BlockTopic to track and process block data within the network.
-	node.BlockTracker = &BlockEventTracker{BlocksCh: blocksCh}
-	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.BlockTopic), node.BlockTracker, true); err != nil {
+	// node.BlockTracker = &BlockEventTracker{BlocksCh: node.BlockTracker.BlocksCh}
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.BlockTopic), &BlockEventTracker{}, true); err != nil {
 		return err
 	}
 
