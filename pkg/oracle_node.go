@@ -509,7 +509,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 
 	go node.Blockchain.Init()
 
-	updateTicker := time.NewTicker(time.Minute)
+	updateTicker := time.NewTicker(time.Second * 15)
 	defer updateTicker.Stop()
 
 	for {
@@ -520,7 +520,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 			}
 
 		case <-updateTicker.C:
-			logrus.Info("tick")
+			logrus.Info("blockchain tick")
 			if err := updateBlocks(ctx, node); err != nil {
 				logrus.Errorf("Error updating blocks: %v", err)
 			}

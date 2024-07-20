@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -170,18 +169,18 @@ func computeCid(str string) (string, error) {
 // It takes an IP address as a string and returns a boolean value.
 // If the IP address is found in the list of bootnodes, it returns true.
 // Otherwise, it returns false.
-func isBootnode(ipAddr string) bool {
-	for _, bn := range config.GetInstance().Bootnodes {
-		if bn == "" {
-			return false
-		}
-		bootNodeAddr := strings.Split(bn, "/")[2]
-		if bootNodeAddr == ipAddr {
-			return true
-		}
-	}
-	return false
-}
+// func isBootnode(ipAddr string) bool {
+// 	for _, bn := range config.GetInstance().Bootnodes {
+// 		if bn == "" {
+// 			return false
+// 		}
+// 		bootNodeAddr := strings.Split(bn, "/")[2]
+// 		if bootNodeAddr == ipAddr {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 
 // updateRecords updates the records for a given node and key with the provided data.
 //
@@ -326,8 +325,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			// if !isBootnode(ipAddr) && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
-			if p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
+			if (p.PeerId.String() != node.Host.ID().String()) && p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
 				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
@@ -399,20 +397,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		return
 	}
 
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Second * 15)
 	defer ticker.Stop()
 	rcm := pubsub.GetResponseChannelMap()
 	var startTime time.Time
 
 	for {
 		select {
-		case <-ticker.C:
-			logrus.Debug("tick")
-		case work, ok := <-node.WorkerTracker.WorkerStatusCh:
-			if !ok {
-				logrus.Error("WorkerStatusCh channel was closed")
-				return
-			}
+		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
 			var workData map[string]string
 			err := json.Unmarshal(work.Data, &workData)
@@ -422,11 +414,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			}
 			startTime = time.Now()
 			go SendWork(node, work)
-		case data, ok := <-workerDoneCh:
-			if !ok {
-				logrus.Error("workerDoneCh channel was closed")
-				return
-			}
+		case data := <-workerDoneCh:
 			validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
 			if !ok {
 				logrus.Errorf("Error asserting type: %v", ok)
@@ -441,11 +429,17 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				}
 				ch <- validatorData
 				close(ch)
+
 			} else {
 				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)
+				continue
 			}
 
 			processValidatorData(data, validatorDataMap, &startTime, node)
+
+		case <-ticker.C:
+			logrus.Info("worker tick")
+
 		case <-ctx.Done():
 			return
 		}

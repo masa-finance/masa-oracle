@@ -35,7 +35,7 @@ func getPeers(node *masa.OracleNode) []*actor.PID {
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			if !isBootnode(ipAddr) {
+			if p.String() != node.Host.ID().String() {
 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 				if err != nil {
 					logrus.Debugf("Spawned error %v", err)
