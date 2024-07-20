@@ -290,12 +290,83 @@ func getResponseMessage(response *messages.Response) (*pubsub2.Message, error) {
 // SendWork is a function that sends work to a node. It takes two parameters:
 // node: A pointer to a masa.OracleNode object. This is the node to which the work will be sent.
 // m: A pointer to a pubsub2.Message object. This is the message that contains the work to be sent.
+//
+//	func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
+//		var wg sync.WaitGroup
+//		props := actor.PropsFromProducer(NewWorker(node))
+//		pid := node.ActorEngine.Spawn(props)
+//		message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
+//		// local
+//		if node.IsStaked && node.IsWorker() {
+//			wg.Add(1)
+//			go func() {
+//				defer wg.Done()
+//				future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
+//				result, err := future.Result()
+//				if err != nil {
+//					logrus.Debugf("Error receiving response: %v", err)
+//					return
+//				}
+//				response := result.(*messages.Response)
+//				msg := &pubsub2.Message{}
+//				err = json.Unmarshal([]byte(response.Value), msg)
+//				if err != nil {
+//					msg, err = getResponseMessage(result.(*messages.Response))
+//					if err != nil {
+//						logrus.Debugf("Error getting response message: %v", err)
+//						workerDoneCh <- &pubsub2.Message{}
+//						return
+//					}
+//				}
+//				workerDoneCh <- msg
+//			}()
+//		}
+//		// remote
+//		peers := node.NodeTracker.GetAllNodeData()
+//		for _, p := range peers {
+//			for _, addr := range p.Multiaddrs {
+//				ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+//				if (p.PeerId.String() != node.Host.ID().String()) && p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
+//					logrus.Infof("[+] Worker Address: %s", ipAddr)
+//					wg.Add(1)
+//					go func(p pubsub.NodeData) {
+//						defer wg.Done()
+//						spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+//						if err != nil {
+//							logrus.Debugf("Spawned error %v", err)
+//							return
+//						}
+//						spawnedPID := spawned.Pid
+//						// Check if spawnedPID is nil we dont need to show this to the user
+//						if spawnedPID == nil {
+//							logrus.Debugf("spawned pid is not a worker for IP: %s", ipAddr)
+//							return
+//						}
+//						client := node.ActorEngine.Spawn(props)
+//						node.ActorEngine.Send(spawnedPID, &messages.Connect{
+//							Sender: client,
+//						})
+//						future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
+//						result, err := future.Result()
+//						if err != nil {
+//							logrus.Debugf("Error receiving response: %v", err)
+//							return
+//						}
+//						response := result.(*messages.Response)
+//						node.ActorEngine.Send(spawnedPID, response)
+//					}(p)
+//				}
+//			}
+//		}
+//		wg.Wait()
+//	}
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	var wg sync.WaitGroup
 	props := actor.PropsFromProducer(NewWorker(node))
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	// local
+
+	// Local worker
 	if node.IsStaked && node.IsWorker() {
 		wg.Add(1)
 		go func() {
@@ -303,7 +374,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
 			result, err := future.Result()
 			if err != nil {
-				logrus.Debugf("Error receiving response: %v", err)
+				logrus.Errorf("Error receiving response from local worker: %v", err)
 				return
 			}
 			response := result.(*messages.Response)
@@ -312,7 +383,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			if err != nil {
 				msg, err = getResponseMessage(result.(*messages.Response))
 				if err != nil {
-					logrus.Debugf("Error getting response message: %v", err)
+					logrus.Errorf("Error getting response message: %v", err)
 					workerDoneCh <- &pubsub2.Message{}
 					return
 				}
@@ -320,39 +391,46 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			workerDoneCh <- msg
 		}()
 	}
-	// remote
+
+	// Remote workers
 	peers := node.NodeTracker.GetAllNodeData()
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			if (p.PeerId.String() != node.Host.ID().String()) && p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper {
+			if (p.PeerId.String() != node.Host.ID().String()) && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
 				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
-						logrus.Debugf("Spawned error %v", err)
+						logrus.Errorf("Error spawning remote worker: %v", err)
 						return
 					}
 					spawnedPID := spawned.Pid
-					// Check if spawnedPID is nil we dont need to show this to the user
 					if spawnedPID == nil {
-						logrus.Debugf("spawned pid is not a worker for IP: %s", ipAddr)
+						logrus.Errorf("Spawned PID is nil for IP: %s", ipAddr)
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
-					node.ActorEngine.Send(spawnedPID, &messages.Connect{
-						Sender: client,
-					})
+					node.ActorEngine.Send(spawnedPID, &messages.Connect{Sender: client})
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 					result, err := future.Result()
 					if err != nil {
-						logrus.Debugf("Error receiving response: %v", err)
+						logrus.Errorf("Error receiving response from remote worker: %v", err)
 						return
 					}
 					response := result.(*messages.Response)
-					node.ActorEngine.Send(spawnedPID, response)
+					msg := &pubsub2.Message{}
+					err = json.Unmarshal([]byte(response.Value), msg)
+					if err != nil {
+						msg, err = getResponseMessage(response)
+						if err != nil {
+							logrus.Errorf("Error getting response message: %v", err)
+							return
+						}
+					}
+					workerDoneCh <- msg
 				}(p)
 			}
 		}

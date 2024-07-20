@@ -455,53 +455,6 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 	return nil
 }
 
-// SubscribeToBlocks is a function that takes in a context and an OracleNode as parameters.
-// It is used to subscribe the given OracleNode to the blockchain blocks.
-// func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
-
-// 	if !node.IsValidator {
-// 		return
-// 	}
-
-// 	go node.Blockchain.Init()
-
-// 	ticker := time.NewTicker(time.Second * 10)
-// 	defer ticker.Stop()
-
-// 	for {
-// 		select {
-// 		case <-ticker.C:
-// 			logrus.Info("tick")
-
-// 		case block := <-node.BlockTracker.BlocksCh:
-
-// 			blocks := chain.GetBlockchain(node.Blockchain)
-// 			shouldAddBlock := true
-// 			for _, b := range blocks {
-// 				if string(b.Data) == string(block.Data) {
-// 					shouldAddBlock = false
-// 					break
-// 				}
-// 			}
-
-// 			if shouldAddBlock {
-// 				_ = node.Blockchain.AddBlock(block.Data)
-// 				if node.Blockchain.LastHash != nil {
-// 					b, e := node.Blockchain.GetBlock(node.Blockchain.LastHash)
-// 					if e != nil {
-// 						logrus.Errorf("Blockchain.GetBlock err: %v", e)
-// 					}
-// 					b.Print()
-// 					updateBlocks(ctx, node)
-// 				}
-// 			}
-
-// 		case <-ctx.Done():
-// 			return
-// 		}
-// 	}
-// }
-
 func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 	if !node.IsValidator {
 		return
@@ -509,23 +462,30 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 
 	go node.Blockchain.Init()
 
-	updateTicker := time.NewTicker(time.Second * 15)
+	updateTicker := time.NewTicker(time.Minute)
 	defer updateTicker.Stop()
 
 	for {
 		select {
-		case block := <-node.BlockTracker.BlocksCh:
+		case block, ok := <-node.BlockTracker.BlocksCh:
+			if !ok {
+				logrus.Error("Block channel closed")
+				return
+			}
 			if err := processBlock(node, block); err != nil {
 				logrus.Errorf("Error processing block: %v", err)
+				// Consider adding a retry mechanism or circuit breaker here
 			}
 
 		case <-updateTicker.C:
-			logrus.Info("blockchain tick")
+			logrus.Info("Updating blockchain")
 			if err := updateBlocks(ctx, node); err != nil {
 				logrus.Errorf("Error updating blocks: %v", err)
+				// Consider adding a retry mechanism or circuit breaker here
 			}
 
 		case <-ctx.Done():
+			logrus.Info("Context cancelled, stopping block subscription")
 			return
 		}
 	}
