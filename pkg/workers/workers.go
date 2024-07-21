@@ -417,7 +417,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 					result, err := future.Result()
 					if err != nil {
-						logrus.Errorf("[-] Error receiving response from remote worker: %v", err)
+						logrus.Debugf("[-] Error receiving response from remote worker: %v", err)
 						return
 					}
 					response := result.(*messages.Response)
