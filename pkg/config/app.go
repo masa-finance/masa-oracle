@@ -1,10 +1,7 @@
 package config
 
 import (
-	"encoding/json"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -150,43 +147,7 @@ func (c *AppConfig) setDefaultConfig() {
 	if _, _ = os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
 		_ = godotenv.Load()
 
-		// Fetch bootnodes from s3
-		if os.Getenv("BOOTNODES") != "" {
-			var url string
-			if os.Getenv("ENV") == "dev" {
-				url = "https://masa-oracle-init-dev.s3.amazonaws.com/node_init.json"
-			} else if os.Getenv("ENV") == "test" {
-				url = "https://masa-oracle-init-test.s3.amazonaws.com/node_init.json"
-			} else if os.Getenv("ENV") == "main" {
-				url = "https://masa-oracle-init-main.s3.amazonaws.com/node_init.json"
-			}
-			if url != "" {
-				resp, err := http.Get(url)
-				if err != nil {
-					logrus.Errorf("Failed to fetch %s: %v", url, err)
-				} else {
-					defer func(Body io.ReadCloser) {
-						err := Body.Close()
-						if err != nil {
-							logrus.Errorf("Failed to close body: %v", err)
-						}
-					}(resp.Body)
-					var nodeInitData struct {
-						Name      string   `json:"name"`
-						Id        string   `json:"id"`
-						NodeType  string   `json:"nodeType"`
-						BootNodes []string `json:"bootNodes"`
-					}
-					if err = json.NewDecoder(resp.Body).Decode(&nodeInitData); err != nil {
-						logrus.Errorf("Failed to parse: %v", err)
-					} else {
-						viper.SetDefault("Bootnodes", strings.Join(nodeInitData.BootNodes, ","))
-					}
-				}
-			} else {
-				viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
-			}
-		}
+		viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
 		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
 		viper.SetDefault(Environment, os.Getenv("ENV"))
 		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
@@ -201,19 +162,22 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(GPTApiKey, os.Getenv("OPENAI_API_KEY"))
 		viper.SetDefault(LlmChatUrl, os.Getenv(LlmChatUrl))
 		viper.SetDefault(LlmCfUrl, os.Getenv(LlmCfUrl))
+		viper.SetDefault(DiscordScraper, os.Getenv("DISCORD_SCRAPER"))
+		viper.SetDefault(TwitterScraper, os.Getenv("TWITTER_SCRAPER"))
+		viper.SetDefault(WebScraper, os.Getenv("WEB_SCRAPER"))
 
 	} else {
 		viper.SetDefault(FilePath, ".")
 		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
-		viper.SetDefault(Validator, "false")
-		viper.SetDefault(TwitterScraper, "false")
-		viper.SetDefault(DiscordScraper, "false")
-		viper.SetDefault(WebScraper, "false")
 		viper.SetDefault(CachePath, "CACHE")
 		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
 		viper.SetDefault(ClaudeApiVersion, "2023-06-01")
 		viper.SetDefault(LlmChatUrl, "http://localhost:11434/api/chat")
 		viper.SetDefault(LlmCfUrl, "https://gateway.ai.cloudflare.com/v1/a72433aa3bb83aecaca1bc8acecdb166/masa/workers-ai/")
+		viper.SetDefault(Validator, false)
+		viper.SetDefault(DiscordScraper, false)
+		viper.SetDefault(TwitterScraper, false)
+		viper.SetDefault(WebScraper, false)
 	}
 
 	// Set defaults
