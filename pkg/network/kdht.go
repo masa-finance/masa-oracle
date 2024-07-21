@@ -46,7 +46,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("Peer added to DHT: %s", p.String())
+		logrus.Infof("[+] Peer added to DHT: %s", p.String())
 
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
@@ -57,7 +57,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	}
 
 	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
-		logrus.Infof("Peer removed from DHT: %s", p)
+		logrus.Infof("[-] Peer removed from DHT: %s", p)
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerRemoved,
@@ -85,11 +85,11 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 		// Add the bootstrap node to the DHT
 		added, err := kademliaDHT.RoutingTable().TryAddPeer(peerInfo.ID, true, false)
 		if err != nil {
-			logrus.Warningf("Failed to add bootstrap peer %s to DHT: %v", peerInfo.ID, err)
+			logrus.Warningf("[-] Failed to add bootstrap peer %s to DHT: %v", peerInfo.ID, err)
 		} else if !added {
-			logrus.Warningf("Bootstrap peer %s was not added to DHT", peerInfo.ID)
+			logrus.Warningf("[-] Bootstrap peer %s was not added to DHT", peerInfo.ID)
 		} else {
-			logrus.Infof("Successfully added bootstrap peer %s to DHT", peerInfo.ID)
+			logrus.Infof("[+] Successfully added bootstrap peer %s to DHT", peerInfo.ID)
 		}
 
 		wg.Add(1)
@@ -100,7 +100,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 
 			defer wg.Done()
 			if err := host.Connect(ctxWithTimeout, *peerInfo); err != nil {
-				logrus.Errorf("Failed to connect to bootstrap peer %s: %v", peerInfo.ID, err)
+				logrus.Errorf("[-] Failed to connect to bootstrap peer %s: %v", peerInfo.ID, err)
 				counter++
 				if counter >= maxRetries {
 					return
@@ -149,10 +149,10 @@ func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Du
 			// This block will be executed every 'interval' duration
 			routingTable := dht.RoutingTable()
 			// Log the size of the routing table
-			logrus.Infof("Routing table size: %d", routingTable.Size())
+			logrus.Infof("[+] Routing table size: %d", routingTable.Size())
 			// Log the peer IDs in the routing table
 			for _, p := range routingTable.ListPeers() {
-				logrus.Debugf("Peer in routing table: %s", p.String())
+				logrus.Debugf("[+] Peer in routing table: %s", p.String())
 			}
 		case <-ctx.Done():
 			// If the context is cancelled, stop the goroutine
