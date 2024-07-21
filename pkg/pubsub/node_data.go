@@ -74,11 +74,6 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
 	cfg := config.GetInstance()
-	wn := cfg.Validator
-	ts := cfg.TwitterScraper
-	ds := cfg.DiscordScraper
-	ws := cfg.WebScraper
-	ver := cfg.Version
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -89,12 +84,12 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
-		IsValidator:       wn,
-		IsTwitterScraper:  ts,
-		IsDiscordScraper:  ds,
-		IsWebScraper:      ws,
+		IsValidator:       cfg.Validator,
+		IsTwitterScraper:  cfg.TwitterScraper,
+		IsDiscordScraper:  cfg.DiscordScraper,
+		IsWebScraper:      cfg.WebScraper,
 		BytesScraped:      0,
-		Version:           ver,
+		Version:           cfg.Version,
 	}
 }
 
@@ -108,22 +103,19 @@ func (n *NodeData) Address() string {
 // TwitterScraper checks if the current node is configured as a Twitter scraper.
 // It retrieves the configuration instance and returns the value of the TwitterScraper field.
 func (n *NodeData) TwitterScraper() bool {
-	cfg := config.GetInstance()
-	return cfg.TwitterScraper
+	return n.IsTwitterScraper
 }
 
 // DiscordScraper checks if the current node is configured as a Discord scraper.
 // It retrieves the configuration instance and returns the value of the DiscordScraper field.
 func (n *NodeData) DiscordScraper() bool {
-	cfg := config.GetInstance()
-	return cfg.DiscordScraper
+	return n.IsDiscordScraper
 }
 
 // WebScraper checks if the current node is configured as a Web scraper.
 // It retrieves the configuration instance and returns the value of the WebScraper field.
 func (n *NodeData) WebScraper() bool {
-	cfg := config.GetInstance()
-	return cfg.WebScraper
+	return n.IsWebScraper
 }
 
 // Joined updates the NodeData when the node joins the network.

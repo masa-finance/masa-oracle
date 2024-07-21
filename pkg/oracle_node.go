@@ -146,13 +146,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		return nil, err
 	}
 
-	isValidator := cfg.Validator
-	isTwitterScraper := cfg.TwitterScraper
-	isDiscordScraper := cfg.DiscordScraper
-	isWebScraper := cfg.WebScraper
-
-	logrus.Infof("[+] Scraper flags - Twitter: %v, Discord: %v, Web: %v", isTwitterScraper, isDiscordScraper, isWebScraper)
-
 	system := actor.NewActorSystemWithConfig(actor.Configure(
 		actor.ConfigOption(func(config *actor.Config) {
 			config.LoggerFactory = func(system *actor.ActorSystem) *slog.Logger {
@@ -184,10 +177,10 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		NodeTracker:      pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
 		PubSubManager:    subscriptionManager,
 		IsStaked:         isStaked,
-		IsValidator:      isValidator,
-		IsTwitterScraper: isTwitterScraper,
-		IsDiscordScraper: isDiscordScraper,
-		IsWebScraper:     isWebScraper,
+		IsValidator:      cfg.Validator,
+		IsTwitterScraper: cfg.TwitterScraper,
+		IsDiscordScraper: cfg.DiscordScraper,
+		IsWebScraper:     cfg.WebScraper,
 		IsLlmServer:      cfg.LlmServer,
 		ActorEngine:      engine,
 		ActorRemote:      r,
