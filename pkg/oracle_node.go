@@ -384,7 +384,6 @@ type BlockEventTracker struct {
 	BlockEvents []BlockEvents
 	BlockTopic  *pubsub.Topic
 	mu          sync.Mutex
-	// BlocksCh    chan *pubsub.Message
 }
 
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
@@ -397,7 +396,6 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	b.mu.Lock()
 	b.BlockEvents = append(b.BlockEvents, blockEvents)
 	b.mu.Unlock()
-	// b.BlocksCh <- m
 	blocksCh <- m
 }
 
@@ -469,7 +467,6 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 	for {
 		select {
 		case block, ok := <-blocksCh:
-			// case block, ok := <-node.BlockTracker.BlocksCh:
 			if !ok {
 				logrus.Error("Block channel closed")
 				return
