@@ -443,11 +443,11 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 		hash, err := sh.AddWithOpts(reader, true, true)
 		if err != nil {
-			logrus.Errorf("Error persisting to IPFS: %s", err)
+			logrus.Errorf("[-]Error persisting to IPFS: %s", err)
 			os.Exit(1)
 		}
 
-		logrus.Printf("Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
+		logrus.Printf("[+] Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
 		_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
 	}
 
@@ -461,7 +461,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 
 	go node.Blockchain.Init()
 
-	updateTicker := time.NewTicker(time.Second * 15)
+	updateTicker := time.NewTicker(time.Minute)
 	defer updateTicker.Stop()
 
 	for {
@@ -499,13 +499,13 @@ func processBlock(node *OracleNode, block *pubsub.Message) error {
 	}
 
 	if err := node.Blockchain.AddBlock(block.Data); err != nil {
-		return fmt.Errorf("failed to add block: %w", err)
+		return fmt.Errorf("[-] failed to add block: %w", err)
 	}
 
 	if node.Blockchain.LastHash != nil {
 		b, err := node.Blockchain.GetBlock(node.Blockchain.LastHash)
 		if err != nil {
-			return fmt.Errorf("failed to get last block: %w", err)
+			return fmt.Errorf("[-] failed to get last block: %w", err)
 		}
 		b.Print()
 	}
