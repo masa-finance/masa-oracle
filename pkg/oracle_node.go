@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -147,7 +146,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		return nil, err
 	}
 
-	isValidator, _ := strconv.ParseBool(cfg.Validator)
+	isValidator := cfg.Validator
 	isTwitterScraper := cfg.TwitterScraper
 	isDiscordScraper := cfg.DiscordScraper
 	isWebScraper := cfg.WebScraper
@@ -240,7 +239,7 @@ func (node *OracleNode) Start() (err error) {
 	nodeData.IsDiscordScraper = cfg.DiscordScraper
 	nodeData.IsTwitterScraper = cfg.TwitterScraper
 	nodeData.IsWebScraper = cfg.WebScraper
-	nodeData.IsValidator = cfg.Validator == "true"
+	nodeData.IsValidator = cfg.Validator
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)

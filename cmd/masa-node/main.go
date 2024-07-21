@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	"github.com/masa-finance/masa-oracle/pkg/workers"
@@ -65,8 +64,7 @@ func main() {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	var isValidator bool
-	isValidator, _ = strconv.ParseBool(cfg.Validator)
+	isValidator := cfg.Validator
 
 	// Create a new OracleNode
 	node, err := masa.NewOracleNode(ctx, isStaked)

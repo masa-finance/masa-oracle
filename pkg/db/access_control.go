@@ -8,8 +8,6 @@ package db
 
 import (
 	"encoding/hex"
-	"strings"
-
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
@@ -83,7 +81,7 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 		return false
 	}
 
-	if strings.ToLower(cfg.Validator) == "true" {
+	if cfg.Validator {
 
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),

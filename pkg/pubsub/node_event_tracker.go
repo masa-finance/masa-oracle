@@ -3,7 +3,6 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"sort"
 	"time"
 
@@ -289,7 +288,6 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
 	dataChanged := false
-	cfg := config.GetInstance()
 	nd, ok := net.nodeData.Get(nodeData.PeerId.String())
 	if !ok {
 		nodeData.SelfIdentified = true
@@ -304,9 +302,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		dataChanged = true
 		nd.BytesScraped = nodeData.BytesScraped
 		nd.IsStaked = nodeData.IsStaked
-		nd.IsDiscordScraper = cfg.DiscordScraper // nodeData.IsDiscordScraper
-		nd.IsTwitterScraper = cfg.TwitterScraper // nodeData.IsTwitterScraper
-		nd.IsWebScraper = cfg.WebScraper         // nodeData.IsWebScraper
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress

@@ -3,7 +3,6 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -75,7 +74,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
 	cfg := config.GetInstance()
-	wn, _ := strconv.ParseBool(cfg.Validator)
+	wn := cfg.Validator
 	ts := cfg.TwitterScraper
 	ds := cfg.DiscordScraper
 	ws := cfg.WebScraper

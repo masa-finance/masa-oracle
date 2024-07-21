@@ -71,7 +71,7 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	FilePath             string   `mapstructure:"filePath"`
-	Validator            string   `mapstructure:"validator"`
+	Validator            bool     `mapstructure:"validator"`
 	CachePath            string   `mapstructure:"cachePath"`
 	Faucet               bool     `mapstructure:"faucet"`
 
@@ -190,10 +190,6 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
-	viper.SetDefault(TwitterScraper, false)
-	viper.SetDefault(DiscordScraper, false)
-	viper.SetDefault(WebScraper, false)
-	viper.SetDefault(LlmServer, false)
 }
 
 // setFileConfig loads configuration from a YAML file.
@@ -243,7 +239,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, "logLevel", viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, "logFilePath", viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, "filePath", viper.GetString(FilePath), "The node file path")
-	pflag.StringVar(&c.Validator, "validator", viper.GetString(Validator), "Approved validator node boolean")
+	pflag.BoolVar(&c.Validator, "validator", viper.GetBool(Validator), "Approved validator node boolean")
 	pflag.StringVar(&c.CachePath, "cachePath", viper.GetString(CachePath), "The cache path")
 	pflag.StringVar(&c.TwitterUsername, "twitterUsername", viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")
