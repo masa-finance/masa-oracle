@@ -384,14 +384,14 @@ type BlockEventTracker struct {
 	BlockEvents []BlockEvents
 	BlockTopic  *pubsub.Topic
 	mu          sync.Mutex
-	BlocksCh    chan *pubsub.Message
+	// BlocksCh    chan *pubsub.Message
 }
 
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	var blockEvents BlockEvents
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal message: %v", err) // ERRO[1128] Failed to unmarshal message: json: cannot unmarshal array into Go value of type masa.BlockEvents
+		logrus.Errorf("Failed to unmarshal message: %v", err)
 		return
 	}
 	b.mu.Lock()
@@ -480,7 +480,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 			}
 
 		case <-updateTicker.C:
-			logrus.Info("blockchain tick")
+			logrus.Info("blockchain ticker")
 			if err := updateBlocks(ctx, node); err != nil {
 				logrus.Errorf("Error updating blocks: %v", err)
 				// Consider adding a retry mechanism or circuit breaker here
