@@ -397,6 +397,14 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			logrus.Infof("p.PeerId.String() %s", p.PeerId.String())
+			logrus.Infof("p.PeerId.String() != node.Host.ID().String() %v", p.PeerId.String() != node.Host.ID().String())
+			logrus.Infof("(p.IsStaked || p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) %v", p.IsStaked || p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper)
+			logrus.Infof("p.IsStaked %v", p.IsStaked)
+			logrus.Infof("p.IsTwitterScraper %v", p.IsTwitterScraper)
+			logrus.Infof("p.IsWebScraper %v", p.IsWebScraper)
+			logrus.Infof("p.IsDiscordScraper %v", p.IsDiscordScraper)
+
 			if (p.PeerId.String() != node.Host.ID().String()) && (p.IsStaked || p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
 				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
