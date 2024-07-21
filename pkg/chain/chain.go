@@ -23,7 +23,7 @@ func (c *Chain) Init() error {
 			logrus.Fatal("[-] Failed to create directory: ", err)
 		}
 	}
-	logrus.WithFields(logrus.Fields{"block": Difficulty}).Info("[+]Initializing blockchain...")
+	logrus.WithFields(logrus.Fields{"block": Difficulty}).Info("[+] Initializing blockchain...")
 	c.storage = &Persistance{}
 	c.storage.Init(dataDir, func() (Serializable, []byte) {
 		genesisBlock := makeGenesisBlock()
