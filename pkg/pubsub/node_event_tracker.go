@@ -3,9 +3,10 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"sort"
 	"time"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -307,6 +308,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
+		nd.IsValidator = cfg.Validator
 		nd.IsDiscordScraper = cfg.DiscordScraper
 		nd.IsTwitterScraper = cfg.TwitterScraper
 		nd.IsWebScraper = cfg.WebScraper
