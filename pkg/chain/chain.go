@@ -20,10 +20,10 @@ func (c *Chain) Init() error {
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		err = os.MkdirAll(dataDir, 0755)
 		if err != nil {
-			logrus.Fatal("Failed to create directory: ", err)
+			logrus.Fatal("[-] Failed to create directory: ", err)
 		}
 	}
-	logrus.WithFields(logrus.Fields{"block": Difficulty}).Info("Initializing blockchain...")
+	logrus.WithFields(logrus.Fields{"block": Difficulty}).Info("[+]Initializing blockchain...")
 	c.storage = &Persistance{}
 	c.storage.Init(dataDir, func() (Serializable, []byte) {
 		genesisBlock := makeGenesisBlock()
@@ -43,7 +43,7 @@ func makeGenesisBlock() *Block {
 func (c *Chain) UpdateLastHash() error {
 	lastHash, err := c.storage.GetLastHash()
 	if err != nil {
-		logrus.Error("Failed to get last hash from the storage: ", err)
+		logrus.Error("[-] Failed to get last hash from the storage: ", err)
 		return err
 	}
 	c.LastHash = lastHash
@@ -59,13 +59,13 @@ func (c *Chain) AddBlock(data []byte) error {
 	newBlock.Build(data, c.LastHash, big.NewInt(1))
 
 	if !IsValidPoS(newBlock, big.NewInt(1)) {
-		logrus.Error("Invalid PoS block")
+		logrus.Error("[-] Invalid PoS block")
 		return fmt.Errorf("invalid PoS block")
 	}
 
 	err := c.storage.SaveBlock(newBlock.Hash, newBlock)
 	if err != nil {
-		logrus.Error("Failed to save block into the storage: ", newBlock, err)
+		logrus.Error("[-] Failed to save block into the storage: ", newBlock, err)
 		return err
 	}
 	c.LastHash = newBlock.Hash
@@ -98,7 +98,7 @@ func (c *Chain) GetLastBlock() (*Block, error) {
 }
 
 func (c *Chain) GetBlock(hash []byte) (*Block, error) {
-	logrus.Infof("transaction %x", hash)
+	logrus.Infof("[+] transaction %x", hash)
 	data, err := c.storage.Get(hash)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func GetBlockchain(c *Chain) []*Block {
 
 	err := c.IterateLink(each, func() {}, func() {})
 	if err != nil {
-		logrus.Errorf("Error iterating through blockchain: %v", err)
+		logrus.Errorf("[-] Error iterating through blockchain: %v", err)
 		return nil
 	}
 

@@ -45,21 +45,21 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 	allowedPeerPubKeyString := cfg.AllowedPeerPublicKey
 
 	if allowedPeerID == "" || allowedPeerPubKeyString == "" {
-		logrus.Warn("Allowed peer ID or public key not found in configuration")
+		logrus.Warn("[-] Allowed peer ID or public key not found in configuration")
 		return false
 	}
 
 	// Decode the public key
 	allowedPeerPubKeyBytes, err := hex.DecodeString(allowedPeerPubKeyString)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to decode allowed peer public key")
+		logrus.WithError(err).Error("[-] Failed to decode allowed peer public key")
 		return false
 	}
 
 	// Unmarshal the public key
 	allowedPeerPubKey, err := libp2pCrypto.UnmarshalPublicKey(allowedPeerPubKeyBytes)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to unmarshal allowed peer public key")
+		logrus.WithError(err).Error("[-] Failed to unmarshal allowed peer public key")
 		return false
 	}
 
@@ -68,7 +68,7 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),
 			"allowedPeerID": allowedPeerID,
-		}).Warn("Host ID does not match allowed peer ID")
+		}).Warn("[-] Host ID does not match allowed peer ID")
 		return false
 	}
 
@@ -79,7 +79,7 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 			"hostID":        h.ID().String(),
 			"allowedPeerID": allowedPeerID,
 			"error":         err,
-		}).Warn("Failed to verify signature or signature is invalid")
+		}).Warn("[-] Failed to verify signature or signature is invalid")
 		return false
 	}
 
@@ -88,7 +88,7 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),
 			"allowedPeerID": allowedPeerID,
-		}).Info("Host is allowed to write to the database")
+		}).Info("[+] Host is allowed to write to the database")
 
 		authorizedNodes = map[string]bool{
 			allowedPeerID: true,

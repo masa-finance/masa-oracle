@@ -49,7 +49,7 @@ func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
 	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
-	}).Info("Started listening")
+	}).Info("[+] Started listening")
 }
 
 // ListenClose logs when the node stops listening on a multiaddr.
@@ -59,7 +59,7 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
-	}).Info("Stopped listening")
+	}).Info("[-]Stopped listening")
 }
 
 // Connected handles when a remote peer connects to this node.
@@ -93,7 +93,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
-	}).Info("Connected")
+	}).Info("[+] Connected")
 }
 
 // Disconnected handles when a remote peer disconnects from this node.
@@ -126,7 +126,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
-	}).Info("Disconnected")
+	}).Info("[+] Disconnected")
 }
 
 // HandleMessage unmarshals the received pubsub message into a NodeData struct,

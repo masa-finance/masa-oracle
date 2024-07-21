@@ -81,7 +81,7 @@ func main() {
 	if cfg.AllowedPeer {
 		cfg.AllowedPeerId = node.Host.ID().String()
 		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
-		logrus.Infof("This node is set as the allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
+		logrus.Infof("[+]Allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
 	} else {
 		logrus.Warn("[-] This node is not set as the allowed peer")
 	}
