@@ -404,12 +404,12 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					defer wg.Done()
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
-						logrus.Errorf("Error spawning remote worker: %v", err)
+						logrus.Errorf("[-] Error spawning remote worker: %v", err)
 						return
 					}
 					spawnedPID := spawned.Pid
 					if spawnedPID == nil {
-						logrus.Errorf("Spawned PID is nil for IP: %s", ipAddr)
+						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
@@ -417,7 +417,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 					result, err := future.Result()
 					if err != nil {
-						logrus.Errorf("Error receiving response from remote worker: %v", err)
+						logrus.Errorf("[-] Error receiving response from remote worker: %v", err)
 						return
 					}
 					response := result.(*messages.Response)
@@ -426,7 +426,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					if err != nil {
 						msg, err = getResponseMessage(response)
 						if err != nil {
-							logrus.Errorf("Error getting response message: %v", err)
+							logrus.Errorf("[-] Error getting response message: %v", err)
 							return
 						}
 					}
