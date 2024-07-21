@@ -194,7 +194,7 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 // with the data if it is about another node, and closes the
 // stream when finished.
 func (node *OracleNode) GossipNodeData(stream network.Stream) {
-	logrus.Info("GossipNodeData")
+	// logrus.Info("GossipNodeData")
 	remotePeerId, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
 		logrus.Errorf("Failed to read stream: %v", err)

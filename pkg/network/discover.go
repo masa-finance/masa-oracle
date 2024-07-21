@@ -26,17 +26,17 @@ import (
 func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol protocol.ID) {
 	var routingDiscovery *routing.RoutingDiscovery
 	protocolString := string(protocol)
-	logrus.Infof("Discovering peers for protocol: %s", protocolString)
+	logrus.Infof("[+] Discovering peers for protocol: %s", protocolString)
 
 	routingDiscovery = routing.NewRoutingDiscovery(dht)
 
 	// Advertise node right away, then it will re-advertise with each ticker interval
-	logrus.Infof("Attempting to advertise protocol: %s", protocolString)
+	logrus.Infof("[+] Attempting to advertise protocol: %s", protocolString)
 	_, err := routingDiscovery.Advertise(ctx, protocolString)
 	if err != nil {
-		logrus.Debugf("Failed to advertise protocol: %v", err)
+		logrus.Debugf("[-] Failed to advertise protocol: %v", err)
 	} else {
-		logrus.Infof("Successfully advertised protocol %s", protocolString)
+		logrus.Infof("[+] Successfully advertised protocol %s", protocolString)
 	}
 
 	ticker := time.NewTicker(time.Second * 10)
@@ -50,18 +50,18 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 			if ctx.Err() != nil {
 				logrus.Errorf("Context error in discovery loop: %v", ctx.Err())
 			}
-			logrus.Info("Stopping peer discovery")
+			logrus.Info("[-] Stopping peer discovery")
 			return
 		case <-ticker.C:
 
-			logrus.Debug("Searching for other peers...")
+			logrus.Debug("[-] Searching for other peers...")
 			routingDiscovery = routing.NewRoutingDiscovery(dht)
 
 			// Advertise this node
-			logrus.Debugf("Attempting to advertise protocol: %s", protocolString)
+			logrus.Debugf("[-] Attempting to advertise protocol: %s", protocolString)
 			_, err := routingDiscovery.Advertise(ctx, protocolString)
 			if err != nil {
-				logrus.Debugf("Failed to advertise protocol with error %v", err)
+				logrus.Debugf("[-] Failed to advertise protocol with error %v", err)
 
 				// Network retry when connectivity is temporarily lost using NewExponentialBackOff
 				expBackOff := backoff.NewExponentialBackOff()
@@ -71,24 +71,24 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					return err
 				}, expBackOff)
 				if err != nil {
-					logrus.Errorf("Retry failed to find peers: %v", err)
+					logrus.Errorf("[-] Retry failed to find peers: %v", err)
 				}
 
 			} else {
-				logrus.Infof("Successfully advertised protocol: %s", protocolString)
+				logrus.Infof("[+] Successfully advertised protocol: %s", protocolString)
 			}
 
 			// Use the routing discovery to find peers.
 			peerChan, err = routingDiscovery.FindPeers(ctx, protocolString)
 			if err != nil {
-				logrus.Errorf("Failed to find peers: %v", err)
+				logrus.Errorf("[-] Failed to find peers: %v", err)
 			} else {
-				logrus.Debug("Successfully started finding peers")
+				logrus.Debug("[+] Successfully started finding peers")
 			}
 			select {
 			case availPeer, ok := <-peerChan:
 				if !ok {
-					logrus.Info("Peer channel closed, restarting discovery")
+					logrus.Info("[+] Peer channel closed, restarting discovery")
 					break
 				}
 				// validating proper peers to connect to
@@ -114,28 +114,28 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 						}
 					}
 				}
-				logrus.Infof("Available Peer: %s", availPeer.String())
+				logrus.Infof("[+] Available Peer: %s", availPeer.String())
 
 				if host.Network().Connectedness(availPeer.ID) != network.Connected {
 					if isConnectedToBootnode(host, config.GetInstance().Bootnodes) {
 						_, err := host.Network().DialPeer(ctx, availPeer.ID)
 						if err != nil {
-							logrus.Warningf("Failed to connect to peer %s, will retry...", availPeer.ID.String())
+							logrus.Warningf("[-] Failed to connect to peer %s, will retry...", availPeer.ID.String())
 							continue
 						} else {
-							logrus.Infof("Connected to peer %s", availPeer.ID.String())
+							logrus.Infof("[+] Connected to peer %s", availPeer.ID.String())
 						}
 					} else {
 						for _, bn := range config.GetInstance().Bootnodes {
 							if len(bn) > 0 {
-								logrus.Info("Not connected to any bootnode. Attempting to reconnect...")
+								logrus.Info("[-] Not connected to any bootnode. Attempting to reconnect...")
 								reconnectToBootnodes(ctx, host, config.GetInstance().Bootnodes)
 							}
 						}
 					}
 				}
 			case <-ctx.Done():
-				logrus.Info("Stopping peer discovery")
+				logrus.Info("[-] Stopping peer discovery")
 				return
 			}
 		}
@@ -161,7 +161,7 @@ func reconnectToBootnodes(ctx context.Context, host host.Host, bootnodes []strin
 		if err := host.Connect(ctx, *peerInfo); err != nil {
 			logrus.Errorf("Failed to reconnect to bootnode %s: %v", bn, err)
 		} else {
-			logrus.Infof("Reconnected to bootnode %s", bn)
+			logrus.Infof("[+] Reconnected to bootnode %s", bn)
 			break // Exit after successful reconnection to one bootnode
 		}
 	}

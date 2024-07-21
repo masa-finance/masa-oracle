@@ -33,7 +33,7 @@ func (c *Chain) Init() error {
 }
 
 func makeGenesisBlock() *Block {
-	logrus.Info("Generating genesis block...")
+	logrus.Info("[+] Generating genesis block...")
 	newBlock := &Block{}
 	emptyLink := []byte{}
 	newBlock.Build([]byte("Genesis"), emptyLink, big.NewInt(1))
@@ -51,7 +51,7 @@ func (c *Chain) UpdateLastHash() error {
 }
 
 func (c *Chain) AddBlock(data []byte) error {
-	logrus.Info("Adding block...")
+	logrus.Info("[+] Adding block...")
 	if err := c.UpdateLastHash(); err != nil {
 		return err
 	}

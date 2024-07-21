@@ -79,7 +79,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 			logrus.Errorf("kdht: %s", err.Error())
 		}
 		if peerInfo.ID == host.ID() {
-			logrus.Info("DHT Skipping connect to self")
+			logrus.Info("[-] DHT Skipping connect to self")
 			continue
 		}
 		// Add the bootstrap node to the DHT
@@ -107,13 +107,13 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 				}
 				time.Sleep(retryDelay)
 			} else {
-				logrus.Info("Connection established with node:", *peerInfo)
+				logrus.Infof("[+] Connection established with node: %s", *peerInfo)
 				stream, err := host.NewStream(ctxWithTimeout, peerInfo.ID, protocolId)
 				if err != nil {
 					if strings.Contains(err.Error(), "protocols not supported") {
-						logrus.Fatalf("%s Please update to the latest version and make sure you are connecting to the correct network.", err.Error())
+						logrus.Fatalf("[-] %s Please update to the latest version and make sure you are connecting to the correct network.", err.Error())
 					} else {
-						logrus.Error("Error opening stream:", err)
+						logrus.Error("[-] Error opening stream:", err)
 					}
 					return
 				}
@@ -121,12 +121,12 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 				defer func(stream network.Stream) {
 					err := stream.Close()
 					if err != nil {
-						logrus.Error("Error closing stream:", err)
+						logrus.Errorf("[-] Error closing stream: %s", err)
 					}
 				}(stream) // Close the stream when done
 				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
 				if err != nil {
-					logrus.Error("Error writing to stream:", err)
+					logrus.Errorf("[-] Error writing to stream: %s", err)
 					return
 				}
 			}
@@ -134,7 +134,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	}
 	wg.Wait()
 	if len(bootstrapNodes) > 0 && peerConnectionCount == 0 {
-		logrus.Println("Unable to connect to a boot node at this time. Waiting...")
+		logrus.Println("[-] Unable to connect to a boot node at this time. Waiting...")
 	}
 	return kademliaDHT, nil
 }

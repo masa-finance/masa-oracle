@@ -199,7 +199,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 // goroutines to handle discovered peers, listen to the node tracker, and
 // discover peers. If this is a bootnode, it adds itself to the node tracker.
 func (node *OracleNode) Start() (err error) {
-	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
+	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
 	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
 	if err != nil {
@@ -262,7 +262,7 @@ func (node *OracleNode) handleDiscoveredPeers() {
 	for {
 		select {
 		case peer := <-node.PeerChan: // will block until we discover a peer
-			logrus.Debugf("Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
+			logrus.Debugf("[+] Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
 			// If the peer is a new peer, connect to it
 			if peer.Action == myNetwork.PeerAdded {
 				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
@@ -291,11 +291,11 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 			// just ignore the error
 			return
 		}
-		logrus.Errorf("Failed to read stream: %v", err)
+		logrus.Errorf("[-] Failed to read stream: %v", err)
 		return
 	}
 	if remotePeer.String() != nodeData.PeerId.String() {
-		logrus.Warnf("Received data from unexpected peer %s", remotePeer)
+		logrus.Warnf("[-] Received data from unexpected peer %s", remotePeer)
 		return
 	}
 	multiAddr := stream.Conn().RemoteMultiaddr()
@@ -306,7 +306,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Error(err)
 		return
 	}
-	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
+	logrus.Infof("[+] nodeStream -> Received data from: %s", remotePeer.String())
 }
 
 // IsWorker determines if the OracleNode is configured to act as an actor.
@@ -356,9 +356,9 @@ func (node *OracleNode) Version() string {
 func (node *OracleNode) LogActiveTopics() {
 	topicNames := node.PubSubManager.GetTopicNames()
 	if len(topicNames) > 0 {
-		logrus.Infof("Active topics: %v", topicNames)
+		logrus.Infof("[+] Active topics: %v", topicNames)
 	} else {
-		logrus.Info("No active topics.")
+		logrus.Info("[-] No active topics.")
 	}
 }
 
@@ -426,7 +426,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
 	if err != nil {
-		logrus.Errorf("Error storing block on DHT: %v", err)
+		logrus.Errorf("[-] Error storing block on DHT: %v", err)
 	}
 
 	if os.Getenv("IPFS_URL") != "" {
@@ -468,23 +468,23 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		select {
 		case block, ok := <-blocksCh:
 			if !ok {
-				logrus.Error("Block channel closed")
+				logrus.Error("[-] Block channel closed")
 				return
 			}
 			if err := processBlock(node, block); err != nil {
-				logrus.Errorf("Error processing block: %v", err)
+				logrus.Errorf("[-] Error processing block: %v", err)
 				// Consider adding a retry mechanism or circuit breaker here
 			}
 
 		case <-updateTicker.C:
-			logrus.Info("blockchain ticker")
+			logrus.Info("[+] blockchain ticker")
 			if err := updateBlocks(ctx, node); err != nil {
-				logrus.Errorf("Error updating blocks: %v", err)
+				logrus.Errorf("[-] Error updating blocks: %v", err)
 				// Consider adding a retry mechanism or circuit breaker here
 			}
 
 		case <-ctx.Done():
-			logrus.Info("Context cancelled, stopping block subscription")
+			logrus.Info("[+] Context cancelled, stopping block subscription")
 			return
 		}
 	}

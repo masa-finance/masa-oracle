@@ -40,7 +40,7 @@ func main() {
 			logrus.Errorf("%v", err)
 			os.Exit(1)
 		} else {
-			logrus.Info("Faucet event completed for this address")
+			logrus.Info("[+] Faucet event completed for this address")
 			os.Exit(0)
 		}
 	}
@@ -50,7 +50,7 @@ func main() {
 		if err != nil {
 			logrus.Warningf("%v", err)
 		} else {
-			logrus.Info("Staking event completed for this address")
+			logrus.Info("[+] Staking event completed for this address")
 			os.Exit(0)
 		}
 	}
@@ -83,7 +83,7 @@ func main() {
 		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
 		logrus.Infof("This node is set as the allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
 	} else {
-		logrus.Info("This node is not set as the allowed peer")
+		logrus.Warn("[-] This node is not set as the allowed peer")
 	}
 
 	// Init cache resolver

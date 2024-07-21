@@ -313,7 +313,7 @@ func (c *AppConfig) LogConfig() {
 	val := reflect.ValueOf(*c)
 	typeOfStruct := val.Type()
 
-	logrus.Info("Current AppConfig values:")
+	// logrus.Info("Current AppConfig values:")
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfStruct.Field(i)
 		value := val.Field(i).Interface()

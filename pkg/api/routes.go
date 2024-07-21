@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/golang-jwt/jwt/v4"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -91,7 +89,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		token := authHeader[len(BearerSchema):]
 
 		// Validate the token against the expected API key stored in environment variables.
-		logrus.Info(os.Getenv("API_KEY"))
+		// logrus.Info(os.Getenv("API_KEY"))
 		if os.Getenv("API_KEY") == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "JWT Token required"})
 			return
