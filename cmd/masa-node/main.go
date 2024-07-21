@@ -76,6 +76,10 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {
+		logrus.Warn("[+] Node is set as all types of scrapers. This may not be intended behavior.")
+	}
+
 	if cfg.AllowedPeer {
 		cfg.AllowedPeerId = node.Host.ID().String()
 		cfg.AllowedPeerPublicKey = keyManager.HexPubKey

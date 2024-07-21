@@ -178,6 +178,16 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(DiscordScraper, false)
 		viper.SetDefault(TwitterScraper, false)
 		viper.SetDefault(WebScraper, false)
+
+		if os.Getenv("DISCORD_SCRAPER") != "" {
+			viper.Set(DiscordScraper, os.Getenv("DISCORD_SCRAPER"))
+		}
+		if os.Getenv("TWITTER_SCRAPER") != "" {
+			viper.Set(TwitterScraper, os.Getenv("TWITTER_SCRAPER"))
+		}
+		if os.Getenv("WEB_SCRAPER") != "" {
+			viper.Set(WebScraper, os.Getenv("WEB_SCRAPER"))
+		}
 	}
 
 	// Set defaults
