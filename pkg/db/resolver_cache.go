@@ -53,7 +53,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	if err != nil {
 		log.Fatal(err)
 	}
-	logrus.Info("ResolverCache initialized")
+	logrus.Info("[+] ResolverCache initialized")
 
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
@@ -204,18 +204,18 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		// sync blocks
 		blocks, err := node.DHT.GetValue(ctx, "/db/blocks")
 		if err != nil {
-			logrus.Debugf("Error getting block data: %v", err)
+			logrus.Debugf("[-] Error getting block data: %v", err)
 			continue
 		}
 
 		if err := WriteData(node, "blocks", blocks); err != nil {
-			logrus.Debugf("Error writing block data: %v", err)
+			logrus.Debugf("[-] Error writing block data: %v", err)
 		}
 
 		// sync ipfs
 		ipfs, e := node.DHT.GetValue(ctx, "/db/ipfs")
 		if e != nil {
-			logrus.Debugf("Error unmarshalling IPFS data: %v", err)
+			logrus.Debugf("[-] Error unmarshalling IPFS data: %v", err)
 		} else {
 			_ = WriteData(node, "ipfs", ipfs)
 		}
