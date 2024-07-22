@@ -6,8 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
-
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -290,7 +288,6 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
 	dataChanged := false
-	cfg := config.GetInstance()
 	nd, ok := net.nodeData.Get(nodeData.PeerId.String())
 	if !ok {
 		nodeData.SelfIdentified = true
