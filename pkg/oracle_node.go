@@ -228,13 +228,11 @@ func (node *OracleNode) Start() (err error) {
 		nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 		nodeData.IsStaked = node.IsStaked
 		nodeData.SelfIdentified = true
+		nodeData.IsDiscordScraper = node.IsDiscordScraper
+		nodeData.IsTwitterScraper = node.IsTwitterScraper
+		nodeData.IsWebScraper = node.IsWebScraper
+		nodeData.IsValidator = node.IsValidator
 	}
-
-	//cfg := config.GetInstance()
-	//nodeData.IsDiscordScraper = cfg.DiscordScraper
-	//nodeData.IsTwitterScraper = cfg.TwitterScraper
-	//nodeData.IsWebScraper = cfg.WebScraper
-	//nodeData.IsValidator = cfg.Validator
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
