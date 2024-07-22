@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -132,7 +131,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		if err != nil {
 			msg, err = getResponseMessage(m)
 			if err != nil {
-				logrus.Errorf("Error getting response message: %v", err)
+				logrus.Errorf("[-] Error getting response message: %v", err)
 				return
 			}
 		}
@@ -166,23 +165,7 @@ func computeCid(str string) (string, error) {
 	return cidKey, nil
 }
 
-// isBootnode checks if the given IP address belongs to a bootnode.
-// It takes an IP address as a string and returns a boolean value.
-// If the IP address is found in the list of bootnodes, it returns true.
-// Otherwise, it returns false.
-func isBootnode(ipAddr string) bool {
-	for _, bn := range config.GetInstance().Bootnodes {
-		if bn == "" {
-			return false
-		}
-		bootNodeAddr := strings.Split(bn, "/")[2]
-		if bootNodeAddr == ipAddr {
-			return true
-		}
-	}
-	return false
-}
-
+// @TODO: do not remove yet to be obsoleted
 // updateRecords updates the records for a given node and key with the provided data.
 //
 // Parameters:
@@ -193,76 +176,73 @@ func isBootnode(ipAddr string) bool {
 // The function checks if the data already exists in the database. If it does not, it writes the new data.
 // It then retrieves the node data from the cache or the node tracker. If the node data is not found, it logs an error.
 // The function updates the node data with the new CID and bytes scraped, and writes the updated node data back to the database.
-func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
-	if node == nil {
-		logrus.Error("Node is nil")
-		return
-	}
+// func updateRecords(node *masa.OracleNode, workEvent db.WorkEvent) {
 
-	exists, _ := db.ReadData(node, workEvent.CID)
-	// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
-	if exists == nil {
-		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
-		if err != nil {
-			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
-			return
-		}
-	}
+// 	ctx := context.Background()
+// 	exists, _ := db.GetCache(ctx, workEvent.CID)
+// 	// exists, _ := db.ReadData(node, workEvent.CID) // this is the timeout
+// 	// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
+// 	if exists == nil {
+// 		err := db.WriteData(node, workEvent.CID, workEvent.Payload)
+// 		if err != nil {
+// 			logrus.Errorf("Failed to write data for CID %s: %v", workEvent.CID, err)
+// 			return
+// 		}
+// 	}
 
-	var nodeData pubsub.NodeData
-	nodeDataBytes, err := db.GetCache(context.Background(), workEvent.PeerId)
-	if err != nil || nodeDataBytes == nil {
-		nodeDataPtr := node.NodeTracker.GetNodeData(workEvent.PeerId)
-		if nodeDataPtr == nil {
-			logrus.Errorf("Node data not found for peer ID: %s", workEvent.PeerId)
-			return
-		}
-		nodeData = *nodeDataPtr
-	} else {
-		err = json.Unmarshal(nodeDataBytes, &nodeData)
-		if err != nil {
-			logrus.Errorf("Failed to unmarshal node data bytes: %v", err)
-			return
-		}
-	}
+// 	var nodeData pubsub.NodeData
+// 	nodeDataBytes, err := db.GetCache(context.Background(), workEvent.PeerId)
+// 	if err != nil || nodeDataBytes == nil {
+// 		nodeDataPtr := node.NodeTracker.GetNodeData(workEvent.PeerId)
+// 		if nodeDataPtr == nil {
+// 			logrus.Errorf("Node data not found for peer ID: %s", workEvent.PeerId)
+// 			return
+// 		}
+// 		nodeData = *nodeDataPtr
+// 	} else {
+// 		err = json.Unmarshal(nodeDataBytes, &nodeData)
+// 		if err != nil {
+// 			logrus.Errorf("Failed to unmarshal node data bytes: %v", err)
+// 			return
+// 		}
+// 	}
 
-	if nodeData.Records == nil {
-		nodeData.Records = []CID{}
-	}
+// 	if nodeData.Records == nil {
+// 		nodeData.Records = []CID{}
+// 	}
 
-	if exists == nil {
-		nodeData.BytesScraped += len(workEvent.Payload)
-		newCID := CID{
-			RecordId:  workEvent.CID,
-			Duration:  workEvent.Duration,
-			Timestamp: time.Now().Unix(),
-		}
-		if records, ok := nodeData.Records.([]CID); ok {
-			nodeData.Records = append(records, newCID)
-		} else {
-			logrus.Errorf("Failed to assert type of nodeData.Records")
-			return
-		}
-		if err := node.NodeTracker.AddOrUpdateNodeData(&nodeData, true); err != nil {
-			logrus.Errorf("Failed to update node data: %v", err)
-			return
-		}
-	}
+// 	if exists == nil {
+// 		newCID := CID{
+// 			RecordId:  workEvent.CID,
+// 			Duration:  workEvent.Duration,
+// 			Timestamp: time.Now().Unix(),
+// 		}
+// 		if records, ok := nodeData.Records.([]CID); ok {
+// 			nodeData.Records = append(records, newCID)
+// 		} else {
+// 			logrus.Errorf("Failed to assert type of nodeData.Records")
+// 			return
+// 		}
+// 		if err := node.NodeTracker.AddOrUpdateNodeData(&nodeData, true); err != nil {
+// 			logrus.Errorf("Failed to update node data: %v", err)
+// 			return
+// 		}
+// 	}
 
-	jsonData, err := json.Marshal(nodeData)
-	if err != nil {
-		logrus.Errorf("Failed to marshal node data: %v", err)
-		return
-	}
-	err = db.WriteData(node, workEvent.PeerId, jsonData)
-	if err != nil {
-		if node.IsValidator {
-			logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
-		}
-		return
-	}
-	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)
-}
+// 	jsonData, err := json.Marshal(nodeData)
+// 	if err != nil {
+// 		logrus.Errorf("Failed to marshal node data: %v", err)
+// 		return
+// 	}
+// 	err = db.WriteData(node, workEvent.PeerId, jsonData)
+// 	if err != nil {
+// 		if node.IsValidator {
+// 			logrus.Errorf("Failed to write node data for peer ID %s: %v", workEvent.PeerId, err)
+// 		}
+// 		return
+// 	}
+// 	logrus.Infof("[+] Updated records key %s for node %s", workEvent.CID, workEvent.PeerId)
+// }
 
 // getResponseMessage converts a messages.Response object into a pubsub2.Message object.
 // It unmarshals the JSON-encoded response value into a map and then constructs a new pubsub2.Message
@@ -298,7 +278,8 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	props := actor.PropsFromProducer(NewWorker(node))
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
-	// local
+
+	// Local worker
 	if node.IsStaked && node.IsWorker() {
 		wg.Add(1)
 		go func() {
@@ -306,7 +287,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
 			result, err := future.Result()
 			if err != nil {
-				logrus.Debugf("Error receiving response: %v", err)
+				logrus.Errorf("[-] Error receiving response from local worker: %v", err)
 				return
 			}
 			response := result.(*messages.Response)
@@ -315,46 +296,54 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			if err != nil {
 				msg, err = getResponseMessage(result.(*messages.Response))
 				if err != nil {
-					logrus.Debugf("Error getting response message: %v", err)
+					logrus.Errorf("[-] Error getting response message: %v", err)
+					workerDoneCh <- &pubsub2.Message{}
 					return
 				}
 			}
 			workerDoneCh <- msg
 		}()
 	}
-	// remote
+
+	// Remote workers
 	peers := node.NodeTracker.GetAllNodeData()
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			if !isBootnode(ipAddr) && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
+			if (p.PeerId.String() != node.Host.ID().String()) && (p.IsStaked || p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
 				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
-						logrus.Debugf("Spawned error %v", err)
+						logrus.Errorf("[-] Error spawning remote worker: %v", err)
 						return
 					}
 					spawnedPID := spawned.Pid
-					// Check if spawnedPID is nil we dont need to show this to the user
 					if spawnedPID == nil {
-						logrus.Debugf("spawned pid is not a worker for IP: %s", ipAddr)
+						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
-					node.ActorEngine.Send(spawnedPID, &messages.Connect{
-						Sender: client,
-					})
+					node.ActorEngine.Send(spawnedPID, &messages.Connect{Sender: client})
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 					result, err := future.Result()
 					if err != nil {
-						logrus.Debugf("Error receiving response: %v", err)
+						logrus.Debugf("[-] Error receiving response from remote worker: %v", err)
 						return
 					}
 					response := result.(*messages.Response)
-					node.ActorEngine.Send(spawnedPID, response)
+					msg := &pubsub2.Message{}
+					err = json.Unmarshal([]byte(response.Value), msg)
+					if err != nil {
+						msg, err = getResponseMessage(response)
+						if err != nil {
+							logrus.Errorf("[-] Error getting response message: %v", err)
+							return
+						}
+					}
+					workerDoneCh <- msg
 				}(p)
 			}
 		}
@@ -372,7 +361,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 // it logs the error.
 func SubscribeToWorkers(node *masa.OracleNode) {
 	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, node.IsValidator)
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
@@ -391,35 +380,22 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
-	if node == nil {
-		logrus.Error("MonitorWorkers: node is nil")
-		return
-	}
-	if node.ActorRemote == nil {
-		logrus.Error("MonitorWorkers: node.ActorRemote is nil")
-		return
-	}
-	if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
-		logrus.Error("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
-		return
-	}
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
-	ticker := time.NewTicker(time.Second * 10)
+	if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
+		logrus.Debug("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
+		return
+	}
+
+	ticker := time.NewTicker(time.Second * 15)
 	defer ticker.Stop()
 	rcm := pubsub.GetResponseChannelMap()
 	var startTime time.Time
 
 	for {
 		select {
-		case <-ticker.C:
-			logrus.Debug("tick")
-		case work, ok := <-node.WorkerTracker.WorkerStatusCh:
-			if !ok {
-				logrus.Error("WorkerStatusCh channel was closed")
-				return
-			}
+		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
 			var workData map[string]string
 			err := json.Unmarshal(work.Data, &workData)
@@ -429,30 +405,32 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			}
 			startTime = time.Now()
 			go SendWork(node, work)
-		case data, ok := <-workerDoneCh:
-			if !ok {
-				logrus.Error("workerDoneCh channel was closed")
-				return
-			}
+		case data := <-workerDoneCh:
 			validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
 			if !ok {
-				logrus.Errorf("Error asserting type: %v", ok)
+				logrus.Errorf("[-] Error asserting type: %v", ok)
 				continue
 			}
 
 			if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
 				validatorData, err := json.Marshal(validatorDataMap["Response"])
 				if err != nil {
-					logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+					logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
 					continue
 				}
 				ch <- validatorData
 				close(ch)
+
 			} else {
 				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)
+				continue
 			}
 
 			processValidatorData(data, validatorDataMap, &startTime, node)
+
+		case <-ticker.C:
+			logrus.Info("[+] worker tick")
+
 		case <-ctx.Done():
 			return
 		}
@@ -469,17 +447,31 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
  */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
+
 		if _, ok := response["error"].(string); ok {
 			logrus.Infof("[+] Work failed %s", response["error"])
+
 		} else if work, ok := response["data"].(string); ok {
 			processWork(data, work, startTime, node)
+
 		} else if w, ok := response["data"].(map[string]interface{}); ok {
 			work, err := json.Marshal(w)
+
 			if err != nil {
-				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+				logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
 				return
 			}
+
 			processWork(data, string(work), startTime, node)
+		} else {
+			work, err := json.Marshal(response["data"])
+			if err != nil {
+				logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
+				return
+			}
+
+			processWork(data, string(work), startTime, node)
+
 		}
 	}
 }
@@ -506,9 +498,11 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
+	logrus.Infof("[+] Publishing work event : %v for Peer %s", workEvent.CID, workEvent.PeerId)
+	logrus.Debugf("[+] Publishing work event : %v", workEvent)
 
-	// @todo handle mutliple block publishes issue
-	// _ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
+	_ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 
-	updateRecords(node, workEvent)
+	// @todo wip removing this for the chain leger and content addressable store task
+	// updateRecords(node, workEvent)
 }

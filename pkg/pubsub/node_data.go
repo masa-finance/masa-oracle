@@ -3,7 +3,6 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -64,7 +63,6 @@ type NodeData struct {
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsDiscordScraper     bool            `json:"isDiscordScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
-	BytesScraped         int             `json:"bytesScraped"`
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
 }
@@ -74,12 +72,7 @@ type NodeData struct {
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
-	cfg := config.GetInstance()
-	wn, _ := strconv.ParseBool(cfg.Validator)
-	ts := cfg.TwitterScraper
-	ds := cfg.DiscordScraper
-	ws := cfg.WebScraper
-	ver := cfg.Version
+	// cfg := config.GetInstance()
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -90,34 +83,8 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
-		IsValidator:       wn,
-		IsTwitterScraper:  ts,
-		IsDiscordScraper:  ds,
-		IsWebScraper:      ws,
-		BytesScraped:      0,
-		Version:           ver,
 	}
 }
-
-//// CalculateCurrentUptime calculates the current uptime based on Unix timestamps.
-//func (n *NodeData) CalculateCurrentUptime() {
-//	if n.Activity == ActivityJoined {
-//		n.CurrentUptime = time.Duration(n.LastUpdatedUnix-n.LastJoinedUnix) * time.Second
-//	} else {
-//		n.CurrentUptime = 0
-//	}
-//	n.CurrentUptimeStr = n.CurrentUptime.String()
-//}
-
-//// CalculateAccumulatedUptime calculates the accumulated uptime based on Unix timestamps.
-//func (n *NodeData) CalculateAccumulatedUptime() {
-//	if n.FirstJoinedUnix > 0 && n.LastLeftUnix > 0 {
-//		n.AccumulatedUptime = time.Duration(n.LastLeftUnix-n.FirstJoinedUnix) * time.Second
-//	} else {
-//		n.AccumulatedUptime = 0
-//	}
-//	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
-//}
 
 // Address returns a string representation of the NodeData's multiaddress
 // and peer ID in the format "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC".
@@ -129,22 +96,19 @@ func (n *NodeData) Address() string {
 // TwitterScraper checks if the current node is configured as a Twitter scraper.
 // It retrieves the configuration instance and returns the value of the TwitterScraper field.
 func (n *NodeData) TwitterScraper() bool {
-	cfg := config.GetInstance()
-	return cfg.TwitterScraper
+	return n.IsTwitterScraper
 }
 
 // DiscordScraper checks if the current node is configured as a Discord scraper.
 // It retrieves the configuration instance and returns the value of the DiscordScraper field.
 func (n *NodeData) DiscordScraper() bool {
-	cfg := config.GetInstance()
-	return cfg.DiscordScraper
+	return n.IsDiscordScraper
 }
 
 // WebScraper checks if the current node is configured as a Web scraper.
 // It retrieves the configuration instance and returns the value of the WebScraper field.
 func (n *NodeData) WebScraper() bool {
-	cfg := config.GetInstance()
-	return cfg.WebScraper
+	return n.IsWebScraper
 }
 
 // Joined updates the NodeData when the node joins the network.
@@ -181,12 +145,8 @@ func (n *NodeData) Left() {
 	n.CurrentUptime = 0
 	n.Activity = ActivityLeft
 	n.IsActive = false
-	// call this after setting activity flags
+
 	n.UpdateAccumulatedUptime()
-
-	//n.CalculateCurrentUptime()
-	//n.CalculateAccumulatedUptime()
-
 	logMessage := fmt.Sprintf("Node left: %s", n.Address())
 	if n.IsStaked {
 		logrus.Info(logMessage)
@@ -248,15 +208,21 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
-		PeerId:     host.ID(),
-		IsStaked:   isStaked,
-		EthAddress: masacrypto.KeyManagerInstance().EthAddress,
+		PeerId:           host.ID(),
+		IsStaked:         isStaked,
+		EthAddress:       masacrypto.KeyManagerInstance().EthAddress,
+		IsTwitterScraper: config.GetInstance().TwitterScraper,
+		IsDiscordScraper: config.GetInstance().DiscordScraper,
+		IsWebScraper:     config.GetInstance().WebScraper,
+		IsValidator:      config.GetInstance().Validator,
+		IsActive:         true,
+		Version:          config.Version,
 	}
 
 	// Convert NodeData to JSON
 	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
-		logrus.Error("Error marshalling NodeData:", err)
+		logrus.Error("[-] Error marshalling NodeData:", err)
 		return nil
 	}
 	return jsonData

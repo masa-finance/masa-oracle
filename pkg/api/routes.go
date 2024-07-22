@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/golang-jwt/jwt/v4"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -91,7 +89,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		token := authHeader[len(BearerSchema):]
 
 		// Validate the token against the expected API key stored in environment variables.
-		logrus.Info(os.Getenv("API_KEY"))
+		// logrus.Info(os.Getenv("API_KEY"))
 		if os.Getenv("API_KEY") == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "JWT Token required"})
 			return
@@ -434,8 +432,19 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /chat/cf [post]
 		v1.POST("/chat/cf", API.CfLlmChat())
 
+		// @Summary Get Blocks
+		// @Description Retrieves the list of blocks from the blockchain
+		// @Tags Blocks
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} Blocks "Successfully retrieved blocks"
+		// @Failure 400 {object} ErrorResponse "Error retrieving blocks"
+		// @Router /blocks [get]
+		v1.GET("/blocks", API.GetBlocks())
+
 		// @note a test route
 		v1.POST("/test", API.Test())
+
 	}
 
 	// @Summary Node Status Page

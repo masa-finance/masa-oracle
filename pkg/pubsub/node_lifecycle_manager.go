@@ -25,7 +25,7 @@ func BroadcastEvent(ctx context.Context, ps *pubsub.PubSub, topicName string, ev
 
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to marshal node lifecycle event")
+		logrus.WithError(err).Error("[-] Failed to marshal node lifecycle event")
 		return err
 	}
 
@@ -34,7 +34,7 @@ func BroadcastEvent(ctx context.Context, ps *pubsub.PubSub, topicName string, ev
 		logrus.WithFields(logrus.Fields{
 			"topicName": topicName,
 			"error":     err,
-		}).Error("Failed to join topic")
+		}).Error("[-] Failed to join topic")
 		return err
 	}
 
@@ -42,7 +42,7 @@ func BroadcastEvent(ctx context.Context, ps *pubsub.PubSub, topicName string, ev
 		logrus.WithFields(logrus.Fields{
 			"topicName": topicName,
 			"error":     err,
-		}).Error("Failed to publish node lifecycle event")
+		}).Error("[-] Failed to publish node lifecycle event")
 		return err
 	}
 
@@ -50,6 +50,6 @@ func BroadcastEvent(ctx context.Context, ps *pubsub.PubSub, topicName string, ev
 		"eventType": event.EventType,
 		"nodeID":    event.NodeID,
 		"topicName": topicName,
-	}).Info("Successfully broadcasted node lifecycle event")
+	}).Info("[+] Successfully broadcasted node lifecycle event")
 	return nil
 }

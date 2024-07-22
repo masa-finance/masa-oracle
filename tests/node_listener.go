@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -53,7 +52,7 @@ func NewNodeListener(connString string) (*NodeListener, error) {
 }
 
 func (ml *NodeListener) Start() error {
-	logrus.Infof("NodeListener --> Start()")
+	logrus.Infof("[+] NodeListener --> Start()")
 	var opts []websocket.Option
 	tlsConf, err := generateTLSConfig()
 	if err != nil {
@@ -103,8 +102,8 @@ func (ml *NodeListener) Start() error {
 	}
 	addr1 := ml.Address.String()
 	addr2 := multiaddrs[0].String()
-	fmt.Printf("libp2p host address: %s", addr1)
-	fmt.Printf("libp2p host address: %s", addr2)
+	logrus.Infof("[+] libp2p host address: %s", addr1)
+	logrus.Infof("[+] libp2p host address: %s", addr2)
 	return nil
 }
 
@@ -114,11 +113,11 @@ func handleStream(stream network.Stream) {
 	buf := make([]byte, 1024)
 	n, err := stream.Read(buf)
 	if err != nil {
-		fmt.Println("Error reading from stream:", err)
+		logrus.Errorf("[-] Error reading from stream: %s", err)
 		return
 	}
 
-	fmt.Printf("Received message: %s\n", string(buf[:n]))
+	logrus.Infof("[+] Received message: %s", string(buf[:n]))
 }
 
 func generateTLSConfig() (*tls.Config, error) {

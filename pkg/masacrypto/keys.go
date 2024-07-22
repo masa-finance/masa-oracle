@@ -38,7 +38,7 @@ func getPrivateKeyFromEnv(envKey string) (privKey crypto.PrivKey, err error) {
 	if err != nil {
 		return nil, logAndReturnError("error unmarshalling private key: %s", err)
 	}
-	logrus.Infof("Loaded private key from environment")
+	logrus.Infof("[+] Loaded private key from environment")
 	return privKey, nil
 }
 
@@ -46,21 +46,21 @@ func getPrivateKeyFromFile(keyFile string) (crypto.PrivKey, error) {
 	// Check if the private key file exists
 	data, err := os.ReadFile(keyFile)
 	if err != nil {
-		return nil, logAndReturnError("Error reading private key file: %s", err)
+		return nil, logAndReturnError("[-] Error reading private key file: %s", err)
 	}
 
 	// Decode the private key from the file
 	rawKey, err := hex.DecodeString(string(data))
 	if err != nil {
-		return nil, logAndReturnError("Error decoding private key: %s", err)
+		return nil, logAndReturnError("[-] Error decoding private key: %s", err)
 	}
 
 	// Unmarshal the private key
 	privKey, err := crypto.UnmarshalPrivateKey(rawKey)
 	if err != nil {
-		return nil, logAndReturnError("Error unmarshalling private key: %s", err)
+		return nil, logAndReturnError("[-] Error unmarshalling private key: %s", err)
 	}
-	logrus.Infof("Loaded private key from %s", keyFile)
+	logrus.Infof("[+] Loaded private key from %s", keyFile)
 	return privKey, nil
 }
 
@@ -68,7 +68,7 @@ func generateNewPrivateKey(keyFile string) (crypto.PrivKey, error) {
 	// Generate a new private key
 	privKey, _, err := crypto.GenerateKeyPair(crypto.Secp256k1, 2048)
 	if err != nil {
-		return nil, logAndReturnError("Error generating new private key: %s", err)
+		return nil, logAndReturnError("[-] Error generating new private key: %s", err)
 	}
 
 	encodedKey, err := getHexEncodedPrivateKey(privKey)
@@ -77,16 +77,16 @@ func generateNewPrivateKey(keyFile string) (crypto.PrivKey, error) {
 	}
 	// Save the private key to the file
 	if err := os.WriteFile(keyFile, []byte(encodedKey), 0600); err != nil {
-		return nil, logAndReturnError("Error saving private key to file: %s", err)
+		return nil, logAndReturnError("[-] Error saving private key to file: %s", err)
 	}
-	logrus.Infof("Generated and saved a new private key to %s: %s", keyFile, privKey)
+	logrus.Infof("[+] Generated and saved a new private key to %s: %s", keyFile, privKey)
 	return privKey, nil
 }
 
 func getHexEncodedPrivateKey(privKey crypto.PrivKey) (string, error) {
 	data, err := crypto.MarshalPrivateKey(privKey)
 	if err != nil {
-		return "", logAndReturnError("Error marshalling private key: %s", err)
+		return "", logAndReturnError("[-] Error marshalling private key: %s", err)
 	}
 	encodedKey := hex.EncodeToString(data)
 	return encodedKey, nil
@@ -95,7 +95,7 @@ func getHexEncodedPrivateKey(privKey crypto.PrivKey) (string, error) {
 func getHexEncodedPublicKey(publicKey crypto.PubKey) (string, error) {
 	pubKeyBytes, err := crypto.MarshalPublicKey(publicKey)
 	if err != nil {
-		return "", logAndReturnError("Error marshalling public key: %s", err)
+		return "", logAndReturnError("[-] Error marshalling public key: %s", err)
 	}
 	encodedKey := hex.EncodeToString(pubKeyBytes)
 	return encodedKey, nil
@@ -105,13 +105,13 @@ func libp2pPrivateKeyToEcdsa(privKey crypto.PrivKey) (*ecdsa.PrivateKey, error) 
 	// After obtaining the libp2p privKey, convert it to an ECDSA private key
 	raw, err := privKey.Raw()
 	if err != nil {
-		logrus.Errorf("Error getting raw private key: %s\n", err)
+		logrus.Errorf("[-] Error getting raw private key: %s\n", err)
 		return nil, err
 	}
 
 	ecdsaPrivKey, err := ethCrypto.ToECDSA(raw)
 	if err != nil {
-		logrus.Errorf("Error converting to ECDSA private key: %s\n", err)
+		logrus.Errorf("[-] Error converting to ECDSA private key: %s\n", err)
 		return nil, err
 	}
 
@@ -125,7 +125,7 @@ func libp2pPubKeyToEcdsa(pubKey crypto.PubKey) (*ecdsa.PublicKey, error) {
 	}
 	secpPubKey, err := secp.ParsePubKey(raw)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing public key: %v", err)
+		return nil, fmt.Errorf("[-] error parsing public key: %v", err)
 	}
 
 	ecdsaPubKey := secpPubKey.ToECDSA()
@@ -152,9 +152,9 @@ func saveEcdesaPrivateKeyToFile(ecdsaPrivKey *ecdsa.PrivateKey, keyFile string) 
 	ecdsaKeyBytes := ethCrypto.FromECDSA(ecdsaPrivKey)
 	ecdsaKeyHex := hex.EncodeToString(ecdsaKeyBytes)
 	if err := os.WriteFile(keyFile, []byte(ecdsaKeyHex), 0600); err != nil {
-		logrus.Errorf("Error saving ECDSA private key to file: %s", err)
+		logrus.Errorf("[-] Error saving ECDSA private key to file: %s", err)
 		return err
 	}
-	logrus.Infof("Saved ECDSA private key to %s", keyFile)
+	logrus.Infof("[+] Saved ECDSA private key to %s", keyFile)
 	return nil
 }
