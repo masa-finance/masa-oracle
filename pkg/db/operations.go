@@ -72,7 +72,7 @@ func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 		"nodeID":       node.Host.ID().String(),
 		"isAuthorized": true,
 		"ReadData":     true,
-	}).Info("Attempting to read data")
+	}).Info("[+] Attempting to read data")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()

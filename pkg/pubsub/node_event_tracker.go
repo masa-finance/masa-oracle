@@ -49,7 +49,7 @@ func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
 	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
-	}).Info("Started listening")
+	}).Info("[+] Started listening")
 }
 
 // ListenClose logs when the node stops listening on a multiaddr.
@@ -59,7 +59,7 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
-	}).Info("Stopped listening")
+	}).Info("[-]Stopped listening")
 }
 
 // Connected handles when a remote peer connects to this node.
@@ -93,7 +93,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
-	}).Info("Connected")
+	}).Info("[+] Connected")
 }
 
 // Disconnected handles when a remote peer disconnects from this node.
@@ -126,7 +126,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
-	}).Info("Disconnected")
+	}).Info("[+] Disconnected")
 }
 
 // HandleMessage unmarshals the received pubsub message into a NodeData struct,
@@ -288,6 +288,7 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
 	dataChanged := false
+
 	nd, ok := net.nodeData.Get(nodeData.PeerId.String())
 	if !ok {
 		nodeData.SelfIdentified = true
@@ -300,15 +301,10 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			nd.SelfIdentified = true
 		}
 		dataChanged = true
-		nd.BytesScraped = nodeData.BytesScraped
 		nd.IsStaked = nodeData.IsStaked
-		nd.IsDiscordScraper = nodeData.IsDiscordScraper
-		nd.IsTwitterScraper = nodeData.IsTwitterScraper
-		nd.IsWebScraper = nodeData.IsWebScraper
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
-
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress

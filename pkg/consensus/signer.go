@@ -53,7 +53,7 @@ func SignData(privKey crypto.PrivKey, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("private key is nil")
 	}
 
-	logrus.Info("Signing data")
+	logrus.Info("[+] Signing data")
 
 	signature, err := privKey.Sign(data)
 	if err != nil {
@@ -61,7 +61,7 @@ func SignData(privKey crypto.PrivKey, data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	logrus.Info("Data signed successfully")
+	logrus.Info("[+] Data signed successfully")
 	return signature, nil
 }
 
@@ -79,7 +79,7 @@ func VerifySignature(pubKey crypto.PubKey, data []byte, signatureHex string) (bo
 		return false, err
 	}
 
-	logrus.Info("Verifying signature")
+	logrus.Info("[+] Verifying signature")
 
 	verified, err := pubKey.Verify(data, signatureBytes)
 	if err != nil {
@@ -88,9 +88,9 @@ func VerifySignature(pubKey crypto.PubKey, data []byte, signatureHex string) (bo
 	}
 
 	if verified {
-		logrus.Info("Signature verified successfully")
+		logrus.Info("[+] Signature verified successfully")
 	} else {
-		logrus.Info("Signature verification failed")
+		logrus.Info("[-] Signature verification failed")
 	}
 	return verified, nil
 }

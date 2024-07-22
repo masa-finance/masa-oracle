@@ -41,7 +41,7 @@ type CollectedData struct {
 //	go func() {
 //		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
-//			logrus.Errorf("Error collecting data: %s", err.Error())
+//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
 //		return
 //	  }
 //	logrus.Infof("%+v", res)
@@ -149,7 +149,7 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 //	go func() {
 //		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
-//			logrus.Errorf("Error collecting data: %s", err.Error())
+//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
 //		return
 //	  }
 //	logrus.Infof("%+v", res)

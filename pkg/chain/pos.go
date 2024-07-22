@@ -20,7 +20,7 @@ type ProofOfStake struct {
 }
 
 func getProofOfStakeTarget(stake *big.Int) *big.Int {
-	logrus.WithFields(logrus.Fields{"stake": stake}).Info("Staked amount")
+	logrus.WithFields(logrus.Fields{"stake": stake}).Info("[+] Staked amount")
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-Difficulty))
 	// adjustment := new(big.Int).Div(target, stake)
@@ -46,7 +46,7 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 	var hashInt big.Int
 	currentTime := time.Now().Unix()
 
-	logrus.WithFields(logrus.Fields{"block_content": string(pos.Block.Data)}).Info("Running Proof of Stake...")
+	logrus.WithFields(logrus.Fields{"nonce": currentTime}).Info("[+] Running Proof of Stake...")
 	spinner := []string{"|", "/", "-", "\\"}
 	i := 0
 	for {
