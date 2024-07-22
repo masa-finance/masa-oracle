@@ -73,7 +73,7 @@ type NodeData struct {
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
-	cfg := config.GetInstance()
+	// cfg := config.GetInstance()
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -84,12 +84,12 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
-		IsValidator:       cfg.Validator,
-		IsTwitterScraper:  cfg.TwitterScraper,
-		IsDiscordScraper:  cfg.DiscordScraper,
-		IsWebScraper:      cfg.WebScraper,
-		BytesScraped:      0,
-		Version:           cfg.Version,
+		// IsValidator:       cfg.Validator,
+		// IsTwitterScraper:  cfg.TwitterScraper,
+		// IsDiscordScraper:  cfg.DiscordScraper,
+		// IsWebScraper:      cfg.WebScraper,
+		// BytesScraped:      0,
+		// Version:           cfg.Version,
 	}
 }
 
