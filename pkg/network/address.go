@@ -43,11 +43,19 @@ func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
 }
 
 func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
+	var bestAddr multiaddr.Multiaddr
+
+	// First, try to get the best address using our public IP
+	bestAddr = getBestPublicAddress(addrs)
+	if bestAddr != nil {
+		return bestAddr
+	}
+
+	// If we couldn't get a public address, fall back to the original logic
 	var bestPublicAddr multiaddr.Multiaddr
 	var bestPrivateAddr multiaddr.Multiaddr
 
 	for _, addr := range addrs {
-
 		ipComponent, err := addr.ValueForProtocol(multiaddr.P_IP4)
 		if err != nil {
 			ipComponent, err = addr.ValueForProtocol(multiaddr.P_IP6)
@@ -62,35 +70,61 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 		}
 
 		if ip.IsPrivate() {
-			// If it's the first private address found or if it's preferred over the current best, keep it
 			if bestPrivateAddr == nil || isPreferredAddress(addr) {
 				bestPrivateAddr = addr
 			}
 		} else {
-			// If it's the first public address found or if it's preferred over the current best, keep it
 			if bestPublicAddr == nil || isPreferredAddress(addr) {
 				bestPublicAddr = addr
 			}
 		}
 	}
-	var baseAddr multiaddr.Multiaddr
+
 	// Prefer public addresses over private ones
 	if bestPublicAddr != nil {
-		baseAddr = bestPublicAddr
+		bestAddr = bestPublicAddr
 	} else if bestPrivateAddr != nil {
-		baseAddr = bestPrivateAddr
-	} else {
+		bestAddr = bestPrivateAddr
+	} else if len(addrs) > 0 {
 		logrus.Warn("[-] No address matches the priority criteria, returning the first entry")
-		baseAddr = addrs[0]
+		bestAddr = addrs[0]
 	}
-	logrus.Debug("[+] Best public address: ", bestPublicAddr)
-	logrus.Debug("[+] Best private address: ", bestPrivateAddr)
-	logrus.Infof("[+] Base address: %s", baseAddr)
-	addr := replaceAddress(baseAddr)
-	if addr != nil {
-		baseAddr = addr
+
+	logrus.Infof("[+] Best address: %s", bestAddr)
+	return bestAddr
+}
+
+func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
+	var externalIP net.IP
+	var err error
+
+	if os.Getenv("ENV") == "local" {
+		externalIP = net.ParseIP(getOutboundIP())
+	} else {
+		externalIP, err = pubip.Get()
+		if err != nil {
+			logrus.Warnf("[-] Failed to get public IP: %v", err)
+			return nil
+		}
 	}
-	return baseAddr
+
+	if externalIP == nil {
+		return nil
+	}
+
+	for _, addr := range addrs {
+		replaced, err := replaceIPComponent(addr, externalIP.String())
+		if err != nil {
+			logrus.Warnf("[-] Failed to replace IP component: %v", err)
+			continue
+		}
+		if replaced != nil {
+			logrus.Infof("[+] Using public IP address: %s", replaced)
+			return replaced
+		}
+	}
+
+	return nil
 }
 
 func isPreferredAddress(addr multiaddr.Multiaddr) bool {
@@ -112,28 +146,6 @@ func getOutboundIP() string {
 	localAddr := conn.LocalAddr().String()
 	idx := strings.LastIndex(localAddr, ":")
 	return localAddr[0:idx]
-}
-
-func replaceAddress(addr multiaddr.Multiaddr) multiaddr.Multiaddr {
-	var err error
-	var bestAddr multiaddr.Multiaddr
-
-	var externalIP net.IP
-	if os.Getenv("ENV") == "local" {
-		externalIP = net.ParseIP(getOutboundIP())
-	} else {
-		externalIP, _ = pubip.Get()
-	}
-
-	if externalIP.String() != "" {
-		bestAddr, err = replaceIPComponent(addr, externalIP.String())
-		if err != nil {
-			logrus.Warnf("[-] Failed to replace IP component: %s", err)
-			return nil
-		}
-	}
-	logrus.Debug("[+] Address after replacing IP component: ", bestAddr)
-	return bestAddr
 }
 
 func replaceIPComponent(maddr multiaddr.Multiaddr, newIP string) (multiaddr.Multiaddr, error) {
