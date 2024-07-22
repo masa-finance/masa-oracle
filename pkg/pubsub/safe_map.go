@@ -70,6 +70,10 @@ func (sm *SafeMap) GetStakedNodesSlice() []NodeData {
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
 		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
+		nd.IsDiscordScraper = nodeData.IsDiscordScraper
+		nd.IsTwitterScraper = nodeData.IsTwitterScraper
+		nd.IsWebScraper = nodeData.IsWebScraper
+		nd.IsValidator = nodeData.IsValidator
 		result = append(result, nd)
 	}
 	// Sort the slice based on the timestamp

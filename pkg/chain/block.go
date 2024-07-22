@@ -2,6 +2,7 @@ package chain
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 	"fmt"
 	"math/big"
@@ -46,7 +47,7 @@ func (b *Block) Deserialize(data []byte) error {
 }
 
 func (b *Block) Print() {
-	fmt.Printf("\t Input Data:    \t%s\n", b.Data)
+	fmt.Printf("\t Input Data:    \t%s\n", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data))))
 	fmt.Printf("\t Transaction Hash:\t%x\n", b.Hash)
 	fmt.Printf("\t Previous Hash:  \t%x\n", b.Link)
 	fmt.Printf("\t Transaction Nonce:\t%d\n", b.Nonce)

@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -859,6 +860,59 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 	}
 }
 
+func (api *API) GetBlocks() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		if !api.Node.IsValidator {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node is not a validator and cannot access this endpoint"})
+			return
+		}
+
+		type BlockData struct {
+			InputData        interface{} `json:"input_data"`
+			TransactionHash  string      `json:"transaction_hash"`
+			PreviousHash     string      `json:"previous_hash"`
+			TransactionNonce int         `json:"nonce"`
+		}
+
+		type Blocks struct {
+			BlockData []BlockData `json:"blocks"`
+		}
+		var existingBlocks Blocks
+		blocks := chain.GetBlockchain(api.Node.Blockchain)
+
+		for _, block := range blocks {
+			var inputData interface{}
+			err := json.Unmarshal(block.Data, &inputData)
+			if err != nil {
+				inputData = string(block.Data) // Fallback to string if unmarshal fails
+			}
+
+			blockData := BlockData{
+				InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
+				TransactionHash:  fmt.Sprintf("%x", block.Hash),
+				PreviousHash:     fmt.Sprintf("%x", block.Link),
+				TransactionNonce: int(block.Nonce),
+			}
+			existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
+		}
+
+		jsonData, err := json.Marshal(existingBlocks)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		var blocksResponse Blocks
+		err = json.Unmarshal(jsonData, &blocksResponse)
+		if err != nil {
+			logrus.Error(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, blocksResponse)
+	}
+}
+
 func (api *API) Test() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
@@ -882,7 +936,7 @@ func (api *API) Test() gin.HandlerFunc {
 
 		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
 		if err != nil {
-			logrus.Errorf("Error publishing block: %v", err)
+			logrus.Errorf("[-] Error publishing block: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
