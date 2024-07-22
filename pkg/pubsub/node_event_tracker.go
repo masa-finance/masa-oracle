@@ -288,6 +288,10 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
 	dataChanged := false
+
+	if nodeData.PeerId.String() == "16Uiu2HAmTHk1nxbU74Co5vfbxEv56HfvPDRcJCdvYNZkGAHkQyJs" {
+		logrus.Info("Local Node data has been added")
+	}
 	nd, ok := net.nodeData.Get(nodeData.PeerId.String())
 	if !ok {
 		nodeData.SelfIdentified = true

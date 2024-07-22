@@ -248,7 +248,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 					logrus.Error(err)
 				}
 			}
-			_ = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+			//_ = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
 			// if dht does not have data check cache and update if exists
 
 			jsonData, _ := json.Marshal(nodeData)
