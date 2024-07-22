@@ -215,9 +215,15 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
-		PeerId:     host.ID(),
-		IsStaked:   isStaked,
-		EthAddress: masacrypto.KeyManagerInstance().EthAddress,
+		PeerId:           host.ID(),
+		IsStaked:         isStaked,
+		EthAddress:       masacrypto.KeyManagerInstance().EthAddress,
+		IsTwitterScraper: config.GetInstance().TwitterScraper,
+		IsDiscordScraper: config.GetInstance().DiscordScraper,
+		IsWebScraper:     config.GetInstance().WebScraper,
+		IsValidator:      config.GetInstance().Validator,
+		IsActive:         true,
+		Version:          config.Version,
 	}
 
 	// Convert NodeData to JSON
