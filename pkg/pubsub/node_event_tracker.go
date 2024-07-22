@@ -308,10 +308,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
-		nd.IsValidator = cfg.Validator
-		nd.IsDiscordScraper = cfg.DiscordScraper
-		nd.IsTwitterScraper = cfg.TwitterScraper
-		nd.IsWebScraper = cfg.WebScraper
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
