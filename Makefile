@@ -29,4 +29,3 @@ proto:
 	sh pkg/workers/messages/build.sh
 
 .PHONY: proto
-

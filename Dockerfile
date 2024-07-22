@@ -7,7 +7,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y apt-utils \
     && apt-get install -y nodejs \
-    && npm install -g npm@latest
+    && npm install -g npm@latest \
+    && apt-get install -y git
 
 # Create the 'masa' user and set up the home directory
 RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:masa /home/masa
@@ -35,6 +36,8 @@ RUN go build -v -o masa-node ./cmd/masa-node
 # Continue with the final image
 FROM base
 COPY --from=builder /app/masa-node /usr/bin/masa-node
+COPY --from=builder /app/.git /home/masa/.git
+RUN chown -R masa:masa /home/masa/.git
 RUN chmod +x /usr/bin/masa-node
 
 # Switch to 'masa' to run the application
@@ -45,8 +48,7 @@ WORKDIR /home/masa
 COPY --chown=masa:masa .env .
 
 # Expose necessary ports
-EXPOSE 4001
-EXPOSE 8080
+EXPOSE 4001 8080
 
 # Set default command to start the Go application
 
