@@ -38,13 +38,13 @@ func (node *OracleNode) ListenToNodeTracker() {
 			}
 
 			if err != nil {
-				logrus.Errorf("Error parsing node data: %v", err)
+				logrus.Errorf("[-] Error parsing node data: %v", err)
 				continue
 			}
 			// Publish the JSON data on the node.topic
 			err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
 			if err != nil {
-				logrus.Errorf("Error publishing node data: %v", err)
+				logrus.Errorf("[-] Error publishing node data: %v", err)
 			}
 			// If the nodeData represents a join event and
 			// the node is a boot node or (we don't want boot nodes to wait)

@@ -936,7 +936,7 @@ func (api *API) Test() gin.HandlerFunc {
 
 		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
 		if err != nil {
-			logrus.Errorf("Error publishing block: %v", err)
+			logrus.Errorf("[-] Error publishing block: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}

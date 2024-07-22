@@ -157,7 +157,7 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 
 	for result := range results.Next() {
 		if result.Error != nil {
-			logrus.Errorf("Error iterating query results: %v", result.Error)
+			logrus.Errorf("[-] Error iterating query results: %v", result.Error)
 			return nil, result.Error
 		}
 		// Append the record to the slice

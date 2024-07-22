@@ -84,7 +84,7 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 func getOutboundIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		fmt.Println("Error getting outbound IP")
+		fmt.Println("[-] Error getting outbound IP")
 	}
 	defer conn.Close()
 	localAddr := conn.LocalAddr().String()
@@ -431,7 +431,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 		jsonBytes, err := json.Marshal(jsonData)
 		if err != nil {
-			logrus.Errorf("Error marshalling JSON: %s", err)
+			logrus.Errorf("[-] Error marshalling JSON: %s", err)
 		}
 
 		reader := bytes.NewReader(jsonBytes)

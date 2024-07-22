@@ -131,7 +131,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		if err != nil {
 			msg, err = getResponseMessage(m)
 			if err != nil {
-				logrus.Errorf("Error getting response message: %v", err)
+				logrus.Errorf("[-] Error getting response message: %v", err)
 				return
 			}
 		}
@@ -165,23 +165,7 @@ func computeCid(str string) (string, error) {
 	return cidKey, nil
 }
 
-// isBootnode checks if the given IP address belongs to a bootnode.
-// It takes an IP address as a string and returns a boolean value.
-// If the IP address is found in the list of bootnodes, it returns true.
-// Otherwise, it returns false.
-// func isBootnode(ipAddr string) bool {
-// 	for _, bn := range config.GetInstance().Bootnodes {
-// 		if bn == "" {
-// 			return false
-// 		}
-// 		bootNodeAddr := strings.Split(bn, "/")[2]
-// 		if bootNodeAddr == ipAddr {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-
+// @TODO: do not remove yet to be obsoleted
 // updateRecords updates the records for a given node and key with the provided data.
 //
 // Parameters:
@@ -304,7 +288,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
 			result, err := future.Result()
 			if err != nil {
-				logrus.Errorf("Error receiving response from local worker: %v", err)
+				logrus.Errorf("[-] Error receiving response from local worker: %v", err)
 				return
 			}
 			response := result.(*messages.Response)
@@ -313,7 +297,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			if err != nil {
 				msg, err = getResponseMessage(result.(*messages.Response))
 				if err != nil {
-					logrus.Errorf("Error getting response message: %v", err)
+					logrus.Errorf("[-] Error getting response message: %v", err)
 					workerDoneCh <- &pubsub2.Message{}
 					return
 				}
@@ -327,14 +311,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			logrus.Infof("p.PeerId.String() %s", p.PeerId.String())
-			logrus.Infof("p.PeerId.String() != node.Host.ID().String() %v", p.PeerId.String() != node.Host.ID().String())
-			logrus.Infof("(p.IsStaked || p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) %v", p.IsStaked || p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper)
-			logrus.Infof("p.IsStaked %v", p.IsStaked)
-			logrus.Infof("p.IsTwitterScraper %v", p.IsTwitterScraper)
-			logrus.Infof("p.IsWebScraper %v", p.IsWebScraper)
-			logrus.Infof("p.IsDiscordScraper %v", p.IsDiscordScraper)
-
 			if (p.PeerId.String() != node.Host.ID().String()) && (p.IsStaked || p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
 				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
@@ -433,14 +409,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerDoneCh:
 			validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
 			if !ok {
-				logrus.Errorf("Error asserting type: %v", ok)
+				logrus.Errorf("[-] Error asserting type: %v", ok)
 				continue
 			}
 
 			if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
 				validatorData, err := json.Marshal(validatorDataMap["Response"])
 				if err != nil {
-					logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+					logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
 					continue
 				}
 				ch <- validatorData
@@ -483,7 +459,7 @@ func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]int
 			work, err := json.Marshal(w)
 
 			if err != nil {
-				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+				logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
 				return
 			}
 
@@ -491,7 +467,7 @@ func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]int
 		} else {
 			work, err := json.Marshal(response["data"])
 			if err != nil {
-				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
+				logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
 				return
 			}
 

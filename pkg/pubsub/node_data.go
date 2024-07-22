@@ -229,7 +229,7 @@ func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	// Convert NodeData to JSON
 	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
-		logrus.Error("Error marshalling NodeData:", err)
+		logrus.Error("[-] Error marshalling NodeData:", err)
 		return nil
 	}
 	return jsonData
