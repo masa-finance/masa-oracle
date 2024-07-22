@@ -228,13 +228,13 @@ func (node *OracleNode) Start() (err error) {
 		nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 		nodeData.IsStaked = node.IsStaked
 		nodeData.SelfIdentified = true
-
-		cfg := config.GetInstance()
-		nodeData.IsDiscordScraper = cfg.DiscordScraper
-		nodeData.IsTwitterScraper = cfg.TwitterScraper
-		nodeData.IsWebScraper = cfg.WebScraper
-		nodeData.IsValidator = cfg.Validator
 	}
+
+	//cfg := config.GetInstance()
+	//nodeData.IsDiscordScraper = cfg.DiscordScraper
+	//nodeData.IsTwitterScraper = cfg.TwitterScraper
+	//nodeData.IsWebScraper = cfg.WebScraper
+	//nodeData.IsValidator = cfg.Validator
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
@@ -292,10 +292,10 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Warnf("[-] Received data from unexpected peer %s", remotePeer)
 		return
 	}
-	multiAddr := stream.Conn().RemoteMultiaddr()
-	newNodeData := pubsub2.NewNodeData(multiAddr, remotePeer, nodeData.EthAddress, pubsub2.ActivityJoined)
-	newNodeData.IsStaked = nodeData.IsStaked
-	err = node.NodeTracker.AddOrUpdateNodeData(newNodeData, false)
+	// multiAddr := stream.Conn().RemoteMultiaddr()
+	// newNodeData := pubsub2.NewNodeData(multiAddr, remotePeer, nodeData.EthAddress, pubsub2.ActivityJoined)
+	// newNodeData.IsStaked = nodeData.IsStaked
+	err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, false)
 	if err != nil {
 		logrus.Error(err)
 		return
