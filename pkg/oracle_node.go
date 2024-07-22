@@ -230,11 +230,11 @@ func (node *OracleNode) Start() (err error) {
 		nodeData.SelfIdentified = true
 	}
 
-	cfg := config.GetInstance()
-	nodeData.IsDiscordScraper = cfg.DiscordScraper
-	nodeData.IsTwitterScraper = cfg.TwitterScraper
-	nodeData.IsWebScraper = cfg.WebScraper
-	nodeData.IsValidator = cfg.Validator
+	//cfg := config.GetInstance()
+	//nodeData.IsDiscordScraper = cfg.DiscordScraper
+	//nodeData.IsTwitterScraper = cfg.TwitterScraper
+	//nodeData.IsWebScraper = cfg.WebScraper
+	//nodeData.IsValidator = cfg.Validator
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
