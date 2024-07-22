@@ -63,7 +63,6 @@ type NodeData struct {
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsDiscordScraper     bool            `json:"isDiscordScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
-	BytesScraped         int             `json:"bytesScraped"`
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
 }
@@ -84,12 +83,6 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
-		// IsValidator:       cfg.Validator,
-		// IsTwitterScraper:  cfg.TwitterScraper,
-		// IsDiscordScraper:  cfg.DiscordScraper,
-		// IsWebScraper:      cfg.WebScraper,
-		// BytesScraped:      0,
-		// Version:           cfg.Version,
 	}
 }
 

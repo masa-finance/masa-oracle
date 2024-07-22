@@ -212,7 +212,6 @@ func computeCid(str string) (string, error) {
 // 	}
 
 // 	if exists == nil {
-// 		nodeData.BytesScraped += len(workEvent.Payload)
 // 		newCID := CID{
 // 			RecordId:  workEvent.CID,
 // 			Duration:  workEvent.Duration,

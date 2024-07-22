@@ -301,7 +301,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			nd.SelfIdentified = true
 		}
 		dataChanged = true
-		nd.BytesScraped = nodeData.BytesScraped
 		nd.IsStaked = nodeData.IsStaked
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs

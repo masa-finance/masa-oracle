@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
@@ -401,7 +400,6 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"LastJoined":       api.Node.FromUnixTime(time.Now().Unix()),
 			"CurrentUptime":    "0",
 			"TotalUptime":      "0",
-			"Rewards":          "Coming Soon!",
 			"BytesScraped":     "0 MB",
 		}
 
@@ -419,15 +417,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				templateData["LastJoined"] = api.Node.FromUnixTime(nd.LastJoinedUnix)
 				templateData["CurrentUptime"] = pubsub.PrettyDuration(nd.GetCurrentUptime())
 				templateData["TotalUptime"] = pubsub.PrettyDuration(nd.GetAccumulatedUptime())
-
-				if nv, err := db.ReadData(api.Node, api.Node.Host.ID().String()); err == nil {
-					var sharedData db.SharedData
-					if json.Unmarshal(nv, &sharedData) == nil {
-						if bytesScraped, err := strconv.Atoi(fmt.Sprintf("%v", sharedData["bytesScraped"])); err == nil {
-							templateData["BytesScraped"] = fmt.Sprintf("%.4f MB", float64(bytesScraped)/(1024*1024))
-						}
-					}
-				}
+				templateData["BytesScraped"] = "0 MB"
 			}
 		}
 
