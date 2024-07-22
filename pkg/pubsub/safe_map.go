@@ -3,7 +3,6 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"sort"
 	"sync"
 	"time"
@@ -65,17 +64,16 @@ func (sm *SafeMap) GetStakedNodesSlice() []NodeData {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	result := make([]NodeData, 0)
-	cfg := config.GetInstance()
 	for _, nodeData := range sm.items {
 		nd := *nodeData
 		nd.CurrentUptime = nodeData.GetCurrentUptime()
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
 		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
-		nd.IsValidator = cfg.Validator
-		nd.IsDiscordScraper = cfg.DiscordScraper
-		nd.IsTwitterScraper = cfg.TwitterScraper
-		nd.IsWebScraper = cfg.WebScraper
+		nd.IsDiscordScraper = nodeData.IsDiscordScraper
+		nd.IsTwitterScraper = nodeData.IsTwitterScraper
+		nd.IsWebScraper = nodeData.IsWebScraper
+		nd.IsValidator = nodeData.IsValidator
 		result = append(result, nd)
 	}
 	// Sort the slice based on the timestamp
