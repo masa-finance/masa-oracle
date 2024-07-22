@@ -2,18 +2,6 @@ name: Build
 
 on:
   pull_request:
-    branches:
-      - dev
-      - test
-      - stage
-      - prod
-
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.github/workflows/gh-release.yaml'
-      - '.github/workflows/release.yaml'
-      - '.github/workflows/publish-to-docs.yaml'
 
 jobs:
   build-pr:
