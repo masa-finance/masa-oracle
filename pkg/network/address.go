@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// GetMultiAddressesForHost returns the multiaddresses for the host
 func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	peerInfo := peer.AddrInfo{
 		ID:    host.ID(),
@@ -34,6 +35,7 @@ func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	return addresses, nil
 }
 
+// GetMultiAddressesForHostQuiet returns the multiaddresses for the host without logging
 func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
 	ma, err := GetMultiAddressesForHost(host)
 	if err != nil {
@@ -42,6 +44,7 @@ func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
 	return ma
 }
 
+// GetPriorityAddress returns the best public or private IP address
 func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	bestAddr := getBestPublicAddress(addrs)
 	if bestAddr != nil {
@@ -53,10 +56,7 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	for _, addr := range addrs {
 		ipComponent, err := addr.ValueForProtocol(multiaddr.P_IP4)
 		if err != nil {
-			ipComponent, err = addr.ValueForProtocol(multiaddr.P_IP6)
-			if err != nil {
-				continue // Not an IP address
-			}
+			continue // Not an IP address
 		}
 
 		ip := net.ParseIP(ipComponent)
@@ -83,6 +83,7 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	return nil
 }
 
+// getBestPublicAddress returns the best public IP address
 func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	var externalIP net.IP
 	var err error
@@ -110,7 +111,7 @@ func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 
 	// Find a suitable port from existing addresses
 	for _, addr := range addrs {
-		if strings.HasPrefix(addr.String(), "/ip4/") || strings.HasPrefix(addr.String(), "/ip6/") {
+		if strings.HasPrefix(addr.String(), "/ip4/") {
 			port, err := addr.ValueForProtocol(multiaddr.P_TCP)
 			if err == nil {
 				return publicAddr.Encapsulate(multiaddr.StringCast("/tcp/" + port))
@@ -121,6 +122,7 @@ func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	return publicAddr
 }
 
+// isPreferredAddress checks if the multiaddress contains the UDP protocol
 func isPreferredAddress(addr multiaddr.Multiaddr) bool {
 	// Check if the multiaddress contains the UDP protocol
 	for _, p := range addr.Protocols() {
@@ -131,6 +133,7 @@ func isPreferredAddress(addr multiaddr.Multiaddr) bool {
 	return false
 }
 
+// getOutboundIP returns the outbound IP address of the current machine 172.17.0.2 10.0.0.2 etc
 func getOutboundIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
@@ -142,6 +145,7 @@ func getOutboundIP() string {
 	return localAddr[0:idx]
 }
 
+// GetBootNodesMultiAddress returns the multiaddresses for the bootstrap nodes
 func GetBootNodesMultiAddress(bootstrapNodes []string) ([]multiaddr.Multiaddr, error) {
 	addrs := make([]multiaddr.Multiaddr, 0)
 	for _, peerAddr := range bootstrapNodes {

@@ -438,12 +438,12 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 		hash, err := sh.AddWithOpts(reader, true, true)
 		if err != nil {
-			logrus.Errorf("[-]Error persisting to IPFS: %s", err)
-			os.Exit(1)
-		}
+			logrus.Errorf("[-] Error persisting to IPFS: %s", err)
+		} else {
+			logrus.Printf("[+] Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
+			_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
 
-		logrus.Printf("[+] Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
-		_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
+		}
 	}
 
 	return nil
@@ -456,7 +456,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 
 	go node.Blockchain.Init()
 
-	updateTicker := time.NewTicker(time.Minute)
+	updateTicker := time.NewTicker(time.Second * 60)
 	defer updateTicker.Stop()
 
 	for {
@@ -472,7 +472,7 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 			}
 
 		case <-updateTicker.C:
-			logrus.Info("[+] blockchain ticker")
+			logrus.Info("[+] blockchain tick")
 			if err := updateBlocks(ctx, node); err != nil {
 				logrus.Errorf("[-] Error updating blocks: %v", err)
 				// Consider adding a retry mechanism or circuit breaker here
