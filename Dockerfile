@@ -1,5 +1,5 @@
 # Use the official Ubuntu 22.04 image as a base for the final image
-FROM ubuntu:22.04 as base
+FROM ubuntu:22.04 AS base
 
 # Install necessary packages for the final image
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -26,7 +26,7 @@ RUN cd contracts && npm install
 USER root
 
 # Build the Go binary in a separate stage
-FROM golang:1.22 as builder
+FROM golang:1.22 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
