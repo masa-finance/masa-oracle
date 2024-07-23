@@ -15,6 +15,11 @@ func SubscribeToTopics(node *OracleNode) error {
 		return err
 	}
 
+	// Subscribe to BlockTopic to track and process block data within the network.
+	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.BlockTopic), &BlockEventTracker{}, true); err != nil {
+		return err
+	}
+
 	// Subscribe to PublicKeyTopic to manage and verify public keys within the network.
 	if err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.PublicKeyTopic), &pubsub2.PublicKeySubscriptionHandler{}, false); err != nil {
 		return err

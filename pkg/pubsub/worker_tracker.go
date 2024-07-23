@@ -26,7 +26,6 @@ type WorkerEventTracker struct {
 
 // HandleMessage implements subscription WorkerEventTracker handler
 func (h *WorkerEventTracker) HandleMessage(m *pubsub.Message) {
-	logrus.Infof("workerStream -> Received work from: %s", m.ReceivedFrom)
 	var workers Workers
 	err := json.Unmarshal(m.Data, &workers)
 	if err != nil {

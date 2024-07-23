@@ -35,7 +35,6 @@ type PublicKeyMessage struct {
 
 // NewPublicKeyPublisher creates a new instance of PublicKeyPublisher.
 func NewPublicKeyPublisher(manager *Manager, pubKey libp2pCrypto.PubKey) *PublicKeyPublisher {
-	logrus.Info("Creating new PublicKeyPublisher")
 	return &PublicKeyPublisher{
 		pubSubManager: manager,
 		pubKey:        pubKey,
@@ -45,12 +44,12 @@ func NewPublicKeyPublisher(manager *Manager, pubKey libp2pCrypto.PubKey) *Public
 // PublishNodePublicKey publishes the node's public key to the designated topic.
 func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signature []byte) error {
 	topicName := "bootNodePublicKey"
-	logrus.Infof("[PublicKeyPublisher] Publishing node's public key to topic: %s", topicName)
+	logrus.Infof("[+] Publishing node's public key to topic: %s", topicName)
 
 	// Ensure the topic exists or create it
 	_, err := p.ensureTopic(topicName)
 	if err != nil {
-		logrus.WithError(err).Errorf("[PublicKeyPublisher] Failed to ensure topic '%s' exists", topicName)
+		logrus.WithError(err).Errorf("[-] Failed to ensure topic '%s' exists", topicName)
 		return err
 	}
 
@@ -58,26 +57,26 @@ func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signat
 	existingPubKey, exists := topicPublicKeyMap[topicName]
 
 	if exists {
-		logrus.Infof("[PublicKeyPublisher] Public key already published for topic: %s. Verifying signature.", topicName)
+		logrus.Infof("[+] Public key already published for topic: %s. Verifying signature.", topicName)
 		// If a public key exists, verify the signature against the existing public key
 		pubKeyBytes, err := hex.DecodeString(existingPubKey)
 		if err != nil {
-			logrus.WithError(err).Error("[PublicKeyPublisher] Failed to decode existing public key for verification")
+			logrus.WithError(err).Error("[-] Failed to decode existing public key for verification")
 			return err
 		}
 		pubKey, err := libp2pCrypto.UnmarshalPublicKey(pubKeyBytes)
 		if err != nil {
-			logrus.WithError(err).Error("[PublicKeyPublisher] Failed to unmarshal existing public key for verification")
+			logrus.WithError(err).Error("[-] Failed to unmarshal existing public key for verification")
 			return err
 		}
 		isValid, err := pubKey.Verify(data, signature)
 		if err != nil || !isValid {
-			logrus.WithError(err).Error("[PublicKeyPublisher] Unauthorized: Failed signature verification or signature is invalid")
+			logrus.WithError(err).Error("[-] Unauthorized: Failed signature verification or signature is invalid")
 			return errors.New("unauthorized: only the owner of the public key can publish changes")
 		}
-		logrus.Info("[PublicKeyPublisher] Signature verified successfully for topic: ", topicName)
+		logrus.Infof("[+] Signature verified successfully for topic: %s", topicName)
 	} else {
-		logrus.Infof("[PublicKeyPublisher] No existing public key for topic: %s. Proceeding with initial publication.", topicName)
+		logrus.Infof("[+] No existing public key for topic: %s. Proceeding with initial publication.", topicName)
 		// If no public key is associated with the topic, this is the initial publication
 		topicPublicKeyMap[topicName] = publicKey
 	}
@@ -90,21 +89,21 @@ func (p *PublicKeyPublisher) PublishNodePublicKey(publicKey string, data, signat
 	}
 	msgBytes, err := json.Marshal(msg)
 	if err != nil {
-		logrus.WithError(err).Error("[PublicKeyPublisher] Failed to marshal public key message")
+		logrus.WithError(err).Error("[-] Failed to marshal public key message")
 		return errors.New("failed to marshal message")
 	}
 
 	// Use the existing Manager to publish the message
-	logrus.Infof("[PublicKeyPublisher] Publishing serialized message to topic: %s", topicName)
+	logrus.Infof("[+] Publishing serialized message to topic: %s", topicName)
 	if err := p.pubSubManager.Publish(topicName, msgBytes); err != nil {
 		return err
 	}
 	// Store the published message in the slice
 	p.publishedMessages = append(p.publishedMessages, msg)
-	logrus.Infof("[PublicKeyPublisher] Stored published message for topic: %s", topicName)
+	logrus.Infof("[+] Stored published message for topic: %s", topicName)
 
 	// Print the published data in the console
-	logrus.Infof("[PublicKeyPublisher] Published data: PublicKey: %s, Signature: %s, Data: %s", msg.PublicKey, msg.Signature, msg.Data)
+	logrus.Infof("[+] Published data: PublicKey: %s, Signature: %s, Data: %s", msg.PublicKey, msg.Signature, msg.Data)
 	return nil
 }
 
@@ -126,44 +125,44 @@ func (p *PublicKeyPublisher) ensureTopic(topicName string) (*pubsub.Topic, error
 
 // HandleMessage handles incoming public key messages, with verification and update logic.
 func (handler *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
-	logrus.Info("Handling incoming public key message")
+	logrus.Info("[+] Handling incoming public key message")
 	var incomingMsg PublicKeyMessage
 	if err := json.Unmarshal(m.Data, &incomingMsg); err != nil {
-		logrus.WithError(err).Error("Failed to unmarshal public key message")
+		logrus.WithError(err).Error("[-] Failed to unmarshal public key message")
 		return
 	}
 
-	logrus.Infof("Received public key message: %s", incomingMsg.PublicKey)
+	logrus.Infof("[+] Received public key message: %s", incomingMsg.PublicKey)
 
 	// Proceed with verification and update logic as before
 	for i, existingMsg := range handler.PublicKeys {
 		if existingMsg.PublicKey == incomingMsg.PublicKey {
-			logrus.Infof("Verifying signature for public key: %s", incomingMsg.PublicKey)
+			logrus.Infof("[+] Verifying signature for public key: %s", incomingMsg.PublicKey)
 			// Decode the public key from hexadecimal to bytes
 			pubKeyBytes, err := hex.DecodeString(existingMsg.PublicKey)
 			if err != nil {
-				logrus.WithError(err).Error("Failed to decode public key for verification")
+				logrus.WithError(err).Error("[-] Failed to decode public key for verification")
 				return
 			}
 
 			// Unmarshal the public key bytes into a libp2pCrypto.PubKey
 			pubKey, err := libp2pCrypto.UnmarshalPublicKey(pubKeyBytes)
 			if err != nil {
-				logrus.WithError(err).Error("Failed to unmarshal public key for verification")
+				logrus.WithError(err).Error("[-] Failed to unmarshal public key for verification")
 				return
 			}
 
 			// Use the VerifySignature function from the consensus package
 			isValid, err := consensus.VerifySignature(pubKey, []byte(incomingMsg.Data), incomingMsg.Signature)
 			if err != nil || !isValid {
-				logrus.WithError(err).Error("Failed signature verification or signature is invalid")
+				logrus.WithError(err).Error("[-] Failed signature verification or signature is invalid")
 				return // Do not update or add if the signature is invalid
 			}
 
 			// Signature is valid, update the existing message's data
 			handler.PublicKeys[i].Data = incomingMsg.Data
-			logrus.Infof("Updated public key message: %s", incomingMsg.PublicKey)
-			logrus.Info("Data stored in the slice successfully.")
+			logrus.Infof("[+] Updated public key message: %s", incomingMsg.PublicKey)
+			logrus.Info("[+] Data stored in the slice successfully.")
 			return
 		}
 	}
@@ -171,14 +170,14 @@ func (handler *PublicKeySubscriptionHandler) HandleMessage(m *pubsub.Message) {
 	// If no public key is stored yet, add the new message
 	if len(handler.PublicKeys) == 0 {
 		handler.PublicKeys = append(handler.PublicKeys, incomingMsg)
-		logrus.Infof("Added new public key message: %s", incomingMsg.PublicKey)
-		logrus.Info("Data stored in the slice successfully.")
+		logrus.Infof("[+] Added new public key message: %s", incomingMsg.PublicKey)
+		logrus.Info("[+] Data stored in the slice successfully.")
 	}
 }
 
 // GetPublicKeys returns the list of PublicKeyMessages.
 func (handler *PublicKeySubscriptionHandler) GetPublicKeys() []PublicKeyMessage {
-	logrus.Info("Retrieving stored public keys")
+	logrus.Info("[+] Retrieving stored public keys")
 	return handler.PublicKeys
 }
 

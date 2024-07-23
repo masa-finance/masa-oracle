@@ -25,18 +25,18 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt
 		tweetsContent := ConcatenateTweets(tweets)
 		payloadBytes, err := CreatePayload(tweetsContent, model, prompt)
 		if err != nil {
-			logrus.Errorf("Error creating payload: %v", err)
+			logrus.Errorf("[-] Error creating payload: %v", err)
 			return "", "", err
 		}
 		resp, err := client.SendRequest(payloadBytes)
 		if err != nil {
-			logrus.Errorf("Error sending request to Claude API: %v", err)
+			logrus.Errorf("[-] Error sending request to Claude API: %v", err)
 			return "", "", err
 		}
 		defer resp.Body.Close()
 		sentimentSummary, err := ParseResponse(resp)
 		if err != nil {
-			logrus.Errorf("Error parsing response from Claude: %v", err)
+			logrus.Errorf("[-] Error parsing response from Claude: %v", err)
 			return "", "", err
 		}
 		return tweetsContent, sentimentSummary, nil
@@ -46,7 +46,7 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt
 		tweetsContent := ConcatenateTweets(tweets)
 		sentimentSummary, err := client.SendRequest(tweetsContent, model, prompt)
 		if err != nil {
-			logrus.Errorf("Error sending request to GPT: %v", err)
+			logrus.Errorf("[-] Error sending request to GPT: %v", err)
 			return "", "", err
 		}
 		return tweetsContent, sentimentSummary, nil
@@ -117,18 +117,18 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		client := NewClaudeClient() // Adjusted to call without arguments
 		payloadBytes, err := CreatePayload(data, model, prompt)
 		if err != nil {
-			logrus.Errorf("Error creating payload: %v", err)
+			logrus.Errorf("[-] Error creating payload: %v", err)
 			return "", "", err
 		}
 		resp, err := client.SendRequest(payloadBytes)
 		if err != nil {
-			logrus.Errorf("Error sending request to Claude API: %v", err)
+			logrus.Errorf("[-] Error sending request to Claude API: %v", err)
 			return "", "", err
 		}
 		defer resp.Body.Close()
 		sentimentSummary, err := ParseResponse(resp)
 		if err != nil {
-			logrus.Errorf("Error parsing response from Claude: %v", err)
+			logrus.Errorf("[-] Error parsing response from Claude: %v", err)
 			return "", "", err
 		}
 		return data, sentimentSummary, nil
@@ -137,7 +137,7 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		client := NewGPTClient()
 		sentimentSummary, err := client.SendRequest(data, model, prompt)
 		if err != nil {
-			logrus.Errorf("Error sending request to GPT: %v", err)
+			logrus.Errorf("[-] Error sending request to GPT: %v", err)
 			return "", "", err
 		}
 		return data, sentimentSummary, nil
@@ -239,18 +239,18 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 		client := NewClaudeClient() // Adjusted to call without arguments
 		payloadBytes, err := CreatePayload(messagesContent, model, prompt)
 		if err != nil {
-			logrus.Errorf("Error creating payload: %v", err)
+			logrus.Errorf("[-] Error creating payload: %v", err)
 			return "", "", err
 		}
 		resp, err := client.SendRequest(payloadBytes)
 		if err != nil {
-			logrus.Errorf("Error sending request to Claude API: %v", err)
+			logrus.Errorf("[-] Error sending request to Claude API: %v", err)
 			return "", "", err
 		}
 		defer resp.Body.Close()
 		sentimentSummary, err := ParseResponse(resp)
 		if err != nil {
-			logrus.Errorf("Error parsing response from Claude: %v", err)
+			logrus.Errorf("[-] Error parsing response from Claude: %v", err)
 			return "", "", err
 		}
 		return messagesContent, sentimentSummary, nil
@@ -274,7 +274,7 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 
 		requestJSON, err := json.Marshal(genReq)
 		if err != nil {
-			logrus.Errorf("Error marshaling request JSON: %v", err)
+			logrus.Errorf("[-] Error marshaling request JSON: %v", err)
 			return "", "", err
 		}
 		uri := config.GetInstance().LLMChatUrl
@@ -285,20 +285,20 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 		}
 		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))
 		if err != nil {
-			logrus.Errorf("Error sending request to API: %v", err)
+			logrus.Errorf("[-] Error sending request to API: %v", err)
 			return "", "", err
 		}
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			logrus.Errorf("Error reading response body: %v", err)
+			logrus.Errorf("[-] Error reading response body: %v", err)
 			return "", "", err
 		}
 
 		var payload api.ChatResponse
 		err = json.Unmarshal(body, &payload)
 		if err != nil {
-			logrus.Errorf("Error unmarshaling response JSON: %v", err)
+			logrus.Errorf("[-] Error unmarshaling response JSON: %v", err)
 			return "", "", err
 		}
 

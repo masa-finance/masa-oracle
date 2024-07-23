@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	"github.com/masa-finance/masa-oracle/pkg/workers"
@@ -34,7 +33,7 @@ func main() {
 			logrus.Errorf("%v", err)
 			os.Exit(1)
 		} else {
-			logrus.Info("Faucet event completed for this address")
+			logrus.Info("[+] Faucet event completed for this address")
 			os.Exit(0)
 		}
 	}
@@ -44,7 +43,7 @@ func main() {
 		if err != nil {
 			logrus.Warningf("%v", err)
 		} else {
-			logrus.Info("Staking event completed for this address")
+			logrus.Info("[+] Staking event completed for this address")
 			os.Exit(0)
 		}
 	}
@@ -59,8 +58,7 @@ func main() {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	var isValidator bool
-	isValidator, _ = strconv.ParseBool(cfg.Validator)
+	isValidator := cfg.Validator
 
 	// Create a new OracleNode
 	node, err := masa.NewOracleNode(ctx, isStaked)
@@ -72,26 +70,28 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {
+		logrus.Warn("[+] Node is set as all types of scrapers. This may not be intended behavior.")
+	}
+
 	if cfg.AllowedPeer {
 		cfg.AllowedPeerId = node.Host.ID().String()
 		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
-		logrus.Infof("This node is set as the allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
+		logrus.Infof("[+] Allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
 	} else {
-		logrus.Info("This node is not set as the allowed peer")
+		logrus.Warn("[-] This node is not set as the allowed peer")
 	}
 
 	// Init cache resolver
-	go db.InitResolverCache(node, keyManager)
-	// Subscribe to blocks -- moving to new ticket
-	// go masa.SubscribeToBlocks(ctx, node)
+	db.InitResolverCache(node, keyManager)
 
 	// Subscribe and if actor start monitoring actor workers
 	// considering all that matters is if the node is staked
 	// and other peers can do work we only need to check this here
 	// if this peer can or cannot scrape or write that is checked in other places
 	if node.IsStaked {
-		go workers.SubscribeToWorkers(node)
 		go workers.MonitorWorkers(ctx, node)
+		go masa.SubscribeToBlocks(ctx, node)
 	}
 
 	// Listen for SIGINT (CTRL+C)
@@ -105,7 +105,6 @@ func main() {
 		if nodeData != nil {
 			nodeData.Left()
 		}
-		// node.NodeTracker.DumpNodeData()
 		cancel()
 	}()
 

@@ -147,6 +147,7 @@ func TopicWithVersion(protocolName string) string {
 }
 
 // Function to call the Cloudflare API and parse the response
+
 func GetCloudflareModels() ([]string, error) {
 	url := "https://api.cloudflare.com/client/v4/accounts/a72433aa3bb83aecaca1bc8acecdb166/ai/models/search"
 	req, err := http.NewRequest("GET", url, nil)

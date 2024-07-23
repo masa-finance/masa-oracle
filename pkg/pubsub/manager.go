@@ -92,7 +92,7 @@ func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler
 		for {
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
-				logrus.Errorf("Error reading from topic: %v", err)
+				logrus.Errorf("[-] Error reading from topic: %v", err)
 				continue
 			}
 			if !includeSelf {
@@ -227,7 +227,7 @@ func (sm *Manager) Subscribe(topicName string, handler SubscriptionHandler) erro
 		for {
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
-				logrus.Errorf("Error reading from topic: %v", err)
+				logrus.Errorf("[-] Error reading from topic: %v", err)
 				continue
 			}
 			// Skip messages from the same node
