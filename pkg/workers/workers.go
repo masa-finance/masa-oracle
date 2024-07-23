@@ -318,7 +318,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					defer wg.Done()
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
-						logrus.Errorf("[-] Error spawning remote worker: %v", err)
+						logrus.Debugf("[-] Error spawning remote worker: %v", err)
 						return
 					}
 					spawnedPID := spawned.Pid
