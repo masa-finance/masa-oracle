@@ -351,22 +351,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	wg.Wait()
 }
 
-// SubscribeToWorkers subscribes the given OracleNode to worker events.
-//
-// Parameters:
-//   - node: A pointer to the OracleNode instance that will be subscribed to worker events.
-//
-// The function initializes the WorkerEventTracker for the node and adds a subscription
-// to the worker topic using the PubSubManager. If an error occurs during the subscription,
-// it logs the error.
-func SubscribeToWorkers(node *masa.OracleNode) {
-	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, node.IsValidator)
-	if err != nil {
-		logrus.Errorf("Subscribe error %v", err)
-	}
-}
-
 // MonitorWorkers monitors worker data by subscribing to the completed work topic,
 // computing a CID for each received data, and writing the data to the database.
 //
@@ -380,6 +364,12 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
+	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, node.IsValidator)
+	if err != nil {
+		logrus.Errorf("Subscribe error %v", err)
+	}
+
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
