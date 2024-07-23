@@ -419,7 +419,8 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 					continue
 				}
 				ch <- validatorData
-				close(ch)
+				defer close(ch)
+				// close(ch)
 
 			} else {
 				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)
