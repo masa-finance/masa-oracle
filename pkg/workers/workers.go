@@ -292,14 +292,15 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			}
 			response := result.(*messages.Response)
 			msg := &pubsub2.Message{}
-			err = json.Unmarshal([]byte(response.Value), msg)
-			if err != nil {
-				msg, err = getResponseMessage(result.(*messages.Response))
-				if err != nil {
-					logrus.Errorf("[-] Error getting response message: %v", err)
+			rErr := json.Unmarshal([]byte(response.Value), msg)
+			if rErr != nil {
+				gMsg, gErr := getResponseMessage(result.(*messages.Response))
+				if gErr != nil {
+					logrus.Errorf("[-] Error getting response message: %v", gErr)
 					workerDoneCh <- &pubsub2.Message{}
 					return
 				}
+				msg = gMsg
 			}
 			workerDoneCh <- msg
 		}()
@@ -311,7 +312,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			if p.IsStaked && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
-				logrus.Infof("[+] Worker Address: %s", ipAddr)
+				// logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()
@@ -321,31 +322,32 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						return
 					}
 					spawnedPID := spawned.Pid
-					logrus.Infof("[+] Spawned PID: %s", spawnedPID)
+					logrus.Infof("[+] Worker Address: %s", spawnedPID)
 					if spawnedPID == nil {
 						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
-					logrus.Infof("[+] Client PID: %v", client)
+					// logrus.Infof("[+] Client PID: %v", client)
 					node.ActorEngine.Send(spawnedPID, &messages.Connect{Sender: client})
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
-					result, err := future.Result()
-					if err != nil {
-						logrus.Errorf("[-] Error receiving response from remote worker: %v", err)
+					result, fErr := future.Result()
+					if fErr != nil {
+						logrus.Errorf("[-] Error receiving response from remote worker: %v", fErr)
 						return
 					}
 					response := result.(*messages.Response)
-					logrus.Infof("[+] Response: %v", response)
 					msg := &pubsub2.Message{}
-					err = json.Unmarshal([]byte(response.Value), msg)
-					logrus.Infof("[+] response.Value: %s", response.Value)
-					if err != nil {
-						msg, err = getResponseMessage(response)
-						logrus.Infof("[+] msg: %v", msg)
-						if err != nil {
-							logrus.Errorf("[-] Error getting response message: %v", err)
+					rErr := json.Unmarshal([]byte(response.Value), &msg)
+					// logrus.Infof("[+] response.Value: %s", response.Value)
+					if rErr != nil {
+						gMsg, gErr := getResponseMessage(response)
+						if gErr != nil {
+							logrus.Errorf("[-] Error getting response message: %v", gErr)
 							return
+						}
+						if gMsg != nil {
+							msg = gMsg
 						}
 					}
 					workerDoneCh <- msg
@@ -420,8 +422,6 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 				}
 				ch <- validatorData
 				defer close(ch)
-				// close(ch)
-
 			} else {
 				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)
 				continue

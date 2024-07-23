@@ -351,3 +351,9 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 		}
 	}
 }
+
+func (net *NodeEventTracker) RemoveNodeData(peerID string) {
+	net.nodeData.Delete(peerID)
+	delete(net.ConnectBuffer, peerID)
+	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+}
