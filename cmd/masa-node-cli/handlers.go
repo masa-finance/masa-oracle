@@ -194,7 +194,7 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	var gossip Gossip
 	err := json.Unmarshal(message.Data, &gossip)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal message: %v", err)
+		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
 		return
 	}
 
@@ -202,7 +202,7 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	handler.Gossips = append(handler.Gossips, gossip)
 	handler.mu.Unlock()
 
-	logrus.Infof("added: %+v", gossip)
+	// logrus.Infof("added: %+v", gossip)
 }
 
 // showMenu creates and returns the menu component.

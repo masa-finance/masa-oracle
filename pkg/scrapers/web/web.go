@@ -195,12 +195,12 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 			if retryAfter > 0 {
 				nextDelay = time.Duration(retryAfter) * time.Second
 			}
-			logrus.Warnf("Rate limited. Retrying after %v", nextDelay)
+			logrus.Warnf("[-] Rate limited. Retrying after %v", nextDelay)
 			time.Sleep(nextDelay)
 			// Retry the request
 			_ = r.Request.Retry()
 		} else {
-			logrus.Errorf("Request URL: %s failed with error: %v", r.Request.URL, err)
+			logrus.Errorf("[-] Request URL: %s failed with error: %v", r.Request.URL, err)
 		}
 	})
 	c.OnHTML("h1, h2", func(e *colly.HTMLElement) {

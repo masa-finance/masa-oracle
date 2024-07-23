@@ -30,7 +30,7 @@ func (b *Block) Serialize() ([]byte, error) {
 	encoder := gob.NewEncoder(&buffer)
 	err := encoder.Encode(b)
 	if err != nil {
-		logrus.Error("Failed to serialize block: ", b, err)
+		logrus.Error("[-] Failed to serialize block: ", b, err)
 	}
 	return buffer.Bytes(), err
 }
@@ -41,7 +41,7 @@ func (b *Block) Deserialize(data []byte) error {
 	decoder := gob.NewDecoder(&buffer)
 	err := decoder.Decode(&b)
 	if err != nil {
-		logrus.Error("Failed to deserialize data into block: ", data, err)
+		logrus.Error("[-] Failed to deserialize data into block: ", data, err)
 	}
 	return err
 }
