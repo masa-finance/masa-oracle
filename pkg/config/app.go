@@ -114,7 +114,7 @@ func GetInstance() *AppConfig {
 		instance = &AppConfig{}
 
 		instance.setDefaultConfig()
-		instance.Version = viper.GetString(Version) // Explicitly set the Version field
+		instance.Version = viper.GetString(Version) // Explicitly set the AppConfig Version field
 		instance.setEnvVariableConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
