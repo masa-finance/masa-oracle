@@ -137,7 +137,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 
 	stream, err := node.Host.NewStream(node.Context, peerID, config.ProtocolWithVersion(config.NodeDataSyncProtocol))
 	if err != nil {
-		node.NodeTracker.RemoveNodeData(peerID.String())
+		// node.NodeTracker.RemoveNodeData(peerID.String())
 		return
 	}
 	defer func(stream network.Stream) {
