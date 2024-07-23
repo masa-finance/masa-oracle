@@ -312,7 +312,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			if p.IsStaked && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
-				logrus.Infof("[+] Worker Address: %s", ipAddr)
+				// logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()
@@ -322,13 +322,13 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						return
 					}
 					spawnedPID := spawned.Pid
-					logrus.Infof("[+] Spawned PID: %s", spawnedPID)
+					logrus.Infof("[+] Worker Address: %s", spawnedPID)
 					if spawnedPID == nil {
 						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
-					logrus.Infof("[+] Client PID: %v", client)
+					// logrus.Infof("[+] Client PID: %v", client)
 					node.ActorEngine.Send(spawnedPID, &messages.Connect{Sender: client})
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 					result, fErr := future.Result()
@@ -339,7 +339,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					response := result.(*messages.Response)
 					msg := &pubsub2.Message{}
 					rErr := json.Unmarshal([]byte(response.Value), &msg)
-					logrus.Infof("[+] response.Value: %s", response.Value)
+					// logrus.Infof("[+] response.Value: %s", response.Value)
 					if rErr != nil {
 						gMsg, gErr := getResponseMessage(response)
 						if gErr != nil {
