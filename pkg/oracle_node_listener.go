@@ -137,7 +137,6 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 
 	stream, err := node.Host.NewStream(node.Context, peerID, config.ProtocolWithVersion(config.NodeDataSyncProtocol))
 	if err != nil {
-		logrus.Errorf("[-] Failed to open stream to %s: %v", peerID, err)
 		node.NodeTracker.RemoveNodeData(peerID.String())
 		return
 	}
