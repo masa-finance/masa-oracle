@@ -49,15 +49,15 @@ func GenerateJWTToken(peerId string) (string, error) {
 // SignData signs the data using the provided private key and returns the signature.
 func SignData(privKey crypto.PrivKey, data []byte) ([]byte, error) {
 	if privKey == nil {
-		logrus.Error("Private key is nil")
-		return nil, fmt.Errorf("private key is nil")
+		logrus.Error("[-] Private key is nil")
+		return nil, fmt.Errorf("[-] private key is nil")
 	}
 
 	logrus.Info("[+] Signing data")
 
 	signature, err := privKey.Sign(data)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to sign data")
+		logrus.WithError(err).Error("[-] Failed to sign data")
 		return nil, err
 	}
 

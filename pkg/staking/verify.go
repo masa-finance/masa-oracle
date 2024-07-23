@@ -25,7 +25,7 @@ func VerifyStakingEvent(userAddress string) (bool, error) {
 
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
-		return false, fmt.Errorf("failed to connect to the Ethereum client: %v", err)
+		return false, fmt.Errorf("[-] Failed to connect to the Ethereum client: %v", err)
 	}
 
 	parsedABI, err := GetABI(ProtocolStakingABIPath) // Use the GetABI function from abi.go
@@ -36,12 +36,12 @@ func VerifyStakingEvent(userAddress string) (bool, error) {
 	address := common.HexToAddress(userAddress)
 	stake, err := parsedABI.Pack("stakes", address)
 	if err != nil {
-		return false, fmt.Errorf("failed to pack data for stakes call: %v", err)
+		return false, fmt.Errorf("[-] Failed to pack data for stakes call: %v", err)
 	}
 
 	addresses, err := LoadContractAddresses()
 	if err != nil {
-		return false, fmt.Errorf("failed to load contract addresses: %v", err)
+		return false, fmt.Errorf("[-] Failed to load contract addresses: %v", err)
 	}
 	contractAddr := common.HexToAddress(addresses.Sepolia.ProtocolStaking)
 
@@ -52,17 +52,17 @@ func VerifyStakingEvent(userAddress string) (bool, error) {
 
 	result, err := client.CallContract(context.Background(), callMsg, nil)
 	if err != nil {
-		return false, fmt.Errorf("failed to call stakes function: %v", err)
+		return false, fmt.Errorf("[-] Failed to call stakes function: %v", err)
 	}
 
 	stakesAmountInterfaces, err := parsedABI.Unpack("stakes", result)
 	if err != nil {
-		return false, fmt.Errorf("failed to unpack stakes: %v", err)
+		return false, fmt.Errorf("[-] Failed to unpack stakes: %v", err)
 	}
 
 	stakesAmount, ok := stakesAmountInterfaces[0].(*big.Int)
 	if !ok {
-		return false, errors.New("failed to assert type: stakesAmount is not *big.Int")
+		return false, errors.New("[-] Failed to assert type: stakesAmount is not *big.Int")
 	}
 	return stakesAmount.Cmp(big.NewInt(0)) > 0, nil
 }

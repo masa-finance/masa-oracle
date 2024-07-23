@@ -491,28 +491,28 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				// Make the HTTP request
 				resp, err := http.Get(url)
 				if err != nil {
-					errCh <- fmt.Errorf("failed to make HTTP request: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to make HTTP request: %v", err)
 					return
 				}
 
 				defer resp.Body.Close()
 				respBody, err := io.ReadAll(resp.Body)
 				if err != nil {
-					errCh <- fmt.Errorf("failed to read response body: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to read response body: %v", err)
 					return
 				}
 
 				// Read and decode the response
 				var result map[string]interface{}
 				if err := json.Unmarshal(respBody, &result); err != nil {
-					errCh <- fmt.Errorf("failed to unmarshal response body: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to unmarshal response body: %v", err)
 					return
 				}
 
 				// Extract guilds from the result
 				guildsData, ok := result["data"]
 				if !ok {
-					errCh <- fmt.Errorf("data field not found in response")
+					errCh <- fmt.Errorf("[-] Data field not found in response")
 					return
 				}
 
@@ -524,7 +524,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 
 				var guilds []discord.Guild
 				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
-					errCh <- fmt.Errorf("failed to unmarshal guilds: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to unmarshal guilds: %v", err)
 					return
 				}
 

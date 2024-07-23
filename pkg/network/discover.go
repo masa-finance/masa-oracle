@@ -158,7 +158,7 @@ func reconnectToBootnodes(ctx context.Context, host host.Host, bootnodes []strin
 		ma, _ := multiaddr.NewMultiaddr(bn)
 		peerInfo, _ := peer.AddrInfoFromP2pAddr(ma)
 		if err := host.Connect(ctx, *peerInfo); err != nil {
-			logrus.Errorf("Failed to reconnect to bootnode %s: %v", bn, err)
+			logrus.Errorf("[-] Failed to reconnect to bootnode %s: %v", bn, err)
 		} else {
 			logrus.Infof("[+] Reconnected to bootnode %s", bn)
 			break // Exit after successful reconnection to one bootnode

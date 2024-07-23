@@ -259,7 +259,7 @@ func (node *OracleNode) handleDiscoveredPeers() {
 			// If the peer is a new peer, connect to it
 			if peer.Action == myNetwork.PeerAdded {
 				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
-					logrus.Errorf("Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)
+					logrus.Errorf("[-] Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)
 					// close the connection
 					err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
 					if err != nil {
@@ -386,7 +386,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	var blockEvents BlockEvents
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
-		logrus.Errorf("Failed to unmarshal message: %v", err)
+		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
 		return
 	}
 	b.mu.Lock()

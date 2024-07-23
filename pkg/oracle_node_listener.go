@@ -67,7 +67,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
 	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
-		logrus.Errorf("Failed to unmarshal node data: %v", err)
+		logrus.Errorf("[-] Failed to unmarshal node data: %v", err)
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
