@@ -3,6 +3,7 @@ package workers
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
@@ -38,6 +39,10 @@ func getPeers(node *masa.OracleNode) []*actor.PID {
 			if p.String() != node.Host.ID().String() {
 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 				if err != nil {
+					if strings.Contains(err.Error(), "future: dead letter") {
+						logrus.Debugf("Ignoring dead letter error for peer %s: %v", p.String(), err)
+						continue
+					}
 					logrus.Debugf("Spawned error %v", err)
 				} else {
 					actors = append(actors, spawned.Pid)
@@ -47,6 +52,27 @@ func getPeers(node *masa.OracleNode) []*actor.PID {
 	}
 	return actors
 }
+
+// func getPeers(node *masa.OracleNode) []*actor.PID {
+// 	var actors []*actor.PID
+// 	peers := node.Host.Network().Peers()
+// 	for _, p := range peers {
+// 		conns := node.Host.Network().ConnsToPeer(p)
+// 		for _, conn := range conns {
+// 			addr := conn.RemoteMultiaddr()
+// 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+// 			if p.String() != node.Host.ID().String() {
+// 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
+// 				if err != nil {
+// 					logrus.Debugf("Spawned error %v", err)
+// 				} else {
+// 					actors = append(actors, spawned.Pid)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return actors
+// }
 
 // HandleConnect is a method of the Worker struct that handles the connection of a worker.
 // It takes in an actor context and a Connect message as parameters.
