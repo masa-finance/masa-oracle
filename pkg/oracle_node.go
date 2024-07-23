@@ -438,12 +438,12 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 		hash, err := sh.AddWithOpts(reader, true, true)
 		if err != nil {
-			logrus.Errorf("[-]Error persisting to IPFS: %s", err)
-			os.Exit(1)
-		}
+			logrus.Errorf("[-] Error persisting to IPFS: %s", err)
+		} else {
+			logrus.Printf("[+] Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
+			_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
 
-		logrus.Printf("[+] Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
-		_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
+		}
 	}
 
 	return nil
