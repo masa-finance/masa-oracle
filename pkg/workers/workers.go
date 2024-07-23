@@ -365,7 +365,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, node.IsValidator)
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
 	if err != nil {
 		logrus.Errorf("Subscribe error %v", err)
 	}
