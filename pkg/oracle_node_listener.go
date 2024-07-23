@@ -38,7 +38,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 			}
 
 			if err != nil {
-				logrus.Errorf("[-] Error parsing node data: %v", err)
+				logrus.Warningf("[-] Error parsing node data: %v", err)
 				continue
 			}
 			// Publish the JSON data on the node.topic

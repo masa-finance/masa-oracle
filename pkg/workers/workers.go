@@ -321,23 +321,28 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						return
 					}
 					spawnedPID := spawned.Pid
+					logrus.Infof("[+] Spawned PID: %s", spawnedPID)
 					if spawnedPID == nil {
 						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
+					logrus.Infof("[+] Client PID: %v", client)
 					node.ActorEngine.Send(spawnedPID, &messages.Connect{Sender: client})
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 					result, err := future.Result()
 					if err != nil {
-						logrus.Debugf("[-] Error receiving response from remote worker: %v", err)
+						logrus.Errorf("[-] Error receiving response from remote worker: %v", err)
 						return
 					}
 					response := result.(*messages.Response)
+					logrus.Infof("[+] Response: %v", response)
 					msg := &pubsub2.Message{}
 					err = json.Unmarshal([]byte(response.Value), msg)
+					logrus.Infof("[+] response.Value: %s", response.Value)
 					if err != nil {
 						msg, err = getResponseMessage(response)
+						logrus.Infof("[+] msg: %v", msg)
 						if err != nil {
 							logrus.Errorf("[-] Error getting response message: %v", err)
 							return
@@ -349,22 +354,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		}
 	}
 	wg.Wait()
-}
-
-// SubscribeToWorkers subscribes the given OracleNode to worker events.
-//
-// Parameters:
-//   - node: A pointer to the OracleNode instance that will be subscribed to worker events.
-//
-// The function initializes the WorkerEventTracker for the node and adds a subscription
-// to the worker topic using the PubSubManager. If an error occurs during the subscription,
-// it logs the error.
-func SubscribeToWorkers(node *masa.OracleNode) {
-	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
-	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, node.IsValidator)
-	if err != nil {
-		logrus.Errorf("Subscribe error %v", err)
-	}
 }
 
 // MonitorWorkers monitors worker data by subscribing to the completed work topic,
@@ -380,11 +369,22 @@ func SubscribeToWorkers(node *masa.OracleNode) {
 // marshals the data to JSON, and writes it to the database using the WriteData function.
 // The monitoring continues until the context is done.
 func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
+	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
+	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
+	if err != nil {
+		logrus.Errorf("Subscribe error %v", err)
+	}
+
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
-	if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
-		logrus.Debug("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
+	if node.WorkerTracker == nil {
+		logrus.Error("MonitorWorkers: WorkerTracker is nil")
+		return
+	}
+
+	if node.WorkerTracker.WorkerStatusCh == nil {
+		logrus.Error("MonitorWorkers: WorkerStatusCh is nil")
 		return
 	}
 
@@ -419,7 +419,8 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 					continue
 				}
 				ch <- validatorData
-				close(ch)
+				defer close(ch)
+				// close(ch)
 
 			} else {
 				logrus.Debugf("Error processing data.ValidatorData: %v", data.ValidatorData)

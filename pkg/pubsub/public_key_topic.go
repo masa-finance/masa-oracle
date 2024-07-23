@@ -35,7 +35,6 @@ type PublicKeyMessage struct {
 
 // NewPublicKeyPublisher creates a new instance of PublicKeyPublisher.
 func NewPublicKeyPublisher(manager *Manager, pubKey libp2pCrypto.PubKey) *PublicKeyPublisher {
-	logrus.Info("[+] Creating new PublicKeyPublisher")
 	return &PublicKeyPublisher{
 		pubSubManager: manager,
 		pubKey:        pubKey,
