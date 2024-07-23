@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -21,11 +20,6 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "--version" {
-		fmt.Printf("Masa Oracle Node Version: %s\n", config.Version)
-		os.Exit(0)
-	}
-
 	cfg := config.GetInstance()
 	cfg.LogConfig()
 	cfg.SetupLogging()

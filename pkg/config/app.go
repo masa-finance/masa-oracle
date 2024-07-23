@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/user"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -115,6 +114,7 @@ func GetInstance() *AppConfig {
 		instance = &AppConfig{}
 
 		instance.setDefaultConfig()
+		instance.Version = viper.GetString(Version) // Explicitly set the Version field
 		instance.setEnvVariableConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
@@ -127,6 +127,7 @@ func GetInstance() *AppConfig {
 			logrus.Errorf("Unable to unmarshal config into struct, %v", err)
 			instance = nil // Ensure instance is nil if unmarshalling fails
 		}
+
 	})
 	return instance
 }
@@ -218,7 +219,7 @@ func (c *AppConfig) setDefaultConfig() {
 	}
 
 	// Set defaults
-	viper.SetDefault(Version, getVersion())
+	viper.SetDefault(Version, formatVersion(Version)) // format and set version passed during build
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -257,29 +258,19 @@ func (c *AppConfig) setEnvVariableConfig() {
 	viper.AutomaticEnv()
 }
 
-// pulls version from git context
-func getVersion() string {
-    cmd := exec.Command("git", "describe", "--tags", "--abbrev=0")
-    output, err := cmd.Output()
-    if err != nil {
-        logrus.Warnf("Failed to get git version: %v", err)
-    }       
-    return formatVersion(string(output))
-}
-
 // Ensures the version is in the format of v0.0.0
 func formatVersion(version string) string {
-    version = strings.TrimSpace(version)
-    // Remove 'v' prefix if present
-    version = strings.TrimPrefix(version, "v")
-    // Split the version string
-    parts := strings.Split(version, ".") 
-    // Ensure we have at least 3 parts
-    for len(parts) < 3 {
-        parts = append(parts, "0")
-    }
-    // Reconstruct the version string
-    return "v" + strings.Join(parts, ".")
+	version = strings.TrimSpace(version)
+	// Remove 'v' prefix if present
+	version = strings.TrimPrefix(version, "v")
+	// Split the version string
+	parts := strings.Split(version, ".")
+	// Ensure we have at least 3 parts
+	for len(parts) < 3 {
+		parts = append(parts, "0")
+	}
+	// Reconstruct the version string
+	return "v" + strings.Join(parts, ".")
 }
 
 // setCommandLineConfig parses command line flags and binds them to the AppConfig struct.

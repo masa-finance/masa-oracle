@@ -8,7 +8,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && apt-get install -y apt-utils \
     && apt-get install -y nodejs \
     && npm install -g npm@latest \
-    && apt-get install -y git
+    && apt-get update && apt-get install -y git
 
 # Create the 'masa' user and set up the home directory
 RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:masa /home/masa
@@ -31,13 +31,12 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -v -o masa-node ./cmd/masa-node
+# Inject the latest git tag version into the build
+RUN go build -v -o masa-node -ldflags "-X 'github.com/masa-finance/masa-oracle/pkg/config.Version=$(git describe --tags --abbrev=0)'" ./cmd/masa-node
 
 # Continue with the final image
 FROM base
 COPY --from=builder /app/masa-node /usr/bin/masa-node
-COPY --from=builder /app/.git /home/masa/.git
-RUN chown -R masa:masa /home/masa/.git
 RUN chmod +x /usr/bin/masa-node
 
 # Switch to 'masa' to run the application

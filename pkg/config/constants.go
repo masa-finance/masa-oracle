@@ -14,6 +14,9 @@ import (
 // ModelType defines a type for model strings.
 type ModelType string
 
+// Store version set during build
+var Version = "Version"
+
 // Define model constants.
 const (
 	ClaudeSonnet35                             ModelType = "claude-3-5-sonnet-20240620"
@@ -94,7 +97,6 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "Version"
 	FilePath    = "FILE_PATH"
 	Validator   = "VALIDATOR"
 	CachePath   = "CACHE_PATH"

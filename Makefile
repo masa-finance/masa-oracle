@@ -1,6 +1,8 @@
+VERSION := $(shell git describe --tags --abbrev=0)
+
 build:
 	@go mod tidy
-	@go build -v -o ./bin/masa-node ./cmd/masa-node
+	@go build -v -o ./bin/masa-node -ldflags "-X 'github.com/masa-finance/masa-oracle/pkg/config.Version=$(VERSION)'" ./cmd/masa-node
 	@go build -v -o ./bin/masa-node-cli ./cmd/masa-node-cli
 	
 install:
@@ -27,5 +29,11 @@ clean:
 
 proto:
 	sh pkg/workers/messages/build.sh
+
+docker-build:
+	@docker build -t masa-node:latest .
+
+docker-compose-up:
+	@docker compose up --build
 
 .PHONY: proto
