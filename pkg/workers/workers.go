@@ -383,8 +383,18 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
-	if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
-		logrus.Debug("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
+	// if node.WorkerTracker == nil || node.WorkerTracker.WorkerStatusCh == nil {
+	// 	logrus.Debug("MonitorWorkers: WorkerTracker or WorkerStatusCh is nil")
+	// 	return
+	// }
+
+	if node.WorkerTracker == nil {
+		logrus.Error("MonitorWorkers: WorkerTracker is nil")
+		return
+	}
+
+	if node.WorkerTracker.WorkerStatusCh == nil {
+		logrus.Error("MonitorWorkers: WorkerStatusCh is nil")
 		return
 	}
 

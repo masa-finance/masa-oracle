@@ -96,9 +96,9 @@ func main() {
 	// and other peers can do work we only need to check this here
 	// if this peer can or cannot scrape or write that is checked in other places
 	if node.IsStaked {
-		go workers.SubscribeToWorkers(node)
-		go workers.MonitorWorkers(ctx, node)
-		go masa.SubscribeToBlocks(ctx, node)
+		workers.SubscribeToWorkers(node)
+		go workers.MonitorWorkers(context.Background(), node)
+		go masa.SubscribeToBlocks(context.Background(), node)
 	}
 
 	// Listen for SIGINT (CTRL+C)
