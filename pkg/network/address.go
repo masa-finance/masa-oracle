@@ -56,10 +56,7 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	for _, addr := range addrs {
 		ipComponent, err := addr.ValueForProtocol(multiaddr.P_IP4)
 		if err != nil {
-			ipComponent, err = addr.ValueForProtocol(multiaddr.P_IP6)
-			if err != nil {
-				continue // Not an IP address
-			}
+			continue // Not an IP address
 		}
 
 		ip := net.ParseIP(ipComponent)
@@ -114,7 +111,7 @@ func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 
 	// Find a suitable port from existing addresses
 	for _, addr := range addrs {
-		if strings.HasPrefix(addr.String(), "/ip4/") || strings.HasPrefix(addr.String(), "/ip6/") {
+		if strings.HasPrefix(addr.String(), "/ip4/") {
 			port, err := addr.ValueForProtocol(multiaddr.P_TCP)
 			if err == nil {
 				return publicAddr.Encapsulate(multiaddr.StringCast("/tcp/" + port))
