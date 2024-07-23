@@ -13,6 +13,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// getOutboundIP returns the outbound IP address of the current machine 172.17.0.2 10.0.0.2 etc
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		logrus.Warn("[-] Error getting outbound IP")
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().String()
+	idx := strings.LastIndex(localAddr, ":")
+	return localAddr[0:idx]
+}
+
 // GetMultiAddressesForHost returns the multiaddresses for the host
 func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	peerInfo := peer.AddrInfo{
@@ -131,18 +143,6 @@ func isPreferredAddress(addr multiaddr.Multiaddr) bool {
 		}
 	}
 	return false
-}
-
-// getOutboundIP returns the outbound IP address of the current machine 172.17.0.2 10.0.0.2 etc
-func getOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		logrus.Warn("[-] Error getting outbound IP")
-	}
-	defer conn.Close()
-	localAddr := conn.LocalAddr().String()
-	idx := strings.LastIndex(localAddr, ":")
-	return localAddr[0:idx]
 }
 
 // GetBootNodesMultiAddress returns the multiaddresses for the bootstrap nodes
