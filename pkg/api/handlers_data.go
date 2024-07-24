@@ -952,8 +952,7 @@ func (api *API) GetBlockByHash() gin.HandlerFunc {
 		}
 		block, err := api.Node.Blockchain.GetBlock(blockHashBytes)
 		if err != nil {
-			logrus.Errorf("[-] Failed to get block: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "hash not found"})
 			return
 		}
 

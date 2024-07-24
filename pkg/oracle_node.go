@@ -386,19 +386,6 @@ type BlockEventTracker struct {
 // HandleMessage processes incoming pubsub messages containing block events.
 // It unmarshals the message data into a slice of BlockEvents and appends them
 // to the tracker's BlockEvents slice.
-func (b *BlockEventTracker) HandleMessageOld(m *pubsub.Message) {
-	var blockEvents BlockEvents
-	err := json.Unmarshal(m.Data, &blockEvents)
-	if err != nil {
-		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
-		return
-	}
-	b.mu.Lock()
-	b.BlockEvents = append(b.BlockEvents, blockEvents)
-	b.mu.Unlock()
-	blocksCh <- m
-}
-
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	var blockEvents any
 
