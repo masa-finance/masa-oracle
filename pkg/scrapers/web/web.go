@@ -154,7 +154,7 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 //	  }
 //	logrus.Infof("%+v", res)
 //	}()
-func ScrapeWebData(uri []string, depth int) (string, error) {
+func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 	// Set default depth to 1 if 0 is provided
 	if depth <= 0 {
 		depth = 1
@@ -251,7 +251,7 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 	for _, u := range uri {
 		err := c.Visit(u)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -259,5 +259,5 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 	c.Wait()
 
 	j, _ := json.Marshal(collectedData)
-	return string(j), nil
+	return j, nil
 }
