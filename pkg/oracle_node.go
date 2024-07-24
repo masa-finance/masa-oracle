@@ -392,22 +392,9 @@ func (b *BlockEventTracker) HandleMessageOld(m *pubsub.Message) {
 		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
 		return
 	}
-
 	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	switch v := blockEvents.(type) {
-	case []BlockEvents:
-		b.BlockEvents = append(b.BlockEvents, v...)
-	case BlockEvents:
-		b.BlockEvents = append(b.BlockEvents, v)
-	case map[string]interface{}:
-		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
-	default:
-		logrus.Errorf("[-] Unexpected data type in message %+v", v)
-		return
-	}
-
+	b.BlockEvents = append(b.BlockEvents, blockEvents)
+	b.mu.Unlock()
 	blocksCh <- m
 }
 
