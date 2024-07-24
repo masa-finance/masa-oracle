@@ -382,16 +382,32 @@ type BlockEventTracker struct {
 	mu          sync.Mutex
 }
 
+// HandleMessage processes incoming pubsub messages containing block events.
+// It unmarshals the message data into a slice of BlockEvents and appends them
+// to the tracker's BlockEvents slice.
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
-	var blockEvents BlockEvents
+	var blockEvents any
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
 		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
 		return
 	}
+
 	b.mu.Lock()
-	b.BlockEvents = append(b.BlockEvents, blockEvents)
-	b.mu.Unlock()
+	defer b.mu.Unlock()
+
+	switch v := blockEvents.(type) {
+	case []BlockEvents:
+		b.BlockEvents = append(b.BlockEvents, v...)
+	case BlockEvents:
+		b.BlockEvents = append(b.BlockEvents, v)
+	case map[string]interface{}:
+		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
+	default:
+		logrus.Errorf("[-] Unexpected data type in message %+v", v)
+		return
+	}
+
 	blocksCh <- m
 }
 
