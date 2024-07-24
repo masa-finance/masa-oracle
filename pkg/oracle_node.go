@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"net"
 	"os"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -386,7 +385,7 @@ type BlockEventTracker struct {
 // HandleMessage processes incoming pubsub messages containing block events.
 // It unmarshals the message data into a slice of BlockEvents and appends them
 // to the tracker's BlockEvents slice.
-func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
+func (b *BlockEventTracker) HandleMessageOld(m *pubsub.Message) {
 	var blockEvents BlockEvents
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
@@ -399,7 +398,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	blocksCh <- m
 }
 
-func (b *BlockEventTracker) HandleMessageNew(m *pubsub.Message) {
+func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	var blockEvents any
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
@@ -421,7 +420,7 @@ func (b *BlockEventTracker) HandleMessageNew(m *pubsub.Message) {
 		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
 	default:
 		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
-		logrus.Errorf("[-] Unexpected data type in message %v", reflect.TypeOf(v))
+		// logrus.Errorf("[-] Unexpected data type in message %v", reflect.TypeOf(v))
 		// return
 	}
 
