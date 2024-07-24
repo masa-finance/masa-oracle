@@ -148,7 +148,7 @@ func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, err
 func QueryAll(ctx context.Context) ([]Record, error) {
 	results, err := cache.Query(ctx, query.Query{})
 	if err != nil {
-		logrus.Errorf("Failed to query the resolver cache: %v", err)
+		logrus.Errorf("[-] Failed to query the resolver cache: %v", err)
 		return nil, err
 	}
 	defer results.Close()

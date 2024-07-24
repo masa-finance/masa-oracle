@@ -69,7 +69,7 @@ func AbiGenBindings(inPath string) error {
 
 	abiData, err := os.ReadFile(inPath)
 	if err != nil {
-		log.Fatalf("Failed to read ABI: %v", err)
+		log.Fatalf("[-] Failed to read ABI: %v", err)
 	}
 
 	var contract Contract
@@ -89,14 +89,14 @@ func AbiGenBindings(inPath string) error {
 		nil,                         // Ethereum contract aliases
 	)
 	if err != nil {
-		log.Fatalf("Failed to generate Go bindings: %v", err)
+		log.Fatalf("[-] Failed to generate Go bindings: %v", err)
 	}
 
 	// Write the Go bindings to a file
 	err = os.WriteFile(fmt.Sprintf("%s.go", contractName), []byte(code), 0644)
 	if err != nil {
-		log.Fatalf("Failed to write Go bindings to file: %v", err)
+		log.Fatalf("[-] Failed to write Go bindings to file: %v", err)
 	}
-	fmt.Println("Go bindings generated successfully!")
+	fmt.Println("[+] Go bindings generated successfully!")
 	return nil
 }

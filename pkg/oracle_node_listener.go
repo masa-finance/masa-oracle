@@ -67,7 +67,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 func (node *OracleNode) HandleMessage(msg *pubsub.Message) {
 	var nodeData pubsub2.NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
-		logrus.Errorf("Failed to unmarshal node data: %v", err)
+		logrus.Errorf("[-] Failed to unmarshal node data: %v", err)
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
@@ -137,7 +137,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 
 	stream, err := node.Host.NewStream(node.Context, peerID, config.ProtocolWithVersion(config.NodeDataSyncProtocol))
 	if err != nil {
-		node.NodeTracker.RemoveNodeData(peerID.String())
+		// node.NodeTracker.RemoveNodeData(peerID.String())
 		return
 	}
 	defer func(stream network.Stream) {

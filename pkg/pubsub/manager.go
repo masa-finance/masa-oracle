@@ -203,7 +203,7 @@ func (sm *Manager) PublishMessage(topicName, message string) error {
 		var err error
 		t, err = sm.createTopic(topicName)
 		if err != nil {
-			return fmt.Errorf("failed to create topic %s: %w", topicName, err)
+			return fmt.Errorf("[-] Failed to create topic %s: %w", topicName, err)
 		}
 	}
 
