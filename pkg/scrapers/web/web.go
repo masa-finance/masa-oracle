@@ -203,6 +203,7 @@ func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 			logrus.Errorf("[-] Request URL: %s failed with error: %v", r.Request.URL, err)
 		}
 	})
+
 	c.OnHTML("h1, h2", func(e *colly.HTMLElement) {
 		// Directly append a new Section to collectedData.Sections
 		collectedData.Sections = append(collectedData.Sections, Section{Title: e.Text})
