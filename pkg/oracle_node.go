@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -386,6 +387,19 @@ type BlockEventTracker struct {
 // It unmarshals the message data into a slice of BlockEvents and appends them
 // to the tracker's BlockEvents slice.
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
+	var blockEvents BlockEvents
+	err := json.Unmarshal(m.Data, &blockEvents)
+	if err != nil {
+		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
+		return
+	}
+	b.mu.Lock()
+	b.BlockEvents = append(b.BlockEvents, blockEvents)
+	b.mu.Unlock()
+	blocksCh <- m
+}
+
+func (b *BlockEventTracker) HandleMessageNew(m *pubsub.Message) {
 	var blockEvents any
 	err := json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
@@ -403,9 +417,12 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 		b.BlockEvents = append(b.BlockEvents, v)
 	case map[string]interface{}:
 		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
+	case []any:
+		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
 	default:
-		logrus.Errorf("[-] Unexpected data type in message %+v", v)
-		return
+		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
+		logrus.Errorf("[-] Unexpected data type in message %v", reflect.TypeOf(v))
+		// return
 	}
 
 	blocksCh <- m
@@ -438,7 +455,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
 	if err != nil {
-		logrus.Errorf("[-] Error storing block on DHT: %v", err)
+		logrus.Warningf("[-] Error storing block on DHT: %v", err)
 	}
 
 	if os.Getenv("IPFS_URL") != "" {

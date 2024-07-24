@@ -110,7 +110,7 @@ func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream 
 
 	_, err = stream.Write(append(jsonData, '\n'))
 	if err != nil {
-		logrus.Errorf("[-] Failed to send NodeDataPage: %v", err)
+		logrus.Debugf("[-] Failed to send NodeDataPage: %v", err)
 	}
 }
 
@@ -141,9 +141,9 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		return
 	}
 	defer func(stream network.Stream) {
-		err = stream.Close()
+		err := stream.Close()
 		if err != nil {
-			logrus.Errorf("[-] Failed to close stream: %v", err)
+			logrus.Debugf("[-] Failed to close stream: %v", err)
 		}
 	}(stream) // Ensure the stream is closed after sending the data
 	logrus.Infof("[+] Sending %d node data records to %s", totalRecords, peerID)

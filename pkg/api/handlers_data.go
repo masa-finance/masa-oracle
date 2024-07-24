@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -860,6 +861,16 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 	}
 }
 
+// GetBlocks returns a gin.HandlerFunc that handles requests to retrieve all blocks from the blockchain.
+//
+// This function:
+// 1. Checks if the node is a validator.
+// 2. Retrieves all blocks from the blockchain.
+// 3. Formats each block's data into a more readable structure.
+// 4. Encodes the input data of each block in base64.
+// 5. Returns the formatted blocks as a JSON response.
+//
+// The function is only accessible to validator nodes and will return an error for non-validator nodes.
 func (api *API) GetBlocks() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -913,25 +924,70 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 	}
 }
 
+// GetBlockByHash returns a gin.HandlerFunc that handles requests to retrieve a specific block from the blockchain by its hash.
+//
+// This function:
+// 1. Extracts the block hash from the request parameters.
+// 2. Decodes the hexadecimal block hash.
+// 3. Retrieves the block from the blockchain using the decoded hash.
+// 4. Unmarshals the block data and formats it for the response.
+// 5. Returns the formatted block data as a JSON response.
+//
+// If any errors occur during this process (e.g., invalid hash, block not found),
+// appropriate error responses are sent back to the client.
+func (api *API) GetBlockByHash() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		blockHash := c.Param("blockHash")
+		blockHashBytes, err := hex.DecodeString(blockHash)
+		if err != nil {
+			logrus.Errorf("Failed to decode block hash: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid block hash"})
+			return
+		}
+		block, err := api.Node.Blockchain.GetBlock(blockHashBytes)
+		if err != nil {
+			logrus.Errorf("Failed to get block: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		var blockData map[string]interface{}
+		err = json.Unmarshal(block.Data, &blockData)
+		var inputData any
+		if err != nil {
+			inputData = string(block.Data)
+		} else {
+			inputData = blockData
+		}
+		responseData := gin.H{
+			"input_data":       inputData,
+			"transaction_hash": blockHash,
+			"nonce":            block.Nonce,
+		}
+		c.JSON(http.StatusOK, responseData)
+	}
+}
+
+// Test is a temporary function that handles test requests.
+// TODO: Remove this function once testing is complete.
 func (api *API) Test() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody struct {
-			Foo string `json:"foo"`
-		}
+		var reqBody map[string]interface{}
 
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
-		if reqBody.Foo == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foo value must be provided"})
+		if len(reqBody) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Request body cannot be empty"})
 			return
 		}
 
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 
 		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
@@ -941,6 +997,6 @@ func (api *API) Test() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "message sent"})
+		c.JSON(http.StatusOK, gin.H{"message": "message sent", "data": reqBody})
 	}
 }
