@@ -35,7 +35,8 @@ import (
 
 	shell "github.com/ipfs/go-ipfs-api"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	chain "github.com/masa-finance/masa-oracle/pkg/chain"
+
+	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
@@ -294,6 +295,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 	multiAddr := stream.Conn().RemoteMultiaddr()
 	nodeData.Multiaddrs = []pubsub2.JSONMultiaddr{{Multiaddr: multiAddr}}
+	nodeData.PeerId = remotePeer
 
 	// newNodeData := pubsub2.NewNodeData(multiAddr, remotePeer, nodeData.EthAddress, pubsub2.ActivityJoined)
 	// newNodeData.IsStaked = nodeData.IsStaked

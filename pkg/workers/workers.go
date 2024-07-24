@@ -294,13 +294,19 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			msg := &pubsub2.Message{}
 			rErr := json.Unmarshal([]byte(response.Value), msg)
 			if rErr != nil {
-				gMsg, gErr := getResponseMessage(result.(*messages.Response))
-				if gErr != nil {
-					logrus.Errorf("[-] Error getting response message: %v", gErr)
-					workerDoneCh <- &pubsub2.Message{}
-					return
-				}
-				msg = gMsg
+				logrus.Errorf("[-] Error unmarshalling response value: %v", rErr)
+				gMsg, _ := getResponseMessage(result.(*messages.Response))
+				temp := gMsg.ValidatorData.(map[string]interface{})
+				temp2 := temp["Response"].(map[string]interface{})
+				errMsg := temp2["error"].(string)
+				logrus.Errorf("[-] Error: %v", errMsg)
+				return
+				//if gErr != nil {
+				//	logrus.Errorf("[-] Error getting response message: %v", gErr)
+				//	workerDoneCh <- &pubsub2.Message{}
+				//	return
+				//}
+				//msg = gMsg
 			}
 			workerDoneCh <- msg
 		}()
