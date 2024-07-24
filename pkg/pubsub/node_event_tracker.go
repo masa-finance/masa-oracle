@@ -84,7 +84,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			nodeData.Joined()
 			err := net.AddOrUpdateNodeData(nodeData, true)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Error("[-] Error adding or updating node data: ", err)
 				return
 			}
 		}
@@ -135,7 +135,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
-		logrus.Errorf("failed to unmarshal node data: %v", err)
+		logrus.Errorf("[-] Failed to unmarshal node data: %v", err)
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
@@ -207,7 +207,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	}
 	err := net.AddOrUpdateNodeData(existingData, true)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Error("[-] Error adding or updating node data: ", err)
 		return
 	}
 }

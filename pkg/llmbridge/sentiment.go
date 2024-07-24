@@ -280,7 +280,7 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
 			errMsg := "ollama api url not set"
-			logrus.Errorf(errMsg)
+			logrus.Errorf("[-] %v", errMsg)
 			return "", "", errors.New(errMsg)
 		}
 		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))

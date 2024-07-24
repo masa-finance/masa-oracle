@@ -118,7 +118,7 @@ func GetInstance() *AppConfig {
 
 		err = viper.Unmarshal(instance)
 		if err != nil {
-			logrus.Errorf("Unable to unmarshal config into struct, %v", err)
+			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
 			instance = nil // Ensure instance is nil if unmarshalling fails
 		}
 	})

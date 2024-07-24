@@ -36,7 +36,7 @@ func main() {
 	if cfg.Faucet {
 		err := handleFaucet(keyManager.EcdsaPrivKey)
 		if err != nil {
-			logrus.Errorf("%v", err)
+			logrus.Errorf("[-] %v", err)
 			os.Exit(1)
 		} else {
 			logrus.Info("[+] Faucet event completed for this address")

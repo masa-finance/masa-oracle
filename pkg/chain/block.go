@@ -47,7 +47,12 @@ func (b *Block) Deserialize(data []byte) error {
 }
 
 func (b *Block) Print() {
-	fmt.Printf("\t Input Data:    \t%s\n", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data))))
+	inputData := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data)))
+	if len(inputData) > 61 {
+		inputData = inputData[:61] + "..."
+	}
+	fmt.Printf("\t Input Data:    \t%s\n", inputData)
+	// fmt.Printf("\t Input Data:    \t%s\n", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data))))
 	fmt.Printf("\t Transaction Hash:\t%x\n", b.Hash)
 	fmt.Printf("\t Previous Hash:  \t%x\n", b.Link)
 	fmt.Printf("\t Transaction Nonce:\t%d\n", b.Nonce)

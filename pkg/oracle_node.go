@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -263,7 +264,7 @@ func (node *OracleNode) handleDiscoveredPeers() {
 					// close the connection
 					err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
 					if err != nil {
-						logrus.Error(err)
+						logrus.Error("[-] Error closing peer: ", err)
 					}
 					continue
 				}
@@ -299,7 +300,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	// newNodeData.IsStaked = nodeData.IsStaked
 	err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, false)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Error("[-] Error adding or updating node data: ", err)
 		return
 	}
 	logrus.Infof("[+] nodeStream -> Received data from: %s", remotePeer.String())
@@ -400,10 +401,18 @@ func (b *BlockEventTracker) HandleMessageOld(m *pubsub.Message) {
 
 func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	var blockEvents any
-	err := json.Unmarshal(m.Data, &blockEvents)
+
+	// Try to decode as base64 first
+	decodedData, err := base64.StdEncoding.DecodeString(string(m.Data))
+	if err == nil {
+		m.Data = decodedData
+	}
+
+	// Try to unmarshal as JSON
+	err = json.Unmarshal(m.Data, &blockEvents)
 	if err != nil {
-		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
-		return
+		// If JSON unmarshal fails, try to interpret as string
+		blockEvents = string(m.Data)
 	}
 
 	b.mu.Lock()
@@ -415,13 +424,24 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 	case BlockEvents:
 		b.BlockEvents = append(b.BlockEvents, v)
 	case map[string]interface{}:
-		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
-	case []any:
-		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
+		// Convert map to BlockEvents struct
+		newBlockEvent := BlockEvents{}
+		// You might need to add logic here to properly convert the map to BlockEvents
+		b.BlockEvents = append(b.BlockEvents, newBlockEvent)
+	case []interface{}:
+		// Convert each item in the slice to BlockEvents
+		for _, item := range v {
+			if be, ok := item.(BlockEvents); ok {
+				b.BlockEvents = append(b.BlockEvents, be)
+			}
+		}
+	case string:
+		// Handle string data
+		newBlockEvent := BlockEvents{}
+		// You might need to add logic here to properly convert the string to BlockEvents
+		b.BlockEvents = append(b.BlockEvents, newBlockEvent)
 	default:
-		b.BlockEvents = append(b.BlockEvents, BlockEvents{})
-		// logrus.Errorf("[-] Unexpected data type in message %v", reflect.TypeOf(v))
-		// return
+		logrus.Warnf("[-] Unexpected data type in message: %v", reflect.TypeOf(v))
 	}
 
 	blocksCh <- m
@@ -454,7 +474,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
 	if err != nil {
-		logrus.Warningf("[-] Error storing block on DHT: %v", err)
+		logrus.Warningf("[-] Unable to store block on DHT: %v", err)
 	}
 
 	if os.Getenv("IPFS_URL") != "" {

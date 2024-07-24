@@ -44,14 +44,14 @@ func WriteData(node *masa.OracleNode, key string, value []byte) error {
 
 		_, er := PutCache(ctx, key, value)
 		if er != nil {
-			logrus.Errorf("%v", er)
+			logrus.Errorf("[-] Error putting cache: %v", er)
 		}
 	} else {
 		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
 
 		_, er := PutCache(ctx, node.Host.ID().String(), value)
 		if er != nil {
-			logrus.Errorf("%v", er)
+			logrus.Errorf("[-] Error putting cache: %v", er)
 		}
 	}
 

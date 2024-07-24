@@ -371,19 +371,19 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
 	if err != nil {
-		logrus.Errorf("Subscribe error %v", err)
+		logrus.Errorf("[-] Subscribe error %v", err)
 	}
 
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
 	if node.WorkerTracker == nil {
-		logrus.Error("MonitorWorkers: WorkerTracker is nil")
+		logrus.Error("[-] MonitorWorkers: WorkerTracker is nil")
 		return
 	}
 
 	if node.WorkerTracker.WorkerStatusCh == nil {
-		logrus.Error("MonitorWorkers: WorkerStatusCh is nil")
+		logrus.Error("[-] MonitorWorkers: WorkerStatusCh is nil")
 		return
 	}
 
@@ -399,7 +399,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			var workData map[string]string
 			err := json.Unmarshal(work.Data, &workData)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Error("[-] Error unmarshalling work: ", err)
 				continue
 			}
 			startTime = time.Now()

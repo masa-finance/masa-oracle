@@ -58,7 +58,7 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
 	if err != nil {
-		logrus.Errorf("%v", err)
+		logrus.Errorf("[-] Error signing data: %v", err)
 	}
 	_ = Verifier(node.Host, data, signature)
 
@@ -191,7 +191,7 @@ func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	records, err := QueryAll(ctx)
 	if err != nil {
-		logrus.Errorf("%+v", err)
+		logrus.Errorf("[-] Error querying all records: %+v", err)
 	}
 	for _, record := range records {
 		key := record.Key
@@ -229,7 +229,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
 	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker)
 	if err != nil {
-		logrus.Errorf("%v", err)
+		logrus.Errorf("[-] Error subscribing to node gossip topic: %v", err)
 	}
 
 	ticker := time.NewTicker(syncInterval)
@@ -245,14 +245,14 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			} else {
 				err = json.Unmarshal(nodeDataBytes, &nodeData)
 				if err != nil {
-					logrus.Error(err)
+					logrus.Errorf("[-] Error unmarshalling node data: %v", err)
 				}
 			}
 
 			jsonData, _ := json.Marshal(nodeData)
 			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
 			if e != nil {
-				logrus.Errorf("%v", e)
+				logrus.Errorf("[-] Error publishing node data: %v", e)
 			}
 		case nodeData := <-nodeDataChan:
 			jsonData, _ := json.Marshal(nodeData)

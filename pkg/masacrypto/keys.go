@@ -144,7 +144,7 @@ func Libp2pPubKeyToEthAddress(pubKey crypto.PubKey) (string, error) {
 
 func logAndReturnError(format string, args ...interface{}) error {
 	err := fmt.Errorf(format, args...)
-	logrus.Error(err)
+	logrus.Error("[-] logAndReturnError ", err)
 	return err
 }
 

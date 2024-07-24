@@ -33,12 +33,12 @@ func (node *OracleNode) ListenToNodeTracker() {
 				_ = json.Unmarshal(jsonData, &nodeData)
 				err = node.DHT.PutValue(context.Background(), "/db/"+nodeData.PeerId.String(), jsonData)
 				if err != nil {
-					logrus.Errorf("%v", err)
+					logrus.Warningf("[-] Unable to store node data on DHT: %v", err)
 				}
 			}
 
 			if err != nil {
-				logrus.Warningf("[-] Error parsing node data: %v", err)
+				logrus.Warningf("[-] Unable to parse node data: %v", err)
 				continue
 			}
 			// Publish the JSON data on the node.topic

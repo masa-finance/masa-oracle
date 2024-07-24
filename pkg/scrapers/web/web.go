@@ -244,8 +244,6 @@ func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 		if strings.HasPrefix(pageURL, "http://") || strings.HasPrefix(pageURL, "https://") {
 			collectedData.Pages = append(collectedData.Pages, pageURL)
 			_ = e.Request.Visit(pageURL)
-		} else {
-			logrus.Warnf("Unsupported URL protocol, skipping: %s", pageURL)
 		}
 	})
 
