@@ -71,7 +71,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					return err
 				}, expBackOff)
 				if err != nil {
-					logrus.Errorf("[-] Retry failed to find peers: %v", err)
+					logrus.Warningf("[-] Retry failed to find peers: %v", err)
 				}
 
 			} else {

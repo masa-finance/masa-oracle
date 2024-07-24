@@ -937,6 +937,12 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 // appropriate error responses are sent back to the client.
 func (api *API) GetBlockByHash() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if !api.Node.IsValidator {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node is not a validator and cannot access this endpoint"})
+			return
+		}
+
 		blockHash := c.Param("blockHash")
 		blockHashBytes, err := hex.DecodeString(blockHash)
 		if err != nil {
