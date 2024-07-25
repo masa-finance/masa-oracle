@@ -11,8 +11,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/chain"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -826,10 +826,6 @@ func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
 			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
-		}
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
 		}
 
 		if reqBody.Username == "" {

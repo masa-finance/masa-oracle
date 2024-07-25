@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
@@ -111,6 +112,9 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 			return nil, err
 		}
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel() // It's important to call cancel to release resources if the operation completes before the timeout
 
 	// Define a variable to hold the authentication result
 	var authResult *tg.AuthAuthorization
