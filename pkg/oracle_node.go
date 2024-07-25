@@ -319,7 +319,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data
 	cfg := config.GetInstance()
-	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TelegramScraper || cfg.WebScraper {
 		return true
 	}
 	return false
