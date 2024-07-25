@@ -13,9 +13,13 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 # Create the 'masa' user and set up the home directory
 RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:masa /home/masa
 
+
 # Switch to user 'masa' for following commands
 USER masa
 WORKDIR /home/masa
+
+# add VERSION file for the build stage
+COPY --chown=masa:masa internal/version/VERSION ./internal/version/VERSION
 
 # Copy and install Node.js dependencies for the contracts
 # Assuming your contracts directory is ready for copy at this stage
@@ -25,18 +29,17 @@ RUN cd contracts && npm install
 # Switch back to root to install the Go binary
 USER root
 
-# Build the Go binary in a separate stage
+# Build the Go binary in a separate stage utilizing Makefile
 FROM golang:1.22 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# Inject the latest git tag version into the build
-RUN go build -v -o masa-node -ldflags "-X 'github.com/masa-finance/masa-oracle/pkg/config.Version=$(git describe --tags --abbrev=0)'" ./cmd/masa-node
+RUN make build
 
 # Continue with the final image
 FROM base
-COPY --from=builder /app/masa-node /usr/bin/masa-node
+COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
 # Switch to 'masa' to run the application

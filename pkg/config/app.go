@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
@@ -109,7 +110,7 @@ func GetInstance() *AppConfig {
 		instance = &AppConfig{}
 
 		instance.setDefaultConfig()
-		instance.Version = viper.GetString(Version) // Explicitly set the AppConfig Version field
+		instance.Version = viper.GetString("Version") // Explicitly set the AppConfig Version field
 		instance.setEnvVariableConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
@@ -142,7 +143,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault(Version, formatVersion(Version)) // format and set version passed during build
+	viper.SetDefault("Version", getVersion())
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -177,19 +178,12 @@ func (c *AppConfig) setEnvVariableConfig() {
 	viper.AutomaticEnv()
 }
 
-// Ensures the version is in the format of v0.0.0
-func formatVersion(version string) string {
-	version = strings.TrimSpace(version)
-	// Remove 'v' prefix if present
-	version = strings.TrimPrefix(version, "v")
-	// Split the version string
-	parts := strings.Split(version, ".")
-	// Ensure we have at least 3 parts
-	for len(parts) < 3 {
-		parts = append(parts, "0")
+func getVersion() string {
+	version, err := os.ReadFile("internal/version/VERSION")
+	if err != nil {
+		logrus.Fatalf("Error reading version file: %v", err)
 	}
-	// Reconstruct the version string
-	return "v" + strings.Join(parts, ".")
+	return strings.TrimSpace(string(version))
 }
 
 // setCommandLineConfig parses command line flags and binds them to the AppConfig struct.

@@ -14,9 +14,6 @@ import (
 // ModelType defines a type for model strings.
 type ModelType string
 
-// Store version set during build
-var Version = "Version"
-
 // Define model constants.
 const (
 	ClaudeSonnet35                             ModelType = "claude-3-5-sonnet-20240620"
@@ -132,18 +129,18 @@ const (
 // with the configured version and environment suffix.
 func ProtocolWithVersion(protocolName string) protocol.ID {
 	if GetInstance().Environment == "" {
-		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString(Version)))
+		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString("Version")))
 	}
-	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString(Version), viper.GetString(Environment)))
+	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString("Version"), viper.GetString(Environment)))
 }
 
 // TopicWithVersion returns a topic string with the configured version
 // and environment suffix.
 func TopicWithVersion(protocolName string) string {
 	if GetInstance().Environment == "" {
-		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString(Version))
+		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString("Version"))
 	}
-	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString(Version), viper.GetString(Environment))
+	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString("Version"), viper.GetString(Environment))
 }
 
 // Function to call the Cloudflare API and parse the response

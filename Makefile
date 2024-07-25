@@ -1,8 +1,10 @@
 VERSION := $(shell git describe --tags --abbrev=0)
 
-build:
-	@go mod tidy
-	@go build -v -o ./bin/masa-node -ldflags "-X 'github.com/masa-finance/masa-oracle/pkg/config.Version=$(VERSION)'" ./cmd/masa-node
+set-version:
+	@echo $(VERSION) > internal/version/VERSION	
+
+build: set-version
+	@go build -v -o ./bin/masa-node ./cmd/masa-node
 	@go build -v -o ./bin/masa-node-cli ./cmd/masa-node-cli
 	
 install:

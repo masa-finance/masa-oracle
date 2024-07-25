@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/sirupsen/logrus"
 )
 
 // NewInputBox returns a new inputbox primitive.
@@ -122,8 +124,17 @@ const logo = `
 const (
 	subtitle   = `masa oracle client`
 	navigation = `[yellow]use keys or mouse to navigate`
-	mouse      = `[green]v0.5.0`
 )
+
+var version string = getVersion()
+
+func getVersion() string {
+	version, err := os.ReadFile("internal/version/VERSION")
+	if err != nil {
+		logrus.Fatalf("Error reading version file: %v", err)
+	}
+	return fmt.Sprintf("[green]%s", version)
+}
 
 // Splash shows the app info
 func Splash() (content tview.Primitive) {
@@ -147,7 +158,7 @@ func Splash() (content tview.Primitive) {
 		AddText(subtitle, true, tview.AlignCenter, tcell.ColorWhite).
 		AddText("", true, tview.AlignCenter, tcell.ColorWhite).
 		AddText(navigation, true, tview.AlignCenter, tcell.ColorDarkMagenta).
-		AddText(mouse, true, tview.AlignCenter, tcell.ColorDarkMagenta)
+		AddText(version, true, tview.AlignCenter, tcell.ColorDarkMagenta)
 
 	// Create a Flex layout that centers the logo and subtitle.
 	flex := tview.NewFlex().
