@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
+	"github.com/gotd/contrib/bg"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -17,11 +17,12 @@ import (
 )
 
 var (
-	client     *telegram.Client
-	once       sync.Once
-	appID      = 28423325                           // Your actual app ID
-	appHash    = "c60c0a268973ea3f7d52e16e4ab2a0d3" // Your actual app hash
-	sessionDir = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")
+	client                  *telegram.Client
+	once                    sync.Once
+	appID                   = 28423325                           // Your actual app ID
+	appHash                 = "c60c0a268973ea3f7d52e16e4ab2a0d3" // Your actual app hash
+	sessionDir              = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")
+	clientCtx, cancelClient = context.WithCancel(context.Background())
 )
 
 func InitializeClient() (*telegram.Client, error) {
@@ -53,7 +54,7 @@ func InitializeClient() (*telegram.Client, error) {
 }
 
 // StartAuthentication sends the phone number to Telegram and requests a code.
-func StartAuthentication(ctx context.Context, phoneNumber string) (string, error) {
+func StartAuthentication(phoneNumber string) (string, error) {
 	// Initialize the Telegram client (if not already initialized)
 	client, err := InitializeClient()
 	if err != nil {
@@ -65,7 +66,7 @@ func StartAuthentication(ctx context.Context, phoneNumber string) (string, error
 	var phoneCodeHash string
 
 	// Use client.Run to start the client and execute the SendCode method
-	err = client.Run(ctx, func(ctx context.Context) error {
+	err = client.Run(clientCtx, func(ctx context.Context) error {
 		// Call the SendCode method of the client to send the code to the user's Telegram app
 		sentCode, err := client.Auth().SendCode(ctx, phoneNumber, auth.SendCodeOptions{
 			AllowFlashCall: true,
@@ -100,26 +101,23 @@ func StartAuthentication(ctx context.Context, phoneNumber string) (string, error
 }
 
 // CompleteAuthentication uses the provided code to authenticate with Telegram.
-func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHash string) (*tg.AuthAuthorization, error) {
+func CompleteAuthentication(phoneNumber, code, phoneCodeHash string) (*tg.AuthAuthorization, error) {
 	// Initialize the Telegram client (if not already initialized)
 	client = GetClient()
 
 	if client == nil {
 		var err error
 		client, err = InitializeClient()
+		log.Printf("Initializing client again")
 		if err != nil {
 			log.Printf("Failed to initialize Telegram client: %v", err)
 			return nil, err
 		}
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel() // It's important to call cancel to release resources if the operation completes before the timeout
-
 	// Define a variable to hold the authentication result
 	var authResult *tg.AuthAuthorization
 	// Use client.Run to start the client and execute the SignIn method
-	err := client.Run(ctx, func(ctx context.Context) error {
+	err := client.Run(clientCtx, func(ctx context.Context) error {
 		// Use the provided code and phoneCodeHash to authenticate
 		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
 		if err != nil {
@@ -129,6 +127,17 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 
 		// At this point, authentication was successful, and you have the user's Telegram auth data.
 		authResult = auth
+		stop, err := bg.Connect(client)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = stop() }()
+
+		// Now you can use client.
+		if _, err := client.Auth().Status(ctx); err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -140,6 +149,11 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 	// You can now create a session for the user or perform other post-authentication tasks.
 	log.Printf("Authentication successful for: %s", phoneNumber)
 	return authResult, nil
+}
+
+// Call this function when your application is shutting down
+func shutdownClient() {
+	cancelClient()
 }
 
 func GetClient() *telegram.Client {

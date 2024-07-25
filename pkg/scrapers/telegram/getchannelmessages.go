@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/gotd/td/tg"
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 // Fetch messages from a group
-func FetchChannelMessages(ctx context.Context, username string) ([]*tg.Message, error) {
+func FetchChannelMessages(username string) ([]*tg.Message, error) {
 	// Initialize the Telegram client (if not already initialized)
-	client = GetClient()
+	// client = GetClient()
 
 	if client == nil {
 		var err error
@@ -26,10 +25,7 @@ func FetchChannelMessages(ctx context.Context, username string) ([]*tg.Message, 
 
 	var messagesSlice []*tg.Message // Define a slice to hold the messages
 
-	// ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
-	// defer cancel() // Make sure to cancel when you are done to free resources.
-
-	err := client.Run(ctx, func(ctx context.Context) error {
+	err := client.Run(clientCtx, func(ctx context.Context) error {
 		resolved, err := client.API().ContactsResolveUsername(ctx, username)
 		if err != nil {
 			return err
@@ -77,12 +73,9 @@ func FetchChannelMessages(ctx context.Context, username string) ([]*tg.Message, 
 }
 
 // ScrapeTelegramMessagesForSentiment scrapes messages from a Telegram channel and analyzes their sentiment.
-func ScrapeTelegramMessagesForSentiment(ctx context.Context, username string, model string, prompt string) (string, string, error) {
-	// Create a context with a timeout if needed
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
+func ScrapeTelegramMessagesForSentiment(username string, model string, prompt string) (string, string, error) {
 	// Fetch messages from the Telegram channel
-	messages, err := FetchChannelMessages(ctx, username)
+	messages, err := FetchChannelMessages(username)
 	if err != nil {
 		return "", "", fmt.Errorf("error fetching messages from Telegram channel: %v", err)
 	}

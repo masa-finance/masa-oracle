@@ -778,13 +778,7 @@ func (api *API) StartAuth() gin.HandlerFunc {
 			return
 		}
 
-		// client, err := telegram.InitializeClient()
-		// if err != nil {
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize Telegram client"})
-		// 	return
-		// }
-
-		phoneCodeHash, err := telegram.StartAuthentication(c.Request.Context(), reqBody.PhoneNumber)
+		phoneCodeHash, err := telegram.StartAuthentication(reqBody.PhoneNumber)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start authentication"})
 			return
@@ -807,7 +801,7 @@ func (api *API) CompleteAuth() gin.HandlerFunc {
 			return
 		}
 
-		auth, err := telegram.CompleteAuthentication(c.Request.Context(), reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
+		auth, err := telegram.CompleteAuthentication(reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
 		if err != nil {
 			// Check if 2FA is required
 			if err.Error() == "2FA required" {
