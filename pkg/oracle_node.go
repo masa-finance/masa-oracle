@@ -64,7 +64,7 @@ type OracleNode struct {
 	IsLlmServer       bool
 	StartTime         time.Time
 	WorkerTracker     *pubsub2.WorkerEventTracker
-	BlockTracker      *pubsub2.BlockEventTracker
+	BlockTracker      *BlockEventTracker
 	ActorEngine       *actor.RootContext
 	ActorRemote       *remote.Remote
 	Blockchain        *chain.Chain
@@ -149,13 +149,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		return nil, err
 	}
 
-	isValidator, _ := strconv.ParseBool(cfg.Validator)
-	isTwitterScraper := cfg.TwitterScraper
-	isDiscordScraper := cfg.DiscordScraper
-	isTelegramScraper := cfg.TelegramScraper
-
-	isWebScraper := cfg.WebScraper
-
 	system := actor.NewActorSystemWithConfig(actor.Configure(
 		actor.ConfigOption(func(config *actor.Config) {
 			config.LoggerFactory = func(system *actor.ActorSystem) *slog.Logger {
@@ -187,11 +180,11 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		NodeTracker:       pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
 		PubSubManager:     subscriptionManager,
 		IsStaked:          isStaked,
-		IsValidator:       isValidator,
-		IsTwitterScraper:  isTwitterScraper,
-		IsDiscordScraper:  isDiscordScraper,
-		IsTelegramScraper: isTelegramScraper,
-		IsWebScraper:      isWebScraper,
+		IsValidator:       cfg.Validator,
+		IsTwitterScraper:  cfg.TwitterScraper,
+		IsDiscordScraper:  cfg.DiscordScraper,
+		IsTelegramScraper: cfg.TelegramScraper,
+		IsWebScraper:      cfg.WebScraper,
 		IsLlmServer:       cfg.LlmServer,
 		ActorEngine:       engine,
 		ActorRemote:       r,
@@ -240,17 +233,11 @@ func (node *OracleNode) Start() (err error) {
 		nodeData.IsStaked = node.IsStaked
 		nodeData.SelfIdentified = true
 		nodeData.IsDiscordScraper = node.IsDiscordScraper
+		nodeData.IsTelegramScraper = node.IsTelegramScraper
 		nodeData.IsTwitterScraper = node.IsTwitterScraper
 		nodeData.IsWebScraper = node.IsWebScraper
 		nodeData.IsValidator = node.IsValidator
 	}
-
-	cfg := config.GetInstance()
-	nodeData.IsDiscordScraper = cfg.DiscordScraper
-	nodeData.IsTelegramScraper = cfg.TelegramScraper
-	nodeData.IsTwitterScraper = cfg.TwitterScraper
-	nodeData.IsWebScraper = cfg.WebScraper
-	nodeData.IsValidator = cfg.Validator == "true"
 
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
@@ -324,7 +311,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 // IsWorker determines if the OracleNode is configured to act as an actor.
 // An actor node is one that has at least one of the following scrapers enabled:
-// TwitterScraper, DiscordScraper, TelegramScraper, or WebScraper.
+// TwitterScraper, DiscordScraper, or WebScraper.
 // It returns true if any of these scrapers are enabled, otherwise false.
 func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data

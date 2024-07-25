@@ -73,13 +73,7 @@ type NodeData struct {
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
-	cfg := config.GetInstance()
-	wn, _ := strconv.ParseBool(cfg.Validator)
-	ts := cfg.TwitterScraper
-	ds := cfg.DiscordScraper
-	tgs := cfg.TelegramScraper
-	ws := cfg.WebScraper
-	ver := cfg.Version
+	// cfg := config.GetInstance()
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -90,13 +84,6 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		EthAddress:        publicKey,
 		Activity:          activity,
 		SelfIdentified:    false,
-		IsValidator:       wn,
-		IsTwitterScraper:  ts,
-		IsDiscordScraper:  ds,
-		IsTelegramScraper: tgs,
-		IsWebScraper:      ws,
-		BytesScraped:      0,
-		Version:           ver,
 	}
 }
 
@@ -119,11 +106,10 @@ func (n *NodeData) DiscordScraper() bool {
 	return n.IsDiscordScraper
 }
 
-// TelegramScraper checks if the current node is configured as a Telegram scraper.
+// TelegramScraper checks if the current node is configured as a Discord scraper.
 // It retrieves the configuration instance and returns the value of the TelegramScraper field.
 func (n *NodeData) TelegramScraper() bool {
-	cfg := config.GetInstance()
-	return cfg.TelegramScraper
+	return n.IsTelegramScraper
 }
 
 // WebScraper checks if the current node is configured as a Web scraper.
@@ -229,15 +215,16 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
-		PeerId:           host.ID(),
-		IsStaked:         isStaked,
-		EthAddress:       masacrypto.KeyManagerInstance().EthAddress,
-		IsTwitterScraper: config.GetInstance().TwitterScraper,
-		IsDiscordScraper: config.GetInstance().DiscordScraper,
-		IsWebScraper:     config.GetInstance().WebScraper,
-		IsValidator:      config.GetInstance().Validator,
-		IsActive:         true,
-		Version:          config.Version,
+		PeerId:            host.ID(),
+		IsStaked:          isStaked,
+		EthAddress:        masacrypto.KeyManagerInstance().EthAddress,
+		IsTwitterScraper:  config.GetInstance().TwitterScraper,
+		IsDiscordScraper:  config.GetInstance().DiscordScraper,
+		IsTelegramScraper: config.GetInstance().TelegramScraper,
+		IsWebScraper:      config.GetInstance().WebScraper,
+		IsValidator:       config.GetInstance().Validator,
+		IsActive:          true,
+		Version:           config.Version,
 	}
 
 	// Convert NodeData to JSON
