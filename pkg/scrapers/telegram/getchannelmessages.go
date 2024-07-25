@@ -26,7 +26,7 @@ func FetchChannelMessages(username string) ([]*tg.Message, error) {
 	var messagesSlice []*tg.Message // Define a slice to hold the messages
 
 	err := client.Run(clientCtx, func(ctx context.Context) error {
-		resolved, err := client.API().ContactsResolveUsername(ctx, username)
+		resolved, err := client.API().ContactsResolveUsername(clientCtx, username)
 		if err != nil {
 			return err
 		}
@@ -42,7 +42,7 @@ func FetchChannelMessages(username string) ([]*tg.Message, error) {
 			ChannelID:  channel.ChannelID,
 			AccessHash: channel.AccessHash,
 		}
-		result, err := client.API().MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+		result, err := client.API().MessagesGetHistory(clientCtx, &tg.MessagesGetHistoryRequest{
 			Peer:  inputPeer, // Pass inputPeer here
 			Limit: 100,       // Adjust the number of messages to fetch
 		})

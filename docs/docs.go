@@ -474,18 +474,27 @@ const docTemplate = `{
 					]
 				}
 			},
-			"/data/telegram/channel/{username}/messages": {
-				"get": {
+			"/data/telegram/channel/messages": {
+				"post": { // Changed from "get" to "post" to allow body parameters
 					"description": "Retrieves messages from a specified Telegram channel.",
 					"tags": ["Telegram"],
 					"summary": "Get Telegram Channel Messages",
 					"parameters": [
 						{
-							"name": "username",
-							"in": "path",
-							"description": "Telegram Username",
+							"in": "body",
+							"name": "body",
+							"description": "Request body",
 							"required": true,
-							"type": "string"
+							"schema": {
+								"type": "object",
+								"properties": {
+									"username": {
+										"type": "string",
+										"description": "Telegram Username"
+									}
+								},
+								"required": ["username"]
+							}
 						}
 					],
 					"responses": {

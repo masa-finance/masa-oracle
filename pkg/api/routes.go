@@ -247,12 +247,11 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Tags Telegram
 		// @Accept  json
 		// @Produce  json
-		// @Param   username   path    string  true  "Telegram Username"
 		// @Success 200 {object} map[string][]Message "Successfully retrieved messages"
 		// @Failure 400 {object} ErrorResponse "Username must be provided"
 		// @Failure 500 {object} ErrorResponse "Failed to fetch channel messages"
 		// @Router /telegram/channel/{username}/messages [get]
-		v1.GET("/data/telegram/channel/:username/messages", API.GetChannelMessagesHandler())
+		v1.GET("/data/telegram/channel/messages", API.GetChannelMessagesHandler())
 
 		// oauth tests
 		// v1.GET("/data/discord/exchangetoken/:code", API.ExchangeDiscordTokenHandler())

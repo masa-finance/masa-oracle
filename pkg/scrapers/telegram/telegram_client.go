@@ -68,7 +68,7 @@ func StartAuthentication(phoneNumber string) (string, error) {
 	// Use client.Run to start the client and execute the SendCode method
 	err = client.Run(clientCtx, func(ctx context.Context) error {
 		// Call the SendCode method of the client to send the code to the user's Telegram app
-		sentCode, err := client.Auth().SendCode(ctx, phoneNumber, auth.SendCodeOptions{
+		sentCode, err := client.Auth().SendCode(clientCtx, phoneNumber, auth.SendCodeOptions{
 			AllowFlashCall: true,
 			CurrentNumber:  true,
 		})
@@ -119,7 +119,7 @@ func CompleteAuthentication(phoneNumber, code, phoneCodeHash string) (*tg.AuthAu
 	// Use client.Run to start the client and execute the SignIn method
 	err := client.Run(clientCtx, func(ctx context.Context) error {
 		// Use the provided code and phoneCodeHash to authenticate
-		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
+		auth, err := client.Auth().SignIn(clientCtx, phoneNumber, code, phoneCodeHash)
 		if err != nil {
 			log.Printf("Error during SignIn: %v", err)
 			return err
