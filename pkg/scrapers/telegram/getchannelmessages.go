@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/gotd/td/tg"
+
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
@@ -24,9 +25,10 @@ func FetchChannelMessages(username string) ([]*tg.Message, error) {
 	}
 
 	var messagesSlice []*tg.Message // Define a slice to hold the messages
-
-	err := client.Run(clientCtx, func(ctx context.Context) error {
-		resolved, err := client.API().ContactsResolveUsername(clientCtx, username)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err := client.Run(ctx, func(ctx context.Context) error {
+		resolved, err := client.API().ContactsResolveUsername(ctx, username)
 		if err != nil {
 			return err
 		}
@@ -42,7 +44,7 @@ func FetchChannelMessages(username string) ([]*tg.Message, error) {
 			ChannelID:  channel.ChannelID,
 			AccessHash: channel.AccessHash,
 		}
-		result, err := client.API().MessagesGetHistory(clientCtx, &tg.MessagesGetHistoryRequest{
+		result, err := client.API().MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
 			Peer:  inputPeer, // Pass inputPeer here
 			Limit: 100,       // Adjust the number of messages to fetch
 		})
@@ -65,7 +67,6 @@ func FetchChannelMessages(username string) ([]*tg.Message, error) {
 			}
 			messagesSlice = append(messagesSlice, message) // Append the message to the slice
 		}
-
 		return nil
 	})
 

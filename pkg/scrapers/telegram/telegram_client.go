@@ -6,10 +6,8 @@ import (
 	"errors"
 	"log"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"sync"
-	"syscall"
 
 	"github.com/gotd/contrib/bg"
 	"github.com/gotd/td/session"
@@ -19,13 +17,11 @@ import (
 )
 
 var (
-	client       *telegram.Client
-	once         sync.Once
-	appID        = 28423325                           // Your actual app ID
-	appHash      = "c60c0a268973ea3f7d52e16e4ab2a0d3" // Your actual app hash
-	sessionDir   = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")
-	clientCtx    context.Context
-	cancelClient context.CancelFunc
+	client     *telegram.Client
+	once       sync.Once
+	appID      = 28423325                           // Your actual app ID
+	appHash    = "c60c0a268973ea3f7d52e16e4ab2a0d3" // Your actual app hash
+	sessionDir = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")
 )
 
 func InitializeClient() (*telegram.Client, error) {
@@ -46,9 +42,6 @@ func InitializeClient() (*telegram.Client, error) {
 		if _, err = rand.Read(seed); err != nil {
 			return
 		}
-
-		clientCtx, cancelClient = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		defer cancelClient()
 
 		// Initialize the Telegram client
 		client = telegram.NewClient(appID, appHash, telegram.Options{
@@ -72,9 +65,10 @@ func StartAuthentication(phoneNumber string) (string, error) {
 	var phoneCodeHash string
 
 	// Use client.Run to start the client and execute the SendCode method
-	err = client.Run(clientCtx, func(ctx context.Context) error {
+	err = client.Run(context.Background(), func(ctx context.Context) error {
+		// We can use a Cancellable context here if we need to handle our own timeouts.
 		// Call the SendCode method of the client to send the code to the user's Telegram app
-		sentCode, err := client.Auth().SendCode(clientCtx, phoneNumber, auth.SendCodeOptions{
+		sentCode, err := client.Auth().SendCode(context.Background(), phoneNumber, auth.SendCodeOptions{
 			AllowFlashCall: true,
 			CurrentNumber:  true,
 		})
@@ -123,9 +117,10 @@ func CompleteAuthentication(phoneNumber, code, phoneCodeHash string) (*tg.AuthAu
 	// Define a variable to hold the authentication result
 	var authResult *tg.AuthAuthorization
 	// Use client.Run to start the client and execute the SignIn method
-	err := client.Run(clientCtx, func(ctx context.Context) error {
+	ctx := context.Background()
+	err := client.Run(ctx, func(ctx context.Context) error {
 		// Use the provided code and phoneCodeHash to authenticate
-		auth, err := client.Auth().SignIn(clientCtx, phoneNumber, code, phoneCodeHash)
+		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
 		if err != nil {
 			log.Printf("Error during SignIn: %v", err)
 			return err
@@ -158,9 +153,9 @@ func CompleteAuthentication(phoneNumber, code, phoneCodeHash string) (*tg.AuthAu
 }
 
 // Call this function when your application is shutting down
-func shutdownClient() {
-	cancelClient()
-}
+//func shutdownClient() {
+//	cancelClient()
+//}
 
 func GetClient() *telegram.Client {
 	return client
