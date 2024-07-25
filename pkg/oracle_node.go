@@ -314,7 +314,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 // IsWorker determines if the OracleNode is configured to act as an actor.
 // An actor node is one that has at least one of the following scrapers enabled:
-// TwitterScraper, DiscordScraper, or WebScraper.
+// TwitterScraper, DiscordScraper, TelegramScraper, or WebScraper.
 // It returns true if any of these scrapers are enabled, otherwise false.
 func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data

@@ -209,6 +209,7 @@ func (c *AppConfig) setDefaultConfig() {
 		viper.SetDefault(Validator, "false")
 		viper.SetDefault(TwitterScraper, "false")
 		viper.SetDefault(DiscordScraper, "false")
+		viper.SetDefault(TelegramScraper, "false")
 		viper.SetDefault(WebScraper, "false")
 		viper.SetDefault(CachePath, "CACHE")
 		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
@@ -229,6 +230,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 	viper.SetDefault(TwitterScraper, false)
 	viper.SetDefault(DiscordScraper, false)
+	viper.SetDefault(TelegramScraper, false)
 	viper.SetDefault(WebScraper, false)
 	viper.SetDefault(LlmServer, false)
 }
@@ -292,6 +294,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.GPTApiKey, "gptApiKey", viper.GetString(GPTApiKey), "OpenAI API Key")
 	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
 	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "DiscordScraper")
+	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "TelegramScraper")
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
