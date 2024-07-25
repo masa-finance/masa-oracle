@@ -1,15 +1,10 @@
 package config
 
 import (
-	"encoding/json"
-	"io"
 	"log"
-	"net/http"
-	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -74,7 +69,7 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	FilePath             string   `mapstructure:"filePath"`
-	Validator            string   `mapstructure:"validator"`
+	Validator            bool     `mapstructure:"validator"`
 	CachePath            string   `mapstructure:"cachePath"`
 	Faucet               bool     `mapstructure:"faucet"`
 
@@ -124,7 +119,7 @@ func GetInstance() *AppConfig {
 
 		err = viper.Unmarshal(instance)
 		if err != nil {
-			logrus.Errorf("Unable to unmarshal config into struct, %v", err)
+			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
 			instance = nil // Ensure instance is nil if unmarshalling fails
 		}
 	})
@@ -253,7 +248,7 @@ func (c *AppConfig) setFileConfig(path string) {
 func (c *AppConfig) setEnvVariableConfig() {
 	err := godotenv.Load()
 	if err != nil {
-		logrus.Error("Error loading .env file")
+		logrus.Error("[-] Error loading .env file")
 	}
 	viper.AutomaticEnv()
 }
@@ -282,7 +277,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, "logLevel", viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, "logFilePath", viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, "filePath", viper.GetString(FilePath), "The node file path")
-	pflag.StringVar(&c.Validator, "validator", viper.GetString(Validator), "Approved validator node boolean")
+	pflag.BoolVar(&c.Validator, "validator", viper.GetBool(Validator), "Approved validator node boolean")
 	pflag.StringVar(&c.CachePath, "cachePath", viper.GetString(CachePath), "The cache path")
 	pflag.StringVar(&c.TwitterUsername, "twitterUsername", viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")
@@ -317,7 +312,7 @@ func (c *AppConfig) LogConfig() {
 	val := reflect.ValueOf(*c)
 	typeOfStruct := val.Type()
 
-	logrus.Info("Current AppConfig values:")
+	// logrus.Info("Current AppConfig values:")
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfStruct.Field(i)
 		value := val.Field(i).Interface()

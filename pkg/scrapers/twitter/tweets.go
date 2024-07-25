@@ -41,12 +41,12 @@ func auth() *twitterscraper.Scraper {
 	}
 
 	if err != nil {
-		logrus.WithError(err).Warning("Login failed")
+		logrus.WithError(err).Warning("[-] Login failed")
 		return nil
 	}
 
 	if err = SaveCookies(scraper, cookieFilePath); err != nil {
-		logrus.WithError(err).Error("Failed to save cookies")
+		logrus.WithError(err).Error("[-] Failed to save cookies")
 	}
 
 	logrus.WithFields(logrus.Fields{

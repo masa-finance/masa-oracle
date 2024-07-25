@@ -24,18 +24,18 @@ func (sc *Client) Approve(amount *big.Int) (string, error) {
 	fromAddress := crypto.PubkeyToAddress(sc.PrivateKey.PublicKey)
 	nonce, err := sc.EthClient.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		return "", fmt.Errorf("failed to get nonce: %v", err)
+		return "", fmt.Errorf("[-] Failed to get nonce: %v", err)
 	}
 
 	value := big.NewInt(0)
 	data, err := parsedABI.Pack("approve", ProtocolStakingContractAddress, amount)
 	if err != nil {
-		return "", fmt.Errorf("failed to pack data for approve: %v", err)
+		return "", fmt.Errorf("[-] Failed to pack data for approve: %v", err)
 	}
 
 	gasPrice, err := sc.EthClient.SuggestGasPrice(context.Background())
 	if err != nil {
-		return "", fmt.Errorf("failed to suggest gas price: %v", err)
+		return "", fmt.Errorf("[-] Failed to suggest gas price: %v", err)
 	}
 
 	msg := ethereum.CallMsg{
@@ -45,31 +45,31 @@ func (sc *Client) Approve(amount *big.Int) (string, error) {
 	}
 	gasLimit, err := sc.EthClient.EstimateGas(context.Background(), msg)
 	if err != nil {
-		return "", fmt.Errorf("failed to estimate gas: %v", err)
+		return "", fmt.Errorf("[-] Failed to estimate gas: %v", err)
 	}
 
 	tx := types.NewTransaction(nonce, MasaTokenAddress, value, gasLimit, gasPrice, data)
 
 	chainID, err := sc.EthClient.NetworkID(context.Background())
 	if err != nil {
-		return "", fmt.Errorf("failed to get network ID: %v", err)
+		return "", fmt.Errorf("[-] Failed to get network ID: %v", err)
 	}
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), sc.PrivateKey)
 	if err != nil {
-		return "", fmt.Errorf("failed to sign transaction: %v", err)
+		return "", fmt.Errorf("[-] Failed to sign transaction: %v", err)
 	}
 
 	err = sc.EthClient.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		return "", fmt.Errorf("failed to send transaction: %v", err)
+		return "", fmt.Errorf("[-] Failed to send transaction: %v", err)
 	}
 
 	receipt, err := bind.WaitMined(context.Background(), sc.EthClient, signedTx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get transaction receipt: %v", err)
+		return "", fmt.Errorf("[-] Failed to get transaction receipt: %v", err)
 	}
 	if receipt.Status != 1 {
-		return "", fmt.Errorf("transaction failed: %v", receipt)
+		return "", fmt.Errorf("[-] Transaction failed: %v", receipt)
 	}
 
 	return signedTx.Hash().Hex(), nil

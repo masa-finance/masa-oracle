@@ -44,14 +44,14 @@ func WriteData(node *masa.OracleNode, key string, value []byte) error {
 
 		_, er := PutCache(ctx, key, value)
 		if er != nil {
-			logrus.Errorf("%v", er)
+			logrus.Errorf("[-] Error putting cache: %v", er)
 		}
 	} else {
 		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
 
 		_, er := PutCache(ctx, node.Host.ID().String(), value)
 		if er != nil {
-			logrus.Errorf("%v", er)
+			logrus.Errorf("[-] Error putting cache: %v", er)
 		}
 	}
 
@@ -72,7 +72,7 @@ func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 		"nodeID":       node.Host.ID().String(),
 		"isAuthorized": true,
 		"ReadData":     true,
-	}).Info("Attempting to read data")
+	}).Info("[+] Attempting to read data")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
@@ -96,7 +96,7 @@ func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 			// we don't need to check for err since !exists gives an err also - we only need to know if the record exists or not in this context
-		}).Debug("Failed to read from the database")
+		}).Debug("[-] Failed to read from the database")
 		return nil, err
 	}
 
@@ -121,12 +121,12 @@ func SendToS3(uid string, payload map[string]string) error {
 
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON payload: %v", err)
+		return fmt.Errorf("[-] Failed to marshal JSON payload: %v", err)
 	}
 
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return fmt.Errorf("failed to create HTTP request: %v", err)
+		return fmt.Errorf("[-] Failed to create HTTP request: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -136,13 +136,13 @@ func SendToS3(uid string, payload map[string]string) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send HTTP request: %v", err)
+		return fmt.Errorf("[-] Failed to send HTTP request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("received non-OK response: %s, body: %s", resp.Status, string(bodyBytes))
+		return fmt.Errorf("[-] Received non-OK response: %s, body: %s", resp.Status, string(bodyBytes))
 	}
 
 	return nil

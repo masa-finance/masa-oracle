@@ -49,48 +49,48 @@ func GenerateJWTToken(peerId string) (string, error) {
 // SignData signs the data using the provided private key and returns the signature.
 func SignData(privKey crypto.PrivKey, data []byte) ([]byte, error) {
 	if privKey == nil {
-		logrus.Error("Private key is nil")
-		return nil, fmt.Errorf("private key is nil")
+		logrus.Error("[-] Private key is nil")
+		return nil, fmt.Errorf("[-] private key is nil")
 	}
 
-	logrus.Info("Signing data")
+	logrus.Info("[+] Signing data")
 
 	signature, err := privKey.Sign(data)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to sign data")
+		logrus.WithError(err).Error("[-] Failed to sign data")
 		return nil, err
 	}
 
-	logrus.Info("Data signed successfully")
+	logrus.Info("[+] Data signed successfully")
 	return signature, nil
 }
 
 // VerifySignature verifies the signature of the data using the signers public key, the data that was signed, and the signature.
 func VerifySignature(pubKey crypto.PubKey, data []byte, signatureHex string) (bool, error) {
 	if pubKey == nil {
-		logrus.Error("Public key is nil")
-		return false, fmt.Errorf("public key is nil")
+		logrus.Error("[-] Public key is nil")
+		return false, fmt.Errorf("[-] public key is nil")
 	}
 
 	// Decode the hexadecimal-encoded signature back to its original byte format
 	signatureBytes, err := hex.DecodeString(signatureHex)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to decode signature from hexadecimal")
+		logrus.WithError(err).Error("[-] Failed to decode signature from hexadecimal")
 		return false, err
 	}
 
-	logrus.Info("Verifying signature")
+	logrus.Info("[+] Verifying signature")
 
 	verified, err := pubKey.Verify(data, signatureBytes)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to verify signature")
+		logrus.WithError(err).Error("[-] Failed to verify signature")
 		return false, err
 	}
 
 	if verified {
-		logrus.Info("Signature verified successfully")
+		logrus.Info("[+] Signature verified successfully")
 	} else {
-		logrus.Info("Signature verification failed")
+		logrus.Info("[-] Signature verification failed")
 	}
 	return verified, nil
 }

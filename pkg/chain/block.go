@@ -2,6 +2,7 @@ package chain
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 	"fmt"
 	"math/big"
@@ -29,7 +30,7 @@ func (b *Block) Serialize() ([]byte, error) {
 	encoder := gob.NewEncoder(&buffer)
 	err := encoder.Encode(b)
 	if err != nil {
-		logrus.Error("Failed to serialize block: ", b, err)
+		logrus.Error("[-] Failed to serialize block: ", b, err)
 	}
 	return buffer.Bytes(), err
 }
@@ -40,13 +41,18 @@ func (b *Block) Deserialize(data []byte) error {
 	decoder := gob.NewDecoder(&buffer)
 	err := decoder.Decode(&b)
 	if err != nil {
-		logrus.Error("Failed to deserialize data into block: ", data, err)
+		logrus.Error("[-] Failed to deserialize data into block: ", data, err)
 	}
 	return err
 }
 
 func (b *Block) Print() {
-	fmt.Printf("\t Input Data:    \t%s\n", b.Data)
+	inputData := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data)))
+	if len(inputData) > 61 {
+		inputData = inputData[:61] + "..."
+	}
+	fmt.Printf("\t Input Data:    \t%s\n", inputData)
+	// fmt.Printf("\t Input Data:    \t%s\n", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data))))
 	fmt.Printf("\t Transaction Hash:\t%x\n", b.Hash)
 	fmt.Printf("\t Previous Hash:  \t%x\n", b.Link)
 	fmt.Printf("\t Transaction Nonce:\t%d\n", b.Nonce)
