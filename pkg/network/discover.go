@@ -48,7 +48,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 		select {
 		case <-ctx.Done():
 			if ctx.Err() != nil {
-				logrus.Errorf("Context error in discovery loop: %v", ctx.Err())
+				logrus.Errorf("[-] Context error in discovery loop: %v", ctx.Err())
 			}
 			logrus.Info("[-] Stopping peer discovery")
 			return
@@ -71,7 +71,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					return err
 				}, expBackOff)
 				if err != nil {
-					logrus.Errorf("[-] Retry failed to find peers: %v", err)
+					logrus.Warningf("[-] Retry failed to find peers: %v", err)
 				}
 
 			} else {

@@ -36,7 +36,7 @@ func main() {
 	if cfg.Faucet {
 		err := handleFaucet(keyManager.EcdsaPrivKey)
 		if err != nil {
-			logrus.Errorf("%v", err)
+			logrus.Errorf("[-] %v", err)
 			os.Exit(1)
 		} else {
 			logrus.Info("[+] Faucet event completed for this address")
@@ -126,7 +126,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, cfg.Version)
 
 	<-ctx.Done()
 }

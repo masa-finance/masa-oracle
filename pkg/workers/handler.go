@@ -106,7 +106,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	case string(WORKER.LLMChat):
 		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
-			logrus.Error("missing env variable LLM_CHAT_URL")
+			logrus.Error("[-] Missing env variable LLM_CHAT_URL")
 			return
 		}
 		bodyBytes, _ := json.Marshal(bodyData)

@@ -154,7 +154,7 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 //	  }
 //	logrus.Infof("%+v", res)
 //	}()
-func ScrapeWebData(uri []string, depth int) (string, error) {
+func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 	// Set default depth to 1 if 0 is provided
 	if depth <= 0 {
 		depth = 1
@@ -203,6 +203,7 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 			logrus.Errorf("[-] Request URL: %s failed with error: %v", r.Request.URL, err)
 		}
 	})
+
 	c.OnHTML("h1, h2", func(e *colly.HTMLElement) {
 		// Directly append a new Section to collectedData.Sections
 		collectedData.Sections = append(collectedData.Sections, Section{Title: e.Text})
@@ -243,15 +244,13 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 		if strings.HasPrefix(pageURL, "http://") || strings.HasPrefix(pageURL, "https://") {
 			collectedData.Pages = append(collectedData.Pages, pageURL)
 			_ = e.Request.Visit(pageURL)
-		} else {
-			logrus.Warnf("Unsupported URL protocol, skipping: %s", pageURL)
 		}
 	})
 
 	for _, u := range uri {
 		err := c.Visit(u)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -259,5 +258,5 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 	c.Wait()
 
 	j, _ := json.Marshal(collectedData)
-	return string(j), nil
+	return j, nil
 }

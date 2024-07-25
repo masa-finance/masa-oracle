@@ -68,14 +68,14 @@ func SignData(privKey crypto.PrivKey, data []byte) ([]byte, error) {
 // VerifySignature verifies the signature of the data using the signers public key, the data that was signed, and the signature.
 func VerifySignature(pubKey crypto.PubKey, data []byte, signatureHex string) (bool, error) {
 	if pubKey == nil {
-		logrus.Error("Public key is nil")
-		return false, fmt.Errorf("public key is nil")
+		logrus.Error("[-] Public key is nil")
+		return false, fmt.Errorf("[-] public key is nil")
 	}
 
 	// Decode the hexadecimal-encoded signature back to its original byte format
 	signatureBytes, err := hex.DecodeString(signatureHex)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to decode signature from hexadecimal")
+		logrus.WithError(err).Error("[-] Failed to decode signature from hexadecimal")
 		return false, err
 	}
 
@@ -83,7 +83,7 @@ func VerifySignature(pubKey crypto.PubKey, data []byte, signatureHex string) (bo
 
 	verified, err := pubKey.Verify(data, signatureBytes)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to verify signature")
+		logrus.WithError(err).Error("[-] Failed to verify signature")
 		return false, err
 	}
 

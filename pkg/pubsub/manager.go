@@ -170,10 +170,10 @@ func StreamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 			if err.Error() == "EOF" {
 				continue
 			}
-			logrus.Errorf("streamConsoleTo: %s", err.Error())
+			logrus.Errorf("[-] streamConsoleTo: %s", err.Error())
 		}
 		if err := topic.Publish(ctx, []byte(s)); err != nil {
-			logrus.Errorf("### Publish error: %s", err)
+			logrus.Errorf("[-] Publish error: %s", err)
 		}
 	}
 }

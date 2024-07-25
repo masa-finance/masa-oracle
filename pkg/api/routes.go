@@ -442,6 +442,18 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /blocks [get]
 		v1.GET("/blocks", API.GetBlocks())
 
+		// @Summary Get Block by Hash
+		// @Description Retrieves a specific block from the blockchain using its hash
+		// @Tags Blocks
+		// @Accept  json
+		// @Produce  json
+		// @Param   blockHash   path    string  true  "Hash of the block to retrieve"
+		// @Success 200 {object} BlockResponse "Successfully retrieved block"
+		// @Failure 400 {object} ErrorResponse "Invalid block hash"
+		// @Failure 500 {object} ErrorResponse "Error retrieving block"
+		// @Router /blocks/{blockHash} [get]
+		v1.GET("/blocks/:blockHash", API.GetBlockByHash())
+
 		// @note a test route
 		v1.POST("/test", API.Test())
 
