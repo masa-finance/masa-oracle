@@ -6,8 +6,10 @@ import (
 	"errors"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sync"
+	"syscall"
 
 	"github.com/gotd/contrib/bg"
 	"github.com/gotd/td/session"
@@ -17,12 +19,13 @@ import (
 )
 
 var (
-	client                  *telegram.Client
-	once                    sync.Once
-	appID                   = 28423325                           // Your actual app ID
-	appHash                 = "c60c0a268973ea3f7d52e16e4ab2a0d3" // Your actual app hash
-	sessionDir              = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")
-	clientCtx, cancelClient = context.WithCancel(context.Background())
+	client       *telegram.Client
+	once         sync.Once
+	appID        = 28423325                           // Your actual app ID
+	appHash      = "c60c0a268973ea3f7d52e16e4ab2a0d3" // Your actual app hash
+	sessionDir   = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")
+	clientCtx    context.Context
+	cancelClient context.CancelFunc
 )
 
 func InitializeClient() (*telegram.Client, error) {
@@ -43,6 +46,9 @@ func InitializeClient() (*telegram.Client, error) {
 		if _, err = rand.Read(seed); err != nil {
 			return
 		}
+
+		clientCtx, cancelClient = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer cancelClient()
 
 		// Initialize the Telegram client
 		client = telegram.NewClient(appID, appHash, telegram.Options{

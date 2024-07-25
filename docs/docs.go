@@ -475,7 +475,7 @@ const docTemplate = `{
 				}
 			},
 			"/data/telegram/channel/messages": {
-				"post": { // Changed from "get" to "post" to allow body parameters
+				"post": {
 					"description": "Retrieves messages from a specified Telegram channel.",
 					"tags": ["Telegram"],
 					"summary": "Get Telegram Channel Messages",

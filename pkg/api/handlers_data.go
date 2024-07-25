@@ -822,6 +822,12 @@ func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
 		}
 
+		// Bind the JSON body to the struct
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
 		if reqBody.Username == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
 			return
