@@ -63,6 +63,7 @@ type NodeData struct {
 	IsValidator          bool            `json:"isValidator"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsDiscordScraper     bool            `json:"isDiscordScraper"`
+	IsTelegramScraper    bool            `json:"isTelegramScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
 	BytesScraped         int             `json:"bytesScraped"`
 	Records              any             `json:"records,omitempty"`
@@ -78,6 +79,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	wn, _ := strconv.ParseBool(cfg.Validator)
 	ts := cfg.TwitterScraper
 	ds := cfg.DiscordScraper
+	tgs := cfg.TelegramScraper
 	ws := cfg.WebScraper
 	ver := cfg.Version
 
@@ -93,6 +95,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 		IsValidator:       wn,
 		IsTwitterScraper:  ts,
 		IsDiscordScraper:  ds,
+		IsTelegramScraper: tgs,
 		IsWebScraper:      ws,
 		BytesScraped:      0,
 		Version:           ver,
@@ -138,6 +141,13 @@ func (n *NodeData) TwitterScraper() bool {
 func (n *NodeData) DiscordScraper() bool {
 	cfg := config.GetInstance()
 	return cfg.DiscordScraper
+}
+
+// TelegramScraper checks if the current node is configured as a Telegram scraper.
+// It retrieves the configuration instance and returns the value of the TelegramScraper field.
+func (n *NodeData) TelegramScraper() bool {
+	cfg := config.GetInstance()
+	return cfg.TelegramScraper
 }
 
 // WebScraper checks if the current node is configured as a Web scraper.

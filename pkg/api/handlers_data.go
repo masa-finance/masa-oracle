@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -823,22 +822,32 @@ func (api *API) CompleteAuth() gin.HandlerFunc {
 
 func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		username := c.Param("username")
-		if username == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Username must be provided"})
+		var reqBody struct {
+			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
-		log.Printf("Starting to fetch messages for username: %s", username)
-		messages, err := telegram.FetchChannelMessages(c.Request.Context(), username)
+		if reqBody.Username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
-			log.Printf("Error fetching messages for username: %s, error: %v", username, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		log.Printf("Finished fetching messages for username: %s", username)
-
-		c.JSON(http.StatusOK, gin.H{"messages": messages})
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.TelegramChannelMessages, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
 	}
 }
 

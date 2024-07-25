@@ -42,29 +42,30 @@ import (
 )
 
 type OracleNode struct {
-	Host             host.Host
-	PrivKey          *ecdsa.PrivateKey
-	Protocol         protocol.ID
-	priorityAddrs    multiaddr.Multiaddr
-	multiAddrs       []multiaddr.Multiaddr
-	DHT              *dht.IpfsDHT
-	Context          context.Context
-	PeerChan         chan myNetwork.PeerEvent
-	NodeTracker      *pubsub2.NodeEventTracker
-	PubSubManager    *pubsub2.Manager
-	Signature        string
-	IsStaked         bool
-	IsValidator      bool
-	IsTwitterScraper bool
-	IsDiscordScraper bool
-	IsWebScraper     bool
-	IsLlmServer      bool
-	StartTime        time.Time
-	WorkerTracker    *pubsub2.WorkerEventTracker
-	BlockTracker     *pubsub2.BlockEventTracker
-	ActorEngine      *actor.RootContext
-	ActorRemote      *remote.Remote
-	Blockchain       *chain.Chain
+	Host              host.Host
+	PrivKey           *ecdsa.PrivateKey
+	Protocol          protocol.ID
+	priorityAddrs     multiaddr.Multiaddr
+	multiAddrs        []multiaddr.Multiaddr
+	DHT               *dht.IpfsDHT
+	Context           context.Context
+	PeerChan          chan myNetwork.PeerEvent
+	NodeTracker       *pubsub2.NodeEventTracker
+	PubSubManager     *pubsub2.Manager
+	Signature         string
+	IsStaked          bool
+	IsValidator       bool
+	IsTwitterScraper  bool
+	IsDiscordScraper  bool
+	IsTelegramScraper bool
+	IsWebScraper      bool
+	IsLlmServer       bool
+	StartTime         time.Time
+	WorkerTracker     *pubsub2.WorkerEventTracker
+	BlockTracker      *pubsub2.BlockEventTracker
+	ActorEngine       *actor.RootContext
+	ActorRemote       *remote.Remote
+	Blockchain        *chain.Chain
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -148,6 +149,8 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	isValidator, _ := strconv.ParseBool(cfg.Validator)
 	isTwitterScraper := cfg.TwitterScraper
 	isDiscordScraper := cfg.DiscordScraper
+	isTelegramScraper := cfg.TelegramScraper
+
 	isWebScraper := cfg.WebScraper
 
 	system := actor.NewActorSystemWithConfig(actor.Configure(
@@ -172,23 +175,24 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	go r.Start()
 
 	return &OracleNode{
-		Host:             hst,
-		PrivKey:          masacrypto.KeyManagerInstance().EcdsaPrivKey,
-		Protocol:         config.ProtocolWithVersion(config.OracleProtocol),
-		multiAddrs:       myNetwork.GetMultiAddressesForHostQuiet(hst),
-		Context:          ctx,
-		PeerChan:         make(chan myNetwork.PeerEvent),
-		NodeTracker:      pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
-		PubSubManager:    subscriptionManager,
-		IsStaked:         isStaked,
-		IsValidator:      isValidator,
-		IsTwitterScraper: isTwitterScraper,
-		IsDiscordScraper: isDiscordScraper,
-		IsWebScraper:     isWebScraper,
-		IsLlmServer:      cfg.LlmServer,
-		ActorEngine:      engine,
-		ActorRemote:      r,
-		Blockchain:       &chain.Chain{},
+		Host:              hst,
+		PrivKey:           masacrypto.KeyManagerInstance().EcdsaPrivKey,
+		Protocol:          config.ProtocolWithVersion(config.OracleProtocol),
+		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
+		Context:           ctx,
+		PeerChan:          make(chan myNetwork.PeerEvent),
+		NodeTracker:       pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
+		PubSubManager:     subscriptionManager,
+		IsStaked:          isStaked,
+		IsValidator:       isValidator,
+		IsTwitterScraper:  isTwitterScraper,
+		IsDiscordScraper:  isDiscordScraper,
+		IsTelegramScraper: isTelegramScraper,
+		IsWebScraper:      isWebScraper,
+		IsLlmServer:       cfg.LlmServer,
+		ActorEngine:       engine,
+		ActorRemote:       r,
+		Blockchain:        &chain.Chain{},
 	}, nil
 }
 
@@ -236,6 +240,7 @@ func (node *OracleNode) Start() (err error) {
 
 	cfg := config.GetInstance()
 	nodeData.IsDiscordScraper = cfg.DiscordScraper
+	nodeData.IsTelegramScraper = cfg.TelegramScraper
 	nodeData.IsTwitterScraper = cfg.TwitterScraper
 	nodeData.IsWebScraper = cfg.WebScraper
 	nodeData.IsValidator = cfg.Validator == "true"

@@ -390,19 +390,20 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Initialize default values for the template data
 		templateData := gin.H{
-			"TotalPeers":       0,
-			"Name":             "Masa Status Page",
-			"PeerID":           api.Node.Host.ID().String(),
-			"IsStaked":         false,
-			"IsTwitterScraper": false,
-			"IsDiscordScraper": false,
-			"IsWebScraper":     false,
-			"FirstJoined":      api.Node.FromUnixTime(time.Now().Unix()),
-			"LastJoined":       api.Node.FromUnixTime(time.Now().Unix()),
-			"CurrentUptime":    "0",
-			"TotalUptime":      "0",
-			"Rewards":          "Coming Soon!",
-			"BytesScraped":     "0 MB",
+			"TotalPeers":        0,
+			"Name":              "Masa Status Page",
+			"PeerID":            api.Node.Host.ID().String(),
+			"IsStaked":          false,
+			"IsTwitterScraper":  false,
+			"IsDiscordScraper":  false,
+			"IsTelegramScraper": false,
+			"IsWebScraper":      false,
+			"FirstJoined":       api.Node.FromUnixTime(time.Now().Unix()),
+			"LastJoined":        api.Node.FromUnixTime(time.Now().Unix()),
+			"CurrentUptime":     "0",
+			"TotalUptime":       "0",
+			"Rewards":           "Coming Soon!",
+			"BytesScraped":      "0 MB",
 		}
 
 		if api.Node != nil && api.Node.Host != nil {
@@ -414,6 +415,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				templateData["IsStaked"] = nd.IsStaked
 				templateData["IsTwitterScraper"] = nd.IsTwitterScraper
 				templateData["IsDiscordScraper"] = nd.IsDiscordScraper
+				templateData["IsTelegramScraper"] = nd.IsTelegramScraper
 				templateData["IsWebScraper"] = nd.IsWebScraper
 				templateData["FirstJoined"] = api.Node.FromUnixTime(nd.FirstJoinedUnix)
 				templateData["LastJoined"] = api.Node.FromUnixTime(nd.LastJoinedUnix)

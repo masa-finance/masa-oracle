@@ -180,7 +180,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 			return
 		}
 		cfg := config.GetInstance()
-		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TwitterScraper || cfg.WebScraper {
 			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 		}
 		for _, pid := range getPeers(node) {

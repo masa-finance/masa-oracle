@@ -303,6 +303,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.BytesScraped = nodeData.BytesScraped
 		nd.IsStaked = nodeData.IsStaked
 		nd.IsDiscordScraper = nodeData.IsDiscordScraper
+		nd.IsTelegramScraper = nodeData.IsTelegramScraper
 		nd.IsTwitterScraper = nodeData.IsTwitterScraper
 		nd.IsWebScraper = nodeData.IsWebScraper
 		nd.Records = nodeData.Records
