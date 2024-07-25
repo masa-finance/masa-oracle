@@ -19,7 +19,7 @@ USER masa
 WORKDIR /home/masa
 
 # add VERSION file for the build stage
-COPY --chown=masa:masa internal/version/VERSION ./internal/version/VERSION
+COPY --chown=masa:masa internal/version ./internal/version
 
 # Copy and install Node.js dependencies for the contracts
 # Assuming your contracts directory is ready for copy at this stage

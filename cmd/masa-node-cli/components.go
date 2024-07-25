@@ -129,7 +129,7 @@ const (
 var version string = getVersion()
 
 func getVersion() string {
-	version, err := os.ReadFile("internal/version/VERSION")
+	version, err := os.ReadFile("internal/version")
 	if err != nil {
 		logrus.Fatalf("Error reading version file: %v", err)
 	}

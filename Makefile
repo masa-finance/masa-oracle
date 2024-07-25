@@ -1,7 +1,7 @@
 VERSION := $(shell git describe --tags --abbrev=0)
 
 set-version:
-	@echo $(VERSION) > internal/version/VERSION	
+	@echo $(VERSION) > internal/version	
 
 build: set-version
 	@go build -v -o ./bin/masa-node ./cmd/masa-node
