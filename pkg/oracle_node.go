@@ -365,6 +365,7 @@ var (
 )
 
 type BlockData struct {
+	Block            uint64      `json:"block"`
 	InputData        interface{} `json:"input_data"`
 	TransactionHash  string      `json:"transaction_hash"`
 	PreviousHash     string      `json:"previous_hash"`
@@ -447,6 +448,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 		}
 
 		blockData := BlockData{
+			Block:            block.Block,
 			InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
 			TransactionHash:  fmt.Sprintf("%x", block.Hash),
 			PreviousHash:     fmt.Sprintf("%x", block.Link),
