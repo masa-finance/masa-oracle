@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -9,26 +10,21 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/chain"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"strings"
-
-	"time"
-
-	"github.com/google/uuid"
-
-	"github.com/gin-gonic/gin"
-
-	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
-
+	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
 
 type LLMChat struct {
@@ -778,7 +774,7 @@ func (api *API) StartAuth() gin.HandlerFunc {
 			return
 		}
 
-		phoneCodeHash, err := telegram.StartAuthentication(reqBody.PhoneNumber)
+		phoneCodeHash, err := telegram.StartAuthentication(context.Background(), reqBody.PhoneNumber)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start authentication"})
 			return
@@ -801,7 +797,7 @@ func (api *API) CompleteAuth() gin.HandlerFunc {
 			return
 		}
 
-		auth, err := telegram.CompleteAuthentication(reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
+		auth, err := telegram.CompleteAuthentication(context.Background(), reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
 		if err != nil {
 			// Check if 2FA is required
 			if err.Error() == "2FA required" {

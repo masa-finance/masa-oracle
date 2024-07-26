@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -90,6 +91,8 @@ type AppConfig struct {
 	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
+
+	TelegramStop bg.StopFunc
 }
 
 // GetInstance returns the singleton instance of AppConfig.

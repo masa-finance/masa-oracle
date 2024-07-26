@@ -112,6 +112,13 @@ func main() {
 			nodeData.Left()
 		}
 		cancel()
+		// Call the global StopFunc to stop the Telegram background connection
+		cfg := config.GetInstance()
+		if cfg.TelegramStop != nil {
+			if err := cfg.TelegramStop(); err != nil {
+				logrus.Errorf("Error stopping the background connection: %v", err)
+			}
+		}
 	}()
 
 	router := api.SetupRoutes(node)
