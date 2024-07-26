@@ -880,6 +880,7 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 		}
 
 		type BlockData struct {
+			Block            uint64      `json:"block"`
 			InputData        interface{} `json:"input_data"`
 			TransactionHash  string      `json:"transaction_hash"`
 			PreviousHash     string      `json:"previous_hash"`
@@ -900,6 +901,7 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 			}
 
 			blockData := BlockData{
+				Block:            block.Block,
 				InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
 				TransactionHash:  fmt.Sprintf("%x", block.Hash),
 				PreviousHash:     fmt.Sprintf("%x", block.Link),
@@ -965,6 +967,7 @@ func (api *API) GetBlockByHash() gin.HandlerFunc {
 			inputData = blockData
 		}
 		responseData := gin.H{
+			"block":            block.Block,
 			"input_data":       inputData,
 			"transaction_hash": blockHash,
 			"nonce":            block.Nonce,

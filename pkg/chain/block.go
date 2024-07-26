@@ -11,13 +11,15 @@ import (
 )
 
 type Block struct {
+	Block uint64
 	Data  []byte //	this block's data
 	Hash  []byte //	this block's hash
 	Link  []byte //	the hash of the last block in the chain
 	Nonce int64  //	the nonce used to sign the block for verification
 }
 
-func (b *Block) Build(data []byte, link []byte, stake *big.Int) {
+func (b *Block) Build(data []byte, link []byte, stake *big.Int, block uint64) {
+	b.Block = block
 	b.Data = data
 	b.Link = link
 
@@ -51,6 +53,7 @@ func (b *Block) Print() {
 	if len(inputData) > 61 {
 		inputData = inputData[:61] + "..."
 	}
+	fmt.Printf("\t Block:   \t%d\n", b.Block)
 	fmt.Printf("\t Input Data:    \t%s\n", inputData)
 	// fmt.Printf("\t Input Data:    \t%s\n", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data))))
 	fmt.Printf("\t Transaction Hash:\t%x\n", b.Hash)
