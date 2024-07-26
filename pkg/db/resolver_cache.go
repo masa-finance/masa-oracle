@@ -192,7 +192,14 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	records, err := QueryAll(ctx)
 	if err != nil {
 		logrus.Errorf("[-] Error querying all records: %+v", err)
+		return
 	}
+
+	if node.DHT == nil {
+		logrus.Errorf("DHT instance is nil. Skipping iterateAndPublish operation.")
+		return
+	}
+
 	for _, record := range records {
 		key := record.Key
 		if len(key) > 0 && key[0] == '/' {
@@ -215,7 +222,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 		// sync ipfs
 		ipfs, e := node.DHT.GetValue(ctx, "/db/ipfs")
 		if e != nil {
-			logrus.Debugf("[-] Error unmarshalling IPFS data: %v", err)
+			logrus.Debugf("[-] Error unmarshalling IPFS data: %v", e)
 		} else {
 			_ = WriteData(node, "ipfs", ipfs)
 		}

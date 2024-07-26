@@ -172,9 +172,13 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 				for _, p := range page.Data {
 					jsonData, _ := json.Marshal(p)
 					_ = json.Unmarshal(jsonData, &nd)
-					err := node.DHT.PutValue(context.Background(), "/db/"+nd.PeerId.String(), jsonData)
-					if err != nil {
-						logrus.Errorf("[-] %v", err)
+					if node.DHT != nil { // Check if DHT is not nil
+						err := node.DHT.PutValue(context.Background(), "/db/"+nd.PeerId.String(), jsonData)
+						if err != nil {
+							logrus.Errorf("[-] %v", err)
+						}
+					} else {
+						logrus.Errorf("DHT instance is nil. Skipping PutValue operation.")
 					}
 				}
 			}
