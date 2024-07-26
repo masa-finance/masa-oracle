@@ -18,9 +18,6 @@ RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:m
 USER masa
 WORKDIR /home/masa
 
-# add VERSION file for the build stage
-COPY --chown=masa:masa internal/constants/version.go ./internal/constants/version.go
-
 # Copy and install Node.js dependencies for the contracts
 # Assuming your contracts directory is ready for copy at this stage
 COPY --chown=masa:masa contracts/ ./contracts/
