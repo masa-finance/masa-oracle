@@ -13,21 +13,16 @@ import (
 // Fetch messages from a group
 func FetchChannelMessages(username string) ([]*tg.Message, error) {
 	// Initialize the Telegram client (if not already initialized)
-	// client = GetClient()
-
-	if client == nil {
-		var err error
-		client, err = InitializeClient()
-		if err != nil {
-			log.Printf("Failed to initialize Telegram client: %v", err)
-			return nil, err
-		}
+	client, err := InitializeClient()
+	if err != nil {
+		log.Printf("Failed to initialize Telegram client: %v", err)
+		return nil, err // Edit: Added nil as the first return value
 	}
 
 	var messagesSlice []*tg.Message // Define a slice to hold the messages
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err := client.Run(ctx, func(ctx context.Context) error {
+	err = client.Run(ctx, func(ctx context.Context) error {
 		resolved, err := client.API().ContactsResolveUsername(ctx, username)
 		if err != nil {
 			return err
