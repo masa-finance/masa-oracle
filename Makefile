@@ -1,11 +1,8 @@
 VERSION := $(shell git describe --tags --abbrev=0)
 
-set-version:
-	@echo $(VERSION) > internal/version	
-
-build: set-version
-	@go build -v -o ./bin/masa-node ./cmd/masa-node
-	@go build -v -o ./bin/masa-node-cli ./cmd/masa-node-cli
+build:
+	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/constants.Version=$(VERSION)" -o ./bin/masa-node ./cmd/masa-node
+	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/constants.Version=$(VERSION)" -o ./bin/masa-node-cli ./cmd/masa-node-cli
 	
 install:
 	@sh ./node_install.sh

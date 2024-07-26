@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
@@ -10,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+	"github.com/masa-finance/masa-oracle/internal/constants"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -143,7 +143,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault("Version", getVersion())
+	viper.SetDefault("Version", constants.Version)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -176,14 +176,6 @@ func (c *AppConfig) setEnvVariableConfig() {
 		logrus.Error("[-] Error loading .env file")
 	}
 	viper.AutomaticEnv()
-}
-
-func getVersion() string {
-	version, err := os.ReadFile("internal/version")
-	if err != nil {
-		logrus.Fatalf("Error reading version file: %v", err)
-	}
-	return strings.TrimSpace(string(version))
 }
 
 // setCommandLineConfig parses command line flags and binds them to the AppConfig struct.

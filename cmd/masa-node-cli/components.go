@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/masa-finance/masa-oracle/internal/constants"
 	"github.com/rivo/tview"
-	"github.com/sirupsen/logrus"
 )
 
 // NewInputBox returns a new inputbox primitive.
@@ -126,15 +125,7 @@ const (
 	navigation = `[yellow]use keys or mouse to navigate`
 )
 
-var version string = getVersion()
-
-func getVersion() string {
-	version, err := os.ReadFile("internal/version")
-	if err != nil {
-		logrus.Fatalf("Error reading version file: %v", err)
-	}
-	return fmt.Sprintf("[green]%s", version)
-}
+var version string = fmt.Sprintf("[green]%s", constants.Version)
 
 // Splash shows the app info
 func Splash() (content tview.Primitive) {
