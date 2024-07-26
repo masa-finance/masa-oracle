@@ -53,7 +53,7 @@ func (b *Block) Print() {
 	if len(inputData) > 61 {
 		inputData = inputData[:61] + "..."
 	}
-	fmt.Printf("\t Block:   \t%d\n", b.Block)
+	fmt.Printf("\t Block:   	\t%d\n", b.Block)
 	fmt.Printf("\t Input Data:    \t%s\n", inputData)
 	// fmt.Printf("\t Input Data:    \t%s\n", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", b.Data))))
 	fmt.Printf("\t Transaction Hash:\t%x\n", b.Hash)
