@@ -200,6 +200,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
 
+	responseCollector := make(chan *pubsub2.Message, 100) // Buffered channel to collect responses
+	timeout := time.After(15 * time.Second)
+
 	// Local worker
 	if node.IsStaked && node.IsWorker() {
 		wg.Add(1)
@@ -268,11 +271,30 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 							msg = gMsg
 						}
 					}
-					workerDoneCh <- msg
+					// workerDoneCh <- msg
+					responseCollector <- msg
 				}(p)
 			}
 		}
 	}
+
+	// Queue responses and send to workerDoneCh
+	go func() {
+		var responses []*pubsub2.Message
+		for {
+			select {
+			case response := <-responseCollector:
+				responses = append(responses, response)
+			case <-timeout:
+				// Send all collected responses to workerDoneCh
+				for _, resp := range responses {
+					workerDoneCh <- resp
+				}
+				return
+			}
+		}
+	}()
+
 	wg.Wait()
 }
 
