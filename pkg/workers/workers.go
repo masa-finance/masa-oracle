@@ -226,7 +226,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 				}
 				msg = gMsg
 			}
-			workerDoneCh <- msg
+			responseCollector <- msg
 		}()
 	}
 
