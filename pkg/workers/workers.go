@@ -271,7 +271,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 							msg = gMsg
 						}
 					}
-					// workerDoneCh <- msg
 					responseCollector <- msg
 				}(p)
 			}
@@ -286,7 +285,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			case response := <-responseCollector:
 				responses = append(responses, response)
 			case <-timeout:
-				// Send all collected responses to workerDoneCh
+				// Send queued responses to workerDoneCh
 				for _, resp := range responses {
 					workerDoneCh <- resp
 				}

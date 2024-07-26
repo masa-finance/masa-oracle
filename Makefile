@@ -23,8 +23,10 @@ test:
 
 clean:
 	@rm -rf bin
-	@rm masa_node.log
-	@rm -rf ~/.masa/cache
+	
+	@if [ -d ~/.masa/blocks ]; then rm -rf ~/.masa/blocks; fi
+	@if [ -d ~/.masa/cache ]; then rm -rf ~/.masa/cache; fi	
+	@if [ -f masa_node.log ]; then rm masa_node.log; fi
 	
 proto:
 	sh pkg/workers/messages/build.sh
