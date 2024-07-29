@@ -346,7 +346,7 @@ func (node *OracleNode) ToUnixTime(stringTime string) int64 {
 
 // Version returns the current version string of the oracle node software.
 func (node *OracleNode) Version() string {
-	return config.Version
+	return config.GetInstance().Version
 }
 
 // LogActiveTopics logs the currently active topic names to the

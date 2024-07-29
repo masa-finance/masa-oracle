@@ -1,7 +1,8 @@
+VERSION := $(shell git describe --tags --abbrev=0)
+
 build:
-	@go mod tidy
-	@go build -v -o ./bin/masa-node ./cmd/masa-node
-	@go build -v -o ./bin/masa-node-cli ./cmd/masa-node-cli
+	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/constants.Version=$(VERSION)" -o ./bin/masa-node ./cmd/masa-node
+	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/constants.Version=$(VERSION)" -o ./bin/masa-node-cli ./cmd/masa-node-cli
 	
 install:
 	@sh ./node_install.sh
@@ -29,5 +30,10 @@ clean:
 proto:
 	sh pkg/workers/messages/build.sh
 
-.PHONY: proto
+docker-build:
+	@docker build -t masa-node:latest .
 
+docker-compose-up:
+	@docker compose up --build
+
+.PHONY: proto

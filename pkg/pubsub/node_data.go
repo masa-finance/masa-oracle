@@ -130,7 +130,7 @@ func (n *NodeData) Joined() {
 	n.Activity = ActivityJoined
 	n.IsActive = true
 
-	n.Version = config.Version[1:]
+	n.Version = config.GetInstance().Version
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
 	if n.IsStaked {
