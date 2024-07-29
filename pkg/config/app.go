@@ -2,8 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
-	"os/exec"
 	"os/user"
 	"path/filepath"
 	"reflect"
@@ -110,15 +108,7 @@ func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
 
-		cmd := exec.Command("git", "describe", "--tags", "--abbrev=0")
-		output, e := cmd.Output()
-		if e != nil {
-			logrus.Errorf("Error running git describe: %v\n", e)
-			os.Exit(1)
-		}
-
 		instance.setDefaultConfig()
-		instance.Version = strings.TrimSpace(string(output))
 		instance.setEnvVariableConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
