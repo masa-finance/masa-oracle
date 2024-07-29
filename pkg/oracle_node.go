@@ -122,8 +122,8 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		libp2p.Security(noise.ID, noise.New),
 	}
 	// @note fix for increase buffer size warning on linux
-	// sudo sysctl -w net.core.rmem_max=7500000 // 7340032
-	// sudo sysctl -w net.core.wmem_max=7500000 // 7340032
+	// sudo sysctl -w net.core.rmem_max=7500000
+	// sudo sysctl -w net.core.wmem_max=7500000
 	// sudo sysctl -p
 	if cfg.UDP {
 		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
@@ -365,6 +365,7 @@ var (
 )
 
 type BlockData struct {
+	Block            uint64      `json:"block"`
 	InputData        interface{} `json:"input_data"`
 	TransactionHash  string      `json:"transaction_hash"`
 	PreviousHash     string      `json:"previous_hash"`
@@ -447,6 +448,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 		}
 
 		blockData := BlockData{
+			Block:            block.Block,
 			InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
 			TransactionHash:  fmt.Sprintf("%x", block.Hash),
 			PreviousHash:     fmt.Sprintf("%x", block.Link),
