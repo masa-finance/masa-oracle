@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/gotd/contrib/bg"
@@ -20,13 +21,22 @@ import (
 var (
 	client     *telegram.Client
 	once       sync.Once
-	appID      = 28423325                           // Your actual app ID
-	appHash    = "c60c0a268973ea3f7d52e16e4ab2a0d3" // Your actual app hash
+	appID      int    // Your actual app ID
+	appHash    string // Your actual app hash
 	sessionDir = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")
 )
 
 func GetClient() (*telegram.Client, error) {
 	var err error
+
+	appID, err = strconv.Atoi(os.Getenv("TELEGRAM_APP_ID"))
+	if err != nil {
+		logrus.Fatalf("Invalid TELEGRAM_APP_ID: %v", err)
+	}
+	appHash = os.Getenv("TELEGRAM_APP_HASH")
+	if appHash == "" {
+		logrus.Fatal("TELEGRAM_APP_HASH must be set")
+	}
 
 	// Ensure the session directory exists
 	if err = os.MkdirAll(sessionDir, 0700); err != nil {
