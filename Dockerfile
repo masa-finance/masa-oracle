@@ -1,5 +1,5 @@
 # Use the official Ubuntu 22.04 image as a base for the final image
-FROM ubuntu:22.04 as base
+FROM ubuntu:22.04 AS base
 
 # Install necessary packages for the final image
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -7,10 +7,12 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y apt-utils \
     && apt-get install -y nodejs \
-    && npm install -g npm@latest
+    && npm install -g npm@latest \
+    && apt-get update && apt-get install -y git
 
 # Create the 'masa' user and set up the home directory
 RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:masa /home/masa
+
 
 # Switch to user 'masa' for following commands
 USER masa
@@ -24,17 +26,17 @@ RUN cd contracts && npm install
 # Switch back to root to install the Go binary
 USER root
 
-# Build the Go binary in a separate stage
-FROM golang:1.22 as builder
+# Build the Go binary in a separate stage utilizing Makefile
+FROM golang:1.22 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -v -o masa-node ./cmd/masa-node
+RUN make build
 
 # Continue with the final image
 FROM base
-COPY --from=builder /app/masa-node /usr/bin/masa-node
+COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
 # Switch to 'masa' to run the application
@@ -45,8 +47,7 @@ WORKDIR /home/masa
 COPY --chown=masa:masa .env .
 
 # Expose necessary ports
-EXPOSE 4001
-EXPOSE 8080
+EXPOSE 4001 8080
 
 # Set default command to start the Go application
 

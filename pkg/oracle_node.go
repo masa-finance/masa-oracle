@@ -176,7 +176,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		multiAddrs:       myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:          ctx,
 		PeerChan:         make(chan myNetwork.PeerEvent),
-		NodeTracker:      pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
+		NodeTracker:      pubsub2.NewNodeEventTracker(config.GetInstance().Version, cfg.Environment),
 		PubSubManager:    subscriptionManager,
 		IsStaked:         isStaked,
 		IsValidator:      cfg.Validator,
@@ -343,7 +343,7 @@ func (node *OracleNode) ToUnixTime(stringTime string) int64 {
 
 // Version returns the current version string of the oracle node software.
 func (node *OracleNode) Version() string {
-	return config.Version
+	return config.GetInstance().Version
 }
 
 // LogActiveTopics logs the currently active topic names to the
