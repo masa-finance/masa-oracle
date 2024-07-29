@@ -116,7 +116,6 @@ func GetInstance() *AppConfig {
 			logrus.Errorf("Error running git describe: %v\n", e)
 			os.Exit(1)
 		}
-		logrus.Infof("output: %s", output)
 
 		instance.setDefaultConfig()
 		instance.Version = strings.TrimSpace(string(output))
