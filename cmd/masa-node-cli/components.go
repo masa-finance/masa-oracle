@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/masa-finance/masa-oracle/internal/constants"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/rivo/tview"
 )
 
@@ -125,7 +125,7 @@ const (
 	navigation = `[yellow]use keys or mouse to navigate`
 )
 
-var version string = fmt.Sprintf("[green]%s", constants.Version)
+var version string = fmt.Sprintf("[green]%s", config.Version)
 
 // Splash shows the app info
 func Splash() (content tview.Primitive) {

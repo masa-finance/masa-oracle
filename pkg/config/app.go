@@ -2,6 +2,8 @@ package config
 
 import (
 	"log"
+	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"reflect"
@@ -9,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/internal/constants"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -109,8 +110,16 @@ func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
 
+		cmd := exec.Command("git", "describe", "--tags", "--abbrev=0")
+		output, e := cmd.Output()
+		if e != nil {
+			logrus.Errorf("Error running git describe: %v\n", e)
+			os.Exit(1)
+		}
+		logrus.Infof("output: %s", output)
+
 		instance.setDefaultConfig()
-		instance.Version = viper.GetString("Version") // Explicitly set the AppConfig Version field
+		instance.Version = strings.TrimSpace(string(output))
 		instance.setEnvVariableConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
@@ -143,7 +152,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault("Version", constants.Version)
+	viper.SetDefault("Version", Version)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
