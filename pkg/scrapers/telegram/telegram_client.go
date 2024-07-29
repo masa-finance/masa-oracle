@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -14,8 +15,6 @@ import (
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 var (
@@ -28,30 +27,32 @@ var (
 
 func GetClient() (*telegram.Client, error) {
 	var err error
-	once.Do(func() {
-		// Ensure the session directory exists
-		if err = os.MkdirAll(sessionDir, 0700); err != nil {
-			logrus.Error(err)
-			return
-		}
 
-		// Create a session storage
-		storage := &session.FileStorage{
-			Path: filepath.Join(sessionDir, "session.json"),
-		}
+	// Ensure the session directory exists
+	if err = os.MkdirAll(sessionDir, 0700); err != nil {
+		logrus.Error(err)
+		return nil, err // Added return statement to handle the error
 
-		// Create a random seed for the client
-		seed := make([]byte, 32)
-		if _, err = rand.Read(seed); err != nil {
-			logrus.Error(err)
-			return
-		}
+	}
 
-		// Initialize the Telegram client
-		client = telegram.NewClient(appID, appHash, telegram.Options{
-			SessionStorage: storage,
-		})
+	// Create a session storage
+	storage := &session.FileStorage{
+		Path: filepath.Join(sessionDir, "session.json"),
+	}
+
+	// Create a random seed for the client
+	seed := make([]byte, 32)
+	if _, err = rand.Read(seed); err != nil {
+		logrus.Error(err)
+		return nil, err // Added return statement to handle the error
+
+	}
+
+	// Initialize the Telegram client
+	client = telegram.NewClient(appID, appHash, telegram.Options{
+		SessionStorage: storage,
 	})
+
 	return client, err
 }
 
@@ -63,25 +64,41 @@ func StartAuthentication(ctx context.Context, phoneNumber string) (string, error
 		logrus.Errorf("Failed to initialize Telegram client: %v", err)
 		return "", err
 	}
-	sentCode, err := client.Auth().SendCode(ctx, phoneNumber, auth.SendCodeOptions{
-		AllowFlashCall: true,
-		CurrentNumber:  true,
+
+	var phoneCodeHash string
+
+	// Use client.Run to start the client and execute the SendCode method
+	err = client.Run(ctx, func(ctx context.Context) error {
+		// Call the SendCode method of the client to send the code to the user's Telegram app
+		sentCode, err := client.Auth().SendCode(ctx, phoneNumber, auth.SendCodeOptions{
+			AllowFlashCall: true,
+			CurrentNumber:  true,
+		})
+		if err != nil {
+			log.Printf("Error sending code: %v", err)
+			return err
+		}
+
+		log.Printf("Code sent successfully to: %s", phoneNumber)
+
+		// Extract the phoneCodeHash from the sentCode object
+		switch code := sentCode.(type) {
+		case *tg.AuthSentCode:
+			phoneCodeHash = code.PhoneCodeHash
+		default:
+			return errors.New("unexpected type of AuthSentCode")
+		}
+
+		return nil
 	})
+
 	if err != nil {
-		logrus.Errorf("Error sending code: %v", err)
+		log.Printf("Failed to run client or send code: %v", err)
 		return "", err
 	}
-	logrus.Debugf("Code sent successfully to: %s", phoneNumber)
 
-	// Extract the phoneCodeHash from the sentCode object
-	var phoneCodeHash string
-	if code, ok := sentCode.(*tg.AuthSentCode); ok {
-		phoneCodeHash = code.PhoneCodeHash
-	} else {
-		return "", errors.New("unexpected type of AuthSentCode")
-	}
-
-	logrus.Infof("Authentication process started successfully for: %s", phoneNumber)
+	// Return the phoneCodeHash to be used in the next step
+	log.Printf("Authentication process started successfully for: %s", phoneNumber)
 	return phoneCodeHash, nil
 }
 
@@ -94,21 +111,39 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 		return nil, err // Edit: Added nil as the first return value
 	}
 
-	authResult, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
+	// Define a variable to hold the authentication result
+	var authResult *tg.AuthAuthorization
+	// Use client.Run to start the client and execute the SignIn method
+	err = client.Run(ctx, func(ctx context.Context) error {
+		// Use the provided code and phoneCodeHash to authenticate
+		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
+		if err != nil {
+			log.Printf("Error during SignIn: %v", err)
+			return err
+		}
+
+		// At this point, authentication was successful, and you have the user's Telegram auth data.
+		authResult = auth
+		stop, err := bg.Connect(client)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = stop() }()
+
+		// Now you can use client.
+		if _, err := client.Auth().Status(ctx); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		logrus.Printf("Error during SignIn: %v", err)
+		log.Printf("Failed to run client or sign in: %v", err)
 		return nil, err
 	}
 
-	cfg := config.GetInstance()
-	cfg.TelegramStop, err = bg.Connect(client)
-	if err != nil {
-		return nil, err
-	}
-
-	// Now you can use client.
-	if _, err := client.Auth().Status(ctx); err != nil {
-		logrus.Printf("Failed to run client or sign in: %v", err)
-	}
+	// You can now create a session for the user or perform other post-authentication tasks.
+	log.Printf("Authentication successful for: %s", phoneNumber)
 	return authResult, nil
 }

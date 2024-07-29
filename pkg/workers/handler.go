@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -102,11 +103,11 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	case string(WORKER.TelegramChannelMessages):
 		logrus.Infof("[+] Telegram Channel Messages %s %s", m.Data, m.Sender)
 		username := bodyData["username"].(string)
-		resp, err = telegram.FetchChannelMessages(username) // Removed the underscore placeholder
+		resp, err = telegram.FetchChannelMessages(context.Background(), username) // Removed the underscore placeholder
 	case string(WORKER.TelegramSentiment):
 		logrus.Infof("[+] Telegram Channel Messages %s %s", m.Data, m.Sender)
 		username := bodyData["username"].(string)
-		_, resp, err = telegram.ScrapeTelegramMessagesForSentiment(username, bodyData["model"].(string), bodyData["prompt"].(string))
+		_, resp, err = telegram.ScrapeTelegramMessagesForSentiment(context.Background(), username, bodyData["model"].(string), bodyData["prompt"].(string))
 	case string(WORKER.DiscordGuildChannels):
 		guildID := bodyData["guildID"].(string)
 		resp, err = discord.GetGuildChannels(guildID)
