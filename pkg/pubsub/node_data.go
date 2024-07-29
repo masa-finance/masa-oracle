@@ -123,7 +123,7 @@ func (n *NodeData) Joined() {
 	n.Activity = ActivityJoined
 	n.IsActive = true
 
-	n.Version = config.Version[1:]
+	n.Version = config.GetInstance().Version
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
 	if n.IsStaked {
@@ -216,7 +216,7 @@ func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 		IsWebScraper:     config.GetInstance().WebScraper,
 		IsValidator:      config.GetInstance().Validator,
 		IsActive:         true,
-		Version:          config.Version,
+		Version:          config.GetInstance().Version,
 	}
 
 	// Convert NodeData to JSON

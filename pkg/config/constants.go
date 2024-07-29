@@ -94,7 +94,6 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.5.0"
 	FilePath    = "FILE_PATH"
 	Validator   = "VALIDATOR"
 	CachePath   = "CACHE_PATH"
@@ -130,18 +129,18 @@ const (
 // with the configured version and environment suffix.
 func ProtocolWithVersion(protocolName string) protocol.ID {
 	if GetInstance().Environment == "" {
-		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, Version))
+		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString("Version")))
 	}
-	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, Version, viper.GetString(Environment)))
+	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString("Version"), viper.GetString(Environment)))
 }
 
 // TopicWithVersion returns a topic string with the configured version
 // and environment suffix.
 func TopicWithVersion(protocolName string) string {
 	if GetInstance().Environment == "" {
-		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, Version)
+		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString("Version"))
 	}
-	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, Version, viper.GetString(Environment))
+	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString("Version"), viper.GetString(Environment))
 }
 
 // Function to call the Cloudflare API and parse the response
