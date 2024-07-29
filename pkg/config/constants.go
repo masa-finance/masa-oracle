@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/spf13/viper"
 )
 
 // ModelType defines a type for model strings.
@@ -128,19 +127,15 @@ const (
 // ProtocolWithVersion returns a libp2p protocol ID string
 // with the configured version and environment suffix.
 func ProtocolWithVersion(protocolName string) protocol.ID {
-	if GetInstance().Environment == "" {
-		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString("Version")))
-	}
-	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString("Version"), viper.GetString(Environment)))
+	cfg := GetInstance()
+	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, cfg.Version, cfg.Environment))
 }
 
 // TopicWithVersion returns a topic string with the configured version
 // and environment suffix.
 func TopicWithVersion(protocolName string) string {
-	if GetInstance().Environment == "" {
-		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, viper.GetString("Version"))
-	}
-	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, viper.GetString("Version"), viper.GetString(Environment))
+	cfg := GetInstance()
+	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, cfg.Version, cfg.Environment)
 }
 
 // Function to call the Cloudflare API and parse the response

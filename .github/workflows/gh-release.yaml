@@ -31,7 +31,7 @@ jobs:
       - name: Extract version from constants.go
         id: extract_version
         run: |
-          VERSION=$(grep 'Version     = ' ./pkg/config/constants.go | awk '{print $NF}' | tr -d '"')
+          VERSION=$(grep 'Version = './pkg/config/constants.go | awk '{print $NF}' | tr -d '"')
           echo "Extracted version: $VERSION"
           echo "::set-output name=version::$VERSION"
 
