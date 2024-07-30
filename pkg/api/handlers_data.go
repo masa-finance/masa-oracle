@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -9,25 +10,21 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/chain"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"strings"
-
-	"time"
-
-	"github.com/google/uuid"
-
-	"github.com/gin-gonic/gin"
-
-	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
-
+	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
 
 type LLMChat struct {
@@ -240,6 +237,56 @@ func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
 		wErr = publishWorkRequest(api, requestID, workers.WORKER.DiscordSentiment, bodyBytes)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
+// SearchTelegramMessagesAndAnalyzeSentiment processes a request to search Telegram messages and analyze sentiment.
+func (api *API) SearchTelegramMessagesAndAnalyzeSentiment() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !api.Node.IsStaked {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
+			return
+		}
+
+		var reqBody struct {
+			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
+			Prompt   string `json:"prompt"`
+			Model    string `json:"model"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		if reqBody.Prompt == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Prompt parameter is missing"})
+			return
+		}
+
+		if reqBody.Model == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing"})
+			return
+		}
+
+		bodyBytes, wErr := json.Marshal(reqBody)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		wErr = publishWorkRequest(api, requestID, workers.WORKER.TelegramSentiment, bodyBytes)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
@@ -713,6 +760,88 @@ func (api *API) WebData() gin.HandlerFunc {
 		}
 		handleWorkResponse(c, responseCh)
 		// worker handler implementation
+	}
+}
+
+// StartAuth starts the authentication process with Telegram.
+func (api *API) StartAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			PhoneNumber string `json:"phone_number"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		phoneCodeHash, err := telegram.StartAuthentication(context.Background(), reqBody.PhoneNumber)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start authentication"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Code sent to Telegram app", "phone_code_hash": phoneCodeHash})
+	}
+}
+
+// CompleteAuth completes the authentication process with Telegram.
+func (api *API) CompleteAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			PhoneNumber   string `json:"phone_number"`
+			Code          string `json:"code"`
+			PhoneCodeHash string `json:"phone_code_hash"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		auth, err := telegram.CompleteAuthentication(context.Background(), reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
+		if err != nil {
+			// Check if 2FA is required
+			if err.Error() == "2FA required" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Two-factor authentication is required"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete authentication", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Authentication successful", "auth": auth})
+	}
+}
+
+func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
+		}
+
+		// Bind the JSON body to the struct
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.TelegramChannelMessages, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
 	}
 }
 

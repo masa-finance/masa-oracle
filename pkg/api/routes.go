@@ -215,6 +215,44 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /discord/profile/{userID} [get]
 		v1.GET("/data/discord/profile/:userID", API.SearchDiscordProfile())
 
+		// @Summary Start Telegram Authentication
+		// @Description Initiates the authentication process with Telegram by sending a code to the provided phone number.
+		// @Tags Authentication
+		// @Accept  json
+		// @Produce  json
+		// @Param   phone_number   body    string  true  "Phone Number"
+		// @Success 200 {object} map[string]interface{} "Successfully sent authentication code"
+		// @Failure 400 {object} ErrorResponse "Invalid request body"
+		// @Failure 500 {object} ErrorResponse "Failed to initialize Telegram client or to start authentication"
+		// @Router /auth/telegram/start [post]
+		v1.POST("/auth/telegram/start", API.StartAuth())
+
+		// @Summary Complete Telegram Authentication
+		// @Description Completes the authentication process with Telegram using the code sent to the phone number.
+		// @Tags Authentication
+		// @Accept  json
+		// @Produce  json
+		// @Param   phone_number   body    string  true  "Phone Number"
+		// @Param   code           body    string  true  "Authentication Code"
+		// @Param   phone_code_hash body   string  true  "Phone Code Hash"
+		// @Success 200 {object} map[string]interface{} "Successfully authenticated"
+		// @Failure 400 {object} ErrorResponse "Invalid request body"
+		// @Failure 401 {object} ErrorResponse "Two-factor authentication is required"
+		// @Failure 500 {object} ErrorResponse "Failed to initialize Telegram client or to complete authentication"
+		// @Router /auth/telegram/complete [post]
+		v1.POST("/auth/telegram/complete", API.CompleteAuth())
+
+		// @Summary Get Telegram Channel Messages
+		// @Description Retrieves messages from a specified Telegram channel.
+		// @Tags Telegram
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} map[string][]Message "Successfully retrieved messages"
+		// @Failure 400 {object} ErrorResponse "Username must be provided"
+		// @Failure 500 {object} ErrorResponse "Failed to fetch channel messages"
+		// @Router /telegram/channel/{username}/messages [get]
+		v1.POST("/data/telegram/channel/messages", API.GetChannelMessagesHandler())
+
 		// oauth tests
 		// v1.GET("/data/discord/exchangetoken/:code", API.ExchangeDiscordTokenHandler())
 
@@ -376,6 +414,17 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of discord"
 		// @Router /sentiment/tweets [post]
 		v1.POST("/sentiment/discord", API.SearchDiscordMessagesAndAnalyzeSentiment())
+
+		// @Summary Analyze Sentiment of Telegram Messages
+		// @Description Searches for Telegram messages and analyzes their sentiment
+		// @Tags Sentiment
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   body    string  true  "Search Query"
+		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of Telegram messages"
+		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of Telegram messages"
+		// @Router /sentiment/telegram [post]
+		v1.POST("/sentiment/telegram", API.SearchTelegramMessagesAndAnalyzeSentiment())
 
 		// @Summary Analyze Sentiment of Web Content
 		// @Description Searches for web content and analyzes its sentiment

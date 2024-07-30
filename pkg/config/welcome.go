@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool, isValidator bool, isTwitterScraper bool, isDiscordScraper bool, isWebScraper bool, version string) {
+func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool, isValidator bool, isTwitterScraper bool, isTelegramScraper bool, isDiscordScraper bool, isWebScraper bool, version string) {
 	// ANSI escape code for yellow text
 	yellow := "\033[33m"
 	blue := "\033[34m"
@@ -31,6 +31,7 @@ func DisplayWelcomeMessage(multiAddr, ipAddr, publicKeyHex string, isStaked bool
 	fmt.Printf(blue+"%-20s %t\n"+reset, "Is Validator:", isValidator)
 	fmt.Printf(blue+"%-20s %t\n"+reset, "Is TwitterScraper:", isTwitterScraper)
 	fmt.Printf(blue+"%-20s %t\n"+reset, "Is DiscordScraper:", isDiscordScraper)
+	fmt.Printf(blue+"%-20s %t\n"+reset, "Is TelegramScraper:", isTelegramScraper)
 	fmt.Printf(blue+"%-20s %t\n"+reset, "Is WebScraper:", isWebScraper)
 	fmt.Println("")
 }

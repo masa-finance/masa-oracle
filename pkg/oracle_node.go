@@ -44,29 +44,30 @@ import (
 )
 
 type OracleNode struct {
-	Host             host.Host
-	PrivKey          *ecdsa.PrivateKey
-	Protocol         protocol.ID
-	priorityAddrs    multiaddr.Multiaddr
-	multiAddrs       []multiaddr.Multiaddr
-	DHT              *dht.IpfsDHT
-	Context          context.Context
-	PeerChan         chan myNetwork.PeerEvent
-	NodeTracker      *pubsub2.NodeEventTracker
-	PubSubManager    *pubsub2.Manager
-	Signature        string
-	IsStaked         bool
-	IsValidator      bool
-	IsTwitterScraper bool
-	IsDiscordScraper bool
-	IsWebScraper     bool
-	IsLlmServer      bool
-	StartTime        time.Time
-	WorkerTracker    *pubsub2.WorkerEventTracker
-	BlockTracker     *BlockEventTracker
-	ActorEngine      *actor.RootContext
-	ActorRemote      *remote.Remote
-	Blockchain       *chain.Chain
+	Host              host.Host
+	PrivKey           *ecdsa.PrivateKey
+	Protocol          protocol.ID
+	priorityAddrs     multiaddr.Multiaddr
+	multiAddrs        []multiaddr.Multiaddr
+	DHT               *dht.IpfsDHT
+	Context           context.Context
+	PeerChan          chan myNetwork.PeerEvent
+	NodeTracker       *pubsub2.NodeEventTracker
+	PubSubManager     *pubsub2.Manager
+	Signature         string
+	IsStaked          bool
+	IsValidator       bool
+	IsTwitterScraper  bool
+	IsDiscordScraper  bool
+	IsTelegramScraper bool
+	IsWebScraper      bool
+	IsLlmServer       bool
+	StartTime         time.Time
+	WorkerTracker     *pubsub2.WorkerEventTracker
+	BlockTracker      *BlockEventTracker
+	ActorEngine       *actor.RootContext
+	ActorRemote       *remote.Remote
+	Blockchain        *chain.Chain
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -170,23 +171,24 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 	go r.Start()
 
 	return &OracleNode{
-		Host:             hst,
-		PrivKey:          masacrypto.KeyManagerInstance().EcdsaPrivKey,
-		Protocol:         config.ProtocolWithVersion(config.OracleProtocol),
-		multiAddrs:       myNetwork.GetMultiAddressesForHostQuiet(hst),
-		Context:          ctx,
-		PeerChan:         make(chan myNetwork.PeerEvent),
-		NodeTracker:      pubsub2.NewNodeEventTracker(config.GetInstance().Version, cfg.Environment),
-		PubSubManager:    subscriptionManager,
-		IsStaked:         isStaked,
-		IsValidator:      cfg.Validator,
-		IsTwitterScraper: cfg.TwitterScraper,
-		IsDiscordScraper: cfg.DiscordScraper,
-		IsWebScraper:     cfg.WebScraper,
-		IsLlmServer:      cfg.LlmServer,
-		ActorEngine:      engine,
-		ActorRemote:      r,
-		Blockchain:       &chain.Chain{},
+		Host:              hst,
+		PrivKey:           masacrypto.KeyManagerInstance().EcdsaPrivKey,
+		Protocol:          config.ProtocolWithVersion(config.OracleProtocol),
+		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
+		Context:           ctx,
+		PeerChan:          make(chan myNetwork.PeerEvent),
+		NodeTracker:       pubsub2.NewNodeEventTracker(config.Version, cfg.Environment),
+		PubSubManager:     subscriptionManager,
+		IsStaked:          isStaked,
+		IsValidator:       cfg.Validator,
+		IsTwitterScraper:  cfg.TwitterScraper,
+		IsDiscordScraper:  cfg.DiscordScraper,
+		IsTelegramScraper: cfg.TelegramScraper,
+		IsWebScraper:      cfg.WebScraper,
+		IsLlmServer:       cfg.LlmServer,
+		ActorEngine:       engine,
+		ActorRemote:       r,
+		Blockchain:        &chain.Chain{},
 	}, nil
 }
 
@@ -231,6 +233,7 @@ func (node *OracleNode) Start() (err error) {
 		nodeData.IsStaked = node.IsStaked
 		nodeData.SelfIdentified = true
 		nodeData.IsDiscordScraper = node.IsDiscordScraper
+		nodeData.IsTelegramScraper = node.IsTelegramScraper
 		nodeData.IsTwitterScraper = node.IsTwitterScraper
 		nodeData.IsWebScraper = node.IsWebScraper
 		nodeData.IsValidator = node.IsValidator
@@ -313,7 +316,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data
 	cfg := config.GetInstance()
-	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TelegramScraper || cfg.WebScraper {
 		return true
 	}
 	return false

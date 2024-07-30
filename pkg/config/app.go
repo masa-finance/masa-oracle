@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -85,10 +86,13 @@ type AppConfig struct {
 	GPTApiKey          string `mapstructure:"gptApiKey"`
 	TwitterScraper     bool   `mapstructure:"twitterScraper"`
 	DiscordScraper     bool   `mapstructure:"discordScraper"`
+	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
+
+	TelegramStop bg.StopFunc
 }
 
 // GetInstance returns the singleton instance of AppConfig.
@@ -214,6 +218,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
 	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
 	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "DiscordScraper")
+	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "TelegramScraper")
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")

@@ -118,6 +118,7 @@ const (
 	GPTApiKey        = "OPENAI_API_KEY"
 	TwitterScraper   = "TWITTER_SCRAPER"
 	DiscordScraper   = "DISCORD_SCRAPER"
+	TelegramScraper  = "TELEGRAM_SCRAPER"
 	WebScraper       = "WEB_SCRAPER"
 	LlmServer        = "LLM_SERVER"
 	LlmChatUrl       = "LLM_CHAT_URL"

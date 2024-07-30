@@ -113,6 +113,13 @@ func main() {
 			nodeData.Left()
 		}
 		cancel()
+		// Call the global StopFunc to stop the Telegram background connection
+		cfg := config.GetInstance()
+		if cfg.TelegramStop != nil {
+			if err := cfg.TelegramStop(); err != nil {
+				logrus.Errorf("Error stopping the background connection: %v", err)
+			}
+		}
 	}()
 
 	router := api.SetupRoutes(node)
@@ -127,7 +134,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.DiscordScraper, cfg.WebScraper, cfg.Version)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
 
 	<-ctx.Done()
 }

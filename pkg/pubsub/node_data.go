@@ -62,6 +62,7 @@ type NodeData struct {
 	IsValidator          bool            `json:"isValidator"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsDiscordScraper     bool            `json:"isDiscordScraper"`
+	IsTelegramScraper    bool            `json:"isTelegramScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
@@ -103,6 +104,12 @@ func (n *NodeData) TwitterScraper() bool {
 // It retrieves the configuration instance and returns the value of the DiscordScraper field.
 func (n *NodeData) DiscordScraper() bool {
 	return n.IsDiscordScraper
+}
+
+// TelegramScraper checks if the current node is configured as a Discord scraper.
+// It retrieves the configuration instance and returns the value of the TelegramScraper field.
+func (n *NodeData) TelegramScraper() bool {
+	return n.IsTelegramScraper
 }
 
 // WebScraper checks if the current node is configured as a Web scraper.
@@ -208,15 +215,16 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
-		PeerId:           host.ID(),
-		IsStaked:         isStaked,
-		EthAddress:       masacrypto.KeyManagerInstance().EthAddress,
-		IsTwitterScraper: config.GetInstance().TwitterScraper,
-		IsDiscordScraper: config.GetInstance().DiscordScraper,
-		IsWebScraper:     config.GetInstance().WebScraper,
-		IsValidator:      config.GetInstance().Validator,
-		IsActive:         true,
-		Version:          config.GetInstance().Version,
+		PeerId:            host.ID(),
+		IsStaked:          isStaked,
+		EthAddress:        masacrypto.KeyManagerInstance().EthAddress,
+		IsTwitterScraper:  config.GetInstance().TwitterScraper,
+		IsDiscordScraper:  config.GetInstance().DiscordScraper,
+		IsTelegramScraper: config.GetInstance().TelegramScraper,
+		IsWebScraper:      config.GetInstance().WebScraper,
+		IsValidator:       config.GetInstance().Validator,
+		IsActive:          true,
+		Version:           config.Version,
 	}
 
 	// Convert NodeData to JSON
