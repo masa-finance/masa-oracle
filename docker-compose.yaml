@@ -4,7 +4,8 @@ services:
     build: .
     # optional if network_mode: "host" mode is not used
     ports:
-       - "4001:4001"
+       - "4001:4001/tcp"
+       - "4001:4001/udp"
        - "8080:8080"
     environment:
       BOOTNODES: "${BOOTNODES}"

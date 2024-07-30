@@ -100,7 +100,7 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 
 			c.JSON(http.StatusOK, result)
 			return
-		case <-time.After(60 * time.Second):
+		case <-time.After(90 * time.Second):
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
 			return
 		case <-c.Done():
@@ -1009,6 +1009,7 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 		}
 
 		type BlockData struct {
+			Block            uint64      `json:"block"`
 			InputData        interface{} `json:"input_data"`
 			TransactionHash  string      `json:"transaction_hash"`
 			PreviousHash     string      `json:"previous_hash"`
@@ -1029,6 +1030,7 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 			}
 
 			blockData := BlockData{
+				Block:            block.Block,
 				InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
 				TransactionHash:  fmt.Sprintf("%x", block.Hash),
 				PreviousHash:     fmt.Sprintf("%x", block.Link),
@@ -1094,6 +1096,7 @@ func (api *API) GetBlockByHash() gin.HandlerFunc {
 			inputData = blockData
 		}
 		responseData := gin.H{
+			"block":            block.Block,
 			"input_data":       inputData,
 			"transaction_hash": blockHash,
 			"nonce":            block.Nonce,

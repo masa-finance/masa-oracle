@@ -11,8 +11,9 @@ import (
 )
 
 type Chain struct {
-	LastHash []byte
-	storage  *Persistance
+	LastHash     []byte
+	storage      *Persistance
+	CurrentBlock uint64
 }
 
 // Init initializes the blockchain.
@@ -55,7 +56,7 @@ func makeGenesisBlock() *Block {
 	logrus.Info("[+] Generating genesis block...")
 	newBlock := &Block{}
 	emptyLink := []byte{}
-	newBlock.Build([]byte("Genesis"), emptyLink, big.NewInt(1))
+	newBlock.Build([]byte("Genesis"), emptyLink, big.NewInt(1), 0)
 	return newBlock
 }
 
@@ -97,7 +98,8 @@ func (c *Chain) AddBlock(data []byte) error {
 		return err
 	}
 	newBlock := &Block{}
-	newBlock.Build(data, c.LastHash, big.NewInt(1))
+	nextBlockNumber := c.getNextBlockNumber()
+	newBlock.Build(data, c.LastHash, big.NewInt(1), nextBlockNumber)
 
 	if !IsValidPoS(newBlock, big.NewInt(1)) {
 		logrus.Error("[-] Invalid PoS block")
@@ -110,7 +112,12 @@ func (c *Chain) AddBlock(data []byte) error {
 		return err
 	}
 	c.LastHash = newBlock.Hash
+	c.CurrentBlock = nextBlockNumber
 	return nil
+}
+
+func (c *Chain) getNextBlockNumber() uint64 {
+	return c.CurrentBlock + 1
 }
 
 // IterateLink iterates through the blockchain, executing provided functions at specific points.

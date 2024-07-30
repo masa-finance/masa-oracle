@@ -117,10 +117,24 @@ func TestScrapeTweetsByQuery(t *testing.T) {
 	sentimentRequest, sentimentSummary, err := llmbridge.AnalyzeSentimentTweets(deserializedTweets, "claude-3-opus-20240229", "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.")
 	if err != nil {
 		logrus.WithError(err).Error("[-] Failed to analyze sentiment")
+		err = os.Remove(filePath)
+		if err != nil {
+			logrus.WithError(err).Error("[-] Failed to delete the temporary file")
+		} else {
+			logrus.WithField("file", filePath).Debug("[+] Temporary file deleted successfully")
+		}
 		return
 	}
 	logrus.WithFields(logrus.Fields{
 		"sentimentRequest": sentimentRequest,
 		"sentimentSummary": sentimentSummary,
 	}).Debug("[+] Sentiment analysis completed successfully.")
+
+	// Delete the created file after the test
+	err = os.Remove(filePath)
+	if err != nil {
+		logrus.WithError(err).Error("[-] Failed to delete the temporary file")
+	} else {
+		logrus.WithField("file", filePath).Debug("[+] Temporary file deleted successfully")
+	}
 }
