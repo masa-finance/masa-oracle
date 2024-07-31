@@ -41,11 +41,46 @@
           for (let i = 0; i < schemeSelect.options.length; i++) {
             if (schemeSelect.options[i].value === currentScheme) {
               schemeSelect.selectedIndex = i;
-              schemeSelect.dispatchEvent(new Event('change'));
+              
+              // Trigger change event
+              const event = new Event('change');
+              schemeSelect.dispatchEvent(event);
+
+              // Force Swagger UI to update all URLs
+              if (ui && ui.specActions && ui.specActions.changeScheme) {
+                ui.specActions.changeScheme(currentScheme);
+              }
+
               break;
             }
           }
         }
+
+        // Update all operation links
+        const updateOperationUrls = function() {
+          const operationUrlInputs = document.querySelectorAll('.opblock-summary-control .opblock-summary-path a');
+          operationUrlInputs.forEach(function(input) {
+            const url = new URL(input.href);
+            url.protocol = window.location.protocol;
+            input.href = url.toString();
+          });
+        };
+
+        // Initial update
+        updateOperationUrls();
+
+        // Set up a MutationObserver to watch for changes in the Swagger UI
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+              updateOperationUrls();
+            }
+          });
+        });
+
+        // Start observing the document with the configured parameters
+        observer.observe(document.body, { childList: true, subtree: true });
+
       }, 1000); // Wait for Swagger UI to fully load
     }
     </script>
