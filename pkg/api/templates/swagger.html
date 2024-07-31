@@ -31,28 +31,30 @@
         ],
         layout: "StandaloneLayout",
         onComplete: function() {
-          setTimeout(function() {
-            const currentScheme = window.location.protocol.slice(0, -1);
+          const currentScheme = window.location.protocol.slice(0, -1);
+          
+          function setScheme() {
             const schemeSelect = document.querySelector('.scheme-container select');
-            if (schemeSelect) {
+            if (schemeSelect && schemeSelect.value !== currentScheme) {
               schemeSelect.value = currentScheme;
-              schemeSelect.dispatchEvent(new Event('change'));
+              const event = new Event('change', { bubbles: true, cancelable: true });
+              schemeSelect.dispatchEvent(event);
             }
-          }, 100);  // Small delay to ensure UI is fully rendered
+          }
 
-          // Add this after the setTimeout in the onComplete function
+          // Initial set
+          setScheme();
+
+          // Set up a MutationObserver to watch for changes in the Swagger UI
           const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
               if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                const schemeSelect = document.querySelector('.scheme-container select');
-                if (schemeSelect && schemeSelect.value !== currentScheme) {
-                  schemeSelect.value = currentScheme;
-                  schemeSelect.dispatchEvent(new Event('change'));
-                }
+                setScheme();
               }
             });
           });
 
+          // Start observing the document with the configured parameters
           observer.observe(document.body, { childList: true, subtree: true });
         }
       });
