@@ -553,43 +553,50 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	router.GET("/swagger", "/swagger/", func(c *gin.Context) {
-		c.Request.URL.Path = "/swagger/index.html"
-		router.HandleContext(c)
-	})
-	router.GET("/swagger/*any", func(c *gin.Context) {
-		if c.Request.URL.Path == "/swagger/doc.json" {
-			doc, err := swag.ReadDoc()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to read Swagger doc"})
+	swaggerGroup := router.Group("/swagger")
+	{
+		swaggerGroup.GET("", func(c *gin.Context) {
+			c.Request.URL.Path = "/swagger/index.html"
+			router.HandleContext(c)
+		})
+		swaggerGroup.GET("/", func(c *gin.Context) {
+			c.Request.URL.Path = "/swagger/index.html"
+			router.HandleContext(c)
+		})
+		swaggerGroup.GET("/*any", func(c *gin.Context) {
+			if c.Request.URL.Path == "/swagger/doc.json" {
+				doc, err := swag.ReadDoc()
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to read Swagger doc"})
+					return
+				}
+
+				var swaggerSpec map[string]interface{}
+				if err := json.Unmarshal([]byte(doc), &swaggerSpec); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to parse Swagger doc"})
+					return
+				}
+
+				// Determine the scheme
+				scheme := "http"
+				if c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https" {
+					scheme = "https"
+				}
+
+				// Update the schemes in the Swagger spec
+				swaggerSpec["schemes"] = []string{scheme}
+
+				// Ensure we're sending valid JSON
+				c.Header("Content-Type", "application/json")
+				jsonData, err := json.Marshal(swaggerSpec)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to generate Swagger JSON"})
+					return
+				}
+				c.Data(http.StatusOK, "application/json", jsonData)
 				return
 			}
-
-			var swaggerSpec map[string]interface{}
-			if err := json.Unmarshal([]byte(doc), &swaggerSpec); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to parse Swagger doc"})
-				return
-			}
-
-			// Determine the scheme
-			scheme := "http"
-			if c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-
-			// Update the schemes in the Swagger spec
-			swaggerSpec["schemes"] = []string{scheme}
-
-			// Ensure we're sending valid JSON
-			c.Header("Content-Type", "application/json")
-			jsonData, err := json.Marshal(swaggerSpec)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to generate Swagger JSON"})
-				return
-			}
-			c.Data(http.StatusOK, "application/json", jsonData)
-			return
-		}
-		ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("doc.json"))(c)
-	})
+			ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("doc.json"))(c)
+		})
+	}
 }
