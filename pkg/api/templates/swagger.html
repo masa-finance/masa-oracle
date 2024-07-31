@@ -41,6 +41,7 @@
           for (let i = 0; i < schemeSelect.options.length; i++) {
             if (schemeSelect.options[i].value === currentScheme) {
               schemeSelect.selectedIndex = i;
+              schemeSelect.dispatchEvent(new Event('change'));
               break;
             }
           }
@@ -56,22 +57,34 @@
         });
       }
 
-      // Initial update
-      setTimeout(updateUrls, 100);
-
-      // Set up a MutationObserver to watch for changes in the Swagger UI
-      const observer = new MutationObserver(function(mutations) {
-        updateUrls();
-      });
-
-      // Start observing the document with the configured parameters
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      // Add event listener for scheme changes
-      document.addEventListener('change', function(event) {
-        if (event.target.matches('.scheme-container select')) {
-          setTimeout(updateUrls, 0);
+      function waitForSwaggerUIReady(callback) {
+        if (document.querySelector('.scheme-container')) {
+          callback();
+        } else {
+          setTimeout(function() {
+            waitForSwaggerUIReady(callback);
+          }, 100);
         }
+      }
+
+      // Initial update
+      waitForSwaggerUIReady(function() {
+        updateUrls();
+        
+        // Set up a MutationObserver to watch for changes in the Swagger UI
+        const observer = new MutationObserver(function(mutations) {
+          updateUrls();
+        });
+
+        // Start observing the document with the configured parameters
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // Add event listener for scheme changes
+        document.addEventListener('change', function(event) {
+          if (event.target.matches('.scheme-container select')) {
+            setTimeout(updateUrls, 0);
+          }
+        });
       });
     }
     </script>
