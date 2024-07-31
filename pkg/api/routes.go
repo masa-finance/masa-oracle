@@ -562,12 +562,22 @@ func setupSwaggerHandler(router *gin.Engine) {
 
 	// Create a custom handler that serves our HTML file
 	customHandler := func(c *gin.Context) {
-		if c.Request.URL.Path == "/swagger/index.html" {
+		if c.Request.URL.Path == "/swagger" || c.Request.URL.Path == "/swagger/" || c.Request.URL.Path == "/swagger/index.html" {
 			c.File(swaggerTemplate)
 			return
 		}
-		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
+
+		// For other swagger-related paths, use the default handler
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
+			ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
+			return
+		}
+
+		// If it's not a swagger path, pass it to the next handler
+		c.Next()
 	}
 
+	// Use our custom handler for all /swagger paths
+	router.GET("/swagger", customHandler)
 	router.GET("/swagger/*any", customHandler)
 }
