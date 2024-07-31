@@ -12,8 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/swag"
 
 	"github.com/masa-finance/masa-oracle/docs"
@@ -553,7 +551,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	// Specific routes first
 	router.GET("/swagger", func(c *gin.Context) {
 		c.Request.URL.Path = "/swagger/index.html"
 		router.HandleContext(c)
@@ -586,7 +583,4 @@ func setupSwaggerHandler(router *gin.Engine) {
 
 		c.JSON(http.StatusOK, swaggerSpec)
 	})
-
-	// Catchall route last
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
