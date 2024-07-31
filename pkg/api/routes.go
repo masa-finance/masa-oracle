@@ -132,7 +132,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Update Swagger info
 	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	docs.SwaggerInfo.Schemes = []string{"https", "http"} // Note the order: HTTPS first
+	docs.SwaggerInfo.Schemes = []string{"http", "https"} // Include both schemes
 
 	//	@BasePath		/api/v1
 	//	@Title			Masa API
@@ -564,7 +564,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	url := ginSwagger.URL("swagger/doc.json")
 	router.GET("/swagger", func(c *gin.Context) {
 		c.Request.URL.Path = "/swagger/index.html"
 		router.HandleContext(c)
@@ -595,6 +594,6 @@ func setupSwaggerHandler(router *gin.Engine) {
 			c.JSON(200, swaggerSpec)
 			return
 		}
-		ginSwagger.WrapHandler(swaggerFiles.Handler, url)(c)
+		ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("doc.json"))(c)
 	})
 }
