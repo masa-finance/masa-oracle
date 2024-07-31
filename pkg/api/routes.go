@@ -566,6 +566,11 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 func setupSwaggerHandler(router *gin.Engine) {
 	url := ginSwagger.URL("swagger/doc.json")
 	router.GET("/swagger/*any", func(c *gin.Context) {
+		if c.Request.URL.Path == "/swagger" || c.Request.URL.Path == "/swagger/" {
+			c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+			return
+		}
+
 		if c.Request.URL.Path == "/swagger/doc.json" {
 			doc, err := swag.ReadDoc()
 			if err != nil {
