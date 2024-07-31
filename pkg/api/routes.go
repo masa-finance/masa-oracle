@@ -8,14 +8,17 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
+
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/swaggo/swag"
 
 	"github.com/masa-finance/masa-oracle/docs"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 )
@@ -129,7 +132,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Update Swagger info
 	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+	docs.SwaggerInfo.Schemes = []string{"https", "http"} // Note the order: HTTPS first
 
 	//	@BasePath		/api/v1
 	//	@Title			Masa API
@@ -141,6 +144,8 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	//	@contact.email	support@masa.ai
 	//	@license.name	MIT
 	//	@license.url	https://opensource.org/license/mit
+
+	setupSwaggerHandler(router)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -555,6 +560,37 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		})
 	})
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return router
+}
+
+func setupSwaggerHandler(router *gin.Engine) {
+	url := ginSwagger.URL("swagger/doc.json")
+	router.GET("/swagger/*any", func(c *gin.Context) {
+		if c.Request.URL.Path == "/swagger/doc.json" {
+			doc, err := swag.ReadDoc()
+			if err != nil {
+				c.JSON(500, gin.H{"error": "Unable to read Swagger doc"})
+				return
+			}
+
+			var swaggerSpec map[string]interface{}
+			if err := json.Unmarshal([]byte(doc), &swaggerSpec); err != nil {
+				c.JSON(500, gin.H{"error": "Unable to parse Swagger doc"})
+				return
+			}
+
+			// Determine the scheme
+			scheme := "http"
+			if c.Request.TLS != nil || strings.HasPrefix(c.Request.Host, "test.api.masa.ai") {
+				scheme = "https"
+			}
+
+			// Update the schemes in the Swagger spec
+			swaggerSpec["schemes"] = []string{scheme}
+
+			c.JSON(200, swaggerSpec)
+			return
+		}
+		ginSwagger.WrapHandler(swaggerFiles.Handler, url)(c)
+	})
 }
