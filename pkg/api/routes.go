@@ -561,8 +561,6 @@ func setupSwaggerHandler(router *gin.Engine) {
 		c.Request.URL.Path = "/swagger/index.html"
 		router.HandleContext(c)
 	})
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 	router.GET("/swagger/doc.json", func(c *gin.Context) {
 		doc, err := swag.ReadDoc()
 		if err != nil {
@@ -587,4 +585,5 @@ func setupSwaggerHandler(router *gin.Engine) {
 
 		c.JSON(http.StatusOK, swaggerSpec)
 	})
+	router.GET("/swagger/*filepath", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
