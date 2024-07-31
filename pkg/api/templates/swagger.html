@@ -19,6 +19,23 @@
     <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script>
     window.onload = function() {
+      // Define a plugin to modify request URLs
+      const UrlModifierPlugin = function() {
+        return {
+          statePlugins: {
+            spec: {
+              wrapActions: {
+                executeRequest: (oriAction) => (req) => {
+                  // Modify the URL to use the current protocol
+                  req.url = req.url.replace(/^https?:/, window.location.protocol);
+                  return oriAction(req);
+                }
+              }
+            }
+          }
+        }
+      }
+
       const ui = SwaggerUIBundle({
         url: "doc.json",
         dom_id: '#swagger-ui',
@@ -28,7 +45,8 @@
           SwaggerUIStandalonePreset
         ],
         plugins: [
-          SwaggerUIBundle.plugins.DownloadUrl
+          SwaggerUIBundle.plugins.DownloadUrl,
+          UrlModifierPlugin
         ],
         layout: "StandaloneLayout"
       });
