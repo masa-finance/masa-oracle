@@ -19,22 +19,7 @@
     <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script>
     window.onload = function() {
-      // Define a plugin to modify request URLs
-      const UrlModifierPlugin = function() {
-        return {
-          statePlugins: {
-            spec: {
-              wrapActions: {
-                executeRequest: (oriAction) => (req) => {
-                  // Modify the URL to use the current protocol
-                  req.url = req.url.replace(/^https?:/, window.location.protocol);
-                  return oriAction(req);
-                }
-              }
-            }
-          }
-        }
-      }
+      const currentScheme = window.location.protocol.slice(0, -1);
 
       const ui = SwaggerUIBundle({
         url: "doc.json",
@@ -45,65 +30,35 @@
           SwaggerUIStandalonePreset
         ],
         plugins: [
-          SwaggerUIBundle.plugins.DownloadUrl,
-          UrlModifierPlugin
+          SwaggerUIBundle.plugins.DownloadUrl
         ],
-        layout: "StandaloneLayout"
+        layout: "StandaloneLayout",
+        onComplete: function() {
+          // Set the correct scheme
+          ui.specActions.changeScheme(currentScheme);
+
+          // Force an update of the spec
+          ui.specActions.updateJsonSpec(ui.specSelectors.specJson().toJS());
+        }
       });
 
-      const currentScheme = window.location.protocol.slice(0, -1);
-
-      function updateUrls() {
-        const schemeSelect = document.querySelector('.scheme-container select');
-        if (schemeSelect) {
-          for (let i = 0; i < schemeSelect.options.length; i++) {
-            if (schemeSelect.options[i].value === currentScheme) {
-              schemeSelect.selectedIndex = i;
-              schemeSelect.dispatchEvent(new Event('change'));
-              break;
-            }
-          }
-        }
-
-        const allUrls = document.querySelectorAll('a[href^="http://"], a[href^="https://"], .highlight-code');
-        allUrls.forEach(function(element) {
-          if (element.href) {
-            element.href = element.href.replace(/^https?:/, window.location.protocol);
-          } else if (element.textContent) {
-            element.textContent = element.textContent.replace(/(https?:\/\/)/g, window.location.protocol + '//');
-          }
-        });
-      }
-
-      function waitForSwaggerUIReady(callback) {
-        if (document.querySelector('.scheme-container')) {
-          callback();
-        } else {
-          setTimeout(function() {
-            waitForSwaggerUIReady(callback);
-          }, 100);
-        }
-      }
-
-      // Initial update
-      waitForSwaggerUIReady(function() {
-        updateUrls();
-        
-        // Set up a MutationObserver to watch for changes in the Swagger UI
+      // Intercept changes to the scheme select
+      const schemeContainer = document.querySelector('.scheme-container');
+      if (schemeContainer) {
         const observer = new MutationObserver(function(mutations) {
-          updateUrls();
+          mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+              const select = schemeContainer.querySelector('select');
+              if (select) {
+                select.value = currentScheme;
+                select.dispatchEvent(new Event('change'));
+                observer.disconnect();
+              }
+            }
+          });
         });
-
-        // Start observing the document with the configured parameters
-        observer.observe(document.body, { childList: true, subtree: true });
-
-        // Add event listener for scheme changes
-        document.addEventListener('change', function(event) {
-          if (event.target.matches('.scheme-container select')) {
-            setTimeout(updateUrls, 0);
-          }
-        });
-      });
+        observer.observe(schemeContainer, { childList: true, subtree: true });
+      }
     }
     </script>
   </body>
