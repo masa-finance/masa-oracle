@@ -126,6 +126,9 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
 	router.SetHTMLTemplate(templ)
 
+	// Update Swagger info
+	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
+	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
 	//	@BasePath		/api/v1
@@ -552,7 +555,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		})
 	})
 
-	url := ginSwagger.URL("") // Use an empty string for the URL
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url, ginSwagger.DefaultModelsExpandDepth(-1)))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return router
 }
