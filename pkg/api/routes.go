@@ -19,6 +19,8 @@ import (
 	"github.com/gin-contrib/cors"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	swaggerFiles "github.com/swaggo/files"     // swagger embed files
+	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
 )
 
 //go:embed templates/*.html
