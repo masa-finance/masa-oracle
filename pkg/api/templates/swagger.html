@@ -33,39 +33,18 @@
         ],
         layout: "StandaloneLayout",
         onComplete: function() {
-          // Function to update the scheme
-          function updateScheme() {
-            const schemeSelect = document.querySelector('.scheme-container select');
-            if (schemeSelect) {
-              schemeSelect.value = currentScheme;
-              // Trigger Swagger UI's internal scheme change mechanism
-              schemeSelect.dispatchEvent(new Event('change'));
-            }
-          }
-
-          // Initial update
-          updateScheme();
-
-          // Set up a MutationObserver to watch for changes in the Swagger UI
-          const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-              if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                updateScheme();
-              }
-            });
-          });
-
-          // Start observing the document with the configured parameters
-          observer.observe(document.body, { childList: true, subtree: true });
-
-          // Override Swagger UI's setScheme function to ensure it always uses the current scheme
-          const originalSetScheme = ui.specActions.setScheme;
-          ui.specActions.setScheme = function(scheme) {
-            originalSetScheme(currentScheme);
-            updateScheme();
-          };
+          // Force the scheme to match the current protocol
+          ui.specActions.changeScheme(currentScheme);
         }
       });
+
+      // Override the execute request function
+      const originalExecuteRequest = ui.specActions.executeRequest;
+      ui.specActions.executeRequest = function(req) {
+        // Ensure the URL uses the correct scheme
+        req.url = req.url.replace(/^(https?:)/, currentScheme + ':');
+        return originalExecuteRequest(req);
+      };
     }
     </script>
   </body>
