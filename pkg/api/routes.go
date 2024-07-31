@@ -583,4 +583,11 @@ func setupSwaggerHandler(router *gin.Engine) {
 
 		c.JSON(http.StatusOK, swaggerSpec)
 	})
+
+	// Add specific routes for Swagger UI files
+	router.GET("/swagger/swagger-ui.css", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/swagger-ui-bundle.js", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/swagger-ui-standalone-preset.js", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/favicon-32x32.png", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/index.html", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
