@@ -34,31 +34,31 @@
         ],
         layout: "StandaloneLayout",
         onComplete: function() {
-          // Set the correct scheme
-          ui.specActions.changeScheme(currentScheme);
+          // Function to update the scheme
+          function updateScheme() {
+            const schemeSelect = document.querySelector('.scheme-container select');
+            if (schemeSelect) {
+              schemeSelect.value = currentScheme;
+              schemeSelect.dispatchEvent(new Event('change'));
+            }
+          }
 
-          // Force an update of the spec
-          ui.specActions.updateJsonSpec(ui.specSelectors.specJson().toJS());
+          // Initial update
+          updateScheme();
+
+          // Set up a MutationObserver to watch for changes in the Swagger UI
+          const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                updateScheme();
+              }
+            });
+          });
+
+          // Start observing the document with the configured parameters
+          observer.observe(document.body, { childList: true, subtree: true });
         }
       });
-
-      // Intercept changes to the scheme select
-      const schemeContainer = document.querySelector('.scheme-container');
-      if (schemeContainer) {
-        const observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-              const select = schemeContainer.querySelector('select');
-              if (select) {
-                select.value = currentScheme;
-                select.dispatchEvent(new Event('change'));
-                observer.disconnect();
-              }
-            }
-          });
-        });
-        observer.observe(schemeContainer, { childList: true, subtree: true });
-      }
     }
     </script>
   </body>
