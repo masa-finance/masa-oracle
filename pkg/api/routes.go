@@ -8,11 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"encoding/json"
-
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/swaggo/swag"
 
 	"github.com/masa-finance/masa-oracle/docs"
 
@@ -132,7 +129,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Update Swagger info
 	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	// Remove the Schemes setting from here, as we'll set it dynamically
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
 	setupSwaggerHandler(router)
 
@@ -553,41 +550,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	// Serve swagger index
-	router.GET("/swagger", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/swagger/")
-	})
-	router.GET("/swagger/", func(c *gin.Context) {
-		c.Request.URL.Path = "/swagger/index.html"
-		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
-	})
-
-	// Serve swagger JSON
-	router.GET("/swagger/doc.json", func(c *gin.Context) {
-		doc, err := swag.ReadDoc()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to read Swagger doc"})
-			return
-		}
-
-		var swaggerSpec map[string]interface{}
-		if err := json.Unmarshal([]byte(doc), &swaggerSpec); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to parse Swagger doc"})
-			return
-		}
-
-		// Determine the scheme
-		scheme := "http"
-		if c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https" {
-			scheme = "https"
-		}
-
-		// Update the schemes in the Swagger spec
-		swaggerSpec["schemes"] = []string{scheme}
-
-		c.JSON(http.StatusOK, swaggerSpec)
-	})
-
-	// Serve Swagger UI files
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Serve swagger documentation
+	url := ginSwagger.URL("/swagger/doc.json") // The url pointing to API definition
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 }
