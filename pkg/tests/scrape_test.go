@@ -18,6 +18,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
@@ -81,6 +82,32 @@ func setup() {
 	}
 
 	logrus.Debug("[+] Login successful")
+}
+
+func scrapeTweets(outputFile string) error {
+	// Implement the tweet scraping logic here
+	// This function should:
+	// 1. Make API calls to the MASA_NODE_URL
+	// 2. Process the responses
+	// 3. Write the tweets to the outputFile in CSV format
+	// 4. Handle rate limiting and retries
+	// 5. Return an error if something goes wrong
+
+	// For now, we'll just create a dummy file
+	file, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("error creating file: %v", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	writer.Write([]string{"tweet", "datetime"})
+	writer.Write([]string{"Test tweet #1", time.Now().Format(time.RFC3339)})
+	writer.Write([]string{"Test tweet #2", time.Now().Format(time.RFC3339)})
+
+	return nil
 }
 
 func TestSetup(t *testing.T) {
@@ -157,7 +184,7 @@ func TestScrapeTweetsWithSentimentByQuery(t *testing.T) {
 	}
 }
 
-func TestScrapeTweets(t *testing.T) {
+func TestScrapeTweetsWithMockServer(t *testing.T) {
 	setup()
 
 	// Mock server
@@ -233,28 +260,27 @@ func TestScrapeTweets(t *testing.T) {
 	}
 }
 
-func scrapeTweets(outputFile string) error {
-	// Implement the tweet scraping logic here
-	// This function should:
-	// 1. Make API calls to the MASA_NODE_URL
-	// 2. Process the responses
-	// 3. Write the tweets to the outputFile in CSV format
-	// 4. Handle rate limiting and retries
-	// 5. Return an error if something goes wrong
+func TestScrapeTweets(t *testing.T) {
+	setup()
 
-	// For now, we'll just create a dummy file
-	file, err := os.Create(outputFile)
-	if err != nil {
-		return fmt.Errorf("error creating file: %v", err)
+	query := "Sadhguru"
+	count := 10
+
+	for i := 0; i < 1; i++ {
+		tweets, err := twitter.ScrapeTweetsByQuery(query, count)
+		if err != nil {
+			logrus.WithError(err).Error("[-] Failed to scrape tweets")
+			return
+		}
+
+		tweetsData, err := json.Marshal(tweets)
+		if err != nil {
+			logrus.WithError(err).Error("[-] Failed to serialize tweets data")
+			return
+		}
+
+		assert.NotNil(t, tweetsData[:10])
+
+		logrus.WithField("tweets", string(tweetsData[:100])).Debug("[+] Tweets data serialized successfully")
 	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	writer.Write([]string{"tweet", "datetime"})
-	writer.Write([]string{"Test tweet #1", time.Now().Format(time.RFC3339)})
-	writer.Write([]string{"Test tweet #2", time.Now().Format(time.RFC3339)})
-
-	return nil
 }
