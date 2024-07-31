@@ -134,16 +134,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	// Remove the Schemes setting from here, as we'll set it dynamically
 
-	// Handle both /swagger and /swagger/ without redirecting
-	router.GET("/swagger", func(c *gin.Context) {
-		c.Request.URL.Path = "/swagger/index.html"
-		router.HandleContext(c)
-	})
-	router.GET("/swagger/", func(c *gin.Context) {
-		c.Request.URL.Path = "/swagger/index.html"
-		router.HandleContext(c)
-	})
-
 	setupSwaggerHandler(router)
 
 	v1 := router.Group("/api/v1")
@@ -563,7 +553,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	router.GET("/swagger", func(c *gin.Context) {
+	router.GET("/swagger", "/swagger/", func(c *gin.Context) {
 		c.Request.URL.Path = "/swagger/index.html"
 		router.HandleContext(c)
 	})
