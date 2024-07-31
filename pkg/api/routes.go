@@ -553,24 +553,18 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	// Handle /swagger and /swagger/
-	router.GET("/swagger", swaggerIndexHandler)
-	router.GET("/swagger/", swaggerIndexHandler)
-
-	// Handle /swagger/doc.json
-	router.GET("/swagger/doc.json", swaggerJSONHandler)
-
-	// Handle all other /swagger/* routes
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/*any", func(c *gin.Context) {
+		if c.Param("any") == "" || c.Param("any") == "/" {
+			c.Request.URL.Path = "/swagger/index.html"
+		} else if c.Param("any") == "/doc.json" {
+			handleSwaggerJSON(c)
+			return
+		}
+		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
+	})
 }
 
-func swaggerIndexHandler(c *gin.Context) {
-	c.Request.URL.Path = "/swagger/index.html"
-	c.Request.URL.RawPath = "/swagger/index.html"
-	ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
-}
-
-func swaggerJSONHandler(c *gin.Context) {
+func handleSwaggerJSON(c *gin.Context) {
 	doc, err := swag.ReadDoc()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to read Swagger doc"})
