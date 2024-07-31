@@ -33,55 +33,65 @@
         layout: "StandaloneLayout"
       });
 
-      // Custom script to set the correct scheme
-      setTimeout(function() {
-        const currentScheme = window.location.protocol.slice(0, -1);
+      const currentScheme = window.location.protocol.slice(0, -1);
+
+      function updateScheme() {
         const schemeSelect = document.querySelector('.scheme-container select');
         if (schemeSelect) {
           for (let i = 0; i < schemeSelect.options.length; i++) {
             if (schemeSelect.options[i].value === currentScheme) {
               schemeSelect.selectedIndex = i;
-              
-              // Trigger change event
-              const event = new Event('change');
-              schemeSelect.dispatchEvent(event);
-
-              // Force Swagger UI to update all URLs
-              if (ui && ui.specActions && ui.specActions.changeScheme) {
-                ui.specActions.changeScheme(currentScheme);
-              }
-
               break;
             }
           }
         }
 
-        // Update all operation links
-        const updateOperationUrls = function() {
-          const operationUrlInputs = document.querySelectorAll('.opblock-summary-control .opblock-summary-path a');
-          operationUrlInputs.forEach(function(input) {
+        if (ui && ui.specActions && ui.specActions.changeScheme) {
+          ui.specActions.changeScheme(currentScheme);
+        }
+
+        updateOperationUrls();
+      }
+
+      function updateOperationUrls() {
+        const operationUrlInputs = document.querySelectorAll('.opblock-summary-control .opblock-summary-path a, .try-out__btn');
+        operationUrlInputs.forEach(function(input) {
+          if (input.href) {
             const url = new URL(input.href);
             url.protocol = window.location.protocol;
             input.href = url.toString();
-          });
-        };
-
-        // Initial update
-        updateOperationUrls();
-
-        // Set up a MutationObserver to watch for changes in the Swagger UI
-        const observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-              updateOperationUrls();
-            }
-          });
+          }
         });
+      }
 
-        // Start observing the document with the configured parameters
-        observer.observe(document.body, { childList: true, subtree: true });
+      // Initial update
+      setTimeout(updateScheme, 100);
 
-      }, 1000); // Wait for Swagger UI to fully load
+      // Set up a MutationObserver to watch for changes in the Swagger UI
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            updateScheme();
+          }
+        });
+      });
+
+      // Start observing the document with the configured parameters
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // Override the changeScheme function
+      const originalChangeScheme = ui.specActions.changeScheme;
+      ui.specActions.changeScheme = function(scheme) {
+        originalChangeScheme(scheme);
+        setTimeout(updateOperationUrls, 0);
+      };
+
+      // Add event listener for scheme changes
+      document.addEventListener('change', function(event) {
+        if (event.target.matches('.scheme-container select')) {
+          setTimeout(updateOperationUrls, 0);
+        }
+      });
     }
     </script>
   </body>
