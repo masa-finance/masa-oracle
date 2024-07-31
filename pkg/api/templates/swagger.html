@@ -18,8 +18,6 @@
     <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script>
     window.onload = function() {
-      const currentScheme = window.location.protocol.slice(0, -1);
-
       const ui = SwaggerUIBundle({
         url: "doc.json",
         dom_id: '#swagger-ui',
@@ -33,18 +31,14 @@
         ],
         layout: "StandaloneLayout",
         onComplete: function() {
-          // Force the scheme to match the current protocol
-          ui.specActions.changeScheme(currentScheme);
+          const currentScheme = window.location.protocol.slice(0, -1);
+          const schemeSelect = document.querySelector('.scheme-container select');
+          if (schemeSelect) {
+            schemeSelect.value = currentScheme;
+            schemeSelect.dispatchEvent(new Event('change'));
+          }
         }
       });
-
-      // Override the execute request function
-      const originalExecuteRequest = ui.specActions.executeRequest;
-      ui.specActions.executeRequest = function(req) {
-        // Ensure the URL uses the correct scheme
-        req.url = req.url.replace(/^(https?:)/, currentScheme + ':');
-        return originalExecuteRequest(req);
-      };
     }
     </script>
   </body>
