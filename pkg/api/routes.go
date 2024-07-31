@@ -553,6 +553,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
+	// Specific routes first
 	router.GET("/swagger", func(c *gin.Context) {
 		c.Request.URL.Path = "/swagger/index.html"
 		router.HandleContext(c)
@@ -585,5 +586,7 @@ func setupSwaggerHandler(router *gin.Engine) {
 
 		c.JSON(http.StatusOK, swaggerSpec)
 	})
-	router.GET("/swagger/*filepath", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Catchall route last
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
