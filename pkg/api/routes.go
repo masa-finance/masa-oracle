@@ -553,14 +553,16 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
+	// Serve swagger index
 	router.GET("/swagger", func(c *gin.Context) {
-		c.Request.URL.Path = "/swagger/index.html"
-		router.HandleContext(c)
+		c.Redirect(http.StatusMovedPermanently, "/swagger/")
 	})
 	router.GET("/swagger/", func(c *gin.Context) {
 		c.Request.URL.Path = "/swagger/index.html"
-		router.HandleContext(c)
+		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
 	})
+
+	// Serve swagger JSON
 	router.GET("/swagger/doc.json", func(c *gin.Context) {
 		doc, err := swag.ReadDoc()
 		if err != nil {
@@ -586,10 +588,6 @@ func setupSwaggerHandler(router *gin.Engine) {
 		c.JSON(http.StatusOK, swaggerSpec)
 	})
 
-	// Add specific routes for Swagger UI files
-	router.GET("/swagger/swagger-ui.css", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/swagger/swagger-ui-bundle.js", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/swagger/swagger-ui-standalone-preset.js", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/swagger/favicon-32x32.png", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/swagger/index.html", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Serve Swagger UI files
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
