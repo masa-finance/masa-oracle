@@ -566,8 +566,8 @@ func setupSwaggerHandler(router *gin.Engine) {
 			c.File(swaggerTemplate)
 			return
 		}
-		swaggerFiles.Handler.ServeHTTP(c.Writer, c.Request)
+		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
 	}
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(http.HandlerFunc(customHandler)))
+	router.GET("/swagger/*any", customHandler)
 }
