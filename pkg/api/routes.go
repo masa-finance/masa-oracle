@@ -132,18 +132,17 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	// Update Swagger info
 	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	docs.SwaggerInfo.Schemes = []string{"http", "https"} // Include both schemes
+	// Remove the Schemes setting from here, as we'll set it dynamically
 
-	//	@BasePath		/api/v1
-	//	@Title			Masa API
-	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
-	//	@Host			https://api.masa.ai
-	//	@Version		0.5.0
-	//	@contact.name	Masa API Support
-	//	@contact.url	https://masa.ai
-	//	@contact.email	support@masa.ai
-	//	@license.name	MIT
-	//	@license.url	https://opensource.org/license/mit
+	// Handle both /swagger and /swagger/ without redirecting
+	router.GET("/swagger", func(c *gin.Context) {
+		c.Request.URL.Path = "/swagger/index.html"
+		router.HandleContext(c)
+	})
+	router.GET("/swagger/", func(c *gin.Context) {
+		c.Request.URL.Path = "/swagger/index.html"
+		router.HandleContext(c)
+	})
 
 	setupSwaggerHandler(router)
 
@@ -572,13 +571,13 @@ func setupSwaggerHandler(router *gin.Engine) {
 		if c.Request.URL.Path == "/swagger/doc.json" {
 			doc, err := swag.ReadDoc()
 			if err != nil {
-				c.JSON(500, gin.H{"error": "Unable to read Swagger doc"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to read Swagger doc"})
 				return
 			}
 
 			var swaggerSpec map[string]interface{}
 			if err := json.Unmarshal([]byte(doc), &swaggerSpec); err != nil {
-				c.JSON(500, gin.H{"error": "Unable to parse Swagger doc"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to parse Swagger doc"})
 				return
 			}
 
@@ -591,7 +590,14 @@ func setupSwaggerHandler(router *gin.Engine) {
 			// Update the schemes in the Swagger spec
 			swaggerSpec["schemes"] = []string{scheme}
 
-			c.JSON(200, swaggerSpec)
+			// Ensure we're sending valid JSON
+			c.Header("Content-Type", "application/json")
+			jsonData, err := json.Marshal(swaggerSpec)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to generate Swagger JSON"})
+				return
+			}
+			c.Data(http.StatusOK, "application/json", jsonData)
 			return
 		}
 		ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("doc.json"))(c)
