@@ -552,6 +552,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		})
 	})
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.DefaultModelsExpandDepth(-1)))
+	url := ginSwagger.URL("") // Use an empty string for the URL
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url, ginSwagger.DefaultModelsExpandDepth(-1)))
 	return router
 }
