@@ -565,12 +565,11 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 
 func setupSwaggerHandler(router *gin.Engine) {
 	url := ginSwagger.URL("swagger/doc.json")
+	router.GET("/swagger", func(c *gin.Context) {
+		c.Request.URL.Path = "/swagger/index.html"
+		router.HandleContext(c)
+	})
 	router.GET("/swagger/*any", func(c *gin.Context) {
-		if c.Request.URL.Path == "/swagger" || c.Request.URL.Path == "/swagger/" {
-			c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
-			return
-		}
-
 		if c.Request.URL.Path == "/swagger/doc.json" {
 			doc, err := swag.ReadDoc()
 			if err != nil {
@@ -586,7 +585,7 @@ func setupSwaggerHandler(router *gin.Engine) {
 
 			// Determine the scheme
 			scheme := "http"
-			if c.Request.TLS != nil || strings.HasPrefix(c.Request.Host, "test.api.masa.ai") {
+			if c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https" {
 				scheme = "https"
 			}
 
