@@ -15,6 +15,9 @@ import (
 
 	"github.com/gin-contrib/cors"
 
+	"path/filepath"
+	"runtime"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	swaggerFiles "github.com/swaggo/files"     // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
@@ -550,7 +553,21 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	// Serve swagger documentation
-	url := ginSwagger.URL("/swagger/doc.json") // The url pointing to API definition
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+	// Get the current file's directory
+	_, currentFile, _, _ := runtime.Caller(0)
+	currentDir := filepath.Dir(currentFile)
+
+	// Construct the path to the swagger.html file
+	swaggerTemplate := filepath.Join(currentDir, "templates", "swagger.html")
+
+	// Create a custom handler that serves our HTML file
+	customHandler := func(c *gin.Context) {
+		if c.Request.URL.Path == "/swagger/index.html" {
+			c.File(swaggerTemplate)
+			return
+		}
+		swaggerFiles.Handler.ServeHTTP(c.Writer, c.Request)
+	}
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(http.HandlerFunc(customHandler)))
 }
