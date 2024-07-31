@@ -266,21 +266,72 @@ func TestScrapeTweets(t *testing.T) {
 	query := "Sadhguru"
 	count := 10
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 100; i++ {
 		tweets, err := twitter.ScrapeTweetsByQuery(query, count)
 		if err != nil {
 			logrus.WithError(err).Error("[-] Failed to scrape tweets")
 			return
 		}
 
-		tweetsData, err := json.Marshal(tweets)
+		var validTweets []*twitter.TweetResult
+		for _, tweet := range tweets {
+			if tweet.Error != nil {
+				logrus.WithError(tweet.Error).Warn("[-] Error in tweet")
+				continue
+			}
+			validTweets = append(validTweets, tweet)
+		}
+
+		tweetsData, err := json.Marshal(validTweets)
 		if err != nil {
 			logrus.WithError(err).Error("[-] Failed to serialize tweets data")
 			return
 		}
 
-		assert.NotNil(t, tweetsData[:10])
+		logrus.WithFields(logrus.Fields{
+			"total_tweets":  len(tweets),
+			"valid_tweets":  len(validTweets),
+			"tweets_sample": string(tweetsData[:min(100, len(tweetsData))]),
+		}).Debug("[+] Tweets data")
 
-		logrus.WithField("tweets", string(tweetsData[:100])).Debug("[+] Tweets data serialized successfully")
+		assert.NotNil(t, tweetsData[:10])
 	}
+}
+
+func TestScrapeTweetsByTrends(t *testing.T) {
+	setup()
+
+	for i := 0; i < 5; i++ { // Run the test 5 times to ensure consistency
+		trends, err := twitter.ScrapeTweetsByTrends()
+		if err != nil {
+			t.Fatalf("Failed to scrape tweets by trends: %v", err)
+		}
+
+		// Check if we got any trends
+		assert.NotEmpty(t, trends, "No trends were returned")
+
+		// Log the trends for debugging
+		logrus.WithFields(logrus.Fields{
+			"trends_count":  len(trends),
+			"trends_sample": trends[:min(5, len(trends))],
+		}).Debug("[+] Trends data")
+
+		// Check each trend
+		for _, trend := range trends {
+			assert.NotEmpty(t, trend, "Empty trend found")
+		}
+
+		// Check if we have at least 5 trends (Twitter usually provides more)
+		assert.GreaterOrEqual(t, len(trends), 5, "Expected at least 5 trends")
+
+		// Optional: Add a short delay between iterations to avoid rate limiting
+		time.Sleep(2 * time.Second)
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

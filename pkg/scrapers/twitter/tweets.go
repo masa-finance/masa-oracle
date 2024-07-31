@@ -13,6 +13,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type TweetResult struct {
+	Tweet *twitterscraper.Tweet
+	Error error
+}
+
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
 // If no valid session is found, it performs a login with credentials specified in the application's configuration.
 // On successful login, it saves the session cookies for future use. If the login fails, it returns nil.
@@ -103,9 +108,10 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 // Returns:
 //   - A slice of pointers to twitterscraper.Tweet objects that match the search query.
 //   - An error if the scraping process encounters any issues.
-func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, error) {
+func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 	scraper := auth()
-	var tweets []*twitterscraper.Tweet
+	// var tweets []*twitterscraper.Tweet
+	var tweets []*TweetResult
 
 	if scraper == nil {
 		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")
@@ -116,11 +122,11 @@ func ScrapeTweetsByQuery(query string, count int) ([]*twitterscraper.Tweet, erro
 
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
-		if tweetResult.Error != nil {
-			logrus.Printf("Error fetching tweet: %v", tweetResult.Error)
-			continue
+		tweet := TweetResult{
+			Tweet: &tweetResult.Tweet,
+			Error: tweetResult.Error,
 		}
-		tweets = append(tweets, &tweetResult.Tweet)
+		tweets = append(tweets, &tweet)
 	}
 	return tweets, nil
 }

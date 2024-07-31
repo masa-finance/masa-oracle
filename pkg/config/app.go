@@ -112,8 +112,8 @@ func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
 
-		instance.setDefaultConfig()
 		instance.setEnvVariableConfig()
+		instance.setDefaultConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
 		if err != nil {
