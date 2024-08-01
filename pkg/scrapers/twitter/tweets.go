@@ -141,9 +141,9 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 // ScrapeTweetsByTrends scrapes the current trending topics on Twitter.
 // It returns a slice of strings representing the trending topics.
 // If an error occurs during the scraping process, it returns an error.
-func ScrapeTweetsByTrends() ([]string, error) {
+func ScrapeTweetsByTrends() ([]*TweetResult, error) {
 	scraper := auth()
-	var tweets []string
+	var trendResults []*TweetResult
 
 	if scraper == nil {
 		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")
@@ -154,13 +154,18 @@ func ScrapeTweetsByTrends() ([]string, error) {
 
 	trends, err := scraper.GetTrends()
 	if err != nil {
-		logrus.Printf("Error fetching tweet: %v", err)
 		return nil, err
 	}
 
-	tweets = append(tweets, trends...)
+	for _, trend := range trends {
+		trendResult := &TweetResult{
+			Tweet: &twitterscraper.Tweet{Text: trend},
+			Error: nil,
+		}
+		trendResults = append(trendResults, trendResult)
+	}
 
-	return tweets, nil
+	return trendResults, nil
 }
 
 // ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
