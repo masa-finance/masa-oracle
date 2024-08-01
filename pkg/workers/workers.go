@@ -275,14 +275,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			if (p.PeerId.String() != node.Host.ID().String()) &&
 				p.IsStaked &&
 				node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type)) {
-
-				// Check WorkerTimeout
-				nodeData := node.NodeTracker.GetNodeData(p.PeerId.String())
-				if !nodeData.WorkerTimeout.IsZero() && time.Since(nodeData.WorkerTimeout) < 16*time.Minute {
-					logrus.Infof("[+] Skipping worker %s due to timeout", p.PeerId)
-					continue
-				}
-
 				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {

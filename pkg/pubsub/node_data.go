@@ -112,6 +112,12 @@ func (wc WorkerCategory) String() string {
 // CanDoWork checks if the node can perform work of the specified WorkerType.
 // It returns true if the node is configured for the given worker type, false otherwise.
 func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
+
+	if !n.WorkerTimeout.IsZero() && time.Since(n.WorkerTimeout) < 16*time.Minute {
+		logrus.Infof("[+] Skipping worker %s due to timeout", n.PeerId)
+		return false
+	}
+
 	switch workerType {
 	case CategoryTwitter:
 		return n.IsActive && n.IsTwitterScraper
