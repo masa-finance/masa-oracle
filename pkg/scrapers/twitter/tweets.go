@@ -112,7 +112,7 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 	if err != nil {
 		return "", "", err
 	}
-	return prompt, sentiment, nil
+	return prompt, sentiment, tweets[0].Error
 }
 
 // ScrapeTweetsByQuery performs a search on Twitter for tweets matching the specified query.
@@ -181,7 +181,7 @@ func ScrapeTweetsByTrends() ([]*TweetResult, error) {
 		trendResults = append(trendResults, trendResult)
 	}
 
-	return trendResults, nil
+	return trendResults, trendResults[0].Error
 }
 
 // ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
@@ -198,7 +198,6 @@ func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
 
 	profile, err := scraper.GetProfile(username)
 	if err != nil {
-		logrus.Printf("Error fetching profile: %v", err)
 		return twitterscraper.Profile{}, err
 	}
 
