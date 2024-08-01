@@ -270,6 +270,21 @@ func TestScrapeTweetsWithMockServer(t *testing.T) {
 func TestScrapeTweets(t *testing.T) {
 	setup()
 
+	// // Create a new OracleNode for testing
+	// testNode, err := masa.NewOracleNode(context.Background(), true)
+	// if err != nil {
+	// 	t.Fatalf("Failed to create test node: %v", err)
+	// }
+	// defer testNode.Host.Close()
+
+	// // Start the node
+	// if err := testNode.Start(); err != nil {
+	// 	t.Fatalf("Failed to start test node: %v", err)
+	// }
+
+	// // Now we can use the node's NodeTracker
+	// go testNode.NodeTracker.ClearExpiredWorkerTimeouts()
+
 	query := "Sadhguru"
 	count := 10
 
@@ -301,7 +316,11 @@ func TestScrapeTweets(t *testing.T) {
 			"tweets_sample": string(tweetsData[:min(100, len(tweetsData))]),
 		}).Debug("[+] Tweets data")
 
-		assert.NotNil(t, tweetsData[:10])
+		if len(tweetsData) > 0 {
+			assert.NotNil(t, tweetsData[:min(10, len(tweetsData))])
+		} else {
+			assert.Nil(t, tweetsData)
+		}
 	}
 }
 

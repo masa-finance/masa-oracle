@@ -151,7 +151,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 		}
 		tweets = append(tweets, &tweet)
 	}
-	return tweets, nil
+	return tweets, tweets[0].Error
 }
 
 // ScrapeTweetsByTrends scrapes the current trending topics on Twitter.
