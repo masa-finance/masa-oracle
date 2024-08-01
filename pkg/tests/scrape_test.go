@@ -163,7 +163,7 @@ func TestScrapeTweetsWithSentimentByQuery(t *testing.T) {
 	twitterScraperTweets := make([]*twitterscraper.TweetResult, len(deserializedTweets))
 	for i, tweet := range deserializedTweets {
 		twitterScraperTweets[i] = &twitterscraper.TweetResult{
-			Tweet: tweet,
+			Tweet: *tweet,
 			Error: nil,
 		}
 	}
