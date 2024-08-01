@@ -100,7 +100,8 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 
 			c.JSON(http.StatusOK, result)
 			return
-		case <-time.After(60 * time.Second):
+		// teslashibe: adjust to timeout after 10 seconds for performance testing
+		case <-time.After(10 * time.Second):
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
 			return
 		case <-c.Done():
