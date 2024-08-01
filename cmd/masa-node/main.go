@@ -99,6 +99,7 @@ func main() {
 	if node.IsStaked {
 		go workers.MonitorWorkers(ctx, node)
 		go masa.SubscribeToBlocks(ctx, node)
+		go node.NodeTracker.ClearExpiredWorkerTimeouts()
 	}
 
 	// Listen for SIGINT (CTRL+C)

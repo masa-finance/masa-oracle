@@ -44,29 +44,29 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 }
 
 type NodeData struct {
-	Multiaddrs           []JSONMultiaddr      `json:"multiaddrs,omitempty"`
-	PeerId               peer.ID              `json:"peerId"`
-	FirstJoinedUnix      int64                `json:"firstJoined,omitempty"`
-	LastJoinedUnix       int64                `json:"lastJoined,omitempty"`
-	LastLeftUnix         int64                `json:"-"`
-	LastUpdatedUnix      int64                `json:"lastUpdated,omitempty"`
-	CurrentUptime        time.Duration        `json:"uptime,omitempty"`
-	CurrentUptimeStr     string               `json:"uptimeStr,omitempty"`
-	AccumulatedUptime    time.Duration        `json:"accumulatedUptime,omitempty"`
-	AccumulatedUptimeStr string               `json:"accumulatedUptimeStr,omitempty"`
-	EthAddress           string               `json:"ethAddress,omitempty"`
-	Activity             int                  `json:"activity,omitempty"`
-	IsActive             bool                 `json:"isActive"`
-	IsStaked             bool                 `json:"isStaked"`
-	SelfIdentified       bool                 `json:"-"`
-	IsValidator          bool                 `json:"isValidator"`
-	IsTwitterScraper     bool                 `json:"isTwitterScraper"`
-	IsDiscordScraper     bool                 `json:"isDiscordScraper"`
-	IsTelegramScraper    bool                 `json:"isTelegramScraper"`
-	IsWebScraper         bool                 `json:"isWebScraper"`
-	Records              any                  `json:"records,omitempty"`
-	Version              string               `json:"version"`
-	TimeoutChecks        map[string]time.Time `json:"timeoutChecks,omitempty"`
+	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
+	PeerId               peer.ID         `json:"peerId"`
+	FirstJoinedUnix      int64           `json:"firstJoined,omitempty"`
+	LastJoinedUnix       int64           `json:"lastJoined,omitempty"`
+	LastLeftUnix         int64           `json:"-"`
+	LastUpdatedUnix      int64           `json:"lastUpdated,omitempty"`
+	CurrentUptime        time.Duration   `json:"uptime,omitempty"`
+	CurrentUptimeStr     string          `json:"uptimeStr,omitempty"`
+	AccumulatedUptime    time.Duration   `json:"accumulatedUptime,omitempty"`
+	AccumulatedUptimeStr string          `json:"accumulatedUptimeStr,omitempty"`
+	EthAddress           string          `json:"ethAddress,omitempty"`
+	Activity             int             `json:"activity,omitempty"`
+	IsActive             bool            `json:"isActive"`
+	IsStaked             bool            `json:"isStaked"`
+	SelfIdentified       bool            `json:"-"`
+	IsValidator          bool            `json:"isValidator"`
+	IsTwitterScraper     bool            `json:"isTwitterScraper"`
+	IsDiscordScraper     bool            `json:"isDiscordScraper"`
+	IsTelegramScraper    bool            `json:"isTelegramScraper"`
+	IsWebScraper         bool            `json:"isWebScraper"`
+	Records              any             `json:"records,omitempty"`
+	Version              string          `json:"version"`
+	WorkerTimeout        time.Time       `json:"workerTimeout,omitempty"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given

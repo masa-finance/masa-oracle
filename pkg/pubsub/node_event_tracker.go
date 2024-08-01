@@ -356,8 +356,35 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	}
 }
 
+// RemoveNodeData removes the node data associated with the given peer ID from the NodeEventTracker.
+// It deletes the node data from the internal map and removes any corresponding entry
+// from the connect buffer. This function is typically called when a peer disconnects
+// or is no longer part of the network.
+//
+// Parameters:
+//   - peerID: A string representing the ID of the peer to be removed.
 func (net *NodeEventTracker) RemoveNodeData(peerID string) {
 	net.nodeData.Delete(peerID)
 	delete(net.ConnectBuffer, peerID)
 	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+}
+
+// ClearExpiredWorkerTimeouts periodically checks and clears expired worker timeouts.
+// It runs in an infinite loop, sleeping for 5 minutes between each iteration.
+// For each node in the network, it checks if the worker timeout has expired (after 60 minutes).
+// If a timeout has expired, it resets the WorkerTimeout to zero and updates the node data.
+// This function helps manage the availability of workers in the network by clearing
+// temporary timeout states.
+func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
+	for {
+		time.Sleep(5 * time.Minute) // Check every 5 minutes
+		now := time.Now()
+
+		for _, nodeData := range net.GetAllNodeData() {
+			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 60*time.Minute {
+				nodeData.WorkerTimeout = time.Time{} // Reset to zero value
+				net.AddOrUpdateNodeData(&nodeData, true)
+			}
+		}
+	}
 }
