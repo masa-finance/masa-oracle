@@ -93,7 +93,7 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 			}
 		} else {
 			tweet = TweetResult{
-				Tweet: tweetResult.Tweet,
+				Tweet: &tweetResult.Tweet,
 				Error: nil,
 			}
 		}
@@ -104,7 +104,7 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 	twitterScraperTweets := make([]*twitterscraper.TweetResult, len(tweets))
 	for i, tweet := range tweets {
 		twitterScraperTweets[i] = &twitterscraper.TweetResult{
-			Tweet: tweet.Tweet,
+			Tweet: *tweet.Tweet,
 			Error: tweet.Error,
 		}
 	}
@@ -145,7 +145,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 			}
 		} else {
 			tweet = TweetResult{
-				Tweet: tweetResult.Tweet,
+				Tweet: &tweetResult.Tweet,
 				Error: nil,
 			}
 		}
