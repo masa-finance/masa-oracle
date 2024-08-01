@@ -317,9 +317,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					}
 					responseCollector <- msg
 					n++
-					// @TODO add a limiter if a node 429s add them to a list and don't call them for n number of minutes
+					// @note added a limiter if a node 429s add them to a list and don't call them for n number of minutes
 					// re: Add feature timeout timestamps to nodeData and helper methods to do timeout checks
-					// @note need to handle if we have thousands of workers this could take a very long time to complete
+					// need to handle if we have thousands of workers this could take a very long time to complete
 					// here we cap n
 					// teslashibe: adjust to 3 for performance testing
 					if n == len(peers) || n == 3 {
