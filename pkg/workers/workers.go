@@ -76,6 +76,37 @@ var (
 	workerDoneCh   = make(chan *pubsub2.Message)
 )
 
+// // WorkerCategory represents the main categories of workers
+// type WorkerCategory int64
+
+// const (
+// 	CategoryDiscord WorkerCategory = iota
+// 	CategoryTelegram
+// 	CategoryTwitter
+// 	CategoryWeb
+// )
+
+// // String returns the string representation of the WorkerCategory
+// func (wc WorkerCategory) String() string {
+// 	return [...]string{"Discord", "Telegram", "Twitter", "Web"}[wc]
+// }
+
+// WorkerTypeToCategory maps WorkerType to WorkerCategory
+func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
+	switch wt {
+	case Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds:
+		return pubsub.CategoryDiscord
+	case TelegramSentiment, TelegramChannelMessages:
+		return pubsub.CategoryTelegram
+	case Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends:
+		return pubsub.CategoryTwitter
+	case Web, WebSentiment:
+		return pubsub.CategoryWeb
+	default:
+		return -1 // Invalid category
+	}
+}
+
 type CID struct {
 	Duration  float64 `json:"duration"`
 	RecordId  string  `json:"cid"`
@@ -202,10 +233,11 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	var wg sync.WaitGroup
 	props := actor.PropsFromProducer(NewWorker(node))
 	pid := node.ActorEngine.Spawn(props)
-	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
+	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String(), Type: int64(pubsub.CategoryTwitter)}
+	n := 0
 
 	responseCollector := make(chan *pubsub2.Message, 100) // Buffered channel to collect responses
-	timeout := time.After(50 * time.Second)
+	timeout := time.After(30 * time.Second)
 
 	// Local worker
 	if node.IsStaked && node.IsWorker() {
@@ -225,12 +257,13 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 				gMsg, gErr := getResponseMessage(result.(*messages.Response))
 				if gErr != nil {
 					logrus.Errorf("[-] Error getting response message: %v", gErr)
-					workerDoneCh <- &pubsub2.Message{}
+					responseCollector <- &pubsub2.Message{}
 					return
 				}
 				msg = gMsg
 			}
 			responseCollector <- msg
+			n++
 		}()
 	}
 
@@ -239,7 +272,13 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			if p.IsStaked && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper || p.IsTelegramScraper) {
+
+			// @TODO add a limiter if a node 429s add them to a list and don't call them for n number of minutes
+			// re: Add feature timeout timestamps to nodeData and helper methods to do timeout checks
+
+			if (p.PeerId.String() != node.Host.ID().String()) &&
+				p.IsStaked &&
+				node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type)) {
 				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
@@ -247,12 +286,14 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
 						logrus.Debugf("[-] Error spawning remote worker: %v", err)
+						responseCollector <- &pubsub2.Message{}
 						return
 					}
 					spawnedPID := spawned.Pid
 					logrus.Infof("[+] Worker Address: %s", spawnedPID)
 					if spawnedPID == nil {
 						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
+						responseCollector <- &pubsub2.Message{}
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
@@ -261,6 +302,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					result, fErr := future.Result()
 					if fErr != nil {
 						logrus.Debugf("[-] Error receiving response from remote worker: %v", fErr)
+						responseCollector <- &pubsub2.Message{}
 						return
 					}
 					response := result.(*messages.Response)
@@ -270,6 +312,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						gMsg, gErr := getResponseMessage(response)
 						if gErr != nil {
 							logrus.Errorf("[-] Error getting response message: %v", gErr)
+							responseCollector <- &pubsub2.Message{}
 							return
 						}
 						if gMsg != nil {
@@ -277,6 +320,13 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						}
 					}
 					responseCollector <- msg
+					n++
+					// @note need to handle if we have thousands of workers this could take a very long time to complete
+					// here we cap n
+					if n == len(peers) || n == 100 {
+						logrus.Info("[+] All workers have responded")
+						responseCollector <- msg
+					}
 				}(p)
 			}
 		}
@@ -290,9 +340,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			case response := <-responseCollector:
 				responses = append(responses, response)
 			case <-timeout:
-				// Send queued responses to workerDoneCh
 				for _, resp := range responses {
-					// @TODO add handling of failed responses here...
 					workerDoneCh <- resp
 				}
 				return
@@ -345,6 +393,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
 			var workData map[string]string
+
 			err := json.Unmarshal(work.Data, &workData)
 			if err != nil {
 				logrus.Error("[-] Error unmarshalling work: ", err)

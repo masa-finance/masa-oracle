@@ -15,6 +15,7 @@ message Work {
   actor.PID Sender = 1;
 	string Data = 2;
   string Id = 3;
+  int64 Type = 4;
 }
 
 message Response {

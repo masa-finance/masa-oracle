@@ -74,7 +74,7 @@ func auth() *twitterscraper.Scraper {
 //   - An error if the scraping or sentiment analysis process encounters any issues.
 func ScrapeTweetsForSentiment(query string, count int, model string) (string, string, error) {
 	scraper := auth()
-	var tweets []*twitterscraper.Tweet
+	var tweets []*TweetResult
 
 	if scraper == nil {
 		return "", "", fmt.Errorf("there was an error authenticating with your Twitter credentials")
@@ -85,14 +85,22 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
-		if tweetResult.Error != nil {
-			logrus.Printf("Error fetching tweet: %v", tweetResult.Error)
-			continue
+		tweet := TweetResult{
+			Tweet: tweetResult.Tweet,
+			Error: tweetResult.Error,
 		}
-		tweets = append(tweets, &tweetResult.Tweet)
+		tweets = append(tweets, &tweet)
 	}
 	sentimentPrompt := "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
-	prompt, sentiment, err := llmbridge.AnalyzeSentimentTweets(tweets, model, sentimentPrompt)
+	// Convert []*TweetResult to []*twitterscraper.TweetResult
+	twitterScraperTweets := make([]*twitterscraper.TweetResult, len(tweets))
+	for i, tweet := range tweets {
+		twitterScraperTweets[i] = &twitterscraper.TweetResult{
+			Tweet: tweet.Tweet,
+			Error: tweet.Error,
+		}
+	}
+	prompt, sentiment, err := llmbridge.AnalyzeSentimentTweets(twitterScraperTweets, model, sentimentPrompt)
 	if err != nil {
 		return "", "", err
 	}
@@ -110,7 +118,6 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 //   - An error if the scraping process encounters any issues.
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 	scraper := auth()
-	// var tweets []*twitterscraper.Tweet
 	var tweets []*TweetResult
 
 	if scraper == nil {
@@ -123,7 +130,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
 		tweet := TweetResult{
-			Tweet: &tweetResult.Tweet,
+			Tweet: tweetResult.Tweet,
 			Error: tweetResult.Error,
 		}
 		tweets = append(tweets, &tweet)
