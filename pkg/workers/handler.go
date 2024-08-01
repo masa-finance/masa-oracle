@@ -90,13 +90,25 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 	}
 
+	// Log the workData and bodyData before the switch
+	logrus.Infof("[+] Message: %+v", m)
+	logrus.Infof("[+] Worker: %+v", WORKER.DiscordChannelMessages)
+	logrus.Infof("[+] WorkData: %+v", workData)
+	logrus.Infof("[+] BodyData: %+v", bodyData)
+
 	switch workData["request"] {
 	case string(WORKER.DiscordProfile):
 		userID := bodyData["userID"].(string)
 		resp, err = discord.GetUserProfile(userID)
 	case string(WORKER.DiscordChannelMessages):
 		channelID := bodyData["channelID"].(string)
-		resp, err = discord.GetChannelMessages(channelID)
+		limit := bodyData["limit"].(int)
+		before := bodyData["before"].(string)
+
+		// Print the values for debugging
+		logrus.Infof("GetChannelMessages called with channelID: %s, limit: %d, before: %s", channelID, limit, before)
+
+		resp, err = discord.GetChannelMessages(channelID, limit, before)
 	case string(WORKER.DiscordSentiment):
 		logrus.Infof("[+] Discord Channel Messages %s %s", m.Data, m.Sender)
 		channelID := bodyData["channelID"].(string)

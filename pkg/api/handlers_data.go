@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -62,6 +63,7 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 	if err != nil {
 		return err
 	}
+	logrus.Infof("Publishing work request: %s", string(jsn))
 	return api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn)
 }
 
@@ -422,27 +424,46 @@ func (api *API) SearchChannelMessages() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody struct {
 			ChannelID string `json:"channelID"`
+			Limit     int    `json:"limit"`
+			Before    string `json:"before"`
 		}
 
+		// Extract the required parameter from the URL path
 		reqBody.ChannelID = c.Param("channelID")
-
 		if reqBody.ChannelID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID must be provided and valid"})
 			return
 		}
+
+		// Extract optional query parameters
+		if limitStr := c.Query("limit"); limitStr != "" {
+			if limit, err := strconv.Atoi(limitStr); err == nil {
+				reqBody.Limit = limit
+			}
+		}
+
+		reqBody.Before = c.Query("before")
 
 		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+
+		// Print the reqBody for debugging
+		logrus.Infof("Request Body: %+v", reqBody)
+
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+
 		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+
 		handleWorkResponse(c, responseCh)
 	}
 }
