@@ -272,10 +272,6 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-
-			// @TODO add a limiter if a node 429s add them to a list and don't call them for n number of minutes
-			// re: Add feature timeout timestamps to nodeData and helper methods to do timeout checks
-
 			if (p.PeerId.String() != node.Host.ID().String()) &&
 				p.IsStaked &&
 				node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type)) {
@@ -321,6 +317,8 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					}
 					responseCollector <- msg
 					n++
+					// @TODO add a limiter if a node 429s add them to a list and don't call them for n number of minutes
+					// re: Add feature timeout timestamps to nodeData and helper methods to do timeout checks
 					// @note need to handle if we have thousands of workers this could take a very long time to complete
 					// here we cap n
 					if n == len(peers) || n == 100 {

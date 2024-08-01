@@ -85,9 +85,17 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
-		tweet := TweetResult{
-			Tweet: &tweetResult.Tweet,
-			Error: tweetResult.Error,
+		var tweet TweetResult
+		if tweetResult.Error != nil {
+			tweet = TweetResult{
+				Tweet: nil,
+				Error: tweetResult.Error,
+			}
+		} else {
+			tweet = TweetResult{
+				Tweet: tweetResult.Tweet,
+				Error: nil,
+			}
 		}
 		tweets = append(tweets, &tweet)
 	}
@@ -96,7 +104,7 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 	twitterScraperTweets := make([]*twitterscraper.TweetResult, len(tweets))
 	for i, tweet := range tweets {
 		twitterScraperTweets[i] = &twitterscraper.TweetResult{
-			Tweet: *tweet.Tweet,
+			Tweet: tweet.Tweet,
 			Error: tweet.Error,
 		}
 	}
@@ -129,9 +137,17 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
-		tweet := TweetResult{
-			Tweet: &tweetResult.Tweet,
-			Error: tweetResult.Error,
+		var tweet TweetResult
+		if tweetResult.Error != nil {
+			tweet = TweetResult{
+				Tweet: nil,
+				Error: tweetResult.Error,
+			}
+		} else {
+			tweet = TweetResult{
+				Tweet: tweetResult.Tweet,
+				Error: nil,
+			}
 		}
 		tweets = append(tweets, &tweet)
 	}
