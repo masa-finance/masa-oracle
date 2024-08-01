@@ -157,7 +157,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	}
 
 	if err != nil {
-		logrus.Errorf("[-] Error processing request: %v", err)
+		logrus.Errorf("[-] Remote node %s: Error processing request: %s", m.Sender, err)
 		chanResponse := ChanResponse{
 			Response:  map[string]interface{}{"error": err.Error()},
 			ChannelId: workData["request_id"],
