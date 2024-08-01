@@ -159,7 +159,6 @@ func TestScrapeTweetsWithSentimentByQuery(t *testing.T) {
 
 	// Now, deserializedTweets contains the tweets loaded from the file
 	// Send the tweets data to Claude for sentiment analysis
-	// Convert []*twitterscraper.Tweet to []*twitterscraper.TweetResult
 	twitterScraperTweets := make([]*twitterscraper.TweetResult, len(deserializedTweets))
 	for i, tweet := range deserializedTweets {
 		twitterScraperTweets[i] = &twitterscraper.TweetResult{
