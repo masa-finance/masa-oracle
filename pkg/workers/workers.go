@@ -317,11 +317,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					}
 					responseCollector <- msg
 					n++
-					// @note added a limiter if a node 429s add them to a list and don't call them for n number of minutes
-					// re: Add feature timeout timestamps to nodeData and helper methods to do timeout checks
-					// need to handle if we have thousands of workers this could take a very long time to complete
-					// here we cap n
-					// teslashibe: adjust to 3 for performance testing
+					// cap at 3 for performance
 					if n == len(peers) || n == 3 {
 						logrus.Info("[+] All workers have responded")
 						responseCollector <- msg
