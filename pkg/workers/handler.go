@@ -173,9 +173,9 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 
 		if isLocalHost {
-			logrus.Errorf("[-] Local node: Error processing request: %s", err)
+			logrus.Errorf("[-] Local node: Error processing request: %s", err.Error())
 		} else {
-			logrus.Errorf("[-] Remote node %s: Error processing request: %s", m.Sender, err)
+			logrus.Errorf("[-] Remote node %s: Error processing request: %s", m.Sender, err.Error())
 		}
 
 		chanResponse := ChanResponse{
