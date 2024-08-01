@@ -278,7 +278,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 
 				// Check WorkerTimeout
 				nodeData := node.NodeTracker.GetNodeData(p.PeerId.String())
-				if !nodeData.WorkerTimeout.IsZero() && time.Since(nodeData.WorkerTimeout) < 60*time.Minute {
+				if !nodeData.WorkerTimeout.IsZero() && time.Since(nodeData.WorkerTimeout) < 16*time.Minute {
 					logrus.Infof("[+] Skipping worker %s due to timeout", p.PeerId)
 					continue
 				}

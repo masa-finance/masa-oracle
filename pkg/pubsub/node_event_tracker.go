@@ -381,7 +381,7 @@ func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
 		now := time.Now()
 
 		for _, nodeData := range net.GetAllNodeData() {
-			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 60*time.Minute {
+			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 16*time.Minute {
 				nodeData.WorkerTimeout = time.Time{} // Reset to zero value
 				net.AddOrUpdateNodeData(&nodeData, true)
 			}
