@@ -237,7 +237,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	n := 0
 
 	responseCollector := make(chan *pubsub2.Message, 100) // Buffered channel to collect responses
-	timeout := time.After(30 * time.Second)
+	timeout := time.After(8 * time.Second)
 
 	// Local worker
 	if node.IsStaked && node.IsWorker() {
