@@ -40,8 +40,7 @@ jobs:
 
     - name: Build Binary
       run: |
-        echo "Building with version: ${{ env.VERSION }}"
-        go build -v -ldflags "-X github.com/masa-finance/masa-oracle/pkg/config.Version=${{ env.VERSION }}" -o masa-node ./cmd/masa-node
+        make build
 
     - id: auth
       uses: google-github-actions/auth@v2
