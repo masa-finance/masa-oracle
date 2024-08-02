@@ -422,37 +422,37 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 // SearchChannelMessages returns a gin.HandlerFunc that processes a request to search for messages in a Discord channel.
 func (api *API) SearchChannelMessages() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody struct {
+		var reqParams struct {
 			ChannelID string `json:"channelID"`
-			Limit     int    `json:"limit"`
+			Limit     string `json:"limit"`
 			Before    string `json:"before"`
 		}
 
-		// Extract the required parameter from the URL path
-		reqBody.ChannelID = c.Param("channelID")
-		if reqBody.ChannelID == "" {
+		reqParams.ChannelID = c.Param("channelID")
+		if reqParams.ChannelID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID must be provided and valid"})
 			return
 		}
 
-		// Extract optional query parameters
-		if limitStr := c.Query("limit"); limitStr != "" {
-			if limit, err := strconv.Atoi(limitStr); err == nil {
-				reqBody.Limit = limit
+		reqParams.Limit = c.Query("limit")
+		reqParams.Before = c.Query("before")
+
+		if reqParams.Limit != "" {
+			if _, err := strconv.Atoi(reqParams.Limit); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit parameter"})
+				return
 			}
 		}
 
-		reqBody.Before = c.Query("before")
-
 		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
+		bodyBytes, err := json.Marshal(reqParams)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
 		// Print the reqBody for debugging
-		logrus.Infof("Request Body: %+v", reqBody)
+		logrus.Infof("Request Body: %+v", reqParams)
 
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)

@@ -149,7 +149,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		workerDoneCh <- msg
 		ctx.Poison(ctx.Self())
 	default:
-		logrus.Warningf("[+] Received unknown message: %T, message: %+v", m, m)
+		logrus.Warningf("[+] Received unknown message in workers: %T, message: %+v", m, m)
 	}
 }
 

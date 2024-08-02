@@ -102,13 +102,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		resp, err = discord.GetUserProfile(userID)
 	case string(WORKER.DiscordChannelMessages):
 		channelID := bodyData["channelID"].(string)
-		limit := bodyData["limit"].(int)
-		before := bodyData["before"].(string)
-
-		// Print the values for debugging
-		logrus.Infof("GetChannelMessages called with channelID: %s, limit: %d, before: %s", channelID, limit, before)
-
-		resp, err = discord.GetChannelMessages(channelID, limit, before)
+		resp, err = discord.GetChannelMessages(channelID, bodyData["limit"].(string), bodyData["before"].(string))
 	case string(WORKER.DiscordSentiment):
 		logrus.Infof("[+] Discord Channel Messages %s %s", m.Data, m.Sender)
 		channelID := bodyData["channelID"].(string)
