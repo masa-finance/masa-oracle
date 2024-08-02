@@ -392,8 +392,8 @@ func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
 }
 
 const (
-	maxDisconnectionTime = 2 * time.Minute
-	cleanupInterval      = 1 * time.Minute
+	maxDisconnectionTime = 3 * time.Minute
+	cleanupInterval      = 5 * time.Minute
 )
 
 // StartCleanupRoutine starts a goroutine that periodically checks for and removes stale peers
@@ -418,14 +418,16 @@ func (net *NodeEventTracker) cleanupStalePeers() {
 	for _, nodeData := range net.GetAllNodeData() {
 		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
 			logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
-			net.RemoveNodeData(nodeData.PeerId.String())
-			delete(net.ConnectBuffer, nodeData.PeerId.String())
+			if nodeData.PeerId.String() != "" {
+				net.RemoveNodeData(nodeData.PeerId.String())
+				delete(net.ConnectBuffer, nodeData.PeerId.String())
 
-			// Notify about peer removal
-			net.NodeDataChan <- &NodeData{
-				PeerId:          nodeData.PeerId,
-				Activity:        ActivityLeft,
-				LastUpdatedUnix: now.Unix(),
+				// Notify about peer removal
+				net.NodeDataChan <- &NodeData{
+					PeerId:          nodeData.PeerId,
+					Activity:        ActivityLeft,
+					LastUpdatedUnix: now.Unix(),
+				}
 			}
 		}
 	}

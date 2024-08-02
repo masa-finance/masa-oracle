@@ -217,7 +217,9 @@ func (node *OracleNode) Start() (err error) {
 	go node.handleDiscoveredPeers()
 
 	removePeerCallback := func(p peer.ID) {
-		node.NodeTracker.RemoveNodeData(p.String())
+		if p != "" {
+			node.NodeTracker.RemoveNodeData(p.String())
+		}
 	}
 
 	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, removePeerCallback)
