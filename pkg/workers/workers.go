@@ -423,8 +423,8 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
  * @param {masa.OracleNode} node - The OracleNode instance.
  */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
+	logrus.Infof("[+] Work validatorDataMap %s", validatorDataMap)
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
-		logrus.Infof("[+] Work done %s", response)
 		if _, ok := response["error"].(string); ok {
 			logrus.Infof("[+] Work failed %s", response["error"])
 
