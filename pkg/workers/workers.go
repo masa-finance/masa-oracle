@@ -222,7 +222,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			result, err := future.Result()
 			if err != nil {
 				logrus.Errorf("[-] Error receiving response from local worker: %v", err)
-				responseCollector <- &pubsub2.Message{}
+				responseCollector <- &pubsub2.Message{
+					ValidatorData: map[string]interface{}{"error": err.Error()},
+				}
 				return
 			}
 			response := result.(*messages.Response)
@@ -232,7 +234,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 				gMsg, gErr := getResponseMessage(result.(*messages.Response))
 				if gErr != nil {
 					logrus.Errorf("[-] Error getting response message: %v", gErr)
-					responseCollector <- &pubsub2.Message{}
+					responseCollector <- &pubsub2.Message{
+						ValidatorData: map[string]interface{}{"error": gErr.Error()},
+					}
 					return
 				}
 				msg = gMsg
@@ -257,14 +261,18 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
 						logrus.Debugf("[-] Error spawning remote worker: %v", err)
-						responseCollector <- &pubsub2.Message{}
+						responseCollector <- &pubsub2.Message{
+							ValidatorData: map[string]interface{}{"error": err.Error()},
+						}
 						return
 					}
 					spawnedPID := spawned.Pid
 					logrus.Infof("[+] Worker Address: %s", spawnedPID)
 					if spawnedPID == nil {
 						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
-						responseCollector <- &pubsub2.Message{}
+						responseCollector <- &pubsub2.Message{
+							ValidatorData: map[string]interface{}{"error": "Spawned PID is nil"},
+						}
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
@@ -273,7 +281,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					result, fErr := future.Result()
 					if fErr != nil {
 						logrus.Debugf("[-] Error receiving response from remote worker: %v", fErr)
-						responseCollector <- &pubsub2.Message{}
+						responseCollector <- &pubsub2.Message{
+							ValidatorData: map[string]interface{}{"error": fErr.Error()},
+						}
 						return
 					}
 					response := result.(*messages.Response)
@@ -283,7 +293,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						gMsg, gErr := getResponseMessage(response)
 						if gErr != nil {
 							logrus.Errorf("[-] Error getting response message: %v", gErr)
-							responseCollector <- &pubsub2.Message{}
+							responseCollector <- &pubsub2.Message{
+								ValidatorData: map[string]interface{}{"error": gErr.Error()},
+							}
 							return
 						}
 						if gMsg != nil {
