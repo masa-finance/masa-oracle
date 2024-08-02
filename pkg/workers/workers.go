@@ -76,21 +76,6 @@ var (
 	workerDoneCh   = make(chan *pubsub2.Message)
 )
 
-// // WorkerCategory represents the main categories of workers
-// type WorkerCategory int64
-
-// const (
-// 	CategoryDiscord WorkerCategory = iota
-// 	CategoryTelegram
-// 	CategoryTwitter
-// 	CategoryWeb
-// )
-
-// // String returns the string representation of the WorkerCategory
-// func (wc WorkerCategory) String() string {
-// 	return [...]string{"Discord", "Telegram", "Twitter", "Web"}[wc]
-// }
-
 // WorkerTypeToCategory maps WorkerType to WorkerCategory
 func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
 	switch wt {
@@ -105,17 +90,6 @@ func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
 	default:
 		return -1 // Invalid category
 	}
-}
-
-type CID struct {
-	Duration  float64 `json:"duration"`
-	RecordId  string  `json:"cid"`
-	Timestamp int64   `json:"timestamp"`
-}
-
-type Record struct {
-	PeerId string `json:"peerid"`
-	CIDs   []CID  `json:"cids"`
 }
 
 type ChanResponse struct {
