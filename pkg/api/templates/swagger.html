@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="./swagger-ui.css" />
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16" />
+    <style>
+      html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+      *, *:before, *:after { box-sizing: inherit; }
+      body { margin:0; background: #fafafa; }
+    </style>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="./swagger-ui-bundle.js" charset="UTF-8"> </script>
+    <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
+    <script>
+    window.onload = function() {
+      const ui = SwaggerUIBundle({
+        url: "doc.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "StandaloneLayout",
+        onComplete: function() {
+          const currentScheme = window.location.protocol.slice(0, -1);
+          
+          function setScheme() {
+            const schemeSelect = document.querySelector('.scheme-container select');
+            if (schemeSelect && schemeSelect.value !== currentScheme) {
+              schemeSelect.value = currentScheme;
+              const event = new Event('change', { bubbles: true, cancelable: true });
+              schemeSelect.dispatchEvent(event);
+            }
+          }
+
+          // Initial set
+          setScheme();
+
+          // Set up a MutationObserver to watch for changes in the Swagger UI
+          const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                setScheme();
+              }
+            });
+          });
+
+          // Start observing the document with the configured parameters
+          observer.observe(document.body, { childList: true, subtree: true });
+        }
+      });
+    }
+    </script>
+  </body>
+</html>
