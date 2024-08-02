@@ -32,7 +32,7 @@ type ConnectBufferEntry struct {
 // It initializes the node data map, node data channel, node data file path,
 // connect buffer map. It loads existing node data from file, starts a goroutine
 // to clear expired buffer entries, and returns the initialized instance.
-func NewNodeEventTracker(version, environment string) *NodeEventTracker {
+func NewNodeEventTracker(version, environment string, hostId string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
 		NodeDataChan:  make(chan *NodeData),
@@ -40,7 +40,7 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
 	go net.ClearExpiredBufferEntries()
-	go net.StartCleanupRoutine(context.Background())
+	go net.StartCleanupRoutine(context.Background(), hostId)
 	return net
 }
 
@@ -336,8 +336,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
 			net.nodeData.Set(nodeData.PeerId.String(), nd)
 
-		} else {
-			return nil
 		}
 
 		// If the node data exists, check if the multiaddress is already in the list
@@ -420,19 +418,19 @@ func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
 }
 
 const (
-	maxDisconnectionTime = 3 * time.Minute
-	cleanupInterval      = 5 * time.Minute
+	maxDisconnectionTime = 1 * time.Minute
+	cleanupInterval      = 2 * time.Minute
 )
 
 // StartCleanupRoutine starts a goroutine that periodically checks for and removes stale peers
-func (net *NodeEventTracker) StartCleanupRoutine(ctx context.Context) {
+func (net *NodeEventTracker) StartCleanupRoutine(ctx context.Context, hostId string) {
 	ticker := time.NewTicker(cleanupInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			net.cleanupStalePeers()
+			net.cleanupStalePeers(hostId)
 		case <-ctx.Done():
 			return
 		}
@@ -440,13 +438,13 @@ func (net *NodeEventTracker) StartCleanupRoutine(ctx context.Context) {
 }
 
 // cleanupStalePeers checks for and removes stale peers from both the routing table and node data
-func (net *NodeEventTracker) cleanupStalePeers() {
+func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
 	now := time.Now()
 
 	for _, nodeData := range net.GetAllNodeData() {
 		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
-			logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
-			if nodeData.PeerId.String() != "" {
+			if nodeData.PeerId.String() != hostId {
+				logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
 				net.RemoveNodeData(nodeData.PeerId.String())
 				delete(net.ConnectBuffer, nodeData.PeerId.String())
 
@@ -457,6 +455,10 @@ func (net *NodeEventTracker) cleanupStalePeers() {
 					LastUpdatedUnix: now.Unix(),
 				}
 			}
+
+			// Use the node parameter to access OracleNode methods if needed
+			// For example:
+			// node.SomeMethod(nodeData.PeerId)
 		}
 	}
 }

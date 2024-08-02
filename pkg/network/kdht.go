@@ -65,9 +65,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 		}
 		peerChan <- pe
 		if removePeerCallback != nil {
-			if p != "" {
-				removePeerCallback(p)
-			}
+			removePeerCallback(p)
 		}
 	}
 
