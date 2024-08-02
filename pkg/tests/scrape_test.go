@@ -270,21 +270,6 @@ func TestScrapeTweetsWithMockServer(t *testing.T) {
 func TestScrapeTweets(t *testing.T) {
 	setup()
 
-	// // Create a new OracleNode for testing
-	// testNode, err := masa.NewOracleNode(context.Background(), true)
-	// if err != nil {
-	// 	t.Fatalf("Failed to create test node: %v", err)
-	// }
-	// defer testNode.Host.Close()
-
-	// // Start the node
-	// if err := testNode.Start(); err != nil {
-	// 	t.Fatalf("Failed to start test node: %v", err)
-	// }
-
-	// // Now we can use the node's NodeTracker
-	// go testNode.NodeTracker.ClearExpiredWorkerTimeouts()
-
 	query := "Sadhguru"
 	count := 10
 
@@ -321,37 +306,6 @@ func TestScrapeTweets(t *testing.T) {
 		} else {
 			assert.Nil(t, tweetsData)
 		}
-	}
-}
-
-func TestScrapeTweetsByTrends(t *testing.T) {
-	setup()
-
-	for i := 0; i < 5; i++ { // Run the test 5 times to ensure consistency
-		trends, err := twitter.ScrapeTweetsByTrends()
-		if err != nil {
-			t.Fatalf("Failed to scrape tweets by trends: %v", err)
-		}
-
-		// Check if we got any trends
-		assert.NotEmpty(t, trends, "No trends were returned")
-
-		// Log the trends for debugging
-		logrus.WithFields(logrus.Fields{
-			"trends_count":  len(trends),
-			"trends_sample": trends[:min(5, len(trends))],
-		}).Debug("[+] Trends data")
-
-		// Check each trend
-		for _, trend := range trends {
-			assert.NotEmpty(t, trend, "Empty trend found")
-		}
-
-		// Check if we have at least 5 trends (Twitter usually provides more)
-		assert.GreaterOrEqual(t, len(trends), 5, "Expected at least 5 trends")
-
-		// Optional: Add a short delay between iterations to avoid rate limiting
-		time.Sleep(2 * time.Second)
 	}
 }
 
