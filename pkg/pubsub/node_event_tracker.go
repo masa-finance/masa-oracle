@@ -315,24 +315,49 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
 		}
-		// If the node data exists, check if the multiaddress is already in the list
-		multiAddress := nodeData.Multiaddrs[0].Multiaddr
-		addrExists := false
-		for _, addr := range nodeData.Multiaddrs {
-			if addr.Equal(multiAddress) {
-				addrExists = true
-				break
+
+		if len(nodeData.Multiaddrs) > 0 {
+			multiAddress := nodeData.Multiaddrs[0].Multiaddr
+			addrExists := false
+			for _, addr := range nodeData.Multiaddrs {
+				if addr.Equal(multiAddress) {
+					addrExists = true
+					break
+				}
 			}
-		}
-		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
-		}
-		if dataChanged || forceGossip {
-			net.NodeDataChan <- nd
+			if !addrExists {
+				nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+			}
+
+			if dataChanged || forceGossip {
+				net.NodeDataChan <- nd
+			}
+
+			nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+			net.nodeData.Set(nodeData.PeerId.String(), nd)
+
+		} else {
+			return nil
 		}
 
-		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		net.nodeData.Set(nodeData.PeerId.String(), nd)
+		// If the node data exists, check if the multiaddress is already in the list
+		// multiAddress := nodeData.Multiaddrs[0].Multiaddr
+		// addrExists := false
+		// for _, addr := range nodeData.Multiaddrs {
+		// 	if addr.Equal(multiAddress) {
+		// 		addrExists = true
+		// 		break
+		// 	}
+		// }
+		// if !addrExists {
+		// 	nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+		// }
+		// if dataChanged || forceGossip {
+		// 	net.NodeDataChan <- nd
+		// }
+
+		// nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+		// net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
@@ -385,7 +410,10 @@ func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
 		for _, nodeData := range net.GetAllNodeData() {
 			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 16*time.Minute {
 				nodeData.WorkerTimeout = time.Time{} // Reset to zero value
-				net.AddOrUpdateNodeData(&nodeData, true)
+				err := net.AddOrUpdateNodeData(&nodeData, true)
+				if err != nil {
+					logrus.Warnf("Error adding worker timeout %v", err)
+				}
 			}
 		}
 	}

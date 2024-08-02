@@ -2,7 +2,7 @@
 
 [All Releases](https://github.com/masa-finance/masa-oracle/releases)
 
-## [0.0.5.x](https://github.com/masa-finance/masa-oracle/releases) (2024)
+## [0.0.5.0](https://github.com/masa-finance/masa-oracle/releases) (2024)
 
 ## Overview
 
@@ -10,7 +10,7 @@ This release of the Masa Oracle Node introduces the following new features and c
 
 ### Breaking Changes
 
-* Protocol verion change to 0.5.x
+* Protocol verion change to 0.5.0
 
 ### Bug fixes
 
@@ -32,4 +32,4 @@ This release of the Masa Oracle Node introduces the following new features and c
 
 ## Change Log
 
-* Version: 0.5.x
+* Version: 0.5.0
