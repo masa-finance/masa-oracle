@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/internal/constants"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -86,10 +86,13 @@ type AppConfig struct {
 	GPTApiKey          string `mapstructure:"gptApiKey"`
 	TwitterScraper     bool   `mapstructure:"twitterScraper"`
 	DiscordScraper     bool   `mapstructure:"discordScraper"`
+	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
+
+	TelegramStop bg.StopFunc
 }
 
 // GetInstance returns the singleton instance of AppConfig.
@@ -109,9 +112,8 @@ func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
 
-		instance.setDefaultConfig()
-		instance.Version = viper.GetString("Version") // Explicitly set the AppConfig Version field
 		instance.setEnvVariableConfig()
+		instance.setDefaultConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
 		if err != nil {
@@ -143,7 +145,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault("Version", constants.Version)
+	viper.SetDefault("Version", Version)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -216,6 +218,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
 	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
 	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "DiscordScraper")
+	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "TelegramScraper")
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")

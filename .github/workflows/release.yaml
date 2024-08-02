@@ -27,15 +27,21 @@ jobs:
       environment: ${{ steps.set-env.outputs.environment }}
     steps:
     - uses: actions/checkout@v4
-    
+      with:
+        fetch-depth: 0
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.21'
     
+    - name: Set Version
+      run: echo "VERSION=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
     - name: Build Binary
-      run: go build -v -o masa-node ./cmd/masa-node
-    
+      run: |
+        make build
+
     - id: auth
       uses: google-github-actions/auth@v2
       with:

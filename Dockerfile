@@ -23,6 +23,8 @@ WORKDIR /home/masa
 COPY --chown=masa:masa contracts/ ./contracts/
 RUN cd contracts && npm install
 
+
+
 # Switch back to root to install the Go binary
 USER root
 
@@ -32,11 +34,14 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+
 RUN make build
 
 # Continue with the final image
 FROM base
+
 COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
+
 RUN chmod +x /usr/bin/masa-node
 
 # Switch to 'masa' to run the application

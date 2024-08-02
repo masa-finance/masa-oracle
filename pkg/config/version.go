@@ -1,4 +1,4 @@
-package constants
+package config
 
 var (
 	Version string

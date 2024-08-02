@@ -1,8 +1,11 @@
 VERSION := $(shell git describe --tags --abbrev=0)
 
+print-version:
+	@echo "Version: ${VERSION}"
+
 build:
-	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/constants.Version=$(VERSION)" -o ./bin/masa-node ./cmd/masa-node
-	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/constants.Version=$(VERSION)" -o ./bin/masa-node-cli ./cmd/masa-node-cli
+	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/pkg/config.Version=${VERSION}" -o ./bin/masa-node ./cmd/masa-node
+	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/pkg/config.Version=${VERSION}" -o ./bin/masa-node-cli ./cmd/masa-node-cli
 	
 install:
 	@sh ./node_install.sh
@@ -20,12 +23,14 @@ client: build
 	@./bin/masa-node-cli
 
 test:
-	@go test ./...
+	@go test -v -count=1 ./...
 
 clean:
 	@rm -rf bin
-	@rm masa_node.log
-	@rm -rf ~/.masa/cache
+	
+	@if [ -d ~/.masa/blocks ]; then rm -rf ~/.masa/blocks; fi
+	@if [ -d ~/.masa/cache ]; then rm -rf ~/.masa/cache; fi	
+	@if [ -f masa_node.log ]; then rm masa_node.log; fi
 	
 proto:
 	sh pkg/workers/messages/build.sh
