@@ -65,7 +65,6 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 	if err != nil {
 		return err
 	}
-	logrus.Infof("Publishing work request: %s", string(jsn))
 	return api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn)
 }
 
@@ -401,9 +400,6 @@ func (api *API) SearchChannelMessages() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		// Print the reqBody for debugging
-		logrus.Infof("Request Body: %+v", reqParams)
 
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)

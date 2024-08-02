@@ -28,9 +28,6 @@ type ChannelMessage struct {
 
 // GetChannelMessages fetches messages for a specific channel from the Discord API
 func GetChannelMessages(channelID string, limit string, before string) ([]ChannelMessage, error) {
-	// Print the parameters for debugging
-	fmt.Printf("Parameters - channelID: %s, limit: %s, before: %s\n", channelID, limit, before)
-
 	botToken := os.Getenv("DISCORD_BOT_TOKEN") // Replace with your actual environment variable name
 	if botToken == "" {
 		return nil, fmt.Errorf("DISCORD_BOT_TOKEN environment variable not set")
@@ -47,7 +44,7 @@ func GetChannelMessages(channelID string, limit string, before string) ([]Channe
 	// Add query parameters if they are provided
 	q := req.URL.Query()
 	if limitCheck > 0 && limitCheck <= 100 {
-		q.Add("limit", fmt.Sprintf("%d", limit))
+		q.Add("limit", limit)
 	}
 	if before != "" {
 		q.Add("before", before)
@@ -55,9 +52,6 @@ func GetChannelMessages(channelID string, limit string, before string) ([]Channe
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", botToken))
-
-	// Print the full request URL for debugging
-	fmt.Printf("Request URL: %s\n", req.URL.String())
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
