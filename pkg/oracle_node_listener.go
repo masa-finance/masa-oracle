@@ -161,6 +161,12 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var page NodeDataPage
+
+		if err := json.Unmarshal(data, &page); err != nil {
+			logrus.Errorf("[-] Failed to unmarshal NodeData page: %v %s %+v", err, string(data), page)
+			continue
+		}
+
 		if err := json.Unmarshal(data, &page); err != nil {
 			logrus.Errorf("[-] Failed to unmarshal NodeData page: %v", err)
 			continue

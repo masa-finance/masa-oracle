@@ -66,6 +66,7 @@ type NodeData struct {
 	IsWebScraper         bool            `json:"isWebScraper"`
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
+	WorkerTimeout        time.Time       `json:"workerTimeout,omitempty"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
@@ -73,7 +74,6 @@ type NodeData struct {
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
-	// cfg := config.GetInstance()
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -92,6 +92,44 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 // This can be used by other nodes to connect to this node.
 func (n *NodeData) Address() string {
 	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
+}
+
+// WorkerCategory represents the main categories of workers
+type WorkerCategory int
+
+const (
+	CategoryDiscord WorkerCategory = iota
+	CategoryTelegram
+	CategoryTwitter
+	CategoryWeb
+)
+
+// String returns the string representation of the WorkerCategory
+func (wc WorkerCategory) String() string {
+	return [...]string{"Discord", "Telegram", "Twitter", "Web"}[wc]
+}
+
+// CanDoWork checks if the node can perform work of the specified WorkerType.
+// It returns true if the node is configured for the given worker type, false otherwise.
+func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
+
+	if !n.WorkerTimeout.IsZero() && time.Since(n.WorkerTimeout) < 16*time.Minute {
+		logrus.Infof("[+] Skipping worker %s due to timeout", n.PeerId)
+		return false
+	}
+
+	switch workerType {
+	case CategoryTwitter:
+		return n.IsActive && n.IsTwitterScraper
+	case CategoryDiscord:
+		return n.IsActive && n.IsDiscordScraper
+	case CategoryTelegram:
+		return n.IsActive && n.IsTelegramScraper
+	case CategoryWeb:
+		return n.IsActive && n.IsWebScraper
+	default:
+		return false
+	}
 }
 
 // TwitterScraper checks if the current node is configured as a Twitter scraper.
