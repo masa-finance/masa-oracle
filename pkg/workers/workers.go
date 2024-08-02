@@ -132,11 +132,11 @@ func (a *Worker) Receive(ctx actor.Context) {
 		}
 	case *messages.Work:
 		if a.Node.IsWorker() {
-			logrus.Infof("[+] Received Work message: %+v", m)
+			logrus.Infof("[+] Received Work")
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
-		logrus.Infof("[+] Received Response message: %+v", m)
+		logrus.Infof("[+] Received Response")
 		msg := &pubsub2.Message{}
 		err := json.Unmarshal([]byte(m.Value), msg)
 		if err != nil {

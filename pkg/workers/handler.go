@@ -90,12 +90,6 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 	}
 
-	// Log the workData and bodyData before the switch
-	logrus.Infof("[+] Message: %+v", m)
-	logrus.Infof("[+] Worker: %+v", WORKER.DiscordChannelMessages)
-	logrus.Infof("[+] WorkData: %+v", workData)
-	logrus.Infof("[+] BodyData: %+v", bodyData)
-
 	switch workData["request"] {
 	case string(WORKER.DiscordProfile):
 		userID := bodyData["userID"].(string)
