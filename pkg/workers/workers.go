@@ -222,6 +222,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			result, err := future.Result()
 			if err != nil {
 				logrus.Errorf("[-] Error receiving response from local worker: %v", err)
+				responseCollector <- &pubsub2.Message{}
 				return
 			}
 			response := result.(*messages.Response)
