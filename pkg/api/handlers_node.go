@@ -424,7 +424,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			}
 		}
 
-		c.HTML(http.StatusOK, "index.html", templateData)
+		c.HTML(http.StatusOK, "status.html", templateData)
 	}
 }
 

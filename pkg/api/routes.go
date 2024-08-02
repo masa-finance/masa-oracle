@@ -8,16 +8,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/masa-finance/masa-oracle/docs"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+
+	"path/filepath"
+	"runtime"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	swaggerFiles "github.com/swaggo/files"     // swagger embed files
+	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
 )
 
 //go:embed templates/*.html
@@ -126,18 +129,12 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
 	router.SetHTMLTemplate(templ)
 
+	// Update Swagger info
+	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
+	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
-	//	@BasePath		/api/v1
-	//	@Title			Masa API
-	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
-	//	@Host			https://api.masa.ai
-	//	@Version		0.5.0
-	//	@contact.name	Masa API Support
-	//	@contact.url	https://masa.ai
-	//	@contact.email	support@masa.ai
-	//	@license.name	MIT
-	//	@license.url	https://opensource.org/license/mit
+	setupSwaggerHandler(router)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -552,6 +549,35 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		})
 	})
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.DefaultModelsExpandDepth(-1)))
 	return router
+}
+
+func setupSwaggerHandler(router *gin.Engine) {
+	// Get the current file's directory
+	_, currentFile, _, _ := runtime.Caller(0)
+	currentDir := filepath.Dir(currentFile)
+
+	// Construct the path to the swagger.html file
+	swaggerTemplate := filepath.Join(currentDir, "templates", "swagger.html")
+
+	// Create a custom handler that serves our HTML file
+	customHandler := func(c *gin.Context) {
+		if c.Request.URL.Path == "/swagger" || c.Request.URL.Path == "/swagger/" || c.Request.URL.Path == "/swagger/index.html" {
+			c.File(swaggerTemplate)
+			return
+		}
+
+		// For other swagger-related paths, use the default handler
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
+			ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
+			return
+		}
+
+		// If it's not a swagger path, pass it to the next handler
+		c.Next()
+	}
+
+	// Use our custom handler for all /swagger paths
+	router.GET("/swagger", customHandler)
+	router.GET("/swagger/*any", customHandler)
 }
