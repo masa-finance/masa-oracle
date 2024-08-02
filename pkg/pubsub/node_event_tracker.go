@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -31,7 +32,7 @@ type ConnectBufferEntry struct {
 // It initializes the node data map, node data channel, node data file path,
 // connect buffer map. It loads existing node data from file, starts a goroutine
 // to clear expired buffer entries, and returns the initialized instance.
-func NewNodeEventTracker(version, environment string) *NodeEventTracker {
+func NewNodeEventTracker(version, environment string, hostId string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
 		NodeDataChan:  make(chan *NodeData),
@@ -39,6 +40,7 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
 	go net.ClearExpiredBufferEntries()
+	go net.StartCleanupRoutine(context.Background(), hostId)
 	return net
 }
 
@@ -313,24 +315,47 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
 		}
-		// If the node data exists, check if the multiaddress is already in the list
-		multiAddress := nodeData.Multiaddrs[0].Multiaddr
-		addrExists := false
-		for _, addr := range nodeData.Multiaddrs {
-			if addr.Equal(multiAddress) {
-				addrExists = true
-				break
+
+		if len(nodeData.Multiaddrs) > 0 {
+			multiAddress := nodeData.Multiaddrs[0].Multiaddr
+			addrExists := false
+			for _, addr := range nodeData.Multiaddrs {
+				if addr.Equal(multiAddress) {
+					addrExists = true
+					break
+				}
 			}
-		}
-		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
-		}
-		if dataChanged || forceGossip {
-			net.NodeDataChan <- nd
+			if !addrExists {
+				nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+			}
+
+			if dataChanged || forceGossip {
+				net.NodeDataChan <- nd
+			}
+
+			nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+			net.nodeData.Set(nodeData.PeerId.String(), nd)
+
 		}
 
-		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		net.nodeData.Set(nodeData.PeerId.String(), nd)
+		// If the node data exists, check if the multiaddress is already in the list
+		// multiAddress := nodeData.Multiaddrs[0].Multiaddr
+		// addrExists := false
+		// for _, addr := range nodeData.Multiaddrs {
+		// 	if addr.Equal(multiAddress) {
+		// 		addrExists = true
+		// 		break
+		// 	}
+		// }
+		// if !addrExists {
+		// 	nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+		// }
+		// if dataChanged || forceGossip {
+		// 	net.NodeDataChan <- nd
+		// }
+
+		// nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+		// net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
@@ -356,8 +381,84 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	}
 }
 
+// RemoveNodeData removes the node data associated with the given peer ID from the NodeEventTracker.
+// It deletes the node data from the internal map and removes any corresponding entry
+// from the connect buffer. This function is typically called when a peer disconnects
+// or is no longer part of the network.
+//
+// Parameters:
+//   - peerID: A string representing the ID of the peer to be removed.
 func (net *NodeEventTracker) RemoveNodeData(peerID string) {
 	net.nodeData.Delete(peerID)
 	delete(net.ConnectBuffer, peerID)
 	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+}
+
+// ClearExpiredWorkerTimeouts periodically checks and clears expired worker timeouts.
+// It runs in an infinite loop, sleeping for 5 minutes between each iteration.
+// For each node in the network, it checks if the worker timeout has expired (after 60 minutes).
+// If a timeout has expired, it resets the WorkerTimeout to zero and updates the node data.
+// This function helps manage the availability of workers in the network by clearing
+// temporary timeout states.
+func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
+	for {
+		time.Sleep(5 * time.Minute) // Check every 5 minutes
+		now := time.Now()
+
+		for _, nodeData := range net.GetAllNodeData() {
+			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 16*time.Minute {
+				nodeData.WorkerTimeout = time.Time{} // Reset to zero value
+				err := net.AddOrUpdateNodeData(&nodeData, true)
+				if err != nil {
+					logrus.Warnf("Error adding worker timeout %v", err)
+				}
+			}
+		}
+	}
+}
+
+const (
+	maxDisconnectionTime = 1 * time.Minute
+	cleanupInterval      = 2 * time.Minute
+)
+
+// StartCleanupRoutine starts a goroutine that periodically checks for and removes stale peers
+func (net *NodeEventTracker) StartCleanupRoutine(ctx context.Context, hostId string) {
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			net.cleanupStalePeers(hostId)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// cleanupStalePeers checks for and removes stale peers from both the routing table and node data
+func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
+	now := time.Now()
+
+	for _, nodeData := range net.GetAllNodeData() {
+		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
+			if nodeData.PeerId.String() != hostId {
+				logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
+				net.RemoveNodeData(nodeData.PeerId.String())
+				delete(net.ConnectBuffer, nodeData.PeerId.String())
+
+				// Notify about peer removal
+				net.NodeDataChan <- &NodeData{
+					PeerId:          nodeData.PeerId,
+					Activity:        ActivityLeft,
+					LastUpdatedUnix: now.Unix(),
+				}
+			}
+
+			// Use the node parameter to access OracleNode methods if needed
+			// For example:
+			// node.SomeMethod(nodeData.PeerId)
+		}
+	}
 }

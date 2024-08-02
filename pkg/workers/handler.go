@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -157,7 +158,26 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	}
 
 	if err != nil {
-		logrus.Errorf("[-] Error processing request: %v", err)
+		host, _, err := net.SplitHostPort(m.Sender.Address)
+		addrs := node.Host.Addrs()
+		isLocalHost := false
+		for _, addr := range addrs {
+			addrStr := addr.String()
+			if strings.HasPrefix(addrStr, "/ip4/") {
+				ipStr := strings.Split(strings.Split(addrStr, "/")[2], "/")[0]
+				if host == ipStr {
+					isLocalHost = true
+					break
+				}
+			}
+		}
+
+		if isLocalHost {
+			logrus.Errorf("[-] Local node: Error processing request: %s", err.Error())
+		} else {
+			logrus.Errorf("[-] Remote node %s: Error processing request: %s", m.Sender, err.Error())
+		}
+
 		chanResponse := ChanResponse{
 			Response:  map[string]interface{}{"error": err.Error()},
 			ChannelId: workData["request_id"],
@@ -187,7 +207,8 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 			return
 		}
 		cfg := config.GetInstance()
-		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TwitterScraper || cfg.WebScraper {
+
+		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TelegramScraper || cfg.WebScraper {
 			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 		}
 		for _, pid := range getPeers(node) {
