@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -39,6 +40,7 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
 	go net.ClearExpiredBufferEntries()
+	go net.StartCleanupRoutine(context.Background())
 	return net
 }
 
@@ -384,6 +386,46 @@ func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
 			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 16*time.Minute {
 				nodeData.WorkerTimeout = time.Time{} // Reset to zero value
 				net.AddOrUpdateNodeData(&nodeData, true)
+			}
+		}
+	}
+}
+
+const (
+	maxDisconnectionTime = 2 * time.Minute
+	cleanupInterval      = 1 * time.Minute
+)
+
+// StartCleanupRoutine starts a goroutine that periodically checks for and removes stale peers
+func (net *NodeEventTracker) StartCleanupRoutine(ctx context.Context) {
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			net.cleanupStalePeers()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// cleanupStalePeers checks for and removes stale peers from both the routing table and node data
+func (net *NodeEventTracker) cleanupStalePeers() {
+	now := time.Now()
+
+	for _, nodeData := range net.GetAllNodeData() {
+		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
+			logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
+			net.RemoveNodeData(nodeData.PeerId.String())
+			delete(net.ConnectBuffer, nodeData.PeerId.String())
+
+			// Notify about peer removal
+			net.NodeDataChan <- &NodeData{
+				PeerId:          nodeData.PeerId,
+				Activity:        ActivityLeft,
+				LastUpdatedUnix: now.Unix(),
 			}
 		}
 	}
