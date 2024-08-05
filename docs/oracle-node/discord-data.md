@@ -31,9 +31,19 @@ The Service Manager assesses the request and delegates the task to the appropria
 
 ## Discord Endpoints
 
-The API provides one endpoint for interacting with Discord user data:
+### Getting Guild and Channel IDs
+
+To get all guilds (and their IDs) you can use the `/data/discord/guilds/all` endpoint.
+
+> ![Get Guilds](../images/discord-get-all-guilds.png)
+
+With the guild ID you can then use the `/data/discord/guilds/{guildID}/channels` endpoint to get all channels for that guild.
+
+> ![Get Channels](../images/discord-get-guild-channels.png)
 
 ### Retrieve User Profile
+
+The API provides one endpoint for interacting with Discord user data:
 
 The `/data/discord/users/{userID}` endpoint retrieves a Discord user's profile. This can be particularly useful for understanding user demographics, personalizing interactions, or for further analysis in combination with other data points.
 
