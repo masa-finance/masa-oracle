@@ -3,7 +3,6 @@ package workers
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
-	masa "github.com/masa-finance/masa-oracle/pkg"
 )
 
 type WorkerType string
@@ -59,8 +58,4 @@ var (
 type ChanResponse struct {
 	Response  map[string]interface{}
 	ChannelId string
-}
-
-type Worker struct {
-	Node *masa.OracleNode
 }

@@ -19,11 +19,18 @@ import (
 const (
 	workerTimeout = 30 * time.Second
 	queueTimeout  = 8 * time.Second
+	maxWorkers    = 5
 )
+
+type Worker struct {
+	IsLocal  bool
+	NodeData pubsub.NodeData
+	IPAddr   string
+	Node     *masa.OracleNode
+}
 
 func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	logrus.Infof("Sending work to node %s", node.Host.ID())
-	var wg sync.WaitGroup
 	props := actor.PropsFromProducer(NewWorker(node))
 	pid := node.ActorEngine.Spawn(props)
 	message := createWorkMessage(m, pid)
@@ -31,12 +38,22 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	responseCollector := make(chan *pubsub2.Message, 100)
 	timeout := time.After(queueTimeout)
 
-	if node.IsStaked && node.IsWorker() {
-		wg.Add(1)
-		go handleLocalWorker(node, pid, message, &wg, responseCollector)
-	}
+	eligibleWorkers := getEligibleWorkers(node, message)
+	workerIterator := newRoundRobinIterator(eligibleWorkers)
 
-	handleRemoteWorkers(node, message, props, &wg, responseCollector)
+	var wg sync.WaitGroup
+	for i := 0; i < maxWorkers && workerIterator.HasNext(); i++ {
+		worker := workerIterator.Next()
+		wg.Add(1)
+		go func(w Worker) {
+			defer wg.Done()
+			if w.IsLocal {
+				handleLocalWorker(node, pid, message, responseCollector)
+			} else {
+				handleRemoteWorker(node, w.NodeData, w.IPAddr, props, message, responseCollector)
+			}
+		}(worker)
+	}
 
 	go queueResponses(responseCollector, timeout)
 
@@ -52,8 +69,49 @@ func createWorkMessage(m *pubsub2.Message, pid *actor.PID) *messages.Work {
 	}
 }
 
-func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.Work, wg *sync.WaitGroup, responseCollector chan<- *pubsub2.Message) {
-	defer wg.Done()
+func getEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker {
+	var workers []Worker
+
+	if node.IsStaked && node.IsWorker() {
+		workers = append(workers, Worker{IsLocal: true, NodeData: pubsub.NodeData{PeerId: node.Host.ID()}})
+	}
+
+	peers := node.NodeTracker.GetAllNodeData()
+	for _, p := range peers {
+		if isEligibleRemoteWorker(p, node, message) {
+			for _, addr := range p.Multiaddrs {
+				ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+				workers = append(workers, Worker{IsLocal: false, NodeData: p, IPAddr: ipAddr})
+				break
+			}
+		}
+	}
+
+	return workers
+}
+
+type roundRobinIterator struct {
+	workers []Worker
+	index   int
+}
+
+func newRoundRobinIterator(workers []Worker) *roundRobinIterator {
+	return &roundRobinIterator{
+		workers: workers,
+		index:   -1,
+	}
+}
+
+func (r *roundRobinIterator) HasNext() bool {
+	return len(r.workers) > 0
+}
+
+func (r *roundRobinIterator) Next() Worker {
+	r.index = (r.index + 1) % len(r.workers)
+	return r.workers[r.index]
+}
+
+func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.Work, responseCollector chan<- *pubsub2.Message) {
 	logrus.Info("Sending work to local worker")
 	future := node.ActorEngine.RequestFuture(pid, message, workerTimeout)
 	result, err := future.Result()
@@ -64,28 +122,13 @@ func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.
 	processWorkerResponse(result, node.Host.ID(), responseCollector)
 }
 
-func handleRemoteWorkers(node *masa.OracleNode, message *messages.Work, props *actor.Props, wg *sync.WaitGroup, responseCollector chan<- *pubsub2.Message) {
-	logrus.Info("Sending work to remote workers")
-	peers := node.NodeTracker.GetAllNodeData()
-	for _, p := range peers {
-		for _, addr := range p.Multiaddrs {
-			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			if isEligibleRemoteWorker(p, node, message) {
-				wg.Add(1)
-				go handleRemoteWorker(node, p, ipAddr, props, message, wg, responseCollector)
-			}
-		}
-	}
-}
-
 func isEligibleRemoteWorker(p pubsub.NodeData, node *masa.OracleNode, message *messages.Work) bool {
 	return (p.PeerId.String() != node.Host.ID().String()) &&
 		p.IsStaked &&
 		node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type))
 }
 
-func handleRemoteWorker(node *masa.OracleNode, p pubsub.NodeData, ipAddr string, props *actor.Props, message *messages.Work, wg *sync.WaitGroup, responseCollector chan<- *pubsub2.Message) {
-	defer wg.Done()
+func handleRemoteWorker(node *masa.OracleNode, p pubsub.NodeData, ipAddr string, props *actor.Props, message *messages.Work, responseCollector chan<- *pubsub2.Message) {
 	logrus.WithFields(logrus.Fields{
 		"ip":   ipAddr,
 		"peer": p.PeerId,
