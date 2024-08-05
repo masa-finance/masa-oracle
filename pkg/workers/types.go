@@ -52,10 +52,20 @@ var WORKER = struct {
 var (
 	clients        = actor.NewPIDSet()
 	workerStatusCh = make(chan *pubsub2.Message)
-	workerDoneCh   = make(chan *pubsub2.Message)
+	workerDoneCh   chan *pubsub2.Message
 )
+
+func init() {
+	config, _ := LoadConfig()
+	workerDoneCh = make(chan *pubsub2.Message, config.WorkerBufferSize)
+}
 
 type ChanResponse struct {
 	Response  map[string]interface{}
 	ChannelId string
+}
+
+type roundRobinIterator struct {
+	workers []Worker
+	index   int
 }

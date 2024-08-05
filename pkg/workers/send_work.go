@@ -15,11 +15,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	workerTimeout    = 30 * time.Second
-	maxRetries       = 3
-	maxSpawnAttempts = 3
-)
+var workerConfig *WorkerConfig
+
+func init() {
+	var err error
+	workerConfig, err = LoadConfig()
+	if err != nil {
+		logrus.Fatalf("Failed to load worker config: %v", err)
+	}
+	workerDoneCh = make(chan *pubsub2.Message, workerConfig.WorkerBufferSize)
+}
 
 type Worker struct {
 	IsLocal  bool
@@ -38,12 +43,12 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 
 	eligibleWorkers := getEligibleWorkers(node, message)
 
-	for retries := 0; retries < maxRetries; retries++ {
+	for retries := 0; retries < workerConfig.MaxRetries; retries++ {
 		success := tryWorkersRoundRobin(node, eligibleWorkers, message, responseCollector)
 		if success {
 			return
 		}
-		logrus.Warnf("All workers failed, retry attempt %d of %d", retries+1, maxRetries)
+		logrus.Warnf("All workers failed, retry attempt %d of %d", retries+1, workerConfig.MaxRetries)
 	}
 
 	logrus.Error("All workers failed to process the work after maximum retries")
@@ -88,7 +93,7 @@ func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, res
 		default:
 			// No response in channel, continue to next worker
 		}
-	case <-time.After(workerTimeout):
+	case <-time.After(workerConfig.WorkerTimeout):
 		logrus.Warnf("Worker %v timed out", worker.NodeData.PeerId)
 	}
 
@@ -125,11 +130,6 @@ func getEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker 
 	return workers
 }
 
-type roundRobinIterator struct {
-	workers []Worker
-	index   int
-}
-
 func newRoundRobinIterator(workers []Worker) *roundRobinIterator {
 	return &roundRobinIterator{
 		workers: workers,
@@ -148,12 +148,16 @@ func (r *roundRobinIterator) Next() Worker {
 
 func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.Work, responseCollector chan<- *pubsub2.Message) {
 	logrus.Info("Sending work to local worker")
-	future := node.ActorEngine.RequestFuture(pid, message, workerTimeout)
+	future := node.ActorEngine.RequestFuture(pid, message, workerConfig.WorkerTimeout)
 	result, err := future.Result()
 	if err != nil {
 		handleWorkerError(err, responseCollector)
 		return
 	}
+
+	// Log the full response from the local worker
+	logrus.WithField("full_response", result).Info("Full response from local worker")
+
 	processWorkerResponse(result, node.Host.ID(), responseCollector)
 }
 
@@ -173,7 +177,7 @@ func handleRemoteWorker(node *masa.OracleNode, p pubsub.NodeData, ipAddr string,
 	var err error
 
 	// Attempt to spawn the remote worker multiple times
-	for attempt := 1; attempt <= maxSpawnAttempts; attempt++ {
+	for attempt := 1; attempt <= workerConfig.MaxSpawnAttempts; attempt++ {
 		spawned, err = spawnRemoteWorker(node, ipAddr)
 		if err == nil {
 			break
@@ -194,7 +198,7 @@ func handleRemoteWorker(node *masa.OracleNode, p pubsub.NodeData, ipAddr string,
 	client := node.ActorEngine.Spawn(props)
 	node.ActorEngine.Send(spawned, &messages.Connect{Sender: client})
 
-	future := node.ActorEngine.RequestFuture(spawned, message, workerTimeout)
+	future := node.ActorEngine.RequestFuture(spawned, message, workerConfig.WorkerTimeout)
 	result, err := future.Result()
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
