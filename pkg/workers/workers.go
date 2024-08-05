@@ -132,9 +132,11 @@ func (a *Worker) Receive(ctx actor.Context) {
 		}
 	case *messages.Work:
 		if a.Node.IsWorker() {
+			logrus.Infof("[+] Received Work")
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
+		logrus.Infof("[+] Received Response")
 		msg := &pubsub2.Message{}
 		err := json.Unmarshal([]byte(m.Value), msg)
 		if err != nil {
@@ -147,7 +149,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 		workerDoneCh <- msg
 		ctx.Poison(ctx.Self())
 	default:
-		logrus.Warningf("[+] Received unknown message: %T", m)
+		logrus.Warningf("[+] Received unknown message in workers: %T, message: %+v", m, m)
 	}
 }
 
@@ -218,7 +220,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			future := node.ActorEngine.RequestFuture(pid, message, 30*time.Second)
+			future := node.ActorEngine.RequestFuture(pid, message, 60*time.Second) // Increase timeout from 30 to 60 seconds
 			result, err := future.Result()
 			if err != nil {
 				logrus.Errorf("[-] Error receiving response from local worker: %v", err)
@@ -423,7 +425,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
  * @param {masa.OracleNode} node - The OracleNode instance.
  */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
-	logrus.Infof("[+] Work validatorDataMap %s", validatorDataMap)
+	//logrus.Infof("[+] Work validatorDataMap %s", validatorDataMap)
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
 		if _, ok := response["error"].(string); ok {
 			logrus.Infof("[+] Work failed %s", response["error"])

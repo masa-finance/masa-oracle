@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -420,29 +421,45 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 // SearchChannelMessages returns a gin.HandlerFunc that processes a request to search for messages in a Discord channel.
 func (api *API) SearchChannelMessages() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody struct {
+		var reqParams struct {
 			ChannelID string `json:"channelID"`
+			Limit     string `json:"limit"`
+			Before    string `json:"before"`
 		}
 
-		reqBody.ChannelID = c.Param("channelID")
-
-		if reqBody.ChannelID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
+		reqParams.ChannelID = c.Param("channelID")
+		if reqParams.ChannelID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID must be provided and valid"})
 			return
 		}
 
+		reqParams.Limit = c.Query("limit")
+		reqParams.Before = c.Query("before")
+
+		if reqParams.Limit != "" {
+			if _, err := strconv.Atoi(reqParams.Limit); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit parameter"})
+				return
+			}
+		}
+
 		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
+		bodyBytes, err := json.Marshal(reqParams)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+
 		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+
 		handleWorkResponse(c, responseCh)
 	}
 }
