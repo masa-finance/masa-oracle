@@ -64,25 +64,12 @@ const (
 
 #### Masa cli or code integration
 
-Tweets are fetched using the Twitter Scraper library, as seen in the [llmbridge](file:///Users/john/Projects/masa/masa-oracle/pkg/llmbridge/sentiment_twitter.go#1%2C9-1%2C9) package. This process does not require Twitter API keys, making it accessible and straightforward.
+Tweets are fetched using the Twitter Scraper library, as seen in the [llmbridge](file:///Users/john/Projects/masa/masa-oracle/pkg/llmbridge/sentiment.go#) package. This process does not require Telegram API keys, making it accessible and straightforward.
 
 ```go
-func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string) (string, string, error) { ... }
+func AnalyzeSentimentTelegram(messages []*tg.Message, model string, prompt string) (string, string, error) {
 ```
 
 ### Analyzing Sentiment
 
 Once tweets are fetched, they are sent to the chosen language model for sentiment analysis. The system currently supports models prefixed with "claude-" and "gpt-", catering to a range of analysis needs.
-
-### Integration with Masa Node CLI
-
-The sentiment analysis feature is integrated into the Masa Node CLI, allowing users to interact with it directly from the command line. Users can specify the query, the number of tweets to analyze, and the model to use for analysis.
-
-```go
-var countMessage string
-var userMessage string
-
-inputCountField := tview.NewInputField().
-  SetLabel("# of Tweets to analyze ").
-  SetFieldWidth(10)
-```
