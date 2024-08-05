@@ -2,7 +2,6 @@ package workers
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -18,8 +17,6 @@ import (
 
 const (
 	workerTimeout = 30 * time.Second
-	queueTimeout  = 8 * time.Second
-	maxWorkers    = 5
 )
 
 type Worker struct {
@@ -35,29 +32,35 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	pid := node.ActorEngine.Spawn(props)
 	message := createWorkMessage(m, pid)
 
-	responseCollector := make(chan *pubsub2.Message, 100)
-	timeout := time.After(queueTimeout)
+	responseCollector := make(chan *pubsub2.Message, 1)
 
 	eligibleWorkers := getEligibleWorkers(node, message)
 	workerIterator := newRoundRobinIterator(eligibleWorkers)
 
-	var wg sync.WaitGroup
-	for i := 0; i < maxWorkers && workerIterator.HasNext(); i++ {
+	for workerIterator.HasNext() {
 		worker := workerIterator.Next()
-		wg.Add(1)
+
 		go func(w Worker) {
-			defer wg.Done()
 			if w.IsLocal {
 				handleLocalWorker(node, pid, message, responseCollector)
 			} else {
 				handleRemoteWorker(node, w.NodeData, w.IPAddr, props, message, responseCollector)
 			}
 		}(worker)
+
+		select {
+		case response := <-responseCollector:
+			if isSuccessfulResponse(response) {
+				processAndSendResponse(response)
+				return
+			}
+			// If response is not successful, continue to next worker
+		case <-time.After(workerTimeout):
+			logrus.Warnf("Worker %v timed out, moving to next worker", worker.NodeData.PeerId)
+		}
 	}
 
-	go queueResponses(responseCollector, timeout)
-
-	wg.Wait()
+	logrus.Error("All workers failed to process the work")
 }
 
 func createWorkMessage(m *pubsub2.Message, pid *actor.PID) *messages.Work {
@@ -195,19 +198,23 @@ func processWorkerResponse(result interface{}, workerID interface{}, responseCol
 	responseCollector <- msg
 }
 
-func queueResponses(responseCollector <-chan *pubsub2.Message, timeout <-chan time.Time) {
-	var responses []*pubsub2.Message
-	for {
-		select {
-		case response := <-responseCollector:
-			responses = append(responses, response)
-			logrus.Infof("Adding response from %s to responses list. Total responses: %d", response.ReceivedFrom, len(responses))
-		case <-timeout:
-			logrus.Infof("Timeout reached, sending all responses to workerDoneCh. Total responses: %d", len(responses))
-			for _, resp := range responses {
-				workerDoneCh <- resp
-			}
-			return
-		}
+func isSuccessfulResponse(response *pubsub2.Message) bool {
+	if response.ValidatorData == nil {
+		return true
 	}
+	validatorData, ok := response.ValidatorData.(map[string]interface{})
+	if !ok {
+		return false
+	}
+	errorVal, exists := validatorData["error"]
+	return !exists || errorVal == nil
+}
+
+func processAndSendResponse(response *pubsub2.Message) {
+	logrus.Infof("Processing and sending successful response")
+	workerDoneCh <- response
+}
+
+func init() {
+	workerDoneCh = make(chan *pubsub2.Message, 100)
 }
