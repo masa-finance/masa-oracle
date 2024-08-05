@@ -41,6 +41,8 @@ With the guild ID you can then use the `/data/discord/guilds/{guildID}/channels`
 
 > ![Get Channels](/docs/images/discord-get-guild-channels.png)
 
+With the guild ID you can then use the `/data/discord/guilds/{guildID}/channels` endpoint to get all channels for that guild.
+
 ### Retrieve User Profile
 
 The API provides one endpoint for interacting with Discord user data:
