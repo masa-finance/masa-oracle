@@ -63,6 +63,10 @@ Example response:
 
 ### Retrieve Messages from a Discord Channel
 
+> **Important**: To retrieve message content, you must toggle "Message Content Intent" in the Discord Developer Portal under the `Bot` section.
+>
+> ![Message Content Intent](../images/discord-message-content-intent.png)
+
 The `/data/discord/channels/{channelID}/messages` endpoint retrieves messages from a specified Discord channel.
 
 - **Endpoint:** `/data/discord/channels/{channelID}/messages`

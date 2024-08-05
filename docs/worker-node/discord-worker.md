@@ -35,11 +35,15 @@ To start processing Discord data requests, you need to retrieve your Discord bot
 
 2. Log in with your Discord account credentials.
 
-3. Click on the "New Application" button. Give your application a name and confirm the creation. ![Create a New Application](../images/discord-create-a-new-application.png)
+3. Click on the "New Application" button. Give your application a name and confirm the creation. 
+
+> ![Create a New Application](../images/discord-create-a-new-application.png)
 
 4. Navigate to the "Bot" tab on the left-hand side and click on "Reset Token".
 
-5. Under the "TOKEN" section, click on "Copy" to get your bot token. ![Copy Token](../images/discord-copy-bot-token.png)
+5. Under the "TOKEN" section, click on "Copy" to get your bot token.
+
+> ![Copy Token](../images/discord-copy-bot-token.png)
 
 ### Adding Discord Credentials
 
