@@ -342,6 +342,21 @@ const docTemplate = `{
 					  "description": "Discord Channel ID",
 					  "required": true,
 					  "type": "string"
+					},
+					{
+					  "name": "limit",
+					  "in": "query",
+					  "description": "The maximum number of messages to return",
+					  "required": false,
+					  "type": "integer",
+					  "format": "int32"
+					},
+					{
+					  "name": "before",
+					  "in": "query",
+					  "description": "A message ID to return messages posted before this message",
+					  "required": false,
+					  "type": "string"
 					}
 				  ],
 				  "responses": {
