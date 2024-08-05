@@ -34,51 +34,51 @@ To become a worker focused on Discord data requests, you need to:
 
 To start processing Discord data requests, you need to retrieve your Discord bot token, which is essential for authenticating with the Discord API. This token will allow your bot to collect data on your guild. Here's how to get your token:
 
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
+1 . Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 
-2. Log in with your Discord account credentials.
+2 . Log in with your Discord account credentials.
 
-3. Click on the "New Application" button. Give your application a name and confirm the creation.
+3 . Click on the "New Application" button. Give your application a name and confirm the creation.
 
 > ![Create a New Application](../images/discord-create-a-new-application.png)
 
 ### Update Bot permissions and install
 
-1. Go to the “Guild Install” section
+1 . Go to the “Guild Install” section
 
-2. Select on dropdown where is says “applications.commands and select “bot”
+2 . Select on dropdown where is says “applications.commands and select “bot”
 
 > ![Update Bot Permissions](../images/discord-change-bot-permissions.png)
 
-3. On the added permission dropdown after selecting bot, select “administrator”
+3 . On the added permission dropdown after selecting bot, select “administrator”
 
-4. Save changes on the bottom floating bar.
+4 . Save changes on the bottom floating bar.
 
 > ![Save Bot Permissions](../images/discord-change-bot-permissions-2.png)
 
-5. Copy the install link
+5 . Copy the install link
 
 > ![Copy Install Link](../images/discord-install-link.png)
 
-6. Go to a new tab on your browser and paste the link and then hit enter
+6 . Go to a new tab on your browser and paste the link and then hit enter
 
-7. You will go to Discord and see a modal click on add to server
+7 . You will go to Discord and see a modal click on add to server
 
-8. Select add to server dropdown and select the guild to add your new bot to your guild.
+8 . Select add to server dropdown and select the guild to add your new bot to your guild.
 
 > <img src="../images/discord-add-bot-to-server.png" alt="Description" width="400"/>
 
-9. Click “Continue”
+9 . Click “Continue”
 
-10. Click Authorize to add your bot. Congrats screen and should see Bot on Discord now!
+10 . Click Authorize to add your bot. Congrats screen and should see Bot on Discord now!
 
 > ![Bot Added](../images/discord-verify-bot.png)
 
 ### Retrieving Your Discord Bot Token
 
-1. Navigate to the "Bot" tab on the left-hand side and click on "Reset Token".
+1 . Navigate to the "Bot" tab on the left-hand side and click on "Reset Token".
 
-2. Under the "TOKEN" section, click on "Copy" to get your bot token.
+2 . Under the "TOKEN" section, click on "Copy" to get your bot token.
 
 > ![Copy Token](../images/discord-copy-bot-token.png)
 

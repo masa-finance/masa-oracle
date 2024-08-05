@@ -176,11 +176,11 @@ Imagine a decentralized AI agent, "CommunityEngageAI," designed to analyze engag
 
 ### How CommunityEngageAI Leverages AI
 
-1. **Data Collection:** CommunityEngageAI sends queries to the various endpoints to fetch profiles of active community members, messages from channels, and other relevant data.
+1 . **Data Collection:** CommunityEngageAI sends queries to the various endpoints to fetch profiles of active community members, messages from channels, and other relevant data.
 
-2. **Engagement Analysis:** Upon retrieving the data, CommunityEngageAI employs AI models to analyze engagement patterns, identify key influencers, and understand user demographics.
+2 . **Engagement Analysis:** Upon retrieving the data, CommunityEngageAI employs AI models to analyze engagement patterns, identify key influencers, and understand user demographics.
 
-3. **Personalized Interactions:** Leveraging the insights gained, CommunityEngageAI customizes interactions with community members, tailoring messages and content to enhance engagement and user satisfaction.
+3 . **Personalized Interactions:** Leveraging the insights gained, CommunityEngageAI customizes interactions with community members, tailoring messages and content to enhance engagement and user satisfaction.
 
 ### Conclusion
 
