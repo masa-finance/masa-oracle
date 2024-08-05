@@ -57,8 +57,8 @@ const (
 ```json
 {
   "username": "coinlistofficialchannel",
-  "count": 5,
-  "model": "all" // or replace with a single model type
+  "model": "all", // or replace with a single model type
+  "prompt": "new tokens"
 }
 ```
 
