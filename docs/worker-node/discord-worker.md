@@ -72,6 +72,8 @@ To start processing Discord data requests, you need to retrieve your Discord bot
 
 10. Click Authorize to add your bot. Congrats screen and should see Bot on Discord now!
 
+> ![Bot Added](../images/discord-verify-bot.png)
+
 ### Retrieving Your Discord Bot Token
 
 1. Navigate to the "Bot" tab on the left-hand side and click on "Reset Token".
