@@ -62,9 +62,11 @@ type NodeData struct {
 	IsValidator          bool            `json:"isValidator"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
 	IsDiscordScraper     bool            `json:"isDiscordScraper"`
+	IsTelegramScraper    bool            `json:"isTelegramScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
+	WorkerTimeout        time.Time       `json:"workerTimeout,omitempty"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
@@ -72,7 +74,6 @@ type NodeData struct {
 func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
 	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
-	// cfg := config.GetInstance()
 
 	return &NodeData{
 		PeerId:            peerId,
@@ -93,6 +94,44 @@ func (n *NodeData) Address() string {
 	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
 }
 
+// WorkerCategory represents the main categories of workers
+type WorkerCategory int
+
+const (
+	CategoryDiscord WorkerCategory = iota
+	CategoryTelegram
+	CategoryTwitter
+	CategoryWeb
+)
+
+// String returns the string representation of the WorkerCategory
+func (wc WorkerCategory) String() string {
+	return [...]string{"Discord", "Telegram", "Twitter", "Web"}[wc]
+}
+
+// CanDoWork checks if the node can perform work of the specified WorkerType.
+// It returns true if the node is configured for the given worker type, false otherwise.
+func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
+
+	if !n.WorkerTimeout.IsZero() && time.Since(n.WorkerTimeout) < 16*time.Minute {
+		logrus.Infof("[+] Skipping worker %s due to timeout", n.PeerId)
+		return false
+	}
+
+	switch workerType {
+	case CategoryTwitter:
+		return n.IsActive && n.IsTwitterScraper
+	case CategoryDiscord:
+		return n.IsActive && n.IsDiscordScraper
+	case CategoryTelegram:
+		return n.IsActive && n.IsTelegramScraper
+	case CategoryWeb:
+		return n.IsActive && n.IsWebScraper
+	default:
+		return false
+	}
+}
+
 // TwitterScraper checks if the current node is configured as a Twitter scraper.
 // It retrieves the configuration instance and returns the value of the TwitterScraper field.
 func (n *NodeData) TwitterScraper() bool {
@@ -103,6 +142,12 @@ func (n *NodeData) TwitterScraper() bool {
 // It retrieves the configuration instance and returns the value of the DiscordScraper field.
 func (n *NodeData) DiscordScraper() bool {
 	return n.IsDiscordScraper
+}
+
+// TelegramScraper checks if the current node is configured as a Discord scraper.
+// It retrieves the configuration instance and returns the value of the TelegramScraper field.
+func (n *NodeData) TelegramScraper() bool {
+	return n.IsTelegramScraper
 }
 
 // WebScraper checks if the current node is configured as a Web scraper.
@@ -208,15 +253,16 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
-		PeerId:           host.ID(),
-		IsStaked:         isStaked,
-		EthAddress:       masacrypto.KeyManagerInstance().EthAddress,
-		IsTwitterScraper: config.GetInstance().TwitterScraper,
-		IsDiscordScraper: config.GetInstance().DiscordScraper,
-		IsWebScraper:     config.GetInstance().WebScraper,
-		IsValidator:      config.GetInstance().Validator,
-		IsActive:         true,
-		Version:          config.GetInstance().Version,
+		PeerId:            host.ID(),
+		IsStaked:          isStaked,
+		EthAddress:        masacrypto.KeyManagerInstance().EthAddress,
+		IsTwitterScraper:  config.GetInstance().TwitterScraper,
+		IsDiscordScraper:  config.GetInstance().DiscordScraper,
+		IsTelegramScraper: config.GetInstance().TelegramScraper,
+		IsWebScraper:      config.GetInstance().WebScraper,
+		IsValidator:       config.GetInstance().Validator,
+		IsActive:          true,
+		Version:           config.Version,
 	}
 
 	// Convert NodeData to JSON

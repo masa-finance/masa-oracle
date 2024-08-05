@@ -29,41 +29,45 @@ import (
 type WorkerType string
 
 const (
-	Discord                WorkerType = "discord"
-	DiscordProfile         WorkerType = "discord-profile"
-	DiscordChannelMessages WorkerType = "discord-channel-messages"
-	DiscordSentiment       WorkerType = "discord-sentiment"
-	DiscordGuildChannels   WorkerType = "discord-guild-channels"
-	DiscordUserGuilds      WorkerType = "discord-user-guilds"
-	LLMChat                WorkerType = "llm-chat"
-	Twitter                WorkerType = "twitter"
-	TwitterFollowers       WorkerType = "twitter-followers"
-	TwitterProfile         WorkerType = "twitter-profile"
-	TwitterSentiment       WorkerType = "twitter-sentiment"
-	TwitterTrends          WorkerType = "twitter-trends"
-	Web                    WorkerType = "web"
-	WebSentiment           WorkerType = "web-sentiment"
-	Test                   WorkerType = "test"
+	Discord                 WorkerType = "discord"
+	DiscordProfile          WorkerType = "discord-profile"
+	DiscordChannelMessages  WorkerType = "discord-channel-messages"
+	DiscordSentiment        WorkerType = "discord-sentiment"
+	TelegramSentiment       WorkerType = "telegram-sentiment"
+	TelegramChannelMessages WorkerType = "telegram-channel-messages"
+	DiscordGuildChannels    WorkerType = "discord-guild-channels"
+	DiscordUserGuilds       WorkerType = "discord-user-guilds"
+	LLMChat                 WorkerType = "llm-chat"
+	Twitter                 WorkerType = "twitter"
+	TwitterFollowers        WorkerType = "twitter-followers"
+	TwitterProfile          WorkerType = "twitter-profile"
+	TwitterSentiment        WorkerType = "twitter-sentiment"
+	TwitterTrends           WorkerType = "twitter-trends"
+	Web                     WorkerType = "web"
+	WebSentiment            WorkerType = "web-sentiment"
+	Test                    WorkerType = "test"
 )
 
 var WORKER = struct {
-	Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
+	Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, TelegramSentiment, TelegramChannelMessages, DiscordGuildChannels, DiscordUserGuilds, LLMChat, Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends, Web, WebSentiment, Test WorkerType
 }{
-	Discord:                Discord,
-	DiscordProfile:         DiscordProfile,
-	DiscordChannelMessages: DiscordChannelMessages,
-	DiscordSentiment:       DiscordSentiment,
-	DiscordGuildChannels:   DiscordGuildChannels,
-	DiscordUserGuilds:      DiscordUserGuilds,
-	LLMChat:                LLMChat,
-	Twitter:                Twitter,
-	TwitterFollowers:       TwitterFollowers,
-	TwitterProfile:         TwitterProfile,
-	TwitterSentiment:       TwitterSentiment,
-	TwitterTrends:          TwitterTrends,
-	Web:                    Web,
-	WebSentiment:           WebSentiment,
-	Test:                   Test,
+	Discord:                 Discord,
+	DiscordProfile:          DiscordProfile,
+	DiscordChannelMessages:  DiscordChannelMessages,
+	DiscordSentiment:        DiscordSentiment,
+	TelegramSentiment:       TelegramSentiment,
+	TelegramChannelMessages: TelegramChannelMessages,
+	DiscordGuildChannels:    DiscordGuildChannels,
+	DiscordUserGuilds:       DiscordUserGuilds,
+	LLMChat:                 LLMChat,
+	Twitter:                 Twitter,
+	TwitterFollowers:        TwitterFollowers,
+	TwitterProfile:          TwitterProfile,
+	TwitterSentiment:        TwitterSentiment,
+	TwitterTrends:           TwitterTrends,
+	Web:                     Web,
+	WebSentiment:            WebSentiment,
+	Test:                    Test,
 }
 
 var (
@@ -72,15 +76,20 @@ var (
 	workerDoneCh   = make(chan *pubsub2.Message)
 )
 
-type CID struct {
-	Duration  float64 `json:"duration"`
-	RecordId  string  `json:"cid"`
-	Timestamp int64   `json:"timestamp"`
-}
-
-type Record struct {
-	PeerId string `json:"peerid"`
-	CIDs   []CID  `json:"cids"`
+// WorkerTypeToCategory maps WorkerType to WorkerCategory
+func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
+	switch wt {
+	case Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds:
+		return pubsub.CategoryDiscord
+	case TelegramSentiment, TelegramChannelMessages:
+		return pubsub.CategoryTelegram
+	case Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends:
+		return pubsub.CategoryTwitter
+	case Web, WebSentiment:
+		return pubsub.CategoryWeb
+	default:
+		return -1 // Invalid category
+	}
 }
 
 type ChanResponse struct {
@@ -198,10 +207,11 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	var wg sync.WaitGroup
 	props := actor.PropsFromProducer(NewWorker(node))
 	pid := node.ActorEngine.Spawn(props)
-	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String()}
+	message := &messages.Work{Data: string(m.Data), Sender: pid, Id: m.ReceivedFrom.String(), Type: int64(pubsub.CategoryTwitter)}
+	n := 0
 
 	responseCollector := make(chan *pubsub2.Message, 100) // Buffered channel to collect responses
-	timeout := time.After(60 * time.Second)
+	timeout := time.After(8 * time.Second)
 
 	// Local worker
 	if node.IsStaked && node.IsWorker() {
@@ -212,6 +222,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			result, err := future.Result()
 			if err != nil {
 				logrus.Errorf("[-] Error receiving response from local worker: %v", err)
+				responseCollector <- &pubsub2.Message{
+					ValidatorData: map[string]interface{}{"error": err.Error()},
+				}
 				return
 			}
 			response := result.(*messages.Response)
@@ -221,12 +234,15 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 				gMsg, gErr := getResponseMessage(result.(*messages.Response))
 				if gErr != nil {
 					logrus.Errorf("[-] Error getting response message: %v", gErr)
-					workerDoneCh <- &pubsub2.Message{}
+					responseCollector <- &pubsub2.Message{
+						ValidatorData: map[string]interface{}{"error": gErr.Error()},
+					}
 					return
 				}
 				msg = gMsg
 			}
 			responseCollector <- msg
+			n++
 		}()
 	}
 
@@ -235,19 +251,28 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	for _, p := range peers {
 		for _, addr := range p.Multiaddrs {
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			if p.IsStaked && (p.IsTwitterScraper || p.IsWebScraper || p.IsDiscordScraper) {
+			if (p.PeerId.String() != node.Host.ID().String()) &&
+				p.IsStaked &&
+				node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type)) {
+				logrus.Infof("[+] Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
 						logrus.Debugf("[-] Error spawning remote worker: %v", err)
+						responseCollector <- &pubsub2.Message{
+							ValidatorData: map[string]interface{}{"error": err.Error()},
+						}
 						return
 					}
 					spawnedPID := spawned.Pid
 					logrus.Infof("[+] Worker Address: %s", spawnedPID)
 					if spawnedPID == nil {
 						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
+						responseCollector <- &pubsub2.Message{
+							ValidatorData: map[string]interface{}{"error": "Spawned PID is nil"},
+						}
 						return
 					}
 					client := node.ActorEngine.Spawn(props)
@@ -256,6 +281,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					result, fErr := future.Result()
 					if fErr != nil {
 						logrus.Debugf("[-] Error receiving response from remote worker: %v", fErr)
+						responseCollector <- &pubsub2.Message{
+							ValidatorData: map[string]interface{}{"error": fErr.Error()},
+						}
 						return
 					}
 					response := result.(*messages.Response)
@@ -265,6 +293,9 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						gMsg, gErr := getResponseMessage(response)
 						if gErr != nil {
 							logrus.Errorf("[-] Error getting response message: %v", gErr)
+							responseCollector <- &pubsub2.Message{
+								ValidatorData: map[string]interface{}{"error": gErr.Error()},
+							}
 							return
 						}
 						if gMsg != nil {
@@ -272,6 +303,12 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 						}
 					}
 					responseCollector <- msg
+					n++
+					// cap at 3 for performance
+					if n == len(peers) || n == 3 {
+						logrus.Info("[+] All workers have responded")
+						responseCollector <- msg
+					}
 				}(p)
 			}
 		}
@@ -285,9 +322,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			case response := <-responseCollector:
 				responses = append(responses, response)
 			case <-timeout:
-				// Send queued responses to workerDoneCh
 				for _, resp := range responses {
-					// @TODO add handling of failed responses here...
 					workerDoneCh <- resp
 				}
 				return
@@ -340,6 +375,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case work := <-node.WorkerTracker.WorkerStatusCh:
 			logrus.Info("[+] Sending work to network")
 			var workData map[string]string
+
 			err := json.Unmarshal(work.Data, &workData)
 			if err != nil {
 				logrus.Error("[-] Error unmarshalling work: ", err)
@@ -387,10 +423,17 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
  * @param {masa.OracleNode} node - The OracleNode instance.
  */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
+	logrus.Infof("[+] Work validatorDataMap %s", validatorDataMap)
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
-
 		if _, ok := response["error"].(string); ok {
 			logrus.Infof("[+] Work failed %s", response["error"])
+
+			// Set WorkerTimeout for the node
+			nodeData := node.NodeTracker.GetNodeData(data.ReceivedFrom.String())
+			if nodeData != nil {
+				nodeData.WorkerTimeout = time.Now()
+				node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+			}
 
 		} else if work, ok := response["data"].(string); ok {
 			processWork(data, work, startTime, node)
