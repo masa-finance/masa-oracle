@@ -7,7 +7,6 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
-	"github.com/multiformats/go-multiaddr"
 
 	"github.com/asynkron/protoactor-go/actor"
 
@@ -41,7 +40,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 
 	responseCollector := make(chan *pubsub2.Message, 1)
 
-	eligibleWorkers := getEligibleWorkers(node, message)
+	eligibleWorkers := GetEligibleWorkers(node, message)
 
 	for retries := 0; retries < workerConfig.MaxRetries; retries++ {
 		success := tryWorkersRoundRobin(node, eligibleWorkers, message, responseCollector)
@@ -107,27 +106,6 @@ func createWorkMessage(m *pubsub2.Message, pid *actor.PID) *messages.Work {
 		Id:     m.ReceivedFrom.String(),
 		Type:   int64(pubsub.CategoryTwitter),
 	}
-}
-
-func getEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker {
-	var workers []Worker
-
-	if node.IsStaked && node.IsWorker() {
-		workers = append(workers, Worker{IsLocal: true, NodeData: pubsub.NodeData{PeerId: node.Host.ID()}})
-	}
-
-	peers := node.NodeTracker.GetAllNodeData()
-	for _, p := range peers {
-		if isEligibleRemoteWorker(p, node, message) {
-			for _, addr := range p.Multiaddrs {
-				ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-				workers = append(workers, Worker{IsLocal: false, NodeData: p, IPAddr: ipAddr})
-				break
-			}
-		}
-	}
-
-	return workers
 }
 
 func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.Work, responseCollector chan<- *pubsub2.Message) {
