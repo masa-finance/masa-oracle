@@ -55,7 +55,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 }
 
 func tryWorkersRoundRobin(node *masa.OracleNode, workers []Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
-	workerIterator := newRoundRobinIterator(workers)
+	workerIterator := NewRoundRobinIterator(workers)
 
 	for workerIterator.HasNext() {
 		worker := workerIterator.Next()
@@ -130,22 +130,6 @@ func getEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker 
 	return workers
 }
 
-func newRoundRobinIterator(workers []Worker) *roundRobinIterator {
-	return &roundRobinIterator{
-		workers: workers,
-		index:   -1,
-	}
-}
-
-func (r *roundRobinIterator) HasNext() bool {
-	return len(r.workers) > 0
-}
-
-func (r *roundRobinIterator) Next() Worker {
-	r.index = (r.index + 1) % len(r.workers)
-	return r.workers[r.index]
-}
-
 func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.Work, responseCollector chan<- *pubsub2.Message) {
 	logrus.Info("Sending work to local worker")
 	future := node.ActorEngine.RequestFuture(pid, message, workerConfig.WorkerTimeout)
@@ -159,12 +143,6 @@ func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.
 	logrus.WithField("full_response", result).Info("Full response from local worker")
 
 	processWorkerResponse(result, node.Host.ID(), responseCollector)
-}
-
-func isEligibleRemoteWorker(p pubsub.NodeData, node *masa.OracleNode, message *messages.Work) bool {
-	return (p.PeerId.String() != node.Host.ID().String()) &&
-		p.IsStaked &&
-		node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type))
 }
 
 func handleRemoteWorker(node *masa.OracleNode, p pubsub.NodeData, ipAddr string, props *actor.Props, message *messages.Work, responseCollector chan<- *pubsub2.Message) {
