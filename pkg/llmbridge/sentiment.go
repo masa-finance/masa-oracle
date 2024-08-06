@@ -19,11 +19,21 @@ import (
 // AnalyzeSentimentTweets analyzes the sentiment of the provided tweets by sending them to the Claude API.
 // It concatenates the tweets, creates a payload, sends a request to Claude, parses the response,
 // and returns the concatenated tweets content, a sentiment summary, and any error.
-func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt string) (string, string, error) {
+func AnalyzeSentimentTweets(tweets []*twitterscraper.TweetResult, model string, prompt string) (string, string, error) {
 	// check if we are using claude or gpt, can add others easily
 	if strings.Contains(model, "claude-") {
 		client := NewClaudeClient() // Adjusted to call without arguments
-		tweetsContent := ConcatenateTweets(tweets)
+
+		var validTweets []*twitterscraper.TweetResult
+		for _, tweet := range tweets {
+			if tweet.Error != nil {
+				logrus.WithError(tweet.Error).Warn("[-] Error in tweet")
+				continue
+			}
+			validTweets = append(validTweets, tweet)
+		}
+
+		tweetsContent := ConcatenateTweets(validTweets)
 		payloadBytes, err := CreatePayload(tweetsContent, model, prompt)
 		if err != nil {
 			logrus.Errorf("[-] Error creating payload: %v", err)
@@ -101,10 +111,10 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.Tweet, model string, prompt
 
 // ConcatenateTweets concatenates the text of the provided tweets into a single string,
 // with each tweet separated by a newline character.
-func ConcatenateTweets(tweets []*twitterscraper.Tweet) string {
+func ConcatenateTweets(tweets []*twitterscraper.TweetResult) string {
 	var tweetsTexts []string
-	for _, tweet := range tweets {
-		tweetsTexts = append(tweetsTexts, tweet.Text)
+	for _, t := range tweets {
+		tweetsTexts = append(tweetsTexts, t.Tweet.Text)
 	}
 	return strings.Join(tweetsTexts, "\n")
 }

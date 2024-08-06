@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
@@ -26,7 +27,7 @@ type ChannelMessage struct {
 }
 
 // GetChannelMessages fetches messages for a specific channel from the Discord API
-func GetChannelMessages(channelID string) ([]ChannelMessage, error) {
+func GetChannelMessages(channelID string, limit string, before string) ([]ChannelMessage, error) {
 	botToken := os.Getenv("DISCORD_BOT_TOKEN") // Replace with your actual environment variable name
 	if botToken == "" {
 		return nil, fmt.Errorf("DISCORD_BOT_TOKEN environment variable not set")
@@ -37,6 +38,18 @@ func GetChannelMessages(channelID string) ([]ChannelMessage, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	limitCheck, _ := strconv.Atoi(limit)
+
+	// Add query parameters if they are provided
+	q := req.URL.Query()
+	if limitCheck > 0 && limitCheck <= 100 {
+		q.Add("limit", limit)
+	}
+	if before != "" {
+		q.Add("before", before)
+	}
+	req.URL.RawQuery = q.Encode()
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", botToken))
 
@@ -67,7 +80,7 @@ func GetChannelMessages(channelID string) ([]ChannelMessage, error) {
 // ScrapeDiscordMessagesForSentiment scrapes messages from a Discord channel and analyzes their sentiment.
 func ScrapeDiscordMessagesForSentiment(channelID string, model string, prompt string) (string, string, error) {
 	// Fetch messages from the Discord channel
-	messages, err := GetChannelMessages(channelID)
+	messages, err := GetChannelMessages(channelID, "100", "")
 	if err != nil {
 		return "", "", fmt.Errorf("error fetching messages from Discord channel: %v", err)
 	}
