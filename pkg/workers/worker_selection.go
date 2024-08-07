@@ -1,43 +1,58 @@
 package workers
 
 import (
+	"encoding/json"
 	"math/rand/v2"
+
+	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
-	"github.com/multiformats/go-multiaddr"
 )
 
+// GetEligibleWorkers Uses the new NodeTracker method to get the eligible workers for a given message type
 func GetEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker {
 	var workers []Worker
-
-	// Always include a local worker
-	workers = append(workers, Worker{IsLocal: true, NodeData: pubsub.NodeData{PeerId: node.Host.ID()}, Node: node})
-
-	peers := node.NodeTracker.GetAllNodeData()
-	for _, p := range peers {
-		if isEligibleRemoteWorker(p, node, message) {
-			for _, addr := range p.Multiaddrs {
-				ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-				workers = append(workers, Worker{IsLocal: false, NodeData: p, IPAddr: ipAddr})
-				break
-			}
+	category := getCategorytForMessage(message)
+	// Get the eligible workers for the given message type. This will include the local node only if it is eligible
+	// for this category of work.
+	for _, eligible := range node.NodeTracker.GetEligibleWorkerNodes(category) {
+		if eligible.PeerId.String() == node.Host.ID().String() {
+			workers = append(workers, Worker{IsLocal: true, NodeData: pubsub.NodeData{PeerId: node.Host.ID()}})
+			continue
+		}
+		for _, addr := range eligible.Multiaddrs {
+			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			workers = append(workers, Worker{IsLocal: false, NodeData: eligible, IPAddr: ipAddr})
+			break
 		}
 	}
-
 	// Shuffle the workers list
 	rand.Shuffle(len(workers), func(i, j int) {
 		workers[i], workers[j] = workers[j], workers[i]
 	})
-
 	return workers
 }
 
-func isEligibleRemoteWorker(p pubsub.NodeData, node *masa.OracleNode, message *messages.Work) bool {
-	return (p.PeerId.String() != node.Host.ID().String()) &&
-		p.IsStaked &&
-		node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type))
+// right now the message has the Twitter work type hard coded so we have to get it from the message data
+func getCategorytForMessage(message *messages.Work) pubsub.WorkerCategory {
+	// TODO: can we get this fixed in the protobuf code?
+	var workData map[string]string
+	err := json.Unmarshal([]byte(message.Data), &workData)
+	if err != nil {
+		logrus.Errorf("[-] Error parsing work data: %v", err)
+		return -1
+	}
+
+	workType, err := StringToWorkerType(workData["request"])
+	if err != nil {
+		logrus.Errorf("[-] Error parsing work type: %v", err)
+		return -1
+	}
+	return WorkerTypeToCategory(workType)
+
 }
 
 func NewRoundRobinIterator(workers []Worker) *roundRobinIterator {
