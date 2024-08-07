@@ -45,7 +45,7 @@ func updateProject(projectDir, branch string) error {
 	}
 	// Execute go mod tidy
 	if err := runCommand("go", "mod", "tidy"); err != nil {
-		return fmt.Errorf("failed to tidy dependencies: %w", err)
+		return fmt.Errorf("[-] Failed to tidy dependencies: %w", err)
 	}
 	return nil
 }

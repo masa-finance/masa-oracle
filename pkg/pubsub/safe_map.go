@@ -3,7 +3,6 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"sync"
 	"time"
@@ -71,6 +70,10 @@ func (sm *SafeMap) GetStakedNodesSlice() []NodeData {
 		nd.AccumulatedUptime = nodeData.GetAccumulatedUptime()
 		nd.CurrentUptimeStr = PrettyDuration(nd.CurrentUptime)
 		nd.AccumulatedUptimeStr = PrettyDuration(nd.AccumulatedUptime)
+		nd.IsDiscordScraper = nodeData.IsDiscordScraper
+		nd.IsTwitterScraper = nodeData.IsTwitterScraper
+		nd.IsWebScraper = nodeData.IsWebScraper
+		nd.IsValidator = nodeData.IsValidator
 		result = append(result, nd)
 	}
 	// Sort the slice based on the timestamp
@@ -92,44 +95,6 @@ func (sm *SafeMap) UnmarshalJSON(b []byte) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	return json.Unmarshal(b, &sm.items)
-}
-
-// DumpNodeData writes the entire nodeData map to a file in JSON format.
-// @note Obsoleted
-func (sm *SafeMap) DumpNodeData(filePath string) error {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-
-	data, err := json.Marshal(sm.items)
-	if err != nil {
-		return fmt.Errorf("could not marshal node data: %w", err)
-	}
-
-	err = os.WriteFile(filePath, data, 0644)
-	if err != nil {
-		return fmt.Errorf("could not write to file: %s, error: %w", filePath, err)
-	}
-
-	return nil
-}
-
-// LoadNodeData reads nodeData from a file in JSON format and loads it into the map.
-// @note Obsoleted
-func (sm *SafeMap) LoadNodeData(filePath string) error {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("could not read from file: %s, error: %w", filePath, err)
-	}
-
-	err = json.Unmarshal(data, &sm.items)
-	if err != nil {
-		return fmt.Errorf("could not unmarshal JSON data: %w", err)
-	}
-
-	return nil
 }
 
 // PrettyDuration takes a time.Duration and returns a string representation

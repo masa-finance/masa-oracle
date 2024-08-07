@@ -1,14 +1,18 @@
 package workers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net"
+	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
@@ -35,9 +39,13 @@ func getPeers(node *masa.OracleNode) []*actor.PID {
 		for _, conn := range conns {
 			addr := conn.RemoteMultiaddr()
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-			if !isBootnode(ipAddr) {
+			if p.String() != node.Host.ID().String() {
 				spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 				if err != nil {
+					if strings.Contains(err.Error(), "future: dead letter") {
+						logrus.Debugf("Ignoring dead letter error for peer %s: %v", p.String(), err)
+						continue
+					}
 					logrus.Debugf("Spawned error %v", err)
 				} else {
 					actors = append(actors, spawned.Pid)
@@ -70,14 +78,14 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	var workData map[string]string
 	err = json.Unmarshal([]byte(m.Data), &workData)
 	if err != nil {
-		logrus.Errorf("Error parsing work data: %v", err)
+		logrus.Errorf("[-] Error parsing work data: %v", err)
 		return
 	}
 
 	var bodyData map[string]interface{}
 	if workData["body"] != "" {
 		if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
-			logrus.Errorf("Error unmarshalling body: %v", err)
+			logrus.Errorf("[-] Error unmarshalling body: %v", err)
 			return
 		}
 	}
@@ -88,11 +96,19 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		resp, err = discord.GetUserProfile(userID)
 	case string(WORKER.DiscordChannelMessages):
 		channelID := bodyData["channelID"].(string)
-		resp, err = discord.GetChannelMessages(channelID)
+		resp, err = discord.GetChannelMessages(channelID, bodyData["limit"].(string), bodyData["before"].(string))
 	case string(WORKER.DiscordSentiment):
 		logrus.Infof("[+] Discord Channel Messages %s %s", m.Data, m.Sender)
 		channelID := bodyData["channelID"].(string)
 		_, resp, err = discord.ScrapeDiscordMessagesForSentiment(channelID, bodyData["model"].(string), bodyData["prompt"].(string))
+	case string(WORKER.TelegramChannelMessages):
+		logrus.Infof("[+] Telegram Channel Messages %s %s", m.Data, m.Sender)
+		username := bodyData["username"].(string)
+		resp, err = telegram.FetchChannelMessages(context.Background(), username) // Removed the underscore placeholder
+	case string(WORKER.TelegramSentiment):
+		logrus.Infof("[+] Telegram Channel Messages %s %s", m.Data, m.Sender)
+		username := bodyData["username"].(string)
+		_, resp, err = telegram.ScrapeTelegramMessagesForSentiment(context.Background(), username, bodyData["model"].(string), bodyData["prompt"].(string))
 	case string(WORKER.DiscordGuildChannels):
 		guildID := bodyData["guildID"].(string)
 		resp, err = discord.GetGuildChannels(guildID)
@@ -101,7 +117,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	case string(WORKER.LLMChat):
 		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
-			logrus.Error("missing env variable LLM_CHAT_URL")
+			logrus.Error("[-] Missing env variable LLM_CHAT_URL")
 			return
 		}
 		bodyBytes, _ := json.Marshal(bodyData)
@@ -142,7 +158,26 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	}
 
 	if err != nil {
-		logrus.Errorf("Error processing request: %v", err)
+		host, _, err := net.SplitHostPort(m.Sender.Address)
+		addrs := node.Host.Addrs()
+		isLocalHost := false
+		for _, addr := range addrs {
+			addrStr := addr.String()
+			if strings.HasPrefix(addrStr, "/ip4/") {
+				ipStr := strings.Split(strings.Split(addrStr, "/")[2], "/")[0]
+				if host == ipStr {
+					isLocalHost = true
+					break
+				}
+			}
+		}
+
+		if isLocalHost {
+			logrus.Errorf("[-] Local node: Error processing request: %s", err.Error())
+		} else {
+			logrus.Errorf("[-] Remote node %s: Error processing request: %s", m.Sender, err.Error())
+		}
+
 		chanResponse := ChanResponse{
 			Response:  map[string]interface{}{"error": err.Error()},
 			ChannelId: workData["request_id"],
@@ -153,7 +188,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 		jsn, err := json.Marshal(val)
 		if err != nil {
-			logrus.Errorf("Error marshalling response: %v", err)
+			logrus.Errorf("[-] Error marshalling response: %v", err)
 			return
 		}
 		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
@@ -168,11 +203,12 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 		jsn, err := json.Marshal(val)
 		if err != nil {
-			logrus.Errorf("Error marshalling response: %v", err)
+			logrus.Errorf("[-] Error marshalling response: %v", err)
 			return
 		}
 		cfg := config.GetInstance()
-		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.WebScraper {
+
+		if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TelegramScraper || cfg.WebScraper {
 			ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
 		}
 		for _, pid := range getPeers(node) {

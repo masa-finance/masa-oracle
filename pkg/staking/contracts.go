@@ -24,7 +24,7 @@ type Client struct {
 func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	addresses, err := LoadContractAddresses()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load contract addresses: %v", err)
+		return nil, fmt.Errorf("[-] Failed to load contract addresses: %v", err)
 	}
 
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)

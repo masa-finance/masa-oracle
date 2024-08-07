@@ -1,10 +1,9 @@
 package pubsub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
@@ -34,18 +32,15 @@ type ConnectBufferEntry struct {
 // It initializes the node data map, node data channel, node data file path,
 // connect buffer map. It loads existing node data from file, starts a goroutine
 // to clear expired buffer entries, and returns the initialized instance.
-func NewNodeEventTracker(version, environment string) *NodeEventTracker {
+func NewNodeEventTracker(version, environment string, hostId string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
 		NodeDataChan:  make(chan *NodeData),
 		nodeDataFile:  fmt.Sprintf("%s_%s_node_data.json", version, environment),
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
-	// err := net.LoadNodeData()
-	// if err != nil {
-	// 	logrus.Error("Error loading node data", err)
-	// }
 	go net.ClearExpiredBufferEntries()
+	go net.StartCleanupRoutine(context.Background(), hostId)
 	return net
 }
 
@@ -56,7 +51,7 @@ func (net *NodeEventTracker) Listen(n network.Network, a ma.Multiaddr) {
 	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
-	}).Info("Started listening")
+	}).Info("[+] Started listening")
 }
 
 // ListenClose logs when the node stops listening on a multiaddr.
@@ -66,7 +61,7 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 	logrus.WithFields(logrus.Fields{
 		"network": n,
 		"address": a,
-	}).Info("Stopped listening")
+	}).Info("[-]Stopped listening")
 }
 
 // Connected handles when a remote peer connects to this node.
@@ -91,7 +86,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			nodeData.Joined()
 			err := net.AddOrUpdateNodeData(nodeData, true)
 			if err != nil {
-				logrus.Error(err)
+				logrus.Error("[-] Error adding or updating node data: ", err)
 				return
 			}
 		}
@@ -100,7 +95,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
-	}).Info("Connected")
+	}).Info("[+] Connected")
 }
 
 // Disconnected handles when a remote peer disconnects from this node.
@@ -133,7 +128,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
 		"conn":    c,
-	}).Info("Disconnected")
+	}).Info("[+] Disconnected")
 }
 
 // HandleMessage unmarshals the received pubsub message into a NodeData struct,
@@ -142,7 +137,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 func (net *NodeEventTracker) HandleMessage(msg *pubsub.Message) {
 	var nodeData NodeData
 	if err := json.Unmarshal(msg.Data, &nodeData); err != nil {
-		logrus.Errorf("failed to unmarshal node data: %v", err)
+		logrus.Errorf("[-] Failed to unmarshal node data: %v", err)
 		return
 	}
 	// Handle the nodeData by calling NodeEventTracker.HandleIncomingData
@@ -214,7 +209,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 	}
 	err := net.AddOrUpdateNodeData(existingData, true)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Error("[-] Error adding or updating node data: ", err)
 		return
 	}
 }
@@ -251,54 +246,6 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 		return updatedNodeData[i].LastUpdatedUnix < updatedNodeData[j].LastUpdatedUnix
 	})
 	return updatedNodeData
-}
-
-// DumpNodeData writes the NodeData map to a JSON file. It determines the file path
-// based on the configured data directory, defaulting to nodeDataFile if not set.
-// It logs any errors writing the file. This allows periodically persisting the
-// node data.
-// @note Obsoleted
-func (net *NodeEventTracker) DumpNodeData() {
-	// Write the JSON data to a file
-	var filePath string
-	dataDir := config.GetInstance().MasaDir
-	if dataDir == "" {
-		filePath = net.nodeDataFile
-	} else {
-		filePath = filepath.Join(dataDir, net.nodeDataFile)
-	}
-	logrus.Infof("writing node data to file: %s", filePath)
-	err := net.nodeData.DumpNodeData(filePath)
-	if err != nil {
-		logrus.Error("could not dump node data", err)
-	}
-}
-
-// LoadNodeData loads the node data from a JSON file. It determines the file path
-// based on the configured data directory, defaulting to nodeDataFile if not set.
-// It logs any errors reading or parsing the file. This allows initializing the
-// node data tracker from persisted data.
-// @note Obsoleted
-func (net *NodeEventTracker) LoadNodeData() error {
-	// Read the JSON data from a file
-	var filePath string
-	dataDir := config.GetInstance().MasaDir
-	if dataDir == "" {
-		filePath = net.nodeDataFile
-	} else {
-		filePath = filepath.Join(dataDir, net.nodeDataFile)
-	}
-	// Check if the file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		logrus.Warn(fmt.Sprintf("file does not exist: %s", filePath))
-		return nil
-	}
-	err := net.nodeData.LoadNodeData(filePath)
-	if err != nil {
-		logrus.Error("could not load node data", err)
-		return err
-	}
-	return nil
 }
 
 // GetEthAddress returns the Ethereum address for the given remote peer.
@@ -343,6 +290,7 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
 	dataChanged := false
+
 	nd, ok := net.nodeData.Get(nodeData.PeerId.String())
 	if !ok {
 		nodeData.SelfIdentified = true
@@ -355,38 +303,59 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			nd.SelfIdentified = true
 		}
 		dataChanged = true
-		nd.BytesScraped = nodeData.BytesScraped
 		nd.IsStaked = nodeData.IsStaked
 		nd.IsDiscordScraper = nodeData.IsDiscordScraper
+		nd.IsTelegramScraper = nodeData.IsTelegramScraper
 		nd.IsTwitterScraper = nodeData.IsTwitterScraper
 		nd.IsWebScraper = nodeData.IsWebScraper
 		nd.Records = nodeData.Records
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
-		nd.IsActive = nodeData.IsActive
-
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
 		}
-		// If the node data exists, check if the multiaddress is already in the list
-		multiAddress := nodeData.Multiaddrs[0].Multiaddr
-		addrExists := false
-		for _, addr := range nodeData.Multiaddrs {
-			if addr.Equal(multiAddress) {
-				addrExists = true
-				break
+
+		if len(nodeData.Multiaddrs) > 0 {
+			multiAddress := nodeData.Multiaddrs[0].Multiaddr
+			addrExists := false
+			for _, addr := range nodeData.Multiaddrs {
+				if addr.Equal(multiAddress) {
+					addrExists = true
+					break
+				}
 			}
-		}
-		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
-		}
-		if dataChanged || forceGossip {
-			net.NodeDataChan <- nd
+			if !addrExists {
+				nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+			}
+
+			if dataChanged || forceGossip {
+				net.NodeDataChan <- nd
+			}
+
+			nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+			net.nodeData.Set(nodeData.PeerId.String(), nd)
+
 		}
 
-		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
+		// If the node data exists, check if the multiaddress is already in the list
+		// multiAddress := nodeData.Multiaddrs[0].Multiaddr
+		// addrExists := false
+		// for _, addr := range nodeData.Multiaddrs {
+		// 	if addr.Equal(multiAddress) {
+		// 		addrExists = true
+		// 		break
+		// 	}
+		// }
+		// if !addrExists {
+		// 	nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+		// }
+		// if dataChanged || forceGossip {
+		// 	net.NodeDataChan <- nd
+		// }
+
+		// nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+		// net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
@@ -401,11 +370,95 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {
+				// first force a leave event so that timestamps are updated properly
+				entry.NodeData.Left()
 				// Buffer period expired without a disconnect, process connect
 				entry.NodeData.Joined()
 				net.NodeDataChan <- entry.NodeData
 				delete(net.ConnectBuffer, peerID)
 			}
+		}
+	}
+}
+
+// RemoveNodeData removes the node data associated with the given peer ID from the NodeEventTracker.
+// It deletes the node data from the internal map and removes any corresponding entry
+// from the connect buffer. This function is typically called when a peer disconnects
+// or is no longer part of the network.
+//
+// Parameters:
+//   - peerID: A string representing the ID of the peer to be removed.
+func (net *NodeEventTracker) RemoveNodeData(peerID string) {
+	net.nodeData.Delete(peerID)
+	delete(net.ConnectBuffer, peerID)
+	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+}
+
+// ClearExpiredWorkerTimeouts periodically checks and clears expired worker timeouts.
+// It runs in an infinite loop, sleeping for 5 minutes between each iteration.
+// For each node in the network, it checks if the worker timeout has expired (after 60 minutes).
+// If a timeout has expired, it resets the WorkerTimeout to zero and updates the node data.
+// This function helps manage the availability of workers in the network by clearing
+// temporary timeout states.
+func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
+	for {
+		time.Sleep(5 * time.Minute) // Check every 5 minutes
+		now := time.Now()
+
+		for _, nodeData := range net.GetAllNodeData() {
+			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 16*time.Minute {
+				nodeData.WorkerTimeout = time.Time{} // Reset to zero value
+				err := net.AddOrUpdateNodeData(&nodeData, true)
+				if err != nil {
+					logrus.Warnf("Error adding worker timeout %v", err)
+				}
+			}
+		}
+	}
+}
+
+const (
+	maxDisconnectionTime = 1 * time.Minute
+	cleanupInterval      = 2 * time.Minute
+)
+
+// StartCleanupRoutine starts a goroutine that periodically checks for and removes stale peers
+func (net *NodeEventTracker) StartCleanupRoutine(ctx context.Context, hostId string) {
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			net.cleanupStalePeers(hostId)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// cleanupStalePeers checks for and removes stale peers from both the routing table and node data
+func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
+	now := time.Now()
+
+	for _, nodeData := range net.GetAllNodeData() {
+		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
+			if nodeData.PeerId.String() != hostId {
+				logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
+				net.RemoveNodeData(nodeData.PeerId.String())
+				delete(net.ConnectBuffer, nodeData.PeerId.String())
+
+				// Notify about peer removal
+				net.NodeDataChan <- &NodeData{
+					PeerId:          nodeData.PeerId,
+					Activity:        ActivityLeft,
+					LastUpdatedUnix: now.Unix(),
+				}
+			}
+
+			// Use the node parameter to access OracleNode methods if needed
+			// For example:
+			// node.SomeMethod(nodeData.PeerId)
 		}
 	}
 }

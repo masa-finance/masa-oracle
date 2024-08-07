@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/rivo/tview"
 )
 
@@ -122,8 +123,9 @@ const logo = `
 const (
 	subtitle   = `masa oracle client`
 	navigation = `[yellow]use keys or mouse to navigate`
-	mouse      = `[green]v0.0.9-beta`
 )
+
+var version string = fmt.Sprintf("[green]%s", config.Version)
 
 // Splash shows the app info
 func Splash() (content tview.Primitive) {
@@ -147,7 +149,7 @@ func Splash() (content tview.Primitive) {
 		AddText(subtitle, true, tview.AlignCenter, tcell.ColorWhite).
 		AddText("", true, tview.AlignCenter, tcell.ColorWhite).
 		AddText(navigation, true, tview.AlignCenter, tcell.ColorDarkMagenta).
-		AddText(mouse, true, tview.AlignCenter, tcell.ColorDarkMagenta)
+		AddText(version, true, tview.AlignCenter, tcell.ColorDarkMagenta)
 
 	// Create a Flex layout that centers the logo and subtitle.
 	flex := tview.NewFlex().

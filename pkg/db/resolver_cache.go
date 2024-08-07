@@ -53,12 +53,12 @@ func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager)
 	if err != nil {
 		log.Fatal(err)
 	}
-	logrus.Info("ResolverCache initialized")
+	logrus.Info("[+] ResolverCache initialized")
 
 	data := []byte(node.Host.ID().String())
 	signature, err := consensus.SignData(keyManager.Libp2pPrivKey, data)
 	if err != nil {
-		logrus.Errorf("%v", err)
+		logrus.Errorf("[-] Error signing data: %v", err)
 	}
 	_ = Verifier(node.Host, data, signature)
 
@@ -148,7 +148,7 @@ func UpdateCache(ctx context.Context, keyStr string, newValue []byte) (bool, err
 func QueryAll(ctx context.Context) ([]Record, error) {
 	results, err := cache.Query(ctx, query.Query{})
 	if err != nil {
-		logrus.Errorf("Failed to query the resolver cache: %v", err)
+		logrus.Errorf("[-] Failed to query the resolver cache: %v", err)
 		return nil, err
 	}
 	defer results.Close()
@@ -157,7 +157,7 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 
 	for result := range results.Next() {
 		if result.Error != nil {
-			logrus.Errorf("Error iterating query results: %v", result.Error)
+			logrus.Errorf("[-] Error iterating query results: %v", result.Error)
 			return nil, result.Error
 		}
 		// Append the record to the slice
@@ -191,15 +191,41 @@ func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 	records, err := QueryAll(ctx)
 	if err != nil {
-		logrus.Errorf("%+v", err)
+		logrus.Errorf("[-] Error querying all records: %+v", err)
+		return
 	}
+
+	if node.DHT == nil {
+		logrus.Errorf("DHT instance is nil. Skipping iterateAndPublish operation.")
+		return
+	}
+
 	for _, record := range records {
 		key := record.Key
 		if len(key) > 0 && key[0] == '/' {
 			key = key[1:]
 		}
-		logrus.Printf("syncing record %s", key)
+		logrus.Printf("syncing %s", key)
 		_ = WriteData(node, key, record.Value)
+
+		// sync blocks
+		blocks, err := node.DHT.GetValue(ctx, "/db/blocks")
+		if err != nil {
+			logrus.Debugf("[-] Error getting block data: %v", err)
+			continue
+		}
+
+		if err := WriteData(node, "blocks", blocks); err != nil {
+			logrus.Debugf("[-] Error writing block data: %v", err)
+		}
+
+		// sync ipfs
+		ipfs, e := node.DHT.GetValue(ctx, "/db/ipfs")
+		if e != nil {
+			logrus.Debugf("[-] Error unmarshalling IPFS data: %v", e)
+		} else {
+			_ = WriteData(node, "ipfs", ipfs)
+		}
 	}
 }
 
@@ -210,7 +236,7 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 	syncInterval := time.Second * 60
 	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker)
 	if err != nil {
-		logrus.Errorf("%v", err)
+		logrus.Errorf("[-] Error subscribing to node gossip topic: %v", err)
 	}
 
 	ticker := time.NewTicker(syncInterval)
@@ -226,16 +252,14 @@ func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
 			} else {
 				err = json.Unmarshal(nodeDataBytes, &nodeData)
 				if err != nil {
-					logrus.Error(err)
+					logrus.Errorf("[-] Error unmarshalling node data: %v", err)
 				}
 			}
-			_ = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
-			// if dht does not have data check cache and update if exists
 
 			jsonData, _ := json.Marshal(nodeData)
 			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
 			if e != nil {
-				logrus.Errorf("%v", e)
+				logrus.Errorf("[-] Error publishing node data: %v", e)
 			}
 		case nodeData := <-nodeDataChan:
 			jsonData, _ := json.Marshal(nodeData)

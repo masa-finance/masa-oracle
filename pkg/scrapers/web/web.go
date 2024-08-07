@@ -41,7 +41,7 @@ type CollectedData struct {
 //	go func() {
 //		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
-//			logrus.Errorf("Error collecting data: %s", err.Error())
+//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
 //		return
 //	  }
 //	logrus.Infof("%+v", res)
@@ -149,12 +149,12 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 //	go func() {
 //		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
-//			logrus.Errorf("Error collecting data: %s", err.Error())
+//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
 //		return
 //	  }
 //	logrus.Infof("%+v", res)
 //	}()
-func ScrapeWebData(uri []string, depth int) (string, error) {
+func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 	// Set default depth to 1 if 0 is provided
 	if depth <= 0 {
 		depth = 1
@@ -188,20 +188,22 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 			retryAfter, convErr := strconv.Atoi(r.Headers.Get("Retry-After"))
 			if convErr != nil {
 				// If not in seconds, it might be a date. Handle accordingly.
+				logrus.Debugf("[-] Retry-After: %s", r.Headers.Get("Retry-After"))
 			}
 			// Calculate the next delay
 			nextDelay := backoffStrategy.NextBackOff()
 			if retryAfter > 0 {
 				nextDelay = time.Duration(retryAfter) * time.Second
 			}
-			logrus.Warnf("Rate limited. Retrying after %v", nextDelay)
+			logrus.Warnf("[-] Rate limited. Retrying after %v", nextDelay)
 			time.Sleep(nextDelay)
 			// Retry the request
 			_ = r.Request.Retry()
 		} else {
-			logrus.Errorf("Request URL: %s failed with response: %v and error: %v", r.Request.URL, r, err)
+			logrus.Errorf("[-] Request URL: %s failed with error: %v", r.Request.URL, err)
 		}
 	})
+
 	c.OnHTML("h1, h2", func(e *colly.HTMLElement) {
 		// Directly append a new Section to collectedData.Sections
 		collectedData.Sections = append(collectedData.Sections, Section{Title: e.Text})
@@ -242,15 +244,13 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 		if strings.HasPrefix(pageURL, "http://") || strings.HasPrefix(pageURL, "https://") {
 			collectedData.Pages = append(collectedData.Pages, pageURL)
 			_ = e.Request.Visit(pageURL)
-		} else {
-			logrus.Warnf("Unsupported URL protocol, skipping: %s", pageURL)
 		}
 	})
 
 	for _, u := range uri {
 		err := c.Visit(u)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -258,5 +258,5 @@ func ScrapeWebData(uri []string, depth int) (string, error) {
 	c.Wait()
 
 	j, _ := json.Marshal(collectedData)
-	return string(j), nil
+	return j, nil
 }

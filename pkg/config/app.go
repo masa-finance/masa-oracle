@@ -1,18 +1,14 @@
 package config
 
 import (
-	"encoding/json"
-	"io"
 	"log"
-	"net/http"
-	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 
+	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -74,7 +70,7 @@ type AppConfig struct {
 	LogLevel             string   `mapstructure:"logLevel"`
 	LogFilePath          string   `mapstructure:"logFilePath"`
 	FilePath             string   `mapstructure:"filePath"`
-	Validator            string   `mapstructure:"validator"`
+	Validator            bool     `mapstructure:"validator"`
 	CachePath            string   `mapstructure:"cachePath"`
 	Faucet               bool     `mapstructure:"faucet"`
 
@@ -90,10 +86,13 @@ type AppConfig struct {
 	GPTApiKey          string `mapstructure:"gptApiKey"`
 	TwitterScraper     bool   `mapstructure:"twitterScraper"`
 	DiscordScraper     bool   `mapstructure:"discordScraper"`
+	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
+
+	TelegramStop bg.StopFunc
 }
 
 // GetInstance returns the singleton instance of AppConfig.
@@ -113,8 +112,8 @@ func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
 
-		instance.setDefaultConfig()
 		instance.setEnvVariableConfig()
+		instance.setDefaultConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
 		if err != nil {
@@ -123,9 +122,10 @@ func GetInstance() *AppConfig {
 
 		err = viper.Unmarshal(instance)
 		if err != nil {
-			logrus.Errorf("Unable to unmarshal config into struct, %v", err)
+			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
 			instance = nil // Ensure instance is nil if unmarshalling fails
 		}
+
 	})
 	return instance
 }
@@ -144,79 +144,8 @@ func (c *AppConfig) setDefaultConfig() {
 	// Set defaults
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
-	// Set values from .env
-	_, b, _, _ := runtime.Caller(0)
-	rootDir := filepath.Join(filepath.Dir(b), "../..")
-	if _, _ = os.Stat(rootDir + "/.env"); !os.IsNotExist(err) {
-		_ = godotenv.Load()
-
-		// Fetch bootnodes from s3
-		if os.Getenv("BOOTNODES") != "" {
-			var url string
-			if os.Getenv("ENV") == "dev" {
-				url = "https://masa-oracle-init-dev.s3.amazonaws.com/node_init.json"
-			} else if os.Getenv("ENV") == "test" {
-				url = "https://masa-oracle-init-test.s3.amazonaws.com/node_init.json"
-			} else if os.Getenv("ENV") == "main" {
-				url = "https://masa-oracle-init-main.s3.amazonaws.com/node_init.json"
-			}
-			if url != "" {
-				resp, err := http.Get(url)
-				if err != nil {
-					logrus.Errorf("Failed to fetch %s: %v", url, err)
-				} else {
-					defer func(Body io.ReadCloser) {
-						err := Body.Close()
-						if err != nil {
-							logrus.Errorf("Failed to close body: %v", err)
-						}
-					}(resp.Body)
-					var nodeInitData struct {
-						Name      string   `json:"name"`
-						Id        string   `json:"id"`
-						NodeType  string   `json:"nodeType"`
-						BootNodes []string `json:"bootNodes"`
-					}
-					if err = json.NewDecoder(resp.Body).Decode(&nodeInitData); err != nil {
-						logrus.Errorf("Failed to parse: %v", err)
-					} else {
-						viper.SetDefault("Bootnodes", strings.Join(nodeInitData.BootNodes, ","))
-					}
-				}
-			} else {
-				viper.SetDefault("Bootnodes", os.Getenv("BOOTNODES"))
-			}
-		}
-		viper.SetDefault(RpcUrl, os.Getenv("RPC_URL"))
-		viper.SetDefault(Environment, os.Getenv("ENV"))
-		viper.SetDefault(FilePath, os.Getenv("FILE_PATH"))
-		viper.SetDefault(Validator, os.Getenv("VALIDATOR"))
-		viper.SetDefault(CachePath, os.Getenv("CACHE_PATH"))
-		viper.SetDefault(TwitterUsername, os.Getenv("TWITTER_USER"))
-		viper.SetDefault(TwitterPassword, os.Getenv("TWITTER_PASS"))
-		viper.SetDefault(DiscordBotToken, os.Getenv("DISCORD_BOT_TOKEN"))
-		viper.SetDefault(ClaudeApiKey, os.Getenv("CLAUDE_API_KEY"))
-		viper.SetDefault(ClaudeApiURL, os.Getenv("CLAUDE_API_URL"))
-		viper.SetDefault(ClaudeApiVersion, os.Getenv("CLAUDE_API_VERSION"))
-		viper.SetDefault(GPTApiKey, os.Getenv("OPENAI_API_KEY"))
-		viper.SetDefault(LlmChatUrl, os.Getenv(LlmChatUrl))
-		viper.SetDefault(LlmCfUrl, os.Getenv(LlmCfUrl))
-
-	} else {
-		viper.SetDefault(FilePath, ".")
-		viper.SetDefault(RpcUrl, "https://ethereum-sepolia.publicnode.com")
-		viper.SetDefault(Validator, "false")
-		viper.SetDefault(TwitterScraper, "false")
-		viper.SetDefault(DiscordScraper, "false")
-		viper.SetDefault(WebScraper, "false")
-		viper.SetDefault(CachePath, "CACHE")
-		viper.SetDefault(ClaudeApiURL, "https://api.anthropic.com/v1/messages")
-		viper.SetDefault(ClaudeApiVersion, "2023-06-01")
-		viper.SetDefault(LlmChatUrl, "http://localhost:11434/api/chat")
-		viper.SetDefault(LlmCfUrl, "https://gateway.ai.cloudflare.com/v1/a72433aa3bb83aecaca1bc8acecdb166/masa/workers-ai/")
-	}
-
 	// Set defaults
+	viper.SetDefault("Version", Version)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -226,10 +155,6 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
-	viper.SetDefault(TwitterScraper, false)
-	viper.SetDefault(DiscordScraper, false)
-	viper.SetDefault(WebScraper, false)
-	viper.SetDefault(LlmServer, false)
 }
 
 // setFileConfig loads configuration from a YAML file.
@@ -250,7 +175,7 @@ func (c *AppConfig) setFileConfig(path string) {
 func (c *AppConfig) setEnvVariableConfig() {
 	err := godotenv.Load()
 	if err != nil {
-		logrus.Error("Error loading .env file")
+		logrus.Error("[-] Error loading .env file")
 	}
 	viper.AutomaticEnv()
 }
@@ -279,7 +204,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.LogLevel, "logLevel", viper.GetString(LogLevel), "The log level")
 	pflag.StringVar(&c.LogFilePath, "logFilePath", viper.GetString(LogFilePath), "The log file path")
 	pflag.StringVar(&c.FilePath, "filePath", viper.GetString(FilePath), "The node file path")
-	pflag.StringVar(&c.Validator, "validator", viper.GetString(Validator), "Approved validator node boolean")
+	pflag.BoolVar(&c.Validator, "validator", viper.GetBool(Validator), "Approved validator node boolean")
 	pflag.StringVar(&c.CachePath, "cachePath", viper.GetString(CachePath), "The cache path")
 	pflag.StringVar(&c.TwitterUsername, "twitterUsername", viper.GetString(TwitterUsername), "Twitter Username")
 	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")
@@ -289,11 +214,12 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API Url")
 	pflag.StringVar(&c.ClaudeApiVersion, "claudeApiVersion", viper.GetString(ClaudeApiVersion), "Claude API Version")
 	pflag.StringVar(&c.GPTApiKey, "gptApiKey", viper.GetString(GPTApiKey), "OpenAI API Key")
-	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
-	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "DiscordScraper")
-	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
+	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
+	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "DiscordScraper")
+	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "TelegramScraper")
+	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.Parse()
@@ -313,7 +239,7 @@ func (c *AppConfig) LogConfig() {
 	val := reflect.ValueOf(*c)
 	typeOfStruct := val.Type()
 
-	logrus.Info("Current AppConfig values:")
+	// logrus.Info("Current AppConfig values:")
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfStruct.Field(i)
 		value := val.Field(i).Interface()

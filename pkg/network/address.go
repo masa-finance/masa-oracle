@@ -13,6 +13,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// getOutboundIP returns the outbound IP address of the current machine 172.17.0.2 10.0.0.2 etc
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		logrus.Warn("[-] Error getting outbound IP")
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().String()
+	idx := strings.LastIndex(localAddr, ":")
+	return localAddr[0:idx]
+}
+
+// GetMultiAddressesForHost returns the multiaddresses for the host
 func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	peerInfo := peer.AddrInfo{
 		ID:    host.ID(),
@@ -34,6 +47,7 @@ func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	return addresses, nil
 }
 
+// GetMultiAddressesForHostQuiet returns the multiaddresses for the host without logging
 func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
 	ma, err := GetMultiAddressesForHost(host)
 	if err != nil {
@@ -42,18 +56,19 @@ func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
 	return ma
 }
 
+// GetPriorityAddress returns the best public or private IP address
 func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
-	var bestPublicAddr multiaddr.Multiaddr
+	bestAddr := getBestPublicAddress(addrs)
+	if bestAddr != nil {
+		return bestAddr
+	}
+
 	var bestPrivateAddr multiaddr.Multiaddr
 
 	for _, addr := range addrs {
-
 		ipComponent, err := addr.ValueForProtocol(multiaddr.P_IP4)
 		if err != nil {
-			ipComponent, err = addr.ValueForProtocol(multiaddr.P_IP6)
-			if err != nil {
-				continue // Not an IP address
-			}
+			continue // Not an IP address
 		}
 
 		ip := net.ParseIP(ipComponent)
@@ -62,37 +77,64 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 		}
 
 		if ip.IsPrivate() {
-			// If it's the first private address found or if it's preferred over the current best, keep it
 			if bestPrivateAddr == nil || isPreferredAddress(addr) {
 				bestPrivateAddr = addr
 			}
-		} else {
-			// If it's the first public address found or if it's preferred over the current best, keep it
-			if bestPublicAddr == nil || isPreferredAddress(addr) {
-				bestPublicAddr = addr
+		}
+	}
+
+	if bestPrivateAddr != nil {
+		return bestPrivateAddr
+	}
+
+	if len(addrs) > 0 {
+		logrus.Warn("[-] No suitable address found, returning the first entry")
+		return addrs[0]
+	}
+
+	return nil
+}
+
+// getBestPublicAddress returns the best public IP address
+func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
+	var externalIP net.IP
+	var err error
+
+	if os.Getenv("ENV") == "local" {
+		externalIP = net.ParseIP(getOutboundIP())
+	} else {
+		externalIP, err = pubip.Get()
+		if err != nil {
+			logrus.Warnf("[-] Failed to get public IP: %v", err)
+			return nil
+		}
+	}
+
+	if externalIP == nil || externalIP.IsPrivate() {
+		return nil
+	}
+
+	// Create a new multiaddr with the public IP
+	publicAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s", externalIP.String()))
+	if err != nil {
+		logrus.Warnf("[-] Failed to create multiaddr with public IP: %v", err)
+		return nil
+	}
+
+	// Find a suitable port from existing addresses
+	for _, addr := range addrs {
+		if strings.HasPrefix(addr.String(), "/ip4/") {
+			port, err := addr.ValueForProtocol(multiaddr.P_TCP)
+			if err == nil {
+				return publicAddr.Encapsulate(multiaddr.StringCast("/tcp/" + port))
 			}
 		}
 	}
-	var baseAddr multiaddr.Multiaddr
-	// Prefer public addresses over private ones
-	if bestPublicAddr != nil {
-		baseAddr = bestPublicAddr
-	} else if bestPrivateAddr != nil {
-		baseAddr = bestPrivateAddr
-	} else {
-		logrus.Warn("No address matches the priority criteria, returning the first entry")
-		baseAddr = addrs[0]
-	}
-	logrus.Debug("Best public address: ", bestPublicAddr)
-	logrus.Debug("Best private address: ", bestPrivateAddr)
-	logrus.Infof("Base address: %s", baseAddr)
-	addr := replaceAddress(baseAddr)
-	if addr != nil {
-		baseAddr = addr
-	}
-	return baseAddr
+
+	return publicAddr
 }
 
+// isPreferredAddress checks if the multiaddress contains the UDP protocol
 func isPreferredAddress(addr multiaddr.Multiaddr) bool {
 	// Check if the multiaddress contains the UDP protocol
 	for _, p := range addr.Protocols() {
@@ -103,56 +145,7 @@ func isPreferredAddress(addr multiaddr.Multiaddr) bool {
 	return false
 }
 
-func getOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		fmt.Println("Error getting outbound IP")
-	}
-	defer conn.Close()
-	localAddr := conn.LocalAddr().String()
-	idx := strings.LastIndex(localAddr, ":")
-	return localAddr[0:idx]
-}
-
-func replaceAddress(addr multiaddr.Multiaddr) multiaddr.Multiaddr {
-	var err error
-	var bestAddr multiaddr.Multiaddr
-
-	var externalIP net.IP
-	if os.Getenv("ENV") == "local" {
-		externalIP = net.ParseIP(getOutboundIP())
-	} else {
-		externalIP, _ = pubip.Get()
-	}
-
-	if externalIP.String() != "" {
-		bestAddr, err = replaceIPComponent(addr, externalIP.String())
-		if err != nil {
-			logrus.Warnf("Failed to replace IP component: %s", err)
-			return nil
-		}
-	}
-	logrus.Debug("Address after replacing IP component: ", bestAddr)
-	return bestAddr
-}
-
-func replaceIPComponent(maddr multiaddr.Multiaddr, newIP string) (multiaddr.Multiaddr, error) {
-	var components []multiaddr.Multiaddr
-	for _, component := range multiaddr.Split(maddr) {
-		if component.Protocols()[0].Code == multiaddr.P_IP4 || component.Protocols()[0].Code == multiaddr.P_IP6 {
-			// Create a new IP component
-			newIPComponent, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s", newIP))
-			if err != nil {
-				return nil, err
-			}
-			components = append(components, newIPComponent)
-		} else {
-			components = append(components, component)
-		}
-	}
-	return multiaddr.Join(components...), nil
-}
-
+// GetBootNodesMultiAddress returns the multiaddresses for the bootstrap nodes
 func GetBootNodesMultiAddress(bootstrapNodes []string) ([]multiaddr.Multiaddr, error) {
 	addrs := make([]multiaddr.Multiaddr, 0)
 	for _, peerAddr := range bootstrapNodes {

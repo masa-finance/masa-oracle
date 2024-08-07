@@ -2,30 +2,30 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
+	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"strings"
-
-	"time"
-
-	"github.com/google/uuid"
-
-	"github.com/gin-gonic/gin"
-
-	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
-
+	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
 
 type LLMChat struct {
@@ -101,8 +101,9 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 
 			c.JSON(http.StatusOK, result)
 			return
-		case <-time.After(60 * time.Second):
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out"})
+		// teslashibe: adjust to timeout after 10 seconds for performance testing
+		case <-time.After(10 * time.Second):
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out, check that port 4001 TCP inbound is open."})
 			return
 		case <-c.Done():
 			return
@@ -246,6 +247,56 @@ func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 	}
 }
 
+// SearchTelegramMessagesAndAnalyzeSentiment processes a request to search Telegram messages and analyze sentiment.
+func (api *API) SearchTelegramMessagesAndAnalyzeSentiment() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !api.Node.IsStaked {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
+			return
+		}
+
+		var reqBody struct {
+			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
+			Prompt   string `json:"prompt"`
+			Model    string `json:"model"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		if reqBody.Prompt == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Prompt parameter is missing"})
+			return
+		}
+
+		if reqBody.Model == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing"})
+			return
+		}
+
+		bodyBytes, wErr := json.Marshal(reqBody)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		wErr = publishWorkRequest(api, requestID, workers.WORKER.TelegramSentiment, bodyBytes)
+		if wErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
+			return
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
 // SearchWebAndAnalyzeSentiment returns a gin.HandlerFunc that processes web search requests and performs sentiment analysis.
 // It first validates the request body for required fields such as URL, Depth, and Model. If the Model is set to "all",
 // it iterates through all available models to perform sentiment analysis on the web content fetched from the specified URL.
@@ -370,29 +421,45 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 // SearchChannelMessages returns a gin.HandlerFunc that processes a request to search for messages in a Discord channel.
 func (api *API) SearchChannelMessages() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody struct {
+		var reqParams struct {
 			ChannelID string `json:"channelID"`
+			Limit     string `json:"limit"`
+			Before    string `json:"before"`
 		}
 
-		reqBody.ChannelID = c.Param("channelID")
-
-		if reqBody.ChannelID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
+		reqParams.ChannelID = c.Param("channelID")
+		if reqParams.ChannelID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID must be provided and valid"})
 			return
 		}
 
+		reqParams.Limit = c.Query("limit")
+		reqParams.Before = c.Query("before")
+
+		if reqParams.Limit != "" {
+			if _, err := strconv.Atoi(reqParams.Limit); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit parameter"})
+				return
+			}
+		}
+
 		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
+		bodyBytes, err := json.Marshal(reqParams)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+
 		requestID := uuid.New().String()
 		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
 		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+
 		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+
 		handleWorkResponse(c, responseCh)
 	}
 }
@@ -490,28 +557,28 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				// Make the HTTP request
 				resp, err := http.Get(url)
 				if err != nil {
-					errCh <- fmt.Errorf("failed to make HTTP request: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to make HTTP request: %v", err)
 					return
 				}
 
 				defer resp.Body.Close()
 				respBody, err := io.ReadAll(resp.Body)
 				if err != nil {
-					errCh <- fmt.Errorf("failed to read response body: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to read response body: %v", err)
 					return
 				}
 
 				// Read and decode the response
 				var result map[string]interface{}
 				if err := json.Unmarshal(respBody, &result); err != nil {
-					errCh <- fmt.Errorf("failed to unmarshal response body: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to unmarshal response body: %v", err)
 					return
 				}
 
 				// Extract guilds from the result
 				guildsData, ok := result["data"]
 				if !ok {
-					errCh <- fmt.Errorf("data field not found in response")
+					errCh <- fmt.Errorf("[-] Data field not found in response")
 					return
 				}
 
@@ -523,7 +590,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 
 				var guilds []discord.Guild
 				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
-					errCh <- fmt.Errorf("failed to unmarshal guilds: %v", err)
+					errCh <- fmt.Errorf("[-] Failed to unmarshal guilds: %v", err)
 					return
 				}
 
@@ -545,7 +612,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		} else if len(errCh) > 0 {
 			// Check if there were any errors
 			for err := range errCh {
-				logrus.Error(err)
+				logrus.Error("[-] Error fetching guilds: ", err)
 			}
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "429 too many requests"})
 			return
@@ -714,6 +781,88 @@ func (api *API) WebData() gin.HandlerFunc {
 	}
 }
 
+// StartAuth starts the authentication process with Telegram.
+func (api *API) StartAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			PhoneNumber string `json:"phone_number"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		phoneCodeHash, err := telegram.StartAuthentication(context.Background(), reqBody.PhoneNumber)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start authentication"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Code sent to Telegram app", "phone_code_hash": phoneCodeHash})
+	}
+}
+
+// CompleteAuth completes the authentication process with Telegram.
+func (api *API) CompleteAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			PhoneNumber   string `json:"phone_number"`
+			Code          string `json:"code"`
+			PhoneCodeHash string `json:"phone_code_hash"`
+		}
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		auth, err := telegram.CompleteAuthentication(context.Background(), reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
+		if err != nil {
+			// Check if 2FA is required
+			if err.Error() == "2FA required" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Two-factor authentication is required"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete authentication", "details": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Authentication successful", "auth": auth})
+	}
+}
+
+func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
+		}
+
+		// Bind the JSON body to the struct
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
+		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		err = publishWorkRequest(api, requestID, workers.WORKER.TelegramChannelMessages, bodyBytes)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		handleWorkResponse(c, responseCh)
+	}
+}
+
 // LocalLlmChat handles requests for chatting with AI models hosted by ollama.
 // It expects a JSON request body with a structure formatted for the model. For example for Ollama:
 //
@@ -845,48 +994,164 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 		defer resp.Body.Close()
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Error("[-] Error reading response body: ", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		var payload map[string]interface{}
 		err = json.Unmarshal(respBody, &payload)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Error("[-] Error unmarshalling response body: ", err)
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
 	}
 }
 
+// GetBlocks returns a gin.HandlerFunc that handles requests to retrieve all blocks from the blockchain.
+//
+// This function:
+// 1. Checks if the node is a validator.
+// 2. Retrieves all blocks from the blockchain.
+// 3. Formats each block's data into a more readable structure.
+// 4. Encodes the input data of each block in base64.
+// 5. Returns the formatted blocks as a JSON response.
+//
+// The function is only accessible to validator nodes and will return an error for non-validator nodes.
+func (api *API) GetBlocks() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		if !api.Node.IsValidator {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node is not a validator and cannot access this endpoint"})
+			return
+		}
+
+		type BlockData struct {
+			Block            uint64      `json:"block"`
+			InputData        interface{} `json:"input_data"`
+			TransactionHash  string      `json:"transaction_hash"`
+			PreviousHash     string      `json:"previous_hash"`
+			TransactionNonce int         `json:"nonce"`
+		}
+
+		type Blocks struct {
+			BlockData []BlockData `json:"blocks"`
+		}
+		var existingBlocks Blocks
+		blocks := chain.GetBlockchain(api.Node.Blockchain)
+
+		for _, block := range blocks {
+			var inputData interface{}
+			err := json.Unmarshal(block.Data, &inputData)
+			if err != nil {
+				inputData = string(block.Data) // Fallback to string if unmarshal fails
+			}
+
+			blockData := BlockData{
+				Block:            block.Block,
+				InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
+				TransactionHash:  fmt.Sprintf("%x", block.Hash),
+				PreviousHash:     fmt.Sprintf("%x", block.Link),
+				TransactionNonce: int(block.Nonce),
+			}
+			existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
+		}
+
+		jsonData, err := json.Marshal(existingBlocks)
+		if err != nil {
+			logrus.Error("[-] Error marshalling blocks: ", err)
+			return
+		}
+		var blocksResponse Blocks
+		err = json.Unmarshal(jsonData, &blocksResponse)
+		if err != nil {
+			logrus.Error("[-] Error unmarshalling blocks: ", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, blocksResponse)
+	}
+}
+
+// GetBlockByHash returns a gin.HandlerFunc that handles requests to retrieve a specific block from the blockchain by its hash.
+//
+// This function:
+// 1. Extracts the block hash from the request parameters.
+// 2. Decodes the hexadecimal block hash.
+// 3. Retrieves the block from the blockchain using the decoded hash.
+// 4. Unmarshals the block data and formats it for the response.
+// 5. Returns the formatted block data as a JSON response.
+//
+// If any errors occur during this process (e.g., invalid hash, block not found),
+// appropriate error responses are sent back to the client.
+func (api *API) GetBlockByHash() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		if !api.Node.IsValidator {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Node is not a validator and cannot access this endpoint"})
+			return
+		}
+
+		blockHash := c.Param("blockHash")
+		blockHashBytes, err := hex.DecodeString(blockHash)
+		if err != nil {
+			logrus.Errorf("[-]Failed to decode block hash: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid block hash"})
+			return
+		}
+		block, err := api.Node.Blockchain.GetBlock(blockHashBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "hash not found"})
+			return
+		}
+
+		var blockData map[string]interface{}
+		err = json.Unmarshal(block.Data, &blockData)
+		var inputData any
+		if err != nil {
+			inputData = string(block.Data)
+		} else {
+			inputData = blockData
+		}
+		responseData := gin.H{
+			"block":            block.Block,
+			"input_data":       inputData,
+			"transaction_hash": blockHash,
+			"nonce":            block.Nonce,
+		}
+		c.JSON(http.StatusOK, responseData)
+	}
+}
+
+// Test is a temporary function that handles test requests.
+// TODO: Remove this function once testing is complete.
 func (api *API) Test() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody struct {
-			Foo string `json:"foo"`
-		}
+		var reqBody map[string]interface{}
 
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
-		if reqBody.Foo == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "foo value must be provided"})
+		if len(reqBody) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Request body cannot be empty"})
 			return
 		}
 
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 
 		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
 		if err != nil {
-			logrus.Errorf("Error publishing block: %v", err)
+			logrus.Errorf("[-] Error publishing block: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "message sent"})
+		c.JSON(http.StatusOK, gin.H{"message": "message sent", "data": reqBody})
 	}
 }

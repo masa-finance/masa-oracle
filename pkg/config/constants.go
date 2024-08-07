@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/spf13/viper"
 )
 
 // ModelType defines a type for model strings.
@@ -94,7 +93,6 @@ const (
 	AllowedPeer = "allowedPeer"
 	Signature   = "signature"
 	Debug       = "debug"
-	Version     = "v0.0.9-beta"
 	FilePath    = "FILE_PATH"
 	Validator   = "VALIDATOR"
 	CachePath   = "CACHE_PATH"
@@ -120,6 +118,7 @@ const (
 	GPTApiKey        = "OPENAI_API_KEY"
 	TwitterScraper   = "TWITTER_SCRAPER"
 	DiscordScraper   = "DISCORD_SCRAPER"
+	TelegramScraper  = "TELEGRAM_SCRAPER"
 	WebScraper       = "WEB_SCRAPER"
 	LlmServer        = "LLM_SERVER"
 	LlmChatUrl       = "LLM_CHAT_URL"
@@ -130,21 +129,22 @@ const (
 // with the configured version and environment suffix.
 func ProtocolWithVersion(protocolName string) protocol.ID {
 	if GetInstance().Environment == "" {
-		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, Version))
+		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, GetInstance().Version))
 	}
-	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, Version, viper.GetString(Environment)))
+	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, GetInstance().Version, GetInstance().Environment))
 }
 
 // TopicWithVersion returns a topic string with the configured version
 // and environment suffix.
 func TopicWithVersion(protocolName string) string {
 	if GetInstance().Environment == "" {
-		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, Version)
+		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, GetInstance().Version)
 	}
-	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, Version, viper.GetString(Environment))
+	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, GetInstance().Version, GetInstance().Environment)
 }
 
 // Function to call the Cloudflare API and parse the response
+
 func GetCloudflareModels() ([]string, error) {
 	url := "https://api.cloudflare.com/client/v4/accounts/a72433aa3bb83aecaca1bc8acecdb166/ai/models/search"
 	req, err := http.NewRequest("GET", url, nil)

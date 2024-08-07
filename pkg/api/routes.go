@@ -8,18 +8,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/masa-finance/masa-oracle/docs"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+
+	"path/filepath"
+	"runtime"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
+	swaggerFiles "github.com/swaggo/files"     // swagger embed files
+	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
 )
 
 //go:embed templates/*.html
@@ -91,7 +92,7 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		token := authHeader[len(BearerSchema):]
 
 		// Validate the token against the expected API key stored in environment variables.
-		logrus.Info(os.Getenv("API_KEY"))
+		// logrus.Info(os.Getenv("API_KEY"))
 		if os.Getenv("API_KEY") == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "JWT Token required"})
 			return
@@ -128,18 +129,12 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 	templ := template.Must(template.ParseFS(htmlTemplates, "templates/*.html"))
 	router.SetHTMLTemplate(templ)
 
+	// Update Swagger info
+	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
+	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
-	//	@BasePath		/api/v1
-	//	@Title			Masa API
-	//	@Description	The Worlds Personal Data Network Masa Oracle Node API
-	//	@Host			https://api.masa.ai
-	//	@Version		0.0.9-beta
-	//	@contact.name	Masa API Support
-	//	@contact.url	https://masa.ai
-	//	@contact.email	support@masa.ai
-	//	@license.name	MIT
-	//	@license.url	https://opensource.org/license/mit
+	setupSwaggerHandler(router)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -216,6 +211,44 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Invalid user ID or error fetching profile"
 		// @Router /discord/profile/{userID} [get]
 		v1.GET("/data/discord/profile/:userID", API.SearchDiscordProfile())
+
+		// @Summary Start Telegram Authentication
+		// @Description Initiates the authentication process with Telegram by sending a code to the provided phone number.
+		// @Tags Authentication
+		// @Accept  json
+		// @Produce  json
+		// @Param   phone_number   body    string  true  "Phone Number"
+		// @Success 200 {object} map[string]interface{} "Successfully sent authentication code"
+		// @Failure 400 {object} ErrorResponse "Invalid request body"
+		// @Failure 500 {object} ErrorResponse "Failed to initialize Telegram client or to start authentication"
+		// @Router /auth/telegram/start [post]
+		v1.POST("/auth/telegram/start", API.StartAuth())
+
+		// @Summary Complete Telegram Authentication
+		// @Description Completes the authentication process with Telegram using the code sent to the phone number.
+		// @Tags Authentication
+		// @Accept  json
+		// @Produce  json
+		// @Param   phone_number   body    string  true  "Phone Number"
+		// @Param   code           body    string  true  "Authentication Code"
+		// @Param   phone_code_hash body   string  true  "Phone Code Hash"
+		// @Success 200 {object} map[string]interface{} "Successfully authenticated"
+		// @Failure 400 {object} ErrorResponse "Invalid request body"
+		// @Failure 401 {object} ErrorResponse "Two-factor authentication is required"
+		// @Failure 500 {object} ErrorResponse "Failed to initialize Telegram client or to complete authentication"
+		// @Router /auth/telegram/complete [post]
+		v1.POST("/auth/telegram/complete", API.CompleteAuth())
+
+		// @Summary Get Telegram Channel Messages
+		// @Description Retrieves messages from a specified Telegram channel.
+		// @Tags Telegram
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} map[string][]Message "Successfully retrieved messages"
+		// @Failure 400 {object} ErrorResponse "Username must be provided"
+		// @Failure 500 {object} ErrorResponse "Failed to fetch channel messages"
+		// @Router /telegram/channel/{username}/messages [get]
+		v1.POST("/data/telegram/channel/messages", API.GetChannelMessagesHandler())
 
 		// oauth tests
 		// v1.GET("/data/discord/exchangetoken/:code", API.ExchangeDiscordTokenHandler())
@@ -379,6 +412,17 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /sentiment/tweets [post]
 		v1.POST("/sentiment/discord", API.SearchDiscordMessagesAndAnalyzeSentiment())
 
+		// @Summary Analyze Sentiment of Telegram Messages
+		// @Description Searches for Telegram messages and analyzes their sentiment
+		// @Tags Sentiment
+		// @Accept  json
+		// @Produce  json
+		// @Param   query   body    string  true  "Search Query"
+		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of Telegram messages"
+		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of Telegram messages"
+		// @Router /sentiment/telegram [post]
+		v1.POST("/sentiment/telegram", API.SearchTelegramMessagesAndAnalyzeSentiment())
+
 		// @Summary Analyze Sentiment of Web Content
 		// @Description Searches for web content and analyzes its sentiment
 		// @Tags Sentiment
@@ -434,8 +478,31 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /chat/cf [post]
 		v1.POST("/chat/cf", API.CfLlmChat())
 
+		// @Summary Get Blocks
+		// @Description Retrieves the list of blocks from the blockchain
+		// @Tags Blocks
+		// @Accept  json
+		// @Produce  json
+		// @Success 200 {object} Blocks "Successfully retrieved blocks"
+		// @Failure 400 {object} ErrorResponse "Error retrieving blocks"
+		// @Router /blocks [get]
+		v1.GET("/blocks", API.GetBlocks())
+
+		// @Summary Get Block by Hash
+		// @Description Retrieves a specific block from the blockchain using its hash
+		// @Tags Blocks
+		// @Accept  json
+		// @Produce  json
+		// @Param   blockHash   path    string  true  "Hash of the block to retrieve"
+		// @Success 200 {object} BlockResponse "Successfully retrieved block"
+		// @Failure 400 {object} ErrorResponse "Invalid block hash"
+		// @Failure 500 {object} ErrorResponse "Error retrieving block"
+		// @Router /blocks/{blockHash} [get]
+		v1.GET("/blocks/:blockHash", API.GetBlockByHash())
+
 		// @note a test route
 		v1.POST("/test", API.Test())
+
 	}
 
 	// @Summary Node Status Page
@@ -482,6 +549,35 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		})
 	})
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.DefaultModelsExpandDepth(-1)))
 	return router
+}
+
+func setupSwaggerHandler(router *gin.Engine) {
+	// Get the current file's directory
+	_, currentFile, _, _ := runtime.Caller(0)
+	currentDir := filepath.Dir(currentFile)
+
+	// Construct the path to the swagger.html file
+	swaggerTemplate := filepath.Join(currentDir, "templates", "swagger.html")
+
+	// Create a custom handler that serves our HTML file
+	customHandler := func(c *gin.Context) {
+		if c.Request.URL.Path == "/swagger" || c.Request.URL.Path == "/swagger/" || c.Request.URL.Path == "/swagger/index.html" {
+			c.File(swaggerTemplate)
+			return
+		}
+
+		// For other swagger-related paths, use the default handler
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
+			ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
+			return
+		}
+
+		// If it's not a swagger path, pass it to the next handler
+		c.Next()
+	}
+
+	// Use our custom handler for all /swagger paths
+	router.GET("/swagger", customHandler)
+	router.GET("/swagger/*any", customHandler)
 }

@@ -342,6 +342,21 @@ const docTemplate = `{
 					  "description": "Discord Channel ID",
 					  "required": true,
 					  "type": "string"
+					},
+					{
+					  "name": "limit",
+					  "in": "query",
+					  "description": "The maximum number of messages to return",
+					  "required": false,
+					  "type": "integer",
+					  "format": "int32"
+					},
+					{
+					  "name": "before",
+					  "in": "query",
+					  "description": "A message ID to return messages posted before this message",
+					  "required": false,
+					  "type": "string"
 					}
 				  ],
 				  "responses": {
@@ -462,6 +477,53 @@ const docTemplate = `{
 						},
 						"400": {
 							"description": "Error fetching guilds or invalid access token",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					},
+					"security": [
+						{
+							"Bearer": []
+						}
+					]
+				}
+			},
+			"/data/telegram/channel/messages": {
+				"post": {
+					"description": "Retrieves messages from a specified Telegram channel.",
+					"tags": ["Telegram"],
+					"summary": "Get Telegram Channel Messages",
+					"parameters": [
+						{
+							"in": "body",
+							"name": "body",
+							"description": "Request body",
+							"required": true,
+							"schema": {
+								"type": "object",
+								"properties": {
+									"username": {
+										"type": "string",
+										"description": "Telegram Username"
+									}
+								},
+								"required": ["username"]
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully retrieved messages",
+							"schema": {
+								"type": "array",
+								"items": {
+									"$ref": "#/definitions/Message"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid username or error fetching messages",
 							"schema": {
 								"$ref": "#/definitions/ErrorResponse"
 							}
@@ -848,6 +910,45 @@ const docTemplate = `{
 					}
 				}
 			},
+			"/sentiment/telegram": {
+				"post": {
+					"description": "Searches for Telegram messages and analyzes their sentiment",
+					"tags": ["Sentiment"],
+					"summary": "Analyze Sentiment of Telegram Messages",
+					"consumes": ["application/json"],
+					"produces": ["application/json"],
+					"parameters": [
+						{
+							"name": "query",
+							"in": "body",
+							"description": "Search Query",
+							"required": true,
+							"schema": {
+								"type": "object",
+								"properties": {
+									"query": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully analyzed sentiment of Telegram messages",
+							"schema": {
+								"$ref": "#/definitions/SentimentAnalysisResponse"
+							}
+						},
+						"400": {
+							"description": "Error analyzing sentiment of Telegram messages",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
 			"/sentiment/discord": {
 				"post": {
 					"description": "Searches for Discord messages and analyzes their sentiment",
@@ -925,6 +1026,115 @@ const docTemplate = `{
 						},
 						"500": {
 							"description": "Error generating API key",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/auth/telegram/start": {
+				"post": {
+					"description": "Initiates the authentication process with Telegram by sending a code to the provided phone number.",
+					"tags": ["Authentication"],
+					"summary": "Start Telegram Authentication",
+					"consumes": ["application/json"],
+					"produces": ["application/json"],
+					"parameters": [
+						{
+							"name": "phone_number",
+							"in": "body",
+							"description": "Phone Number",
+							"required": true,
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone_number": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully sent authentication code",
+							"schema": {
+								"type": "object",
+								"additionalProperties": {
+									"type": "string"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid request body",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						},
+						"500": {
+							"description": "Failed to initialize Telegram client or to start authentication",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						}
+					}
+				}
+			},
+			"/auth/telegram/complete": {
+				"post": {
+					"description": "Completes the authentication process with Telegram using the code sent to the phone number.",
+					"tags": ["Authentication"],
+					"summary": "Complete Telegram Authentication",
+					"consumes": ["application/json"],
+					"produces": ["application/json"],
+					"parameters": [
+						{
+							"name": "phone_number",
+							"in": "body",
+							"description": "Phone Number",
+							"required": true,
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone_number": {
+										"type": "string"
+									},
+									"code": {
+										"type": "string"
+									},
+									"phone_code_hash": {
+										"type": "string"
+									}
+								},
+								"required": ["phone_number", "code", "phone_code_hash"]
+							}
+						}
+					],
+					"responses": {
+						"200": {
+							"description": "Successfully authenticated",
+							"schema": {
+								"type": "object",
+								"additionalProperties": {
+									"type": "string"
+								}
+							}
+						},
+						"400": {
+							"description": "Invalid request body",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						},
+						"401": {
+							"description": "Two-factor authentication is required",
+							"schema": {
+								"$ref": "#/definitions/ErrorResponse"
+							}
+						},
+						"500": {
+							"description": "Failed to initialize Telegram client or to complete authentication",
 							"schema": {
 								"$ref": "#/definitions/ErrorResponse"
 							}

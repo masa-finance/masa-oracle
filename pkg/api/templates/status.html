@@ -71,6 +71,22 @@
                     {{end}}
                   </tr>
                   <tr>
+                    <th scope="row">Telegram Scraper</th>
+                    {{if .IsTelegramScraper}}
+                    <td>
+                      <span class="badge badge-success"
+                        >{{.IsTelegramScraper}}</span
+                      >
+                    </td>
+                    {{else}}
+                    <td>
+                      <span class="badge badge-danger"
+                        >{{.IsTelegramScraper}}</span
+                      >
+                    </td>
+                    {{end}}
+                  </tr>
+                  <tr>
                     <th scope="row">Web Scraper</th>
                     {{if .IsWebScraper}}
                     <td>
