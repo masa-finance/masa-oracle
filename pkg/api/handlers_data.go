@@ -101,7 +101,7 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 			c.JSON(http.StatusOK, result)
 			return
 		// teslashibe: adjust to timeout after 10 seconds for performance testing
-		case <-time.After(10 * time.Second):
+		case <-time.After(15 * time.Second):
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out, check that port 4001 TCP inbound is open."})
 			return
 		case <-c.Done():
