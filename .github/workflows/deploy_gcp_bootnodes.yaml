@@ -33,7 +33,7 @@ jobs:
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: projects/784882329213/locations/global/workloadIdentityPools/github-oidc-pool/providers/github-oidc-provider
-        service_account: gh-masa-oracle-${{ github.ref_name }}@masa-chain.iam.gserviceaccount.com
+        service_account: gh-masa-oracle-test@masa-chain.iam.gserviceaccount.com
     - name: Install Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       with:
