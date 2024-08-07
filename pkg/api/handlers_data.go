@@ -75,6 +75,13 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
 func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
+	config, err := LoadConfig()
+	if err != nil {
+		logrus.Errorf("Failed to load API config: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
 	for {
 		select {
 		case response := <-responseCh:
@@ -101,8 +108,7 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 
 			c.JSON(http.StatusOK, result)
 			return
-		// teslashibe: adjust to timeout after 10 seconds for performance testing
-		case <-time.After(15 * time.Second):
+		case <-time.After(config.WorkerResponseTimeout):
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out, check that port 4001 TCP inbound is open."})
 			return
 		case <-c.Done():
