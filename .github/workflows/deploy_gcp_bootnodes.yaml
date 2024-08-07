@@ -46,24 +46,21 @@ jobs:
         gsutil cp ./bin/masa-node gs://${{ vars.GCP_BUCKET_NAME }}/masa-node
         gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/$BINARY_NAME/
         gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/
-    - name: Set environment output
-      id: set-env
-      run: echo "environment=test" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build-and-release
     runs-on: ubuntu-latest
     environment:
-      name: ${{ needs.build-and-release.outputs.environment }}
+      name: test
     steps:
     - id: auth
       uses: google-github-actions/auth@v2
       with:
         workload_identity_provider: projects/784882329213/locations/global/workloadIdentityPools/github-oidc-pool/providers/github-oidc-provider
-        service_account: gh-masa-oracle-${{ github.ref_name }}@masa-chain.iam.gserviceaccount.com
+        service_account: gh-masa-oracle-test@masa-chain.iam.gserviceaccount.com
     - name: Update Instance Metadata
       run: |
-        ENVIRONMENT="production"
+        ENVIRONMENT="test"
         echo "Looking for instances with env metadata: $ENVIRONMENT"
         INSTANCES=$(gcloud compute instances list --filter="metadata.items.ENV=$ENVIRONMENT" --format="get(name)")
         echo "Found instances: $INSTANCES"
