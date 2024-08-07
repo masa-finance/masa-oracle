@@ -82,6 +82,7 @@ func (a *Worker) Receive(ctx actor.Context) {
 	case *messages.Work:
 		logrus.Info("Handling Work message")
 		if a.Node.IsWorker() {
+			logrus.Infof("[+] Received Work")
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
