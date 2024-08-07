@@ -15,20 +15,21 @@ REPO_INFO=$(gh repo view --json nameWithOwner)
 REPO=$(echo $REPO_INFO | jq -r .nameWithOwner)
 echo "Repository: $REPO"
 
-echo "Searching for workflow: '$WORKFLOW_NAME'"
-WORKFLOW_ID=$(gh api "/repos/$REPO/actions/workflows" | jq -r ".workflows[] | select(.name == \"$WORKFLOW_NAME\") | .id")
+echo "Searching for workflows with name: '$WORKFLOW_NAME'"
+WORKFLOW_IDS=$(gh api "/repos/$REPO/actions/workflows" | jq -r ".workflows[] | select(.name == \"$WORKFLOW_NAME\") | .id")
 
-if [ -z "$WORKFLOW_ID" ]; then
-    echo "No workflow found with name '$WORKFLOW_NAME'"
+if [ -z "$WORKFLOW_IDS" ]; then
+    echo "No workflows found with name '$WORKFLOW_NAME'"
     exit 1
 fi
 
-echo "Found workflow with ID: $WORKFLOW_ID"
+echo "Found workflow(s) with ID(s): $WORKFLOW_IDS"
 
 delete_runs() {
-    local page=$1
-    echo "Fetching runs (page $page)..."
-    RUNS=$(gh api "/repos/$REPO/actions/workflows/$WORKFLOW_ID/runs?per_page=100&page=$page")
+    local workflow_id=$1
+    local page=$2
+    echo "Fetching runs for workflow $workflow_id (page $page)..."
+    RUNS=$(gh api "/repos/$REPO/actions/workflows/$workflow_id/runs?per_page=100&page=$page")
     RUN_COUNT=$(echo $RUNS | jq '.workflow_runs | length')
     
     if [ "$RUN_COUNT" -eq 0 ]; then
@@ -44,14 +45,19 @@ delete_runs() {
     return 0
 }
 
-page=1
-while delete_runs $page; do
-    ((page++))
+for WORKFLOW_ID in $WORKFLOW_IDS; do
+    echo "Processing workflow ID: $WORKFLOW_ID"
+    page=1
+    while delete_runs $WORKFLOW_ID $page; do
+        ((page++))
+    done
+
+    echo "All runs deleted for workflow ID $WORKFLOW_ID"
+
+    echo "Deleting the workflow itself..."
+    gh api -X DELETE "/repos/$REPO/actions/workflows/$WORKFLOW_ID"
+
+    echo "Workflow with ID $WORKFLOW_ID has been deleted."
 done
 
-echo "All runs deleted for workflow '$WORKFLOW_NAME'"
-
-echo "Deleting the workflow itself..."
-gh api -X DELETE "/repos/$REPO/actions/workflows/$WORKFLOW_ID"
-
-echo "Workflow '$WORKFLOW_NAME' and all its runs have been deleted."
+echo "All workflows named '$WORKFLOW_NAME' and their runs have been deleted."
