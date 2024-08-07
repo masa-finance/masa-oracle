@@ -6,6 +6,8 @@ on:
       - main
       - test
       - dev
+    tags:
+      - 'v*' # Add this line to trigger the workflow on tag pushes that match 'v*'
 
     paths-ignore:
       - 'docs/**'
