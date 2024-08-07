@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -106,7 +107,13 @@ func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, res
 	case <-workerDone:
 		select {
 		case response := <-responseCollector:
-			if isSuccessfulResponse(response) {
+			success, err := isSuccessfulResponse(response)
+			if err != nil {
+				// TODO: This is the original error from the worker message. We can decide how we want to handle this
+				logrus.Errorf("[-] Error in response: %v", err)
+				return false
+			}
+			if success {
 				if worker.IsLocal {
 					logrus.Infof("Local worker with PeerID %s successfully completed the work", node.Host.ID())
 				} else {
@@ -241,16 +248,23 @@ func processWorkerResponse(result interface{}, workerID interface{}, responseCol
 	responseCollector <- msg
 }
 
-func isSuccessfulResponse(response *pubsub2.Message) bool {
+func isSuccessfulResponse(response *pubsub2.Message) (bool, error) {
 	if response.ValidatorData == nil {
-		return true
+		return true, nil
 	}
 	validatorData, ok := response.ValidatorData.(map[string]interface{})
 	if !ok {
-		return false
+		return false, nil
 	}
-	errorVal, exists := validatorData["error"]
-	return !exists || errorVal == nil
+	// TODO: this code is unwrapping the error returned from the worker. We can improve on how we use this in the result
+	if responseVal, exists := validatorData["Response"]; exists {
+		if responseMap, ok := responseVal.(map[string]interface{}); ok {
+			if errorVal, exists := responseMap["error"]; exists {
+				return false, errors.New(errorVal.(string))
+			}
+		}
+	}
+	return true, nil
 }
 
 func processAndSendResponse(response *pubsub2.Message) {
