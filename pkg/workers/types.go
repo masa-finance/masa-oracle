@@ -1,6 +1,8 @@
 package workers
 
 import (
+	"fmt"
+
 	"github.com/asynkron/protoactor-go/actor"
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
 )
@@ -47,6 +49,33 @@ var WORKER = struct {
 	Web:                     Web,
 	WebSentiment:            WebSentiment,
 	Test:                    Test,
+}
+
+var workerTypeMap = map[string]WorkerType{
+	"discord":                   Discord,
+	"discord-profile":           DiscordProfile,
+	"discord-channel-messages":  DiscordChannelMessages,
+	"discord-sentiment":         DiscordSentiment,
+	"telegram-sentiment":        TelegramSentiment,
+	"telegram-channel-messages": TelegramChannelMessages,
+	"discord-guild-channels":    DiscordGuildChannels,
+	"discord-user-guilds":       DiscordUserGuilds,
+	"llm-chat":                  LLMChat,
+	"twitter":                   Twitter,
+	"twitter-followers":         TwitterFollowers,
+	"twitter-profile":           TwitterProfile,
+	"twitter-sentiment":         TwitterSentiment,
+	"twitter-trends":            TwitterTrends,
+	"web":                       Web,
+	"web-sentiment":             WebSentiment,
+	"test":                      Test,
+}
+
+func StringToWorkerType(s string) (WorkerType, error) {
+	if workerType, ok := workerTypeMap[s]; ok {
+		return workerType, nil
+	}
+	return "", fmt.Errorf("invalid WorkerType: %s", s)
 }
 
 var (

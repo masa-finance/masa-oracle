@@ -117,7 +117,9 @@ func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
 		logrus.Infof("[+] Skipping worker %s due to timeout", n.PeerId)
 		return false
 	}
-
+	if !n.IsStaked {
+		return false
+	}
 	switch workerType {
 	case CategoryTwitter:
 		return n.IsActive && n.IsTwitterScraper

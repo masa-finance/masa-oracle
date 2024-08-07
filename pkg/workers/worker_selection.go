@@ -1,36 +1,44 @@
 package workers
 
 import (
+	"encoding/json"
+
 	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
 )
 
+// GetEligibleWorkers Uses the new NodeTracker method to get the eligible workers for a given message type
 func GetEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker {
 	var workers []Worker
-
-	if node.IsStaked && node.IsWorker() {
-		workers = append(workers, Worker{IsLocal: true, NodeData: pubsub.NodeData{PeerId: node.Host.ID()}})
+	// right now the message has the Twitter work type hard coded so we have to get it from the message data
+	// TODO: can we get this fixed in the protobuf code?
+	var workData map[string]string
+	err := json.Unmarshal([]byte(message.Data), &workData)
+	if err != nil {
+		logrus.Errorf("[-] Error parsing work data: %v", err)
+		return workers
 	}
 
-	peers := node.NodeTracker.GetAllNodeData()
-	for _, p := range peers {
-		if isEligibleRemoteWorker(p, node, message) {
-			for _, addr := range p.Multiaddrs {
-				ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
-				workers = append(workers, Worker{IsLocal: false, NodeData: p, IPAddr: ipAddr})
-				break
-			}
+	workType, err := StringToWorkerType(workData["request"])
+	if err != nil {
+		logrus.Errorf("[-] Error parsing work type: %v", err)
+		return workers
+	}
+	category := WorkerTypeToCategory(workType)
+	for _, eligible := range node.NodeTracker.GetEligibleWorkerNodes(category) {
+		if eligible.PeerId.String() == node.Host.ID().String() {
+			workers = append(workers, Worker{IsLocal: true, NodeData: pubsub.NodeData{PeerId: node.Host.ID()}})
+			continue
+		}
+		for _, addr := range eligible.Multiaddrs {
+			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
+			workers = append(workers, Worker{IsLocal: false, NodeData: eligible, IPAddr: ipAddr})
+			break
 		}
 	}
-
 	return workers
-}
-
-func isEligibleRemoteWorker(p pubsub.NodeData, node *masa.OracleNode, message *messages.Work) bool {
-	return (p.PeerId.String() != node.Host.ID().String()) &&
-		p.IsStaked &&
-		node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type))
 }

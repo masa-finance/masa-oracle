@@ -248,6 +248,17 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 	return updatedNodeData
 }
 
+func (net *NodeEventTracker) GetEligibleWorkerNodes(category WorkerCategory) []NodeData {
+	logrus.Debugf("Getting eligible worker nodes for category: %s", category)
+	result := make([]NodeData, 0)
+	for _, nodeData := range net.GetAllNodeData() {
+		if nodeData.CanDoWork(category) {
+			result = append(result, nodeData)
+		}
+	}
+	return result
+}
+
 // GetEthAddress returns the Ethereum address for the given remote peer.
 // It gets the peer's public key from the network's peerstore, converts
 // it to a hex string, and converts that to an Ethereum address.

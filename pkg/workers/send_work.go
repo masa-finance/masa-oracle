@@ -53,6 +53,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 	logrus.Error("All workers failed to process the work after maximum retries")
 }
 
+// TODO: collecting N responses is not in this implementation. Should we add it?
 func tryWorkersConcurrently(node *masa.OracleNode, workers []Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
 	//TODO: removed: The round robin iterator was iterating through the full list in an indeterminate way.
 	for _, worker := range workers {
@@ -207,6 +208,7 @@ func processAndSendResponse(response *pubsub2.Message) {
 	workerDoneCh <- response
 }
 
-func init() {
-	workerDoneCh = make(chan *pubsub2.Message, 100)
-}
+// TODO: Remove this is already handled in the init function in types.go
+//func init() {
+//	workerDoneCh = make(chan *pubsub2.Message, 100)
+//}
