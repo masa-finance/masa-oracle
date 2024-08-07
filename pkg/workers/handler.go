@@ -9,6 +9,9 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	pubsub2 "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
@@ -16,8 +19,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/web"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/sirupsen/logrus"
 )
 
 type LLMChatBody struct {
@@ -158,7 +159,10 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	}
 
 	if err != nil {
-		host, _, err := net.SplitHostPort(m.Sender.Address)
+		host, _, err2 := net.SplitHostPort(m.Sender.Address)
+		if err2 != nil {
+			logrus.Errorf("[-] Error splitting host and port: %v", err2)
+		}
 		addrs := node.Host.Addrs()
 		isLocalHost := false
 		for _, addr := range addrs {
