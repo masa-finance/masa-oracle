@@ -42,30 +42,52 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 
 	eligibleWorkers := GetEligibleWorkers(node, message)
 
-	for retries := 0; retries < workerConfig.MaxRetries; retries++ {
-		success := tryWorkersRoundRobin(node, eligibleWorkers, message, responseCollector)
-		if success {
-			return
-		}
-		logrus.Warnf("All workers failed, retry attempt %d of %d", retries+1, workerConfig.MaxRetries)
+	success := tryWorkersRoundRobin(node, eligibleWorkers, message, responseCollector)
+	if !success {
+		logrus.Error("Failed to process the work")
 	}
-
-	logrus.Error("All workers failed to process the work after maximum retries")
 }
 
 func tryWorkersRoundRobin(node *masa.OracleNode, workers []Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
-	workerIterator := NewRoundRobinIterator(workers)
+	var localWorker *Worker
+	remoteWorkersAttempted := 0
 
-	for workerIterator.HasNext() {
-		worker := workerIterator.Next()
+	logrus.Info("Starting round-robin worker selection")
 
-		success := tryWorker(node, worker, message, responseCollector)
-		if success {
-			return true
+	// Try remote workers first, up to MaxRemoteWorkers
+	for _, worker := range workers {
+		if !worker.IsLocal {
+			if remoteWorkersAttempted >= workerConfig.MaxRemoteWorkers {
+				logrus.Infof("Reached maximum remote workers (%d), stopping remote worker attempts", workerConfig.MaxRemoteWorkers)
+				break
+			}
+			remoteWorkersAttempted++
+			logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
+			if tryWorker(node, worker, message, responseCollector) {
+				logrus.Infof("Remote worker %s successfully completed the work", worker.NodeData.PeerId)
+				return true
+			}
+			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
+		} else {
+			localWorker = &worker
+			logrus.Info("Found local worker, saving for later if needed")
 		}
 	}
 
-	return false
+	// If remote workers fail or don't exist, try local worker
+	if localWorker != nil {
+		logrus.Info("Attempting local worker")
+		return tryWorker(node, *localWorker, message, responseCollector)
+	}
+
+	// If no workers are available, create a local worker as last resort
+	logrus.Warn("No workers available, creating last resort local worker")
+	lastResortLocalWorker := Worker{
+		IsLocal:  true,
+		NodeData: pubsub.NodeData{PeerId: node.Host.ID()},
+		Node:     node,
+	}
+	return tryWorker(node, lastResortLocalWorker, message, responseCollector)
 }
 
 func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
@@ -82,18 +104,30 @@ func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, res
 
 	select {
 	case <-workerDone:
-		// Worker finished, check response
 		select {
 		case response := <-responseCollector:
 			if isSuccessfulResponse(response) {
+				if worker.IsLocal {
+					logrus.Infof("Local worker with PeerID %s successfully completed the work", node.Host.ID())
+				} else {
+					logrus.Infof("Remote worker with PeerID %s and IP %s successfully completed the work", worker.NodeData.PeerId, worker.IPAddr)
+				}
 				processAndSendResponse(response)
 				return true
 			}
-		default:
-			// No response in channel, continue to next worker
+		case <-time.After(workerConfig.WorkerResponseTimeout):
+			if worker.IsLocal {
+				logrus.Warnf("Local worker with PeerID %s failed to respond in time", node.Host.ID())
+			} else {
+				logrus.Warnf("Remote worker with PeerID %s and IP %s failed to respond in time", worker.NodeData.PeerId, worker.IPAddr)
+			}
 		}
 	case <-time.After(workerConfig.WorkerTimeout):
-		logrus.Warnf("Worker %v timed out", worker.NodeData.PeerId)
+		if worker.IsLocal {
+			logrus.Warnf("Local worker with PeerID %s timed out", node.Host.ID())
+		} else {
+			logrus.Warnf("Remote worker with PeerID %s and IP %s timed out", worker.NodeData.PeerId, worker.IPAddr)
+		}
 	}
 
 	return false

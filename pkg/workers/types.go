@@ -68,4 +68,5 @@ type ChanResponse struct {
 type roundRobinIterator struct {
 	workers []Worker
 	index   int
+	tried   map[int]bool
 }

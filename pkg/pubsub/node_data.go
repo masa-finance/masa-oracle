@@ -91,6 +91,10 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 // and peer ID in the format "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC".
 // This can be used by other nodes to connect to this node.
 func (n *NodeData) Address() string {
+	// Add a check for empty addresses
+	if len(n.Multiaddrs) == 0 {
+		return ""
+	}
 	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
 }
 
