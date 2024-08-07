@@ -113,13 +113,12 @@ func StartAuthentication(ctx context.Context, phoneNumber string) (string, error
 }
 
 // CompleteAuthentication uses the provided code to authenticate with Telegram.
-// CompleteAuthentication uses the provided code to authenticate with Telegram.
-func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHash, password string) (*tg.AuthAuthorization, error) {
+func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHash string) (*tg.AuthAuthorization, error) {
 	// Initialize the Telegram client (if not already initialized)
 	client, err := GetClient()
 	if err != nil {
 		logrus.Printf("Failed to initialize Telegram client: %v", err)
-		return nil, err
+		return nil, err // Edit: Added nil as the first return value
 	}
 
 	// Define a variable to hold the authentication result
@@ -129,23 +128,8 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 		// Use the provided code and phoneCodeHash to authenticate
 		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
 		if err != nil {
-			var e *tg.Error
-			if errors.As(err, &e) { // Check if err is *tg.Error
-				if e.Text == "" { // This is just an example, replace with actual type for password needed
-					// Now, you need to sign in with the password (2FA)
-					auth, err = client.Auth().Password(ctx, password)
-					if err != nil {
-						log.Printf("Error during 2FA SignIn: %v", err)
-						return err
-					}
-				} else {
-					log.Printf("Error during SignIn: %v", err)
-					return err
-				}
-			} else {
-				log.Printf("Error during SignIn: %v", err)
-				return err
-			}
+			log.Printf("Error during SignIn: %v", err)
+			return err
 		}
 
 		// At this point, authentication was successful, and you have the user's Telegram auth data.
