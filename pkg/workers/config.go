@@ -5,7 +5,7 @@ import (
 )
 
 type WorkerConfig struct {
-	WorkerTimeout         time.Duration
+	ConnectTimeout        time.Duration
 	WorkerResponseTimeout time.Duration
 	MaxRetries            int
 	MaxSpawnAttempts      int
@@ -14,7 +14,7 @@ type WorkerConfig struct {
 }
 
 var DefaultConfig = WorkerConfig{
-	WorkerTimeout:         30 * time.Second,
+	ConnectTimeout:        250 * time.Millisecond,
 	WorkerResponseTimeout: 25 * time.Second,
 	MaxRetries:            1,
 	MaxSpawnAttempts:      3,

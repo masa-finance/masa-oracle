@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -122,7 +123,7 @@ func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, res
 				logrus.Warnf("Remote worker with PeerID %s and IP %s failed to respond in time", worker.NodeData.PeerId, worker.IPAddr)
 			}
 		}
-	case <-time.After(workerConfig.WorkerTimeout):
+	case <-time.After(workerConfig.WorkerResponseTimeout):
 		if worker.IsLocal {
 			logrus.Warnf("Local worker with PeerID %s timed out", node.Host.ID())
 		} else {
@@ -144,7 +145,7 @@ func createWorkMessage(m *pubsub2.Message, pid *actor.PID) *messages.Work {
 
 func handleLocalWorker(node *masa.OracleNode, pid *actor.PID, message *messages.Work, responseCollector chan<- *pubsub2.Message) {
 	logrus.Info("Sending work to local worker")
-	future := node.ActorEngine.RequestFuture(pid, message, workerConfig.WorkerTimeout)
+	future := node.ActorEngine.RequestFuture(pid, message, workerConfig.WorkerResponseTimeout)
 	result, err := future.Result()
 	if err != nil {
 		handleWorkerError(err, responseCollector)
@@ -188,7 +189,7 @@ func handleRemoteWorker(node *masa.OracleNode, p pubsub.NodeData, ipAddr string,
 	client := node.ActorEngine.Spawn(props)
 	node.ActorEngine.Send(spawned, &messages.Connect{Sender: client})
 
-	future := node.ActorEngine.RequestFuture(spawned, message, workerConfig.WorkerTimeout)
+	future := node.ActorEngine.RequestFuture(spawned, message, workerConfig.WorkerResponseTimeout)
 	result, err := future.Result()
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
@@ -207,6 +208,9 @@ func handleRemoteWorker(node *masa.OracleNode, p pubsub.NodeData, ipAddr string,
 }
 
 func spawnRemoteWorker(node *masa.OracleNode, ipAddr string) (*actor.PID, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), workerConfig.ConnectTimeout)
+	defer cancel()
+
 	spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 	if err != nil {
 		return nil, err
@@ -216,7 +220,13 @@ func spawnRemoteWorker(node *masa.OracleNode, ipAddr string) (*actor.PID, error)
 		return nil, fmt.Errorf("failed to spawn remote worker: PID is nil for IP %s", ipAddr)
 	}
 
-	return spawned.Pid, nil
+	// Check if the context has expired
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("connection timeout while spawning remote worker for IP %s", ipAddr)
+	default:
+		return spawned.Pid, nil
+	}
 }
 
 func handleWorkerError(err error, responseCollector chan<- *pubsub2.Message) {
