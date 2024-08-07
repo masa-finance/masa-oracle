@@ -1,4 +1,4 @@
-name: release
+name: Deploy GCP Testnet Bootnodes 
 on:
   push:
     tags:
@@ -12,7 +12,7 @@ jobs:
   build-and-release:
     runs-on: ubuntu-latest
     environment: 
-      name: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'development' }}
+      name: "test" #will expand to other envs later, currently "test" deploys to the 5 GCP bootnodes
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
     steps:
@@ -48,7 +48,7 @@ jobs:
         gsutil cp ./contracts/* gs://${{ vars.GCP_BUCKET_NAME }}/
     - name: Set environment output
       id: set-env
-      run: echo "environment=production" >> $GITHUB_OUTPUT
+      run: echo "environment=test" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build-and-release
