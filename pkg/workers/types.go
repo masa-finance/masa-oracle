@@ -64,8 +64,3 @@ type ChanResponse struct {
 	Response  map[string]interface{}
 	ChannelId string
 }
-
-type roundRobinIterator struct {
-	workers []Worker
-	index   int
-}

@@ -42,61 +42,44 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 
 	eligibleWorkers := GetEligibleWorkers(node, message)
 
+	// TODO: there is an issue with retries. Typically, the timeout occurs first, so the retry happens in the background adding work with nowhere to go.
 	for retries := 0; retries < workerConfig.MaxRetries; retries++ {
-		success := tryWorkersRoundRobin(node, eligibleWorkers, message, responseCollector)
+		success := tryWorkersConcurrently(node, eligibleWorkers, message, responseCollector)
 		if success {
 			return
 		}
 		logrus.Warnf("All workers failed, retry attempt %d of %d", retries+1, workerConfig.MaxRetries)
 	}
-
 	logrus.Error("All workers failed to process the work after maximum retries")
 }
 
-func tryWorkersRoundRobin(node *masa.OracleNode, workers []Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
-	workerIterator := NewRoundRobinIterator(workers)
-
-	for workerIterator.HasNext() {
-		worker := workerIterator.Next()
-
-		success := tryWorker(node, worker, message, responseCollector)
-		if success {
+func tryWorkersConcurrently(node *masa.OracleNode, workers []Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
+	//TODO: removed: The round robin iterator was iterating through the full list in an indeterminate way.
+	for _, worker := range workers {
+		go tryWorker(node, worker, message, responseCollector)
+	}
+	// put the select here so that we can have all workers working at the same time.
+	// In this implementation, the first worker to respond will be processed.
+	select {
+	case response := <-responseCollector:
+		if isSuccessfulResponse(response) {
+			processAndSendResponse(response)
 			return true
 		}
+	case <-time.After(workerConfig.WorkerTimeout * time.Duration(len(workers))):
+		logrus.Warn("All workers timed out")
+		return false
 	}
-
 	return false
 }
 
-func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
-	workerDone := make(chan bool, 1)
-
-	go func() {
-		if worker.IsLocal {
-			handleLocalWorker(node, node.ActorEngine.Spawn(actor.PropsFromProducer(NewWorker(node))), message, responseCollector)
-		} else {
-			handleRemoteWorker(node, worker.NodeData, worker.IPAddr, actor.PropsFromProducer(NewWorker(node)), message, responseCollector)
-		}
-		workerDone <- true
-	}()
-
-	select {
-	case <-workerDone:
-		// Worker finished, check response
-		select {
-		case response := <-responseCollector:
-			if isSuccessfulResponse(response) {
-				processAndSendResponse(response)
-				return true
-			}
-		default:
-			// No response in channel, continue to next worker
-		}
-	case <-time.After(workerConfig.WorkerTimeout):
-		logrus.Warnf("Worker %v timed out", worker.NodeData.PeerId)
+func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, responseCollector chan *pubsub2.Message) {
+	props := actor.PropsFromProducer(NewWorker(node))
+	if worker.IsLocal {
+		handleLocalWorker(node, node.ActorEngine.Spawn(props), message, responseCollector)
+	} else {
+		handleRemoteWorker(node, worker.NodeData, worker.IPAddr, props, message, responseCollector)
 	}
-
-	return false
 }
 
 func createWorkMessage(m *pubsub2.Message, pid *actor.PID) *messages.Work {

@@ -1,10 +1,11 @@
 package workers
 
 import (
+	"github.com/multiformats/go-multiaddr"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
-	"github.com/multiformats/go-multiaddr"
 )
 
 func GetEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker {
@@ -32,20 +33,4 @@ func isEligibleRemoteWorker(p pubsub.NodeData, node *masa.OracleNode, message *m
 	return (p.PeerId.String() != node.Host.ID().String()) &&
 		p.IsStaked &&
 		node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type))
-}
-
-func NewRoundRobinIterator(workers []Worker) *roundRobinIterator {
-	return &roundRobinIterator{
-		workers: workers,
-		index:   -1,
-	}
-}
-
-func (r *roundRobinIterator) HasNext() bool {
-	return len(r.workers) > 0
-}
-
-func (r *roundRobinIterator) Next() Worker {
-	r.index = (r.index + 1) % len(r.workers)
-	return r.workers[r.index]
 }
