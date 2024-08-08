@@ -5,15 +5,15 @@ title: Telegram Sentiment
 
 ## Masa Node Telegram Sentiment Analysis Feature
 
-The Masa Node introduces a powerful feature for analyzing the sentiment of telegram messages. This functionality leverages advanced language models to interpret the sentiment behind a collection of tweets, providing valuable insights into public perception and trends.
+The Masa Node introduces a powerful feature for analyzing the sentiment of telegram messages. This functionality leverages advanced language models to interpret the sentiment behind a collection of Telegram messages, providing valuable insights into public perception and trends.
 
 ## Overview
 
-The Telegram sentiment analysis feature is part of the broader capabilities of the Masa Node, designed to interact with Telegram messages data in a meaningful way. It uses state-of-the-art language models to evaluate the sentiment of tweets, categorizing them into positive, negative, or neutral sentiments.
+The Telegram sentiment analysis feature is part of the broader capabilities of the Masa Node, designed to interact with Telegram messages data in a meaningful way. It uses state-of-the-art language models to evaluate the sentiment of Telegram messages, categorizing them into positive, negative, or neutral sentiments.
 
 ## How It Works
 
-The sentiment analysis process involves fetching tweets based on specific queries, and then analyzing these tweets using selected language models. The system supports various models, including Claude and GPT variants, allowing for flexible and powerful sentiment analysis.
+The sentiment analysis process involves fetching Telegram messages based on specific queries, and then analyzing these messages using selected language models. The system supports various models, including Claude and GPT variants, allowing for flexible and powerful sentiment analysis.
 
 ### Models
 
@@ -64,7 +64,7 @@ const (
 
 #### Masa cli or code integration
 
-Tweets are fetched using the Twitter Scraper library, as seen in the [llmbridge](file:///Users/john/Projects/masa/masa-oracle/pkg/llmbridge/sentiment.go#) package. This process does not require Telegram API keys, making it accessible and straightforward.
+Messages are fetched using the Telegram Scraper library, as seen in the [llmbridge](/masa-oracle/pkg/llmbridge/sentiment.go#) package. This process does not require Telegram API keys, making it accessible and straightforward.
 
 ```go
 func AnalyzeSentimentTelegram(messages []*tg.Message, model string, prompt string) (string, string, error) {
@@ -72,4 +72,4 @@ func AnalyzeSentimentTelegram(messages []*tg.Message, model string, prompt strin
 
 ### Analyzing Sentiment
 
-Once tweets are fetched, they are sent to the chosen language model for sentiment analysis. The system currently supports models prefixed with "claude-" and "gpt-", catering to a range of analysis needs.
+Once Telegram Messages are fetched, they are sent to the chosen language model for sentiment analysis. The system currently supports models prefixed with "claude-" and "gpt-", catering to a range of analysis needs.
