@@ -28,7 +28,7 @@ func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Leg
 	responseJSON, err := json.Marshal(followingResponse)
 	if err != nil {
 		// Log the error if the marshaling fails
-		logrus.Errorf("[-] Error marshaling followingResponse: %v", err)
+		logrus.Errorf("Error marshaling followingResponse: %v", err)
 	} else {
 		// Log the JSON string of followingResponse
 		logrus.Debugf("Following response: %s", responseJSON)

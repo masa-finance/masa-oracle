@@ -17,7 +17,7 @@ import (
 func getOutboundIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		logrus.Warn("[-] Error getting outbound IP")
+		logrus.Warn("Error getting outbound IP")
 	}
 	defer conn.Close()
 	localAddr := conn.LocalAddr().String()
@@ -88,7 +88,7 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	}
 
 	if len(addrs) > 0 {
-		logrus.Warn("[-] No suitable address found, returning the first entry")
+		logrus.Warn("No suitable address found, returning the first entry")
 		return addrs[0]
 	}
 
@@ -105,7 +105,7 @@ func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	} else {
 		externalIP, err = pubip.Get()
 		if err != nil {
-			logrus.Warnf("[-] Failed to get public IP: %v", err)
+			logrus.Warnf("Failed to get public IP: %v", err)
 			return nil
 		}
 	}
@@ -117,7 +117,7 @@ func getBestPublicAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	// Create a new multiaddr with the public IP
 	publicAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s", externalIP.String()))
 	if err != nil {
-		logrus.Warnf("[-] Failed to create multiaddr with public IP: %v", err)
+		logrus.Warnf("Failed to create multiaddr with public IP: %v", err)
 		return nil
 	}
 

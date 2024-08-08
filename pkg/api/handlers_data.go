@@ -557,28 +557,28 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 				// Make the HTTP request
 				resp, err := http.Get(url)
 				if err != nil {
-					errCh <- fmt.Errorf("[-] Failed to make HTTP request: %v", err)
+					errCh <- fmt.Errorf("Failed to make HTTP request: %v", err)
 					return
 				}
 
 				defer resp.Body.Close()
 				respBody, err := io.ReadAll(resp.Body)
 				if err != nil {
-					errCh <- fmt.Errorf("[-] Failed to read response body: %v", err)
+					errCh <- fmt.Errorf("Failed to read response body: %v", err)
 					return
 				}
 
 				// Read and decode the response
 				var result map[string]interface{}
 				if err := json.Unmarshal(respBody, &result); err != nil {
-					errCh <- fmt.Errorf("[-] Failed to unmarshal response body: %v", err)
+					errCh <- fmt.Errorf("Failed to unmarshal response body: %v", err)
 					return
 				}
 
 				// Extract guilds from the result
 				guildsData, ok := result["data"]
 				if !ok {
-					errCh <- fmt.Errorf("[-] Data field not found in response")
+					errCh <- fmt.Errorf("Data field not found in response")
 					return
 				}
 
@@ -590,7 +590,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 
 				var guilds []discord.Guild
 				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
-					errCh <- fmt.Errorf("[-] Failed to unmarshal guilds: %v", err)
+					errCh <- fmt.Errorf("Failed to unmarshal guilds: %v", err)
 					return
 				}
 
@@ -612,7 +612,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		} else if len(errCh) > 0 {
 			// Check if there were any errors
 			for err := range errCh {
-				logrus.Error("[-] Error fetching guilds: ", err)
+				logrus.Error("Error fetching guilds: ", err)
 			}
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "429 too many requests"})
 			return
@@ -994,14 +994,14 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 		defer resp.Body.Close()
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			logrus.Error("[-] Error reading response body: ", err)
+			logrus.Error("Error reading response body: ", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		var payload map[string]interface{}
 		err = json.Unmarshal(respBody, &payload)
 		if err != nil {
-			logrus.Error("[-] Error unmarshalling response body: ", err)
+			logrus.Error("Error unmarshalling response body: ", err)
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, payload)
@@ -1059,13 +1059,13 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 
 		jsonData, err := json.Marshal(existingBlocks)
 		if err != nil {
-			logrus.Error("[-] Error marshalling blocks: ", err)
+			logrus.Error("Error marshalling blocks: ", err)
 			return
 		}
 		var blocksResponse Blocks
 		err = json.Unmarshal(jsonData, &blocksResponse)
 		if err != nil {
-			logrus.Error("[-] Error unmarshalling blocks: ", err)
+			logrus.Error("Error unmarshalling blocks: ", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -1147,7 +1147,7 @@ func (api *API) Test() gin.HandlerFunc {
 
 		err = api.Node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), bodyBytes)
 		if err != nil {
-			logrus.Errorf("[-] Error publishing block: %v", err)
+			logrus.Errorf("Error publishing block: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}

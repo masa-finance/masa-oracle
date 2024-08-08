@@ -18,7 +18,39 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
+type prefixHook struct {
+	prefixes map[logrus.Level]string
+}
+
+func (hook *prefixHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (hook *prefixHook) Fire(entry *logrus.Entry) error {
+	if prefix, ok := hook.prefixes[entry.Level]; ok {
+		entry.Message = prefix + entry.Message
+	}
+	return nil
+}
+
 func main() {
+
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:     true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+
+	// Custom log entry hook to add prefixes
+	prefixHook := &prefixHook{
+		prefixes: map[logrus.Level]string{
+			logrus.InfoLevel:  "[+] ",
+			logrus.DebugLevel: "[DEBUG] ",
+			logrus.WarnLevel:  "[x] ",
+			logrus.ErrorLevel: "[-] ",
+		},
+	}
+	logrus.AddHook(prefixHook)
 
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
 		logrus.Infof("Masa Oracle Node Version: %s\n", config.Version)
@@ -37,10 +69,10 @@ func main() {
 	if cfg.Faucet {
 		err := handleFaucet(keyManager.EcdsaPrivKey)
 		if err != nil {
-			logrus.Errorf("[-] %v", err)
+			logrus.Errorf("%v", err)
 			os.Exit(1)
 		} else {
-			logrus.Info("[+] Faucet event completed for this address")
+			logrus.Info("Faucet event completed for this address")
 			os.Exit(0)
 		}
 	}
@@ -50,7 +82,7 @@ func main() {
 		if err != nil {
 			logrus.Warningf("%v", err)
 		} else {
-			logrus.Info("[+] Staking event completed for this address")
+			logrus.Info("Staking event completed for this address")
 			os.Exit(0)
 		}
 	}
@@ -78,15 +110,15 @@ func main() {
 	}
 
 	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {
-		logrus.Warn("[+] Node is set as all types of scrapers. This may not be intended behavior.")
+		logrus.Warn("Node is set as all types of scrapers. This may not be intended behavior.")
 	}
 
 	if cfg.AllowedPeer {
 		cfg.AllowedPeerId = node.Host.ID().String()
 		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
-		logrus.Infof("[+] Allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
+		logrus.Infof("Allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
 	} else {
-		logrus.Warn("[-] This node is not set as the allowed peer")
+		logrus.Warn("This node is not set as the allowed peer")
 	}
 
 	// Init cache resolver

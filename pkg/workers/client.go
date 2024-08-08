@@ -92,7 +92,7 @@ func call(url, method string, buffer *bytes.Buffer, headers map[string]string) (
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			logrus.Error("[-] Error closing response body: ", err)
+			logrus.Error("Error closing response body: ", err)
 		}
 	}(resp.Body)
 	if err != nil {

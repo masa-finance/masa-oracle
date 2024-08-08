@@ -41,7 +41,7 @@ type CollectedData struct {
 //	go func() {
 //		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
-//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
+//			logrus.Errorf("Error collecting data: %s", err.Error())
 //		return
 //	  }
 //	logrus.Infof("%+v", res)
@@ -149,7 +149,7 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 //	go func() {
 //		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
-//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
+//			logrus.Errorf("Error collecting data: %s", err.Error())
 //		return
 //	  }
 //	logrus.Infof("%+v", res)
@@ -188,19 +188,19 @@ func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 			retryAfter, convErr := strconv.Atoi(r.Headers.Get("Retry-After"))
 			if convErr != nil {
 				// If not in seconds, it might be a date. Handle accordingly.
-				logrus.Debugf("[-] Retry-After: %s", r.Headers.Get("Retry-After"))
+				logrus.Debugf("Retry-After: %s", r.Headers.Get("Retry-After"))
 			}
 			// Calculate the next delay
 			nextDelay := backoffStrategy.NextBackOff()
 			if retryAfter > 0 {
 				nextDelay = time.Duration(retryAfter) * time.Second
 			}
-			logrus.Warnf("[-] Rate limited. Retrying after %v", nextDelay)
+			logrus.Warnf("Rate limited. Retrying after %v", nextDelay)
 			time.Sleep(nextDelay)
 			// Retry the request
 			_ = r.Request.Retry()
 		} else {
-			logrus.Errorf("[-] Request URL: %s failed with error: %v", r.Request.URL, err)
+			logrus.Errorf("Request URL: %s failed with error: %v", r.Request.URL, err)
 		}
 	})
 

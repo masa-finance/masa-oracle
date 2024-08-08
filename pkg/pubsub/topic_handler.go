@@ -23,7 +23,7 @@ func (h *TopicHandler) StartListening() {
 		for {
 			msg, err := h.Subscription.Next(context.Background()) // Use the context package as needed
 			if err != nil {
-				logrus.Error("[-] Error while reading message: ", err)
+				logrus.Error("Error while reading message: ", err)
 				return
 			}
 			h.HandleMessage(msg)

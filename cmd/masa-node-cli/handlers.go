@@ -194,7 +194,7 @@ func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
 	var gossip Gossip
 	err := json.Unmarshal(message.Data, &gossip)
 	if err != nil {
-		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
+		logrus.Errorf("Failed to unmarshal message: %v", err)
 		return
 	}
 
@@ -257,24 +257,24 @@ func handleOption(app *tview.Application, option string, output *tview.TextView)
 
 					maddr, err := multiaddr.NewMultiaddr(appConfig.Address)
 					if err != nil {
-						logrus.Errorf("[-] %v", err)
+						logrus.Errorf("%v", err)
 					}
 
 					// Create a libp2p host to connect to the Masa node
 					host, err := libp2p.New(libp2p.NoSecurity, libp2p.Transport(quic.NewTransport))
 					if err != nil {
-						logrus.Errorf("[-] %v", err)
+						logrus.Errorf("%v", err)
 					}
 
 					// Extract the peer ID from the multiaddress
 					peerInfo, err := peer.AddrInfoFromP2pAddr(maddr)
 					if err != nil {
-						logrus.Errorf("[-] %v", err)
+						logrus.Errorf("%v", err)
 					}
 
 					// Connect to the peer
 					if err := host.Connect(context.Background(), *peerInfo); err != nil {
-						logrus.Errorf("[-] %v", err)
+						logrus.Errorf("%v", err)
 					}
 
 					output.SetText(fmt.Sprintf("Successfully connected to node: %s", appConfig.Address))

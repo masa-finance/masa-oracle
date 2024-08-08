@@ -62,7 +62,7 @@ func handleStaking(privateKey *ecdsa.PrivateKey) error {
 	go startSpinner("Approving staking contract to spend tokens...", txHashChan, done)
 	approveTxHash, err = stakingClient.Approve(amountInSmallestUnit)
 	if err != nil {
-		logrus.Error("[-] Failed to approve tokens for staking:", err)
+		logrus.Error("Failed to approve tokens for staking:", err)
 		return err
 	}
 	txHashChan <- approveTxHash // Send the transaction hash to the spinner
@@ -76,7 +76,7 @@ func handleStaking(privateKey *ecdsa.PrivateKey) error {
 	go startSpinner("Staking tokens...", txHashChan, done)
 	stakeTxHash, err = stakingClient.Stake(amountInSmallestUnit)
 	if err != nil {
-		logrus.Error("[-] Failed to stake tokens:", err)
+		logrus.Error("Failed to stake tokens:", err)
 		return err
 	}
 	txHashChan <- stakeTxHash // Send the transaction hash to the spinner
@@ -89,7 +89,7 @@ func handleStaking(privateKey *ecdsa.PrivateKey) error {
 func handleFaucet(privateKey *ecdsa.PrivateKey) error {
 	faucetClient, err := staking.NewClient(privateKey)
 	if err != nil {
-		logrus.Error("[-] Failed to create staking client:", err)
+		logrus.Error("Failed to create staking client:", err)
 		return err
 	}
 
@@ -128,12 +128,12 @@ func handleFaucet(privateKey *ecdsa.PrivateKey) error {
 	go startSpinner("Requesting tokens from faucet...", txHashChan, done)
 	faucetTxHash, err = faucetClient.RunFaucet()
 	if err != nil {
-		logrus.Error("[-] Failed to request tokens from faucet:", err)
+		logrus.Error("Failed to request tokens from faucet:", err)
 		return err
 	}
 	txHashChan <- faucetTxHash // Send the transaction hash to the spinner
 	done <- true               // Stop the spinner
-	color.Green("[-] Faucet transaction hash: %s", faucetTxHash)
+	color.Green("Faucet transaction hash: %s", faucetTxHash)
 
 	return nil
 }

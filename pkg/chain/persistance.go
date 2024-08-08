@@ -23,7 +23,7 @@ func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte))
 	dbOptions.Logger = nil
 	db, err := badger.Open(dbOptions)
 	if err != nil {
-		logrus.Error("[-] Failed to initialize datastore: ", db, err)
+		logrus.Error("Failed to initialize datastore: ", db, err)
 		return nil, err
 	}
 	p.db = db
@@ -56,7 +56,7 @@ func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte))
 
 		value, err := item.ValueCopy(nil)
 		if err != nil {
-			logrus.Error("[-] Error occured while getting item value by key: ", KeyLastHash, item, err)
+			logrus.Error("Error occured while getting item value by key: ", KeyLastHash, item, err)
 			return err
 		}
 		lastHash = value
@@ -64,7 +64,7 @@ func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte))
 
 	})
 	if err != nil {
-		logrus.Error("[-] Failed to run Init transaction in the datastore: ", err)
+		logrus.Error("Failed to run Init transaction in the datastore: ", err)
 		return nil, err
 	}
 
@@ -76,18 +76,18 @@ func (p *Persistance) Get(key []byte) ([]byte, error) {
 	err := p.db.View(func(transaction *badger.Txn) error {
 		item, err := transaction.Get(key)
 		if err != nil {
-			logrus.Error("[-] Error occured while getting item by key: ", key, item, err)
+			logrus.Error("Error occured while getting item by key: ", key, item, err)
 			return err
 		}
 		value, err = item.ValueCopy(nil)
 		if err != nil {
-			logrus.Error("[-] Error occured while getting item value by key: ", key, item, err)
+			logrus.Error("Error occured while getting item value by key: ", key, item, err)
 			return err
 		}
 		return err
 	})
 	if err != nil {
-		logrus.Error("[-] Failed to run Get transaction in the datastore: ", err)
+		logrus.Error("Failed to run Get transaction in the datastore: ", err)
 		return nil, err
 	}
 	return value, nil
@@ -113,7 +113,7 @@ func (p *Persistance) SaveBlock(hash []byte, block Serializable) error {
 	})
 
 	if err != nil {
-		logrus.Error("[-] Failed to run SaveBlock transaction in the datastore: ", err)
+		logrus.Error("Failed to run SaveBlock transaction in the datastore: ", err)
 		return err
 	}
 	return nil

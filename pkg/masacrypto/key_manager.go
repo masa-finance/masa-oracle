@@ -62,7 +62,7 @@ func KeyManagerInstance() *KeyManager {
 	once.Do(func() {
 		keyManagerInstance = &KeyManager{}
 		if err := keyManagerInstance.loadPrivateKey(); err != nil {
-			logrus.Fatal("[-] Failed to initialize keys:", err)
+			logrus.Fatal("Failed to initialize keys:", err)
 		}
 	})
 	return keyManagerInstance

@@ -29,7 +29,7 @@ func (h *WorkerEventTracker) HandleMessage(m *pubsub.Message) {
 	var workers Workers
 	err := json.Unmarshal(m.Data, &workers)
 	if err != nil {
-		logrus.Errorf("[-] Failed to unmarshal message: %v", err)
+		logrus.Errorf("Failed to unmarshal message: %v", err)
 		return
 	}
 	h.mu.Lock()
