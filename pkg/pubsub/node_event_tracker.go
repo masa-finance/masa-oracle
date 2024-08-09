@@ -378,7 +378,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 // entry, and if expired, processes the connect and removes the entry.
 func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	for {
-		time.Sleep(30 * time.Second) // E.g., every 5 seconds
+		time.Sleep(1 * time.Minute)
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {
@@ -400,11 +400,13 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 //
 // Parameters:
 //   - peerID: A string representing the ID of the peer to be removed.
-func (net *NodeEventTracker) RemoveNodeData(peerID string) {
-	net.nodeData.Delete(peerID)
-	delete(net.ConnectBuffer, peerID)
-	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
-}
+//
+// TODO: we should never remove node data from the internal map. Otherwise we lose all tracking of activity.
+//func (net *NodeEventTracker) RemoveNodeData(peerID string) {
+//	net.nodeData.Delete(peerID)
+//	delete(net.ConnectBuffer, peerID)
+//	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+//}
 
 // ClearExpiredWorkerTimeouts periodically checks and clears expired worker timeouts.
 // It runs in an infinite loop, sleeping for 5 minutes between each iteration.
@@ -457,7 +459,6 @@ func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
 		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
 			if nodeData.PeerId.String() != hostId {
 				logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
-				net.RemoveNodeData(nodeData.PeerId.String())
 				delete(net.ConnectBuffer, nodeData.PeerId.String())
 
 				// Notify about peer removal

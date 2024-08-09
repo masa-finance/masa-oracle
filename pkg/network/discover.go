@@ -8,8 +8,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/multiformats/go-multiaddr"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -39,7 +40,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 		logrus.Infof("[+] Successfully advertised protocol %s", protocolString)
 	}
 
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Minute * 1)
 	defer ticker.Stop()
 
 	var peerChan <-chan peer.AddrInfo
