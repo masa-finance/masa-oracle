@@ -16,7 +16,6 @@ builds:
     goarch:
       - amd64
       - arm
-      - 386
       - arm64
 source:
   enabled: true
@@ -36,9 +35,4 @@ checksum:
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-      - '^Merge pull request'
+  skip: true
