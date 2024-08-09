@@ -1,7 +1,6 @@
 package masa
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/base64"
@@ -10,7 +9,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -35,7 +33,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	shell "github.com/ipfs/go-ipfs-api"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	chain "github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -478,28 +475,6 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
 	if err != nil {
 		logrus.Warningf("Unable to store block on DHT: %v", err)
-	}
-
-	if os.Getenv("IPFS_URL") != "" {
-
-		infuraURL := fmt.Sprintf("https://%s:%s@%s", os.Getenv("PID"), os.Getenv("PS"), os.Getenv("IPFS_URL"))
-		sh := shell.NewShell(infuraURL)
-
-		jsonBytes, err := json.Marshal(jsonData)
-		if err != nil {
-			logrus.Errorf("Error marshalling JSON: %s", err)
-		}
-
-		reader := bytes.NewReader(jsonBytes)
-
-		hash, err := sh.AddWithOpts(reader, true, true)
-		if err != nil {
-			logrus.Errorf("Error persisting to IPFS: %s", err)
-		} else {
-			logrus.Printf("Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
-			_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
-
-		}
 	}
 
 	return nil
