@@ -111,7 +111,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	nodeData, exists := net.nodeData.Get(peerID)
 	if !exists {
 		// this should never happen
-		logrus.Debugf("Node data does not exist for disconnected node: %s", peerID)
+		logrus.Warningf("Node data does not exist for disconnected node: %s", peerID)
 		return
 	}
 	buffered := net.ConnectBuffer[peerID]
@@ -157,7 +157,7 @@ func (net *NodeEventTracker) RefreshFromBoot(data NodeData) {
 // This allows the tracker to maintain an up-to-date view of the node
 // topology based on pubsub messages.
 func (net *NodeEventTracker) HandleNodeData(data NodeData) {
-	logrus.Debugf("Handling node data for: %s", data.PeerId)
+	logrus.Infof("Handling node data for: %s", data.PeerId)
 	// we want nodeData for status even if staked is false
 	existingData, ok := net.nodeData.Get(data.PeerId.String())
 	if !ok {
@@ -166,7 +166,7 @@ func (net *NodeEventTracker) HandleNodeData(data NodeData) {
 			return
 		}
 		// Otherwise, add it
-		logrus.Debugf("Adding new node data: %s", data.PeerId.String())
+		logrus.Infof("Adding new node data: %s", data.PeerId.String())
 		net.nodeData.Set(data.PeerId.String(), &data)
 		return
 	}
@@ -337,25 +337,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			net.nodeData.Set(nodeData.PeerId.String(), nd)
 
 		}
-
-		// If the node data exists, check if the multiaddress is already in the list
-		// multiAddress := nodeData.Multiaddrs[0].Multiaddr
-		// addrExists := false
-		// for _, addr := range nodeData.Multiaddrs {
-		// 	if addr.Equal(multiAddress) {
-		// 		addrExists = true
-		// 		break
-		// 	}
-		// }
-		// if !addrExists {
-		// 	nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
-		// }
-		// if dataChanged || forceGossip {
-		// 	net.NodeDataChan <- nd
-		// }
-
-		// nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		// net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
@@ -366,7 +347,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 // entry, and if expired, processes the connect and removes the entry.
 func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	for {
-		time.Sleep(30 * time.Second) // E.g., every 5 seconds
+		time.Sleep(time.Minute * 1)
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {

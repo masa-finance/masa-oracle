@@ -220,7 +220,14 @@ func (node *OracleNode) Start() (err error) {
 		node.NodeTracker.RemoveNodeData(p.String())
 	}
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, removePeerCallback)
+	sendNodeDataCallback := func(p peer.ID) {
+		nodeData := node.NodeTracker.GetNodeData(p.String())
+		if nodeData != nil {
+			_ = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+		}
+	}
+
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, removePeerCallback, sendNodeDataCallback)
 	if err != nil {
 		return err
 	}
@@ -263,9 +270,8 @@ func (node *OracleNode) Start() (err error) {
 func (node *OracleNode) handleDiscoveredPeers() {
 	for {
 		select {
-		case peer := <-node.PeerChan: // will block until we discover a peer
-			logrus.Debugf("Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
-			// If the peer is a new peer, connect to it
+		case peer := <-node.PeerChan: // will listen for a peer to be added to the network
+			logrus.Infof("Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
 			if peer.Action == myNetwork.PeerAdded {
 				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
 					logrus.Errorf("Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)

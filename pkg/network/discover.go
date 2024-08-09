@@ -39,7 +39,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 		logrus.Infof("Successfully advertised protocol %s", protocolString)
 	}
 
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Minute * 1)
 	defer ticker.Stop()
 
 	var peerChan <-chan peer.AddrInfo

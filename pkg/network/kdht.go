@@ -30,11 +30,11 @@ func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
 func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 
 func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr,
-	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool, removePeerCallback func(peer.ID)) (*dht.IpfsDHT, error) {
+	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool, removePeerCallback func(peer.ID), sendNodeDataCallback func(peer.ID)) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
 	options = append(options, dht.Concurrency(100))                         // Increase concurrency
-	options = append(options, dht.RoutingTableRefreshPeriod(time.Minute*5)) // Set refresh interval
+	options = append(options, dht.RoutingTableRefreshPeriod(time.Minute*1)) // Set refresh interval
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
 	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
@@ -43,10 +43,9 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	if err != nil {
 		return nil, err
 	}
-	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
+	go monitorRoutingTable(ctx, kademliaDHT, time.Minute, sendNodeDataCallback)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("Peer added to DHT: %s", p.String())
 
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
@@ -54,6 +53,9 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 			Source:   "kdht",
 		}
 		peerChan <- pe
+		if sendNodeDataCallback != nil {
+			sendNodeDataCallback(p)
+		}
 	}
 
 	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
@@ -142,8 +144,8 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	return kademliaDHT, nil
 }
 
-func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Duration) {
-	ticker := time.NewTicker(interval)
+func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Duration, sendNodeDataCallback func(peer.ID)) {
+	ticker := time.NewTicker(interval * 1)
 	defer ticker.Stop()
 
 	for {
@@ -155,7 +157,10 @@ func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Du
 			logrus.Infof("Routing table size: %d", routingTable.Size())
 			// Log the peer IDs in the routing table
 			for _, p := range routingTable.ListPeers() {
-				logrus.Debugf("Peer in routing table: %s", p.String())
+				logrus.Infof("Peer in routing table: %s", p.String())
+				if sendNodeDataCallback != nil {
+					sendNodeDataCallback(p)
+				}
 			}
 		case <-ctx.Done():
 			// If the context is cancelled, stop the goroutine

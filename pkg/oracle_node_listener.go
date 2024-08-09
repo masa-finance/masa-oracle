@@ -137,7 +137,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 
 	stream, err := node.Host.NewStream(node.Context, peerID, config.ProtocolWithVersion(config.NodeDataSyncProtocol))
 	if err != nil {
-		// node.NodeTracker.RemoveNodeData(peerID.String())
+		node.NodeTracker.RemoveNodeData(peerID.String())
 		return
 	}
 	defer func(stream network.Stream) {
@@ -156,7 +156,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 // over a network stream. It scans the stream and unmarshals each
 // page of NodeData, refreshing the local NodeTracker with the data.
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
-	logrus.Debug("ReceiveNodeData")
+	logrus.Infof("Received NodeData from %s", stream.Conn().RemotePeer())
 	scanner := bufio.NewScanner(stream)
 	for scanner.Scan() {
 		data := scanner.Bytes()
@@ -178,11 +178,12 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 				for _, p := range page.Data {
 					jsonData, _ := json.Marshal(p)
 					_ = json.Unmarshal(jsonData, &nd)
-					if node.DHT != nil { // Check if DHT is not nil
+					if node.DHT != nil {
 						err := node.DHT.PutValue(context.Background(), "/db/"+nd.PeerId.String(), jsonData)
 						if err != nil {
 							logrus.Errorf("%v", err)
 						}
+						// node.SendNodeData(nd.PeerId)
 					} else {
 						logrus.Errorf("DHT instance is nil. Skipping PutValue operation.")
 					}
