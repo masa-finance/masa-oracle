@@ -41,7 +41,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 
 	responseCollector := make(chan *pubsub2.Message, 1)
 
-	eligibleWorkers := GetEligibleWorkers(node, message)
+	eligibleWorkers := GetEligibleWorkers(node, message, workerConfig)
 
 	success := tryWorkersRoundRobin(node, eligibleWorkers, message, responseCollector)
 	if !success {

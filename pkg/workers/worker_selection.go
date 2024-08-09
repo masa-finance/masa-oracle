@@ -18,7 +18,8 @@ import (
 
 // GetEligibleWorkers Uses the new NodeTracker method to get the eligible workers for a given message type
 // I'm leaving this returning an array so that we can easily increase the number of workers in the future
-func GetEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker {
+func GetEligibleWorkers(node *masa.OracleNode, message *messages.Work, config *WorkerConfig) []Worker {
+
 	var workers []Worker
 	category := getCategorytForMessage(message)
 	// Get the eligible workers for the given message type. This will include the local node only if it is eligible
@@ -53,7 +54,7 @@ func GetEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker 
 				logrus.Errorf("[-] Failed to get peer info: %s", err)
 				continue
 			}
-			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), time.Second*1)
+			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), config.ConnectionTimeout)
 			defer cancel() // Cancel the context when done to release resources
 			if err := node.Host.Connect(ctxWithTimeout, *peerInfo); err != nil {
 				logrus.Debugf("[-] Failed to connect to peer: %v", err)
