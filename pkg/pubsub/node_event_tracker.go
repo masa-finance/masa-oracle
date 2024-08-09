@@ -249,7 +249,7 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 }
 
 // GetEthAddress returns the Ethereum address for the given remote peer.
-// It gets the peer's public key from the network's peerstore, converts
+// It gets the peer's public key from the network's peer store, converts
 // it to a hex string, and converts that to an Ethereum address.
 // Returns an empty string if there is no public key for the peer.
 func GetEthAddress(remotePeer peer.ID, n network.Network) string {
@@ -271,6 +271,18 @@ func GetEthAddress(remotePeer peer.ID, n network.Network) string {
 		}
 	}
 	return publicKeyHex
+}
+
+// GetEligibleWorkerNodes returns a slice of NodeData for nodes that are eligible to perform a specific category of work.
+func (net *NodeEventTracker) GetEligibleWorkerNodes(category WorkerCategory) []NodeData {
+	logrus.Debugf("Getting eligible worker nodes for category: %s", category)
+	result := make([]NodeData, 0)
+	for _, nodeData := range net.GetAllNodeData() {
+		if nodeData.CanDoWork(category) {
+			result = append(result, nodeData)
+		}
+	}
+	return result
 }
 
 // IsStaked returns whether the node with the given peerID is marked as staked in the node data tracker.
