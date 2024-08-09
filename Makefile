@@ -1,4 +1,4 @@
-VERSION :=v0.5.1.2
+VERSION := $(shell git describe --tags --abbrev=0)
 
 print-version:
 	@echo "Version: ${VERSION}"
