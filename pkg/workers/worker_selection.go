@@ -44,9 +44,13 @@ func GetEligibleWorkers(node *masa.OracleNode, message *messages.Work) []Worker 
 			ipAddr, _ := addr.ValueForProtocol(multiaddr.P_IP4)
 			realAddr := fmt.Sprintf("/ip4/%s/udp/4001/quic-v1/p2p/%s", ipAddr, eligible.PeerId.String())
 			addr, err := multiaddr.NewMultiaddr(realAddr)
-			peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
 			if err != nil {
 				logrus.Errorf("[-] kdht: %s", err.Error())
+				continue
+			}
+			peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+			if err != nil {
+				logrus.Errorf("[-] Failed to get peer info: %s", err)
 				continue
 			}
 			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), time.Second*1)
