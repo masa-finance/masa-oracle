@@ -34,23 +34,23 @@ func TestAuth(t *testing.T) {
 	}
 
 	if err != nil {
-		logrus.WithError(err).Warning("[-] Login failed")
+		logrus.WithError(err).Warning("Login failed")
 	} else {
-		logrus.Debug("[+] Login successful")
+		logrus.Debug("Login successful")
 	}
 
 	// Optionally, check if logged in
 	if twitter.IsLoggedIn(scraper) {
-		logrus.Debug("[+] Confirmed logged in.")
+		logrus.Debug("Confirmed logged in.")
 	} else {
-		logrus.Debug("[-] Not logged in.")
+		logrus.Debug("Not logged in.")
 	}
 
 	// Don't forget to logout after testing
 	err = twitter.Logout(scraper)
 	if err != nil {
-		logrus.WithError(err).Warn("[-] Logout failed")
+		logrus.WithError(err).Warn("Logout failed")
 	} else {
-		logrus.Debug("[+] Logged out successfully.")
+		logrus.Debug("Logged out successfully.")
 	}
 }

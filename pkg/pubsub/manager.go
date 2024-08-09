@@ -92,7 +92,7 @@ func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler
 		for {
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
-				logrus.Errorf("[-] Error reading from topic: %v", err)
+				logrus.Errorf("Error reading from topic: %v", err)
 				continue
 			}
 			if !includeSelf {
@@ -170,10 +170,10 @@ func StreamConsoleTo(ctx context.Context, topic *pubsub.Topic) {
 			if err.Error() == "EOF" {
 				continue
 			}
-			logrus.Errorf("[-] streamConsoleTo: %s", err.Error())
+			logrus.Errorf("streamConsoleTo: %s", err.Error())
 		}
 		if err := topic.Publish(ctx, []byte(s)); err != nil {
-			logrus.Errorf("[-] Publish error: %s", err)
+			logrus.Errorf("Publish error: %s", err)
 		}
 	}
 }
@@ -203,7 +203,7 @@ func (sm *Manager) PublishMessage(topicName, message string) error {
 		var err error
 		t, err = sm.createTopic(topicName)
 		if err != nil {
-			return fmt.Errorf("[-] Failed to create topic %s: %w", topicName, err)
+			return fmt.Errorf("Failed to create topic %s: %w", topicName, err)
 		}
 	}
 
@@ -227,7 +227,7 @@ func (sm *Manager) Subscribe(topicName string, handler SubscriptionHandler) erro
 		for {
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
-				logrus.Errorf("[-] Error reading from topic: %v", err)
+				logrus.Errorf("Error reading from topic: %v", err)
 				continue
 			}
 			// Skip messages from the same node

@@ -120,36 +120,36 @@ func (a *Worker) Receive(ctx actor.Context) {
 		a.HandleConnect(ctx, m)
 	case *actor.Started:
 		if a.Node.IsWorker() {
-			a.HandleLog(ctx, "[+] Actor started")
+			a.HandleLog(ctx, "Actor started")
 		}
 	case *actor.Stopping:
 		if a.Node.IsWorker() {
-			a.HandleLog(ctx, "[+] Actor stopping")
+			a.HandleLog(ctx, "Actor stopping")
 		}
 	case *actor.Stopped:
 		if a.Node.IsWorker() {
-			a.HandleLog(ctx, "[+] Actor stopped")
+			a.HandleLog(ctx, "Actor stopped")
 		}
 	case *messages.Work:
 		if a.Node.IsWorker() {
-			logrus.Infof("[+] Received Work")
+			logrus.Infof("Received Work")
 			a.HandleWork(ctx, m, a.Node)
 		}
 	case *messages.Response:
-		logrus.Infof("[+] Received Response")
+		logrus.Infof("Received Response")
 		msg := &pubsub2.Message{}
 		err := json.Unmarshal([]byte(m.Value), msg)
 		if err != nil {
 			msg, err = getResponseMessage(m)
 			if err != nil {
-				logrus.Errorf("[-] Error getting response message: %v", err)
+				logrus.Errorf("Error getting response message: %v", err)
 				return
 			}
 		}
 		workerDoneCh <- msg
 		ctx.Poison(ctx.Self())
 	default:
-		logrus.Warningf("[+] Received unknown message in workers: %T, message: %+v", m, m)
+		logrus.Warningf("Received unknown message in workers: %T, message: %+v", m, m)
 	}
 }
 
@@ -223,7 +223,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			future := node.ActorEngine.RequestFuture(pid, message, 60*time.Second) // Increase timeout from 30 to 60 seconds
 			result, err := future.Result()
 			if err != nil {
-				logrus.Errorf("[-] Error receiving response from local worker: %v", err)
+				logrus.Errorf("Error receiving response from local worker: %v", err)
 				responseCollector <- &pubsub2.Message{
 					ValidatorData: map[string]interface{}{"error": err.Error()},
 				}
@@ -235,7 +235,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			if rErr != nil {
 				gMsg, gErr := getResponseMessage(result.(*messages.Response))
 				if gErr != nil {
-					logrus.Errorf("[-] Error getting response message: %v", gErr)
+					logrus.Errorf("Error getting response message: %v", gErr)
 					responseCollector <- &pubsub2.Message{
 						ValidatorData: map[string]interface{}{"error": gErr.Error()},
 					}
@@ -256,22 +256,22 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 			if (p.PeerId.String() != node.Host.ID().String()) &&
 				p.IsStaked &&
 				node.NodeTracker.GetNodeData(p.PeerId.String()).CanDoWork(pubsub.WorkerCategory(message.Type)) {
-				logrus.Infof("[+] Worker Address: %s", ipAddr)
+				logrus.Infof("Worker Address: %s", ipAddr)
 				wg.Add(1)
 				go func(p pubsub.NodeData) {
 					defer wg.Done()
 					spawned, err := node.ActorRemote.SpawnNamed(fmt.Sprintf("%s:4001", ipAddr), "worker", "peer", -1)
 					if err != nil {
-						logrus.Debugf("[-] Error spawning remote worker: %v", err)
+						logrus.Debugf("Error spawning remote worker: %v", err)
 						responseCollector <- &pubsub2.Message{
 							ValidatorData: map[string]interface{}{"error": err.Error()},
 						}
 						return
 					}
 					spawnedPID := spawned.Pid
-					logrus.Infof("[+] Worker Address: %s", spawnedPID)
+					logrus.Infof("Worker Address: %s", spawnedPID)
 					if spawnedPID == nil {
-						logrus.Errorf("[-] Spawned PID is nil for IP: %s", ipAddr)
+						logrus.Errorf("Spawned PID is nil for IP: %s", ipAddr)
 						responseCollector <- &pubsub2.Message{
 							ValidatorData: map[string]interface{}{"error": "Spawned PID is nil"},
 						}
@@ -282,7 +282,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					future := node.ActorEngine.RequestFuture(spawnedPID, message, 30*time.Second)
 					result, fErr := future.Result()
 					if fErr != nil {
-						logrus.Debugf("[-] Error receiving response from remote worker: %v", fErr)
+						logrus.Debugf("Error receiving response from remote worker: %v", fErr)
 						responseCollector <- &pubsub2.Message{
 							ValidatorData: map[string]interface{}{"error": fErr.Error()},
 						}
@@ -294,7 +294,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					if rErr != nil {
 						gMsg, gErr := getResponseMessage(response)
 						if gErr != nil {
-							logrus.Errorf("[-] Error getting response message: %v", gErr)
+							logrus.Errorf("Error getting response message: %v", gErr)
 							responseCollector <- &pubsub2.Message{
 								ValidatorData: map[string]interface{}{"error": gErr.Error()},
 							}
@@ -308,7 +308,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 					n++
 					// cap at 3 for performance
 					if n == len(peers) || n == 3 {
-						logrus.Info("[+] All workers have responded")
+						logrus.Info("All workers have responded")
 						responseCollector <- msg
 					}
 				}(p)
@@ -351,19 +351,19 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	node.WorkerTracker = &pubsub.WorkerEventTracker{WorkerStatusCh: workerStatusCh}
 	err := node.PubSubManager.AddSubscription(config.TopicWithVersion(config.WorkerTopic), node.WorkerTracker, true)
 	if err != nil {
-		logrus.Errorf("[-] Subscribe error %v", err)
+		logrus.Errorf("Subscribe error %v", err)
 	}
 
 	// Register self as a remote node for the network
 	node.ActorRemote.Register("peer", actor.PropsFromProducer(NewWorker(node)))
 
 	if node.WorkerTracker == nil {
-		logrus.Error("[-] MonitorWorkers: WorkerTracker is nil")
+		logrus.Error("MonitorWorkers: WorkerTracker is nil")
 		return
 	}
 
 	if node.WorkerTracker.WorkerStatusCh == nil {
-		logrus.Error("[-] MonitorWorkers: WorkerStatusCh is nil")
+		logrus.Error("MonitorWorkers: WorkerStatusCh is nil")
 		return
 	}
 
@@ -375,12 +375,12 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 	for {
 		select {
 		case work := <-node.WorkerTracker.WorkerStatusCh:
-			logrus.Info("[+] Sending work to network")
+			logrus.Info("Sending work to network")
 			var workData map[string]string
 
 			err := json.Unmarshal(work.Data, &workData)
 			if err != nil {
-				logrus.Error("[-] Error unmarshalling work: ", err)
+				logrus.Error("Error unmarshalling work: ", err)
 				continue
 			}
 			startTime = time.Now()
@@ -388,14 +388,14 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 		case data := <-workerDoneCh:
 			validatorDataMap, ok := data.ValidatorData.(map[string]interface{})
 			if !ok {
-				logrus.Errorf("[-] Error asserting type: %v", ok)
+				logrus.Errorf("Error asserting type: %v", ok)
 				continue
 			}
 
 			if ch, ok := rcm.Get(validatorDataMap["ChannelId"].(string)); ok {
 				validatorData, err := json.Marshal(validatorDataMap["Response"])
 				if err != nil {
-					logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
+					logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
 					continue
 				}
 				ch <- validatorData
@@ -408,7 +408,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			processValidatorData(data, validatorDataMap, &startTime, node)
 
 		case <-ticker.C:
-			logrus.Info("[+] worker tick")
+			logrus.Info("worker tick")
 
 		case <-ctx.Done():
 			return
@@ -425,10 +425,10 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
  * @param {masa.OracleNode} node - The OracleNode instance.
  */
 func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]interface{}, startTime *time.Time, node *masa.OracleNode) {
-	//logrus.Infof("[+] Work validatorDataMap %s", validatorDataMap)
+	//logrus.Infof("Work validatorDataMap %s", validatorDataMap)
 	if response, ok := validatorDataMap["Response"].(map[string]interface{}); ok {
 		if _, ok := response["error"].(string); ok {
-			logrus.Infof("[+] Work failed %s", response["error"])
+			logrus.Infof("Work failed %s", response["error"])
 
 			// Set WorkerTimeout for the node
 			nodeData := node.NodeTracker.GetNodeData(data.ReceivedFrom.String())
@@ -444,7 +444,7 @@ func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]int
 			work, err := json.Marshal(w)
 
 			if err != nil {
-				logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
+				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
 				return
 			}
 
@@ -452,7 +452,7 @@ func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]int
 		} else {
 			work, err := json.Marshal(response["data"])
 			if err != nil {
-				logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
+				logrus.Errorf("Error marshalling data.ValidatorData: %v", err)
 				return
 			}
 
@@ -472,7 +472,7 @@ func processValidatorData(data *pubsub2.Message, validatorDataMap map[string]int
  */
 func processWork(data *pubsub2.Message, work string, startTime *time.Time, node *masa.OracleNode) {
 	key, _ := computeCid(work)
-	logrus.Infof("[+] Work done %s", key)
+	logrus.Infof("Work done %s", key)
 
 	endTime := time.Now()
 	duration := endTime.Sub(*startTime)
@@ -484,8 +484,8 @@ func processWork(data *pubsub2.Message, work string, startTime *time.Time, node 
 		Duration:  duration.Seconds(),
 		Timestamp: time.Now().Unix(),
 	}
-	logrus.Infof("[+] Publishing work event : %v for Peer %s", workEvent.CID, workEvent.PeerId)
-	logrus.Debugf("[+] Publishing work event : %v", workEvent)
+	logrus.Infof("Publishing work event : %v for Peer %s", workEvent.CID, workEvent.PeerId)
+	logrus.Debugf("Publishing work event : %v", workEvent)
 
 	_ = node.PubSubManager.Publish(config.TopicWithVersion(config.BlockTopic), workEvent.Payload)
 }

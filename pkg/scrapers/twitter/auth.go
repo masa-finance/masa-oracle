@@ -45,7 +45,7 @@ func IsLoggedIn(scraper *twitterscraper.Scraper) bool {
 func Logout(scraper *twitterscraper.Scraper) error {
 	err := scraper.Logout()
 	if err != nil {
-		return fmt.Errorf("[-] Logout failed: %v", err)
+		return fmt.Errorf("Logout failed: %v", err)
 	}
 	return nil
 }

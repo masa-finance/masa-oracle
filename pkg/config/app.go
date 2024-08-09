@@ -122,7 +122,7 @@ func GetInstance() *AppConfig {
 
 		err = viper.Unmarshal(instance)
 		if err != nil {
-			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
+			logrus.Errorf("Unable to unmarshal config into struct, %v", err)
 			instance = nil // Ensure instance is nil if unmarshalling fails
 		}
 
@@ -175,7 +175,7 @@ func (c *AppConfig) setFileConfig(path string) {
 func (c *AppConfig) setEnvVariableConfig() {
 	err := godotenv.Load()
 	if err != nil {
-		logrus.Error("[-] Error loading .env file")
+		logrus.Error("Error loading .env file")
 	}
 	viper.AutomaticEnv()
 }

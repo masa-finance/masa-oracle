@@ -114,7 +114,7 @@ func (wc WorkerCategory) String() string {
 func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
 
 	if !n.WorkerTimeout.IsZero() && time.Since(n.WorkerTimeout) < 16*time.Minute {
-		logrus.Infof("[+] Skipping worker %s due to timeout", n.PeerId)
+		logrus.Infof("Skipping worker %s due to timeout", n.PeerId)
 		return false
 	}
 
@@ -170,7 +170,7 @@ func (n *NodeData) Joined() {
 
 	n.Version = config.GetInstance().Version
 
-	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
+	logMessage := fmt.Sprintf("%s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
 	if n.IsStaked {
 		logrus.Info(logMessage)
 	} else {
@@ -268,7 +268,7 @@ func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 	// Convert NodeData to JSON
 	jsonData, err := json.Marshal(nodeData)
 	if err != nil {
-		logrus.Error("[-] Error marshalling NodeData:", err)
+		logrus.Error("Error marshalling NodeData:", err)
 		return nil
 	}
 	return jsonData

@@ -1,7 +1,6 @@
 package masa
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/base64"
@@ -10,7 +9,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -35,7 +33,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	shell "github.com/ipfs/go-ipfs-api"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	chain "github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -87,7 +84,7 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 func getOutboundIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		fmt.Println("[-] Error getting outbound IP")
+		fmt.Println("Error getting outbound IP")
 	}
 	defer conn.Close()
 	localAddr := conn.LocalAddr().String()
@@ -198,7 +195,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 // goroutines to handle discovered peers, listen to the node tracker, and
 // discover peers. If this is a bootnode, it adds itself to the node tracker.
 func (node *OracleNode) Start() (err error) {
-	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
+	logrus.Infof("Starting node with ID: %s", node.GetMultiAddrs().String())
 
 	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
 	if err != nil {
@@ -220,7 +217,14 @@ func (node *OracleNode) Start() (err error) {
 		node.NodeTracker.RemoveNodeData(p.String())
 	}
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, removePeerCallback)
+	sendNodeDataCallback := func(p peer.ID) {
+		nodeData := node.NodeTracker.GetNodeData(p.String())
+		if nodeData != nil {
+			_ = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
+		}
+	}
+
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, removePeerCallback, sendNodeDataCallback)
 	if err != nil {
 		return err
 	}
@@ -263,16 +267,15 @@ func (node *OracleNode) Start() (err error) {
 func (node *OracleNode) handleDiscoveredPeers() {
 	for {
 		select {
-		case peer := <-node.PeerChan: // will block until we discover a peer
-			logrus.Debugf("[+] Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
-			// If the peer is a new peer, connect to it
+		case peer := <-node.PeerChan: // will listen for a peer to be added to the network
+			logrus.Infof("Peer Event for: %s, Action: %s", peer.AddrInfo.ID.String(), peer.Action)
 			if peer.Action == myNetwork.PeerAdded {
 				if err := node.Host.Connect(node.Context, peer.AddrInfo); err != nil {
-					logrus.Errorf("[-] Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)
+					logrus.Errorf("Connection failed for peer: %s %v", peer.AddrInfo.ID.String(), err)
 					// close the connection
 					err := node.Host.Network().ClosePeer(peer.AddrInfo.ID)
 					if err != nil {
-						logrus.Error("[-] Error closing peer: ", err)
+						logrus.Error("Error closing peer: ", err)
 					}
 					continue
 				}
@@ -293,11 +296,11 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 			// just ignore the error
 			return
 		}
-		logrus.Errorf("[-] Failed to read stream: %v", err)
+		logrus.Errorf("Failed to read stream: %v", err)
 		return
 	}
 	if remotePeer.String() != nodeData.PeerId.String() {
-		logrus.Warnf("[-] Received data from unexpected peer %s", remotePeer)
+		logrus.Warnf("Received data from unexpected peer %s", remotePeer)
 		return
 	}
 
@@ -308,10 +311,10 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	// newNodeData.IsStaked = nodeData.IsStaked
 	err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, false)
 	if err != nil {
-		logrus.Error("[-] Error adding or updating node data: ", err)
+		logrus.Error("Error adding or updating node data: ", err)
 		return
 	}
-	logrus.Infof("[+] nodeStream -> Received data from: %s", remotePeer.String())
+	logrus.Infof("nodeStream -> Received data from: %s", remotePeer.String())
 }
 
 // IsWorker determines if the OracleNode is configured to act as an actor.
@@ -361,9 +364,9 @@ func (node *OracleNode) Version() string {
 func (node *OracleNode) LogActiveTopics() {
 	topicNames := node.PubSubManager.GetTopicNames()
 	if len(topicNames) > 0 {
-		logrus.Infof("[+] Active topics: %v", topicNames)
+		logrus.Infof("Active topics: %v", topicNames)
 	} else {
-		logrus.Info("[-] No active topics.")
+		logrus.Info("No active topics.")
 	}
 }
 
@@ -437,7 +440,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 		// You might need to add logic here to properly convert the string to BlockEvents
 		b.BlockEvents = append(b.BlockEvents, newBlockEvent)
 	default:
-		logrus.Warnf("[-] Unexpected data type in message: %v", reflect.TypeOf(v))
+		logrus.Warnf("Unexpected data type in message: %v", reflect.TypeOf(v))
 	}
 
 	blocksCh <- m
@@ -471,29 +474,7 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 
 	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
 	if err != nil {
-		logrus.Warningf("[-] Unable to store block on DHT: %v", err)
-	}
-
-	if os.Getenv("IPFS_URL") != "" {
-
-		infuraURL := fmt.Sprintf("https://%s:%s@%s", os.Getenv("PID"), os.Getenv("PS"), os.Getenv("IPFS_URL"))
-		sh := shell.NewShell(infuraURL)
-
-		jsonBytes, err := json.Marshal(jsonData)
-		if err != nil {
-			logrus.Errorf("[-] Error marshalling JSON: %s", err)
-		}
-
-		reader := bytes.NewReader(jsonBytes)
-
-		hash, err := sh.AddWithOpts(reader, true, true)
-		if err != nil {
-			logrus.Errorf("[-] Error persisting to IPFS: %s", err)
-		} else {
-			logrus.Printf("[+] Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
-			_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
-
-		}
+		logrus.Warningf("Unable to store block on DHT: %v", err)
 	}
 
 	return nil
@@ -513,23 +494,23 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		select {
 		case block, ok := <-blocksCh:
 			if !ok {
-				logrus.Error("[-] Block channel closed")
+				logrus.Error("Block channel closed")
 				return
 			}
 			if err := processBlock(node, block); err != nil {
-				logrus.Errorf("[-] Error processing block: %v", err)
+				logrus.Errorf("Error processing block: %v", err)
 				// Consider adding a retry mechanism or circuit breaker here
 			}
 
 		case <-updateTicker.C:
-			logrus.Info("[+] blockchain tick")
+			logrus.Info("blockchain tick")
 			if err := updateBlocks(ctx, node); err != nil {
-				logrus.Errorf("[-] Error updating blocks: %v", err)
+				logrus.Errorf("Error updating blocks: %v", err)
 				// Consider adding a retry mechanism or circuit breaker here
 			}
 
 		case <-ctx.Done():
-			logrus.Info("[+] Context cancelled, stopping block subscription")
+			logrus.Info("Context cancelled, stopping block subscription")
 			return
 		}
 	}
@@ -544,13 +525,13 @@ func processBlock(node *OracleNode, block *pubsub.Message) error {
 	}
 
 	if err := node.Blockchain.AddBlock(block.Data); err != nil {
-		return fmt.Errorf("[-] failed to add block: %w", err)
+		return fmt.Errorf("failed to add block: %w", err)
 	}
 
 	if node.Blockchain.LastHash != nil {
 		b, err := node.Blockchain.GetBlock(node.Blockchain.LastHash)
 		if err != nil {
-			return fmt.Errorf("[-] failed to get last block: %w", err)
+			return fmt.Errorf("failed to get last block: %w", err)
 		}
 		b.Print()
 	}

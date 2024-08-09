@@ -59,7 +59,7 @@ func getPeers(node *masa.OracleNode) []*actor.PID {
 // HandleConnect is a method of the Worker struct that handles the connection of a worker.
 // It takes in an actor context and a Connect message as parameters.
 func (a *Worker) HandleConnect(ctx actor.Context, m *messages.Connect) {
-	logrus.Infof("[+] Worker %v connected", m.Sender)
+	logrus.Infof("Worker %v connected", m.Sender)
 	clients.Add(m.Sender)
 }
 
@@ -78,14 +78,14 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	var workData map[string]string
 	err = json.Unmarshal([]byte(m.Data), &workData)
 	if err != nil {
-		logrus.Errorf("[-] Error parsing work data: %v", err)
+		logrus.Errorf("Error parsing work data: %v", err)
 		return
 	}
 
 	var bodyData map[string]interface{}
 	if workData["body"] != "" {
 		if err := json.Unmarshal([]byte(workData["body"]), &bodyData); err != nil {
-			logrus.Errorf("[-] Error unmarshalling body: %v", err)
+			logrus.Errorf("Error unmarshalling body: %v", err)
 			return
 		}
 	}
@@ -98,15 +98,15 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		channelID := bodyData["channelID"].(string)
 		resp, err = discord.GetChannelMessages(channelID, bodyData["limit"].(string), bodyData["before"].(string))
 	case string(WORKER.DiscordSentiment):
-		logrus.Infof("[+] Discord Channel Messages %s %s", m.Data, m.Sender)
+		logrus.Infof("Discord Channel Messages %s %s", m.Data, m.Sender)
 		channelID := bodyData["channelID"].(string)
 		_, resp, err = discord.ScrapeDiscordMessagesForSentiment(channelID, bodyData["model"].(string), bodyData["prompt"].(string))
 	case string(WORKER.TelegramChannelMessages):
-		logrus.Infof("[+] Telegram Channel Messages %s %s", m.Data, m.Sender)
+		logrus.Infof("Telegram Channel Messages %s %s", m.Data, m.Sender)
 		username := bodyData["username"].(string)
 		resp, err = telegram.FetchChannelMessages(context.Background(), username) // Removed the underscore placeholder
 	case string(WORKER.TelegramSentiment):
-		logrus.Infof("[+] Telegram Channel Messages %s %s", m.Data, m.Sender)
+		logrus.Infof("Telegram Channel Messages %s %s", m.Data, m.Sender)
 		username := bodyData["username"].(string)
 		_, resp, err = telegram.ScrapeTelegramMessagesForSentiment(context.Background(), username, bodyData["model"].(string), bodyData["prompt"].(string))
 	case string(WORKER.DiscordGuildChannels):
@@ -117,7 +117,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 	case string(WORKER.LLMChat):
 		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
-			logrus.Error("[-] Missing env variable LLM_CHAT_URL")
+			logrus.Error("Missing env variable LLM_CHAT_URL")
 			return
 		}
 		bodyBytes, _ := json.Marshal(bodyData)
@@ -153,7 +153,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 			return count, err
 		}(count)
 	default:
-		logrus.Warningf("[+] Received unknown message: %T", m)
+		logrus.Warningf("Received unknown message: %T", m)
 		return
 	}
 
@@ -173,9 +173,9 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 
 		if isLocalHost {
-			logrus.Errorf("[-] Local node: Error processing request: %s", err.Error())
+			logrus.Errorf("Local node: Error processing request: %s", err.Error())
 		} else {
-			logrus.Errorf("[-] Remote node %s: Error processing request: %s", m.Sender, err.Error())
+			logrus.Errorf("Remote node %s: Error processing request: %s", m.Sender, err.Error())
 		}
 
 		chanResponse := ChanResponse{
@@ -188,7 +188,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 		jsn, err := json.Marshal(val)
 		if err != nil {
-			logrus.Errorf("[-] Error marshalling response: %v", err)
+			logrus.Errorf("Error marshalling response: %v", err)
 			return
 		}
 		ctx.Respond(&messages.Response{RequestId: workData["request_id"], Value: string(jsn)})
@@ -203,7 +203,7 @@ func (a *Worker) HandleWork(ctx actor.Context, m *messages.Work, node *masa.Orac
 		}
 		jsn, err := json.Marshal(val)
 		if err != nil {
-			logrus.Errorf("[-] Error marshalling response: %v", err)
+			logrus.Errorf("Error marshalling response: %v", err)
 			return
 		}
 		cfg := config.GetInstance()
