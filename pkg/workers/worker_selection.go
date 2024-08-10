@@ -134,7 +134,6 @@ func (r *roundRobinIterator) Next() Worker {
 	if hasLocalWorker {
 		return localWorker
 	}
-
-	// This should never happen if HasNext() is checked before calling Next()
-	panic("No workers available")
+	logrus.Error("No workers available")
+	return Worker{}
 }

@@ -80,15 +80,7 @@ func tryWorkersRoundRobin(node *masa.OracleNode, workers []Worker, message *mess
 		logrus.Info("Attempting local worker")
 		return tryWorker(node, *localWorker, message, responseCollector)
 	}
-
-	// If no workers are available, create a local worker as last resort
-	logrus.Warn("No workers available, creating last resort local worker")
-	lastResortLocalWorker := Worker{
-		IsLocal:  true,
-		NodeData: pubsub.NodeData{PeerId: node.Host.ID()},
-		Node:     node,
-	}
-	return tryWorker(node, lastResortLocalWorker, message, responseCollector)
+	return false
 }
 
 func tryWorker(node *masa.OracleNode, worker Worker, message *messages.Work, responseCollector chan *pubsub2.Message) bool {
