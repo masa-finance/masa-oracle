@@ -46,8 +46,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("[+] Peer added to DHT: %s", p.String())
-
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerAdded,
@@ -57,7 +55,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	}
 
 	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
-		logrus.Infof("[-] Peer removed from DHT: %s", p)
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerRemoved,
@@ -150,10 +147,6 @@ func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Du
 			routingTable := dht.RoutingTable()
 			// Log the size of the routing table
 			logrus.Infof("[+] Routing table size: %d", routingTable.Size())
-			// Log the peer IDs in the routing table
-			for _, p := range routingTable.ListPeers() {
-				logrus.Debugf("[+] Peer in routing table: %s", p.String())
-			}
 		case <-ctx.Done():
 			// If the context is cancelled, stop the goroutine
 			return
