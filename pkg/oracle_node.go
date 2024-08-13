@@ -22,7 +22,6 @@ import (
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
@@ -213,18 +212,7 @@ func (node *OracleNode) Start() (err error) {
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
-	removePeerCallback := func(p peer.ID) {
-		node.NodeTracker.RemoveNodeData(p.String())
-	}
-
-	sendNodeDataCallback := func(p peer.ID) {
-		nodeData := node.NodeTracker.GetNodeData(p.String())
-		if nodeData != nil {
-			_ = node.NodeTracker.AddOrUpdateNodeData(nodeData, true)
-		}
-	}
-
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, removePeerCallback, sendNodeDataCallback)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked)
 	if err != nil {
 		return err
 	}
