@@ -1105,6 +1105,10 @@ const docTemplate = `{
 									},
 									"phone_code_hash": {
 										"type": "string"
+									},
+									"password": {
+										"type": "string",
+										"description": "Optional password for two-factor authentication"
 									}
 								},
 								"required": ["phone_number", "code", "phone_code_hash"]
