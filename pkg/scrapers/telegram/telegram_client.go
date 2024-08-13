@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gotd/contrib/bg"
@@ -128,18 +129,12 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 	err = client.Run(ctx, func(ctx context.Context) error {
 		// Use the provided code and phoneCodeHash to authenticate
 		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
+
 		if err != nil {
-			var e *tg.Error
-			if errors.As(err, &e) { // Check if err is *tg.Error
-				if e.Text == "" { // This is just an example, replace with actual type for password needed
-					// Now, you need to sign in with the password (2FA)
-					auth, err = client.Auth().Password(ctx, password)
-					if err != nil {
-						log.Printf("Error during 2FA SignIn: %v", err)
-						return err
-					}
-				} else {
-					log.Printf("Error during SignIn: %v", err)
+			if strings.Contains(err.Error(), "ErrPasswordAuthNeeded") {
+				auth, err = client.Auth().Password(ctx, password)
+				if err != nil {
+					log.Printf("Error during 2FA SignIn: %v", err)
 					return err
 				}
 			} else {

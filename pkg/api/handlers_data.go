@@ -809,13 +809,14 @@ func (api *API) CompleteAuth() gin.HandlerFunc {
 			PhoneNumber   string `json:"phone_number"`
 			Code          string `json:"code"`
 			PhoneCodeHash string `json:"phone_code_hash"`
+			Password      string `json:"password"`
 		}
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
-		auth, err := telegram.CompleteAuthentication(context.Background(), reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash)
+		auth, err := telegram.CompleteAuthentication(context.Background(), reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash, reqBody.Password)
 		if err != nil {
 			// Check if 2FA is required
 			if err.Error() == "2FA required" {
