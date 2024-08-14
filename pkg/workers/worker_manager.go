@@ -119,7 +119,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		}
 		remoteWorkersAttempted++
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
-		response := whm.sendWorkToWorker(worker, workRequest)
+		response := whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != nil {
 			logrus.Errorf("error sending work to worker: %s", response.Error.Error())
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
@@ -135,16 +135,16 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	return response
 }
 
-func (whm *WorkHandlerManager) sendWorkToWorker(worker Worker, workRequest WorkRequest) (response WorkResponse) {
+func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker Worker, workRequest WorkRequest) (response WorkResponse) {
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), workerConfig.WorkerResponseTimeout)
 	defer cancel() // Cancel the context when done to release resources
 
-	if err := worker.Node.Host.Connect(ctxWithTimeout, *worker.AddrInfo); err != nil {
+	if err := node.Host.Connect(ctxWithTimeout, *worker.AddrInfo); err != nil {
 		response.Error = fmt.Errorf("failed to connect to remote peer %s: %v", worker.AddrInfo.ID.String(), err)
 		return
 	} else {
 		logrus.Debugf("[+] Connection established with node: %s", worker.AddrInfo.ID.String())
-		stream, err := worker.Node.Host.NewStream(ctxWithTimeout, worker.AddrInfo.ID, config.ProtocolWithVersion(config.WorkerProtocol))
+		stream, err := node.Host.NewStream(ctxWithTimeout, worker.AddrInfo.ID, config.ProtocolWithVersion(config.WorkerProtocol))
 		if err != nil {
 			response.Error = fmt.Errorf("error opening stream: %v", err)
 			return
