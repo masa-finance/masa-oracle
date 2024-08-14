@@ -241,7 +241,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 			processValidatorData(data, validatorDataMap, &startTime, node)
 
 		case <-ticker.C:
-			logrus.Info("[+] Worker tick")
+			//logrus.Info("[+] Worker tick")
 
 		case <-ctx.Done():
 			logrus.Info("Context done, stopping MonitorWorkers")

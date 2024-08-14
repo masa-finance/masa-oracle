@@ -132,7 +132,9 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	if localWorker != nil {
 		return whm.ExecuteWork(workRequest)
 	}
-	response.Error = errors.New("no eligible workers found")
+	if response.Error == nil {
+		response.Error = errors.New("no eligible workers found")
+	}
 	return response
 }
 
