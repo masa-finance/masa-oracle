@@ -62,7 +62,7 @@ func GetEligibleWorkers(node *masa.OracleNode, category pubsub.WorkerCategory, c
 	if localWorker == nil {
 		nd := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nd.CanDoWork(category) {
-			workers = append(workers, Worker{IsLocal: true, NodeData: *nd})
+			localWorker = &Worker{IsLocal: true, NodeData: *nd}
 		}
 	}
 	return workers, localWorker

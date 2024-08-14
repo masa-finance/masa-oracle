@@ -230,7 +230,8 @@ func (node *OracleNode) Start() (err error) {
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
 		publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
-		nodeData = pubsub2.NewNodeData(node.GetMultiAddrs(), node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
+		ma := myNetwork.GetMultiAddressesForHostQuiet(node.Host)
+		nodeData = pubsub2.NewNodeData(ma[0], node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 		nodeData.IsStaked = node.IsStaked
 		nodeData.SelfIdentified = true
 		nodeData.IsDiscordScraper = node.IsDiscordScraper
