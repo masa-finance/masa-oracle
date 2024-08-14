@@ -21,7 +21,7 @@ import (
 func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
-		logrus.Infof("Masa Oracle Node Version: %s\n", config.Version)
+		logrus.Infof("Masa Oracle Node Version: %s\nMasa Oracle Protocol verison: %s", config.ApplicationVersion, config.ProtocolVersion)
 		os.Exit(0)
 	}
 
@@ -135,7 +135,7 @@ func main() {
 	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
 	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, config.Version)
+	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, config.ApplicationVersion, config.ProtocolVersion)
 
 	<-ctx.Done()
 }

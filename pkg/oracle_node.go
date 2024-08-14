@@ -178,7 +178,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:           ctx,
 		PeerChan:          make(chan myNetwork.PeerEvent),
-		NodeTracker:       pubsub2.NewNodeEventTracker(config.Version, cfg.Environment, hst.ID().String()),
+		NodeTracker:       pubsub2.NewNodeEventTracker(config.ProtocolVersion, cfg.Environment, hst.ID().String()),
 		PubSubManager:     subscriptionManager,
 		IsStaked:          isStaked,
 		IsValidator:       cfg.Validator,

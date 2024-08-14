@@ -262,7 +262,7 @@ func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
 		IsWebScraper:      config.GetInstance().WebScraper,
 		IsValidator:       config.GetInstance().Validator,
 		IsActive:          true,
-		Version:           config.Version,
+		Version:           config.ProtocolVersion,
 	}
 
 	// Convert NodeData to JSON

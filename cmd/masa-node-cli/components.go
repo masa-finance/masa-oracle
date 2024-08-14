@@ -125,7 +125,7 @@ const (
 	navigation = `[yellow]use keys or mouse to navigate`
 )
 
-var version string = fmt.Sprintf("[green]%s", config.Version)
+var version string = fmt.Sprintf(`[green]Application version: %s\n[green]Protocol Version: %s`, config.ApplicationVersion, config.ProtocolVersion)
 
 // Splash shows the app info
 func Splash() (content tview.Primitive) {
