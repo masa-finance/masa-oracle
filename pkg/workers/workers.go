@@ -196,7 +196,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 
 	ticker := time.NewTicker(time.Second * 15)
 	defer ticker.Stop()
-	rcm := pubsub.GetResponseChannelMap()
+	rcm := GetResponseChannelMap()
 	var startTime time.Time
 
 	for {
@@ -227,7 +227,7 @@ func MonitorWorkers(ctx context.Context, node *masa.OracleNode) {
 						logrus.Errorf("[-] Error marshalling data.ValidatorData: %v", err)
 						continue
 					}
-					ch <- validatorData
+					ch <- WorkResponse{Data: validatorData}
 					defer close(ch)
 				} else {
 					logrus.Debugf("Channel not found for ChannelId: %v", validatorDataMap["ChannelId"])

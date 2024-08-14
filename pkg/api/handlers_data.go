@@ -42,7 +42,42 @@ func IsBase64(s string) bool {
 	return err == nil
 }
 
-// publishWorkRequest sends a work request to the PubSubManager for processing by a worker.
+// SendWorkRequest sends a work request to a worker for processing.
+// It marshals the request details into JSON and sends it over a libp2p stream.
+// It is currently re-using the response channel map for this; however, it could be a simple synchronous call
+// in which case the worker handlers would be responseible for preparing the data to be sent back to the client
+//
+// Parameters:
+// - api: The API instance containing the Node and PubSubManager.
+// - requestID: A unique identifier for the request.
+// - workType: The type of work to be performed by the worker.
+// - bodyBytes: The request body in byte slice format.
+//
+// Returns:
+// - error: An error object if the request could not be sent or processed, otherwise nil.
+func SendWorkRequest(api *API, requestID string, workType workers.WorkerType, bodyBytes []byte, wg *sync.WaitGroup) error {
+	request := workers.WorkRequest{
+		WorkType:  workType,
+		RequestId: requestID,
+		Data:      bodyBytes,
+	}
+	response := workers.GetWorkHandlerManager().DistributeWork(api.Node, request)
+	responseChannel, exists := workers.GetResponseChannelMap().Get(requestID)
+	if !exists {
+		return fmt.Errorf("response channel not found")
+	}
+	select {
+	case responseChannel <- response:
+		wg.Add(1)
+		// Successfully sent JSON response to the response channel
+	default:
+		// Log an error if the channel is blocking for debugging purposes
+		logrus.Errorf("response channel is blocking for request ID: %s", requestID)
+	}
+	return nil
+}
+
+// SendWorkRequest sends a work request to the PubSubManager for processing by a worker.
 // It marshals the request details into JSON and publishes it to the configured topic.
 //
 // Parameters:
@@ -74,10 +109,10 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 // Parameters:
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
-func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
-	config, err := LoadConfig()
+func handleWorkResponse(c *gin.Context, responseCh chan workers.WorkResponse, wg *sync.WaitGroup) {
+	cfg, err := LoadConfig()
 	if err != nil {
-		logrus.Errorf("Failed to load API config: %v", err)
+		logrus.Errorf("Failed to load API cfg: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
@@ -85,14 +120,12 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 	for {
 		select {
 		case response := <-responseCh:
-			var result map[string]interface{}
-			if err := json.Unmarshal(response, &result); err != nil {
-				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			if response.Error != nil {
+				c.JSON(http.StatusExpectationFailed, response)
 				return
 			}
-
-			if data, ok := result["data"].(string); ok && IsBase64(data) {
-				decodedData, err := base64.StdEncoding.DecodeString(result["data"].(string))
+			if data, ok := response.Data.(string); ok && IsBase64(data) {
+				decodedData, err := base64.StdEncoding.DecodeString(response.Data.(string))
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode base64 data"})
 					return
@@ -103,15 +136,18 @@ func handleWorkResponse(c *gin.Context, responseCh chan []byte) {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON data"})
 					return
 				}
-				result["data"] = jsonData
+				response.Data = jsonData
 			}
-
-			c.JSON(http.StatusOK, result)
+			response.WorkRequest = workers.WorkRequest{}
+			c.JSON(http.StatusOK, response)
+			wg.Done()
 			return
-		case <-time.After(config.WorkerResponseTimeout):
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out, check that port 4001 TCP inbound is open."})
+		case <-time.After(cfg.WorkerResponseTimeout):
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out in API layer"})
+			wg.Done()
 			return
 		case <-c.Done():
+			wg.Done()
 			return
 		}
 	}
@@ -192,14 +228,15 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		wErr = publishWorkRequest(api, requestID, workers.WORKER.TwitterSentiment, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		wErr = SendWorkRequest(api, requestID, workers.WORKER.TwitterSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -242,14 +279,16 @@ func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		wErr = publishWorkRequest(api, requestID, workers.WORKER.DiscordSentiment, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		wErr = SendWorkRequest(api, requestID, workers.WORKER.DiscordSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
 		}
-		handleWorkResponse(c, responseCh)
 	}
 }
 
@@ -292,14 +331,16 @@ func (api *API) SearchTelegramMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 			return
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		wErr = publishWorkRequest(api, requestID, workers.WORKER.TelegramSentiment, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		wErr = SendWorkRequest(api, requestID, workers.WORKER.TelegramSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
 		}
-		handleWorkResponse(c, responseCh)
 	}
 }
 
@@ -344,15 +385,18 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
+
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		wErr = publishWorkRequest(api, requestID, workers.WORKER.WebSentiment, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		wErr = SendWorkRequest(api, requestID, workers.WORKER.WebSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
+		wg.Wait()
 	}
 }
 
@@ -378,14 +422,15 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.TwitterProfile, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.TwitterProfile, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -413,14 +458,15 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordProfile, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordProfile, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -457,16 +503,16 @@ func (api *API) SearchChannelMessages() gin.HandlerFunc {
 		}
 
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
 
-		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes)
+		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		handleWorkResponse(c, responseCh)
 	}
 }
 
@@ -490,13 +536,15 @@ func (api *API) SearchGuildChannels() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordGuildChannels, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordGuildChannels, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
 	}
 }
 
@@ -511,13 +559,15 @@ func (api *API) SearchUserGuilds() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.DiscordUserGuilds, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordUserGuilds, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
 	}
 }
 
@@ -671,15 +721,15 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.TwitterFollowers, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.TwitterFollowers, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
-
 	}
 }
 
@@ -711,14 +761,15 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.Twitter, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.Twitter, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -730,14 +781,15 @@ func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// worker handler implementation
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err := publishWorkRequest(api, requestID, workers.WORKER.TwitterTrends, nil)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err := SendWorkRequest(api, requestID, workers.WORKER.TwitterTrends, nil, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -776,14 +828,16 @@ func (api *API) WebData() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.Web, bodyBytes)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.Web, bodyBytes, wg)
+		defer workers.GetResponseChannelMap().Delete(requestID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 
@@ -859,13 +913,15 @@ func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.TelegramChannelMessages, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.TelegramChannelMessages, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
 	}
 }
 
@@ -912,14 +968,15 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 		}
 
 		requestID := uuid.New().String()
-		responseCh := pubsub2.GetResponseChannelMap().CreateChannel(requestID)
-		defer pubsub2.GetResponseChannelMap().Delete(requestID)
-		err = publishWorkRequest(api, requestID, workers.WORKER.LLMChat, bodyBytes)
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, workers.WORKER.LLMChat, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
-		handleWorkResponse(c, responseCh)
-		// worker handler implementation
 	}
 }
 

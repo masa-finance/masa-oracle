@@ -45,6 +45,7 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 
 type NodeData struct {
 	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
+	MultiaddrsString     string          `json:"multiaddrsString,omitempty"`
 	PeerId               peer.ID         `json:"peerId"`
 	FirstJoinedUnix      int64           `json:"firstJoined,omitempty"`
 	LastJoinedUnix       int64           `json:"lastJoined,omitempty"`
@@ -78,6 +79,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
+		MultiaddrsString:  addr.String(),
 		LastUpdatedUnix:   time.Now().Unix(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
@@ -256,10 +258,11 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 // It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 // The NodeData struct is then marshalled into a JSON byte array.
 // Returns nil if there is an error marshalling to JSON.
-func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
+func GetSelfNodeDataJson(host host.Host, isStaked bool, multiaddrString string) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
 		PeerId:            host.ID(),
+		MultiaddrsString:  multiaddrString,
 		IsStaked:          isStaked,
 		EthAddress:        masacrypto.KeyManagerInstance().EthAddress,
 		IsTwitterScraper:  config.GetInstance().TwitterScraper,

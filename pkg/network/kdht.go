@@ -121,7 +121,14 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 						logrus.Errorf("[-] Error closing stream: %s", err)
 					}
 				}(stream) // Close the stream when done
-				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+
+				multiaddr, err := GetMultiAddressesForHost(host)
+				if err != nil {
+					logrus.Errorf("[-] Error getting multiaddresses for host: %s", err)
+					return
+				}
+				multaddrString := GetPriorityAddress(multiaddr)
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked, multaddrString.String()))
 				if err != nil {
 					logrus.Errorf("[-] Error writing to stream: %s", err)
 					return

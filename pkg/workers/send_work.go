@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/libp2p/go-libp2p/core/peer"
+
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/messages"
@@ -28,8 +30,9 @@ func init() {
 
 type Worker struct {
 	IsLocal  bool
-	NodeData pubsub.NodeData
 	IPAddr   string
+	AddrInfo *peer.AddrInfo
+	NodeData pubsub.NodeData
 	Node     *masa.OracleNode
 }
 
@@ -41,7 +44,7 @@ func SendWork(node *masa.OracleNode, m *pubsub2.Message) {
 
 	responseCollector := make(chan *pubsub2.Message, 1)
 
-	eligibleWorkers := GetEligibleWorkers(node, message, workerConfig)
+	eligibleWorkers := GetEligibleWorkersOld(node, message, workerConfig)
 
 	success := tryWorkersRoundRobin(node, eligibleWorkers, message, responseCollector)
 	if !success {
