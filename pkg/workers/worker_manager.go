@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -156,10 +157,17 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker Wo
 			}
 		}(stream) // Close the stream when done
 
-		// Write the request to the stream
+		// Write the request to the stream with length prefix
 		bytes, err := json.Marshal(workRequest)
 		if err != nil {
 			response.Error = fmt.Errorf("error marshaling work request: %v", err)
+			return
+		}
+		lengthBuf := make([]byte, 4)
+		binary.BigEndian.PutUint32(lengthBuf, uint32(len(bytes)))
+		_, err = stream.Write(lengthBuf)
+		if err != nil {
+			response.Error = fmt.Errorf("error writing length to stream: %v", err)
 			return
 		}
 		_, err = stream.Write(bytes)
@@ -168,21 +176,23 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker Wo
 			return
 		}
 
-		// Read the response from the stream in chunks since they can be very large
-		var buf []byte
-		chunk := make([]byte, 4096)
-		for {
-			n, err := stream.Read(chunk)
-			if err != nil {
-				if err == io.EOF {
-					break // End of stream
-				}
-				response.Error = fmt.Errorf("error reading from stream: %v", err)
-				return
-			}
-			buf = append(buf, chunk[:n]...)
+		// Read the response length
+		lengthBuf = make([]byte, 4)
+		_, err = io.ReadFull(stream, lengthBuf)
+		if err != nil {
+			response.Error = fmt.Errorf("error reading response length: %v", err)
+			return
 		}
-		err = json.Unmarshal(buf, &response)
+		responseLength := binary.BigEndian.Uint32(lengthBuf)
+
+		// Read the actual response
+		responseBuf := make([]byte, responseLength)
+		_, err = io.ReadFull(stream, responseBuf)
+		if err != nil {
+			response.Error = fmt.Errorf("error reading response: %v", err)
+			return
+		}
+		err = json.Unmarshal(responseBuf, &response)
 		if err != nil {
 			response.Error = fmt.Errorf("error unmarshaling response: %v", err)
 			return
@@ -239,23 +249,25 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		}
 	}(stream)
 
-	// Read the request from the stream
-	var workRequest WorkRequest
-	buf := make([]byte, 4096) // Adjust buffer size as needed
-	var requestBuf []byte
-	for {
-		n, err := stream.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break // End of stream
-			}
-			logrus.Errorf("error reading from stream: %v", err)
-			return
-		}
-		requestBuf = append(requestBuf, buf[:n]...)
+	// Read the length of the message
+	lengthBuf := make([]byte, 4)
+	_, err := io.ReadFull(stream, lengthBuf)
+	if err != nil {
+		logrus.Errorf("error reading message length: %v", err)
+		return
+	}
+	messageLength := binary.BigEndian.Uint32(lengthBuf)
+
+	// Read the actual message
+	messageBuf := make([]byte, messageLength)
+	_, err = io.ReadFull(stream, messageBuf)
+	if err != nil {
+		logrus.Errorf("error reading message: %v", err)
+		return
 	}
 
-	err := json.Unmarshal(requestBuf, &workRequest)
+	var workRequest WorkRequest
+	err = json.Unmarshal(messageBuf, &workRequest)
 	if err != nil {
 		logrus.Errorf("error unmarshaling work request: %v", err)
 		return
@@ -272,9 +284,21 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		logrus.Errorf("error marshaling work response: %v", err)
 		return
 	}
+
+	// Prefix the response with its length
+	responseLength := uint32(len(responseBytes))
+	lengthBuf = make([]byte, 4)
+	binary.BigEndian.PutUint32(lengthBuf, responseLength)
+
+	_, err = stream.Write(lengthBuf)
+	if err != nil {
+		logrus.Errorf("error writing response length to stream: %v", err)
+		return
+	}
+
 	_, err = stream.Write(responseBytes)
 	if err != nil {
-		logrus.Errorf("error writing to stream: %v", err)
+		logrus.Errorf("error writing response to stream: %v", err)
 		return
 	}
 }
