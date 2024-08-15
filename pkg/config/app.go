@@ -147,7 +147,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault("Version", versioning.ApplicationVersion)
+	viper.SetDefault("Version", versioning.ProtocolVersion)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
