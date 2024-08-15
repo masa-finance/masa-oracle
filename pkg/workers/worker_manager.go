@@ -263,11 +263,12 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		logrus.Errorf("error unmarshaling work request: %v", err)
 		return
 	}
+	peerId := stream.Conn().LocalPeer().String()
 	workResponse := whm.ExecuteWork(workRequest)
-	if workResponse.Error == "" {
-		logrus.Errorf("error from remote worker %s: executing work: %v", err)
+	if workResponse.Error != "" {
+		logrus.Errorf("error from remote worker %s: executing work: %v", peerId, err)
 	}
-	workResponse.WorkerPeerId = stream.Conn().LocalPeer().String()
+	workResponse.WorkerPeerId = peerId
 
 	// Write the response to the stream
 	responseBytes, err := json.Marshal(workResponse)

@@ -41,7 +41,5 @@ func (h *WebSentimentHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get web sentiment: %v", err)}
 	}
-	rslt := make(map[string]interface{})
-	rslt["sentiment"] = resp
-	return data_types.WorkResponse{Data: rslt}
+	return data_types.WorkResponse{Data: resp}
 }
