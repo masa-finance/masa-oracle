@@ -26,6 +26,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
+	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 type LLMChat struct {
@@ -55,8 +56,8 @@ func IsBase64(s string) bool {
 //
 // Returns:
 // - error: An error object if the request could not be sent or processed, otherwise nil.
-func SendWorkRequest(api *API, requestID string, workType workers.WorkerType, bodyBytes []byte, wg *sync.WaitGroup) error {
-	request := workers.WorkRequest{
+func SendWorkRequest(api *API, requestID string, workType data_types.WorkerType, bodyBytes []byte, wg *sync.WaitGroup) error {
+	request := data_types.WorkRequest{
 		WorkType:  workType,
 		RequestId: requestID,
 		Data:      bodyBytes,
@@ -88,7 +89,7 @@ func SendWorkRequest(api *API, requestID string, workType workers.WorkerType, bo
 //
 // Returns:
 // - error: An error object if the request could not be published, otherwise nil.
-func publishWorkRequest(api *API, requestID string, request workers.WorkerType, bodyBytes []byte) error {
+func publishWorkRequest(api *API, requestID string, request data_types.WorkerType, bodyBytes []byte) error {
 	workRequest := map[string]string{
 		"request":    string(request),
 		"request_id": requestID,
@@ -109,7 +110,7 @@ func publishWorkRequest(api *API, requestID string, request workers.WorkerType, 
 // Parameters:
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
-func handleWorkResponse(c *gin.Context, responseCh chan workers.WorkResponse, wg *sync.WaitGroup) {
+func handleWorkResponse(c *gin.Context, responseCh chan data_types.WorkResponse, wg *sync.WaitGroup) {
 	cfg, err := LoadConfig()
 	if err != nil {
 		logrus.Errorf("Failed to load API cfg: %v", err)
@@ -138,7 +139,7 @@ func handleWorkResponse(c *gin.Context, responseCh chan workers.WorkResponse, wg
 				}
 				response.Data = jsonData
 			}
-			response.WorkRequest = workers.WorkRequest{}
+			response.WorkRequest = data_types.WorkRequest{}
 			c.JSON(http.StatusOK, response)
 			wg.Done()
 			return
@@ -233,7 +234,7 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		wErr = SendWorkRequest(api, requestID, workers.WORKER.TwitterSentiment, bodyBytes, wg)
+		wErr = SendWorkRequest(api, requestID, data_types.TwitterSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
@@ -284,7 +285,7 @@ func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		wErr = SendWorkRequest(api, requestID, workers.WORKER.DiscordSentiment, bodyBytes, wg)
+		wErr = SendWorkRequest(api, requestID, data_types.DiscordSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
@@ -336,7 +337,7 @@ func (api *API) SearchTelegramMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		wErr = SendWorkRequest(api, requestID, workers.WORKER.TelegramSentiment, bodyBytes, wg)
+		wErr = SendWorkRequest(api, requestID, data_types.TelegramSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
@@ -392,7 +393,7 @@ func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		wErr = SendWorkRequest(api, requestID, workers.WORKER.WebSentiment, bodyBytes, wg)
+		wErr = SendWorkRequest(api, requestID, data_types.WebSentiment, bodyBytes, wg)
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
@@ -427,7 +428,7 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.TwitterProfile, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.TwitterProfile, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -463,7 +464,7 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordProfile, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.DiscordProfile, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -508,7 +509,7 @@ func (api *API) SearchChannelMessages() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordChannelMessages, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.DiscordChannelMessages, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -541,7 +542,7 @@ func (api *API) SearchGuildChannels() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordGuildChannels, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.DiscordGuildChannels, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -564,7 +565,7 @@ func (api *API) SearchUserGuilds() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.DiscordUserGuilds, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.DiscordUserGuilds, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -617,7 +618,12 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 					return
 				}
 
-				defer resp.Body.Close()
+				defer func(Body io.ReadCloser) {
+					err := Body.Close()
+					if err != nil {
+						logrus.Error("[-] Error closing response body: ", err)
+					}
+				}(resp.Body)
 				respBody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					errCh <- fmt.Errorf("[-] Failed to read response body: %v", err)
@@ -726,7 +732,7 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.TwitterFollowers, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.TwitterFollowers, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -766,7 +772,7 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.Twitter, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.Twitter, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -786,7 +792,7 @@ func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err := SendWorkRequest(api, requestID, workers.WORKER.TwitterTrends, nil, wg)
+		err := SendWorkRequest(api, requestID, data_types.TwitterTrends, nil, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -833,7 +839,7 @@ func (api *API) WebData() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.Web, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.Web, bodyBytes, wg)
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -918,7 +924,7 @@ func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.TelegramChannelMessages, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.TelegramChannelMessages, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -973,7 +979,7 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 		defer workers.GetResponseChannelMap().Delete(requestID)
 		go handleWorkResponse(c, responseCh, wg)
 
-		err = SendWorkRequest(api, requestID, workers.WORKER.LLMChat, bodyBytes, wg)
+		err = SendWorkRequest(api, requestID, data_types.LLMChat, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -1054,7 +1060,12 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logrus.Error("[-] Error closing response body: ", err)
+			}
+		}(resp.Body)
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			logrus.Error("[-] Error reading response body: ", err)

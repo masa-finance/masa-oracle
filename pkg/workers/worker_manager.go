@@ -15,6 +15,8 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
+	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 var (
@@ -22,23 +24,10 @@ var (
 	once     sync.Once
 )
 
-type WorkRequest struct {
-	WorkType  WorkerType
-	RequestId string
-	Data      []byte
-}
-
-type WorkResponse struct {
-	WorkRequest  WorkRequest
-	Data         interface{}
-	Error        error
-	WorkerPeerId string
-}
-
 func GetWorkHandlerManager() *WorkHandlerManager {
 	once.Do(func() {
 		instance = &WorkHandlerManager{
-			handlers: make(map[WorkerType]*WorkHandlerInfo),
+			handlers: make(map[data_types.WorkerType]*WorkHandlerInfo),
 		}
 		instance.setupHandlers()
 	})
@@ -50,7 +39,7 @@ var ErrHandlerNotFound = errors.New("work handler not found")
 
 // WorkHandler defines the interface for handling different types of work.
 type WorkHandler interface {
-	HandleWork(data []byte) WorkResponse
+	HandleWork(data []byte) data_types.WorkResponse
 }
 
 // WorkHandlerInfo contains information about a work handler, including metrics.
@@ -62,40 +51,40 @@ type WorkHandlerInfo struct {
 
 // WorkHandlerManager manages work handlers and tracks their execution metrics.
 type WorkHandlerManager struct {
-	handlers map[WorkerType]*WorkHandlerInfo
+	handlers map[data_types.WorkerType]*WorkHandlerInfo
 	mu       sync.RWMutex
 }
 
 func (whm *WorkHandlerManager) setupHandlers() {
 	cfg := config.GetInstance()
 	if cfg.TwitterScraper {
-		whm.addWorkHandler(Twitter, &TwitterQueryHandler{})
-		whm.addWorkHandler(TwitterFollowers, &TwitterFollowersHandler{})
-		whm.addWorkHandler(TwitterProfile, &TwitterProfileHandler{})
-		whm.addWorkHandler(TwitterSentiment, &TwitterSentimentHandler{})
-		whm.addWorkHandler(TwitterTrends, &TwitterTrendsHandler{})
+		whm.addWorkHandler(data_types.Twitter, &handlers.TwitterQueryHandler{})
+		whm.addWorkHandler(data_types.TwitterFollowers, &handlers.TwitterFollowersHandler{})
+		whm.addWorkHandler(data_types.TwitterProfile, &handlers.TwitterProfileHandler{})
+		whm.addWorkHandler(data_types.TwitterSentiment, &handlers.TwitterSentimentHandler{})
+		whm.addWorkHandler(data_types.TwitterTrends, &handlers.TwitterTrendsHandler{})
 	}
 	if cfg.WebScraper {
-		whm.addWorkHandler(Web, &WebHandler{})
-		whm.addWorkHandler(WebSentiment, &WebSentimentHandler{})
+		whm.addWorkHandler(data_types.Web, &handlers.WebHandler{})
+		whm.addWorkHandler(data_types.WebSentiment, &handlers.WebSentimentHandler{})
 	}
 	if cfg.LlmServer {
-		whm.addWorkHandler(LLMChat, &LLMChatHandler{})
+		whm.addWorkHandler(data_types.LLMChat, &handlers.LLMChatHandler{})
 	}
 	if cfg.DiscordScraper {
-		whm.addWorkHandler(Discord, &DiscordHandler{})
+		whm.addWorkHandler(data_types.Discord, &handlers.DiscordProfileHandler{})
 	}
 }
 
 // addWorkHandler registers a new work handler under a specific name.
-func (whm *WorkHandlerManager) addWorkHandler(wType WorkerType, handler WorkHandler) {
+func (whm *WorkHandlerManager) addWorkHandler(wType data_types.WorkerType, handler WorkHandler) {
 	whm.mu.Lock()
 	defer whm.mu.Unlock()
 	whm.handlers[wType] = &WorkHandlerInfo{Handler: handler}
 }
 
 // getWorkHandler retrieves a registered work handler by name.
-func (whm *WorkHandlerManager) getWorkHandler(wType WorkerType) (WorkHandler, bool) {
+func (whm *WorkHandlerManager) getWorkHandler(wType data_types.WorkerType) (WorkHandler, bool) {
 	whm.mu.RLock()
 	defer whm.mu.RUnlock()
 	info, exists := whm.handlers[wType]
@@ -105,8 +94,8 @@ func (whm *WorkHandlerManager) getWorkHandler(wType WorkerType) (WorkHandler, bo
 	return info.Handler, true
 }
 
-func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest WorkRequest) (response WorkResponse) {
-	category := WorkerTypeToCategory(workRequest.WorkType)
+func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
+	category := data_types.WorkerTypeToCategory(workRequest.WorkType)
 	remoteWorkers, localWorker := GetEligibleWorkers(node, category, workerConfig)
 
 	remoteWorkersAttempted := 0
@@ -138,7 +127,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	return response
 }
 
-func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker Worker, workRequest WorkRequest) (response WorkResponse) {
+func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker data_types.Worker, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), workerConfig.WorkerResponseTimeout)
 	defer cancel() // Cancel the context when done to release resources
 
@@ -205,10 +194,10 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker Wo
 
 // ExecuteWork finds and executes the work handler associated with the given name.
 // It tracks the call count and execution duration for the handler.
-func (whm *WorkHandlerManager) ExecuteWork(workRequest WorkRequest) (response WorkResponse) {
+func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	handler, exists := whm.getWorkHandler(workRequest.WorkType)
 	if !exists {
-		return WorkResponse{Error: ErrHandlerNotFound}
+		return data_types.WorkResponse{Error: ErrHandlerNotFound}
 	}
 
 	// Create a context with a 30-second timeout
@@ -216,7 +205,7 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest WorkRequest) (response Wo
 	defer cancel()
 
 	// Channel to receive the work response
-	responseChan := make(chan WorkResponse, 1)
+	responseChan := make(chan data_types.WorkResponse, 1)
 
 	// Execute the work in a separate goroutine
 	go func() {
@@ -236,7 +225,7 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest WorkRequest) (response Wo
 	select {
 	case <-ctx.Done():
 		// Context timed out
-		return WorkResponse{Error: errors.New("work execution timed out")}
+		return data_types.WorkResponse{Error: errors.New("work execution timed out")}
 	case response = <-responseChan:
 		// Work completed within the timeout
 		return response
@@ -268,7 +257,7 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		return
 	}
 
-	var workRequest WorkRequest
+	var workRequest data_types.WorkRequest
 	err = json.Unmarshal(messageBuf, &workRequest)
 	if err != nil {
 		logrus.Errorf("error unmarshaling work request: %v", err)

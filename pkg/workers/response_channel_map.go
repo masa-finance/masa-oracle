@@ -2,11 +2,13 @@ package workers
 
 import (
 	"sync"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 type ResponseChannelMap struct {
 	mu    sync.RWMutex
-	items map[string]chan WorkResponse
+	items map[string]chan data_types.WorkResponse
 }
 
 var (
@@ -18,7 +20,7 @@ var (
 func GetResponseChannelMap() *ResponseChannelMap {
 	rcmOnce.Do(func() {
 		rcmInstance = &ResponseChannelMap{
-			items: make(map[string]chan WorkResponse),
+			items: make(map[string]chan data_types.WorkResponse),
 		}
 	})
 	return rcmInstance
@@ -26,7 +28,7 @@ func GetResponseChannelMap() *ResponseChannelMap {
 
 // Set associates the specified value with the specified key in the ResponseChannelMap.
 // It acquires a write lock to ensure thread-safety while setting the value.
-func (drm *ResponseChannelMap) Set(key string, value chan WorkResponse) {
+func (drm *ResponseChannelMap) Set(key string, value chan data_types.WorkResponse) {
 	drm.mu.Lock()
 	defer drm.mu.Unlock()
 	drm.items[key] = value
@@ -36,7 +38,7 @@ func (drm *ResponseChannelMap) Set(key string, value chan WorkResponse) {
 // It acquires a read lock to ensure thread-safety while reading the value.
 // If the key exists in the ResponseChannelMap, it returns the corresponding value and true.
 // If the key does not exist, it returns nil and false.
-func (drm *ResponseChannelMap) Get(key string) (chan WorkResponse, bool) {
+func (drm *ResponseChannelMap) Get(key string) (chan data_types.WorkResponse, bool) {
 	drm.mu.RLock()
 	defer drm.mu.RUnlock()
 	value, ok := drm.items[key]
@@ -59,8 +61,8 @@ func (drm *ResponseChannelMap) Len() int {
 	return len(drm.items)
 }
 
-func (drm *ResponseChannelMap) CreateChannel(key string) chan WorkResponse {
-	ch := make(chan WorkResponse)
+func (drm *ResponseChannelMap) CreateChannel(key string) chan data_types.WorkResponse {
+	ch := make(chan data_types.WorkResponse)
 	drm.Set(key, ch)
 	return ch
 }

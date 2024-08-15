@@ -98,7 +98,6 @@ func main() {
 	// if this peer can or cannot scrape or write that is checked in other places
 	if node.IsStaked {
 		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.WorkerProtocol), workers.GetWorkHandlerManager().HandleWorkerStream)
-		go workers.MonitorWorkers(ctx, node)
 		go masa.SubscribeToBlocks(ctx, node)
 		go node.NodeTracker.ClearExpiredWorkerTimeouts()
 	}

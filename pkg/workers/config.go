@@ -2,6 +2,8 @@ package workers
 
 import (
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type WorkerConfig struct {
@@ -22,6 +24,16 @@ var DefaultConfig = WorkerConfig{
 	MaxSpawnAttempts:      1,
 	WorkerBufferSize:      100,
 	MaxRemoteWorkers:      1,
+}
+
+var workerConfig *WorkerConfig
+
+func init() {
+	var err error
+	workerConfig, err = LoadConfig()
+	if err != nil {
+		logrus.Fatalf("Failed to load worker config: %v", err)
+	}
 }
 
 func LoadConfig() (*WorkerConfig, error) {

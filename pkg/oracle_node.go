@@ -7,18 +7,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log/slog"
 	"net"
 	"os"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/asynkron/protoactor-go/actor"
-	"github.com/asynkron/protoactor-go/remote"
-	"github.com/chyeh/pubip"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -66,8 +60,6 @@ type OracleNode struct {
 	StartTime         time.Time
 	WorkerTracker     *pubsub2.WorkerEventTracker
 	BlockTracker      *BlockEventTracker
-	ActorEngine       *actor.RootContext
-	ActorRemote       *remote.Remote
 	Blockchain        *chain.Chain
 }
 
@@ -88,8 +80,14 @@ func getOutboundIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
 		fmt.Println("[-] Error getting outbound IP")
+		return ""
 	}
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
 	localAddr := conn.LocalAddr().String()
 	idx := strings.LastIndex(localAddr, ":")
 	return localAddr[0:idx]
@@ -150,27 +148,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		return nil, err
 	}
 
-	system := actor.NewActorSystemWithConfig(actor.Configure(
-		actor.ConfigOption(func(config *actor.Config) {
-			config.LoggerFactory = func(system *actor.ActorSystem) *slog.Logger {
-				return slog.New(slog.NewTextHandler(io.Discard, nil))
-			}
-		}),
-	))
-	engine := system.Root
-
-	var ip any
-	if cfg.Environment == "local" {
-		ip = getOutboundIP()
-	} else {
-		ip, _ = pubip.Get()
-	}
-	conf := remote.Configure("0.0.0.0", 4001,
-		remote.WithAdvertisedHost(fmt.Sprintf("%s:4001", ip)))
-
-	r := remote.NewRemote(system, conf)
-	go r.Start()
-
 	return &OracleNode{
 		Host:              hst,
 		PrivKey:           masacrypto.KeyManagerInstance().EcdsaPrivKey,
@@ -187,8 +164,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		IsTelegramScraper: cfg.TelegramScraper,
 		IsWebScraper:      cfg.WebScraper,
 		IsLlmServer:       cfg.LlmServer,
-		ActorEngine:       engine,
-		ActorRemote:       r,
 		Blockchain:        &chain.Chain{},
 	}, nil
 }
@@ -501,7 +476,12 @@ func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
 		return
 	}
 
-	go node.Blockchain.Init()
+	go func() {
+		err := node.Blockchain.Init()
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
 
 	updateTicker := time.NewTicker(time.Second * 60)
 	defer updateTicker.Stop()
