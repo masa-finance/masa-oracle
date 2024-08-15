@@ -140,7 +140,7 @@ func handleWorkResponse(c *gin.Context, responseCh chan data_types.WorkResponse,
 				}
 				response.Data = jsonData
 			}
-			response.WorkRequest = &data_types.WorkRequest{}
+			response.WorkRequest = nil
 			c.JSON(http.StatusOK, response)
 			wg.Done()
 			return
