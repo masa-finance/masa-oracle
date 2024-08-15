@@ -131,7 +131,7 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
 
 		if err != nil {
-			if strings.Contains(err.Error(), "ErrPasswordAuthNeeded") {
+			if strings.Contains(err.Error(), "2FA required") {
 				auth, err = client.Auth().Password(ctx, password)
 				if err != nil {
 					log.Printf("Error during 2FA SignIn: %v", err)
