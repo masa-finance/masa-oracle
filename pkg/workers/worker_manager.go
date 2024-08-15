@@ -109,7 +109,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		}
 		remoteWorkersAttempted++
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
-		response := whm.sendWorkToWorker(node, worker, workRequest)
+		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
 			logrus.Errorf("error sending work to worker: %s", response.Error)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
@@ -141,10 +141,11 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 			response.Error = fmt.Sprintf("error opening stream: %v", err)
 			return
 		}
+		// the stream should be closed by the receiver, but keeping this here just in case
 		defer func(stream network.Stream) {
 			err := stream.Close()
 			if err != nil {
-				logrus.Errorf("[-] Error closing stream: %s", err)
+				logrus.Debug("[-] Error closing stream: %s", err)
 			}
 		}(stream) // Close the stream when done
 
@@ -266,7 +267,7 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 	peerId := stream.Conn().LocalPeer().String()
 	workResponse := whm.ExecuteWork(workRequest)
 	if workResponse.Error != "" {
-		logrus.Errorf("error from remote worker %s: executing work: %v", peerId, err)
+		logrus.Errorf("error from remote worker %s: executing work: %s", peerId, workResponse.Error)
 	}
 	workResponse.WorkerPeerId = peerId
 
