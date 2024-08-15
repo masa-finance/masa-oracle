@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -29,18 +28,21 @@ func (h *LLMChatHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] LLM Chat %s", data)
 	uri := config.GetInstance().LLMChatUrl
 	if uri == "" {
-		return data_types.WorkResponse{Error: errors.New("missing env variable LLM_CHAT_URL")}
+		return data_types.WorkResponse{Error: "missing env variable LLM_CHAT_URL"}
 	}
 
 	var dataMap map[string]interface{}
 	if err := json.Unmarshal(data, &dataMap); err != nil {
-		return data_types.WorkResponse{Error: fmt.Errorf("unable to parse LLM chat data: %v", err)}
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse LLM chat data: %v", err)}
 	}
 
 	jsnBytes, err := json.Marshal(dataMap)
 	if err != nil {
-		return data_types.WorkResponse{Error: err}
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to marshal LLM chat data: %v", err)}
 	}
 	resp, err := Post(uri, jsnBytes, nil)
-	return data_types.WorkResponse{Data: resp, Error: err}
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to post LLM chat data: %v", err)}
+	}
+	return data_types.WorkResponse{Data: resp}
 }

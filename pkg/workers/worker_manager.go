@@ -110,8 +110,8 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		remoteWorkersAttempted++
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response := whm.sendWorkToWorker(node, worker, workRequest)
-		if response.Error != nil {
-			logrus.Errorf("error sending work to worker: %s", response.Error.Error())
+		if response.Error != "" {
+			logrus.Errorf("error sending work to worker: %s", response.Error)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
 			continue
 		}
@@ -121,8 +121,8 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	if localWorker != nil {
 		return whm.ExecuteWork(workRequest)
 	}
-	if response.Error == nil {
-		response.Error = errors.New("no eligible workers found")
+	if response.Error != "" {
+		response.Error = "no eligible workers found"
 	}
 	return response
 }
@@ -132,13 +132,13 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 	defer cancel() // Cancel the context when done to release resources
 
 	if err := node.Host.Connect(ctxWithTimeout, *worker.AddrInfo); err != nil {
-		response.Error = fmt.Errorf("failed to connect to remote peer %s: %v", worker.AddrInfo.ID.String(), err)
+		response.Error = fmt.Sprintf("failed to connect to remote peer %s: %v", worker.AddrInfo.ID.String(), err)
 		return
 	} else {
 		logrus.Debugf("[+] Connection established with node: %s", worker.AddrInfo.ID.String())
 		stream, err := node.Host.NewStream(ctxWithTimeout, worker.AddrInfo.ID, config.ProtocolWithVersion(config.WorkerProtocol))
 		if err != nil {
-			response.Error = fmt.Errorf("error opening stream: %v", err)
+			response.Error = fmt.Sprintf("error opening stream: %v", err)
 			return
 		}
 		defer func(stream network.Stream) {
@@ -151,19 +151,19 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 		// Write the request to the stream with length prefix
 		bytes, err := json.Marshal(workRequest)
 		if err != nil {
-			response.Error = fmt.Errorf("error marshaling work request: %v", err)
+			response.Error = fmt.Sprintf("error marshaling work request: %v", err)
 			return
 		}
 		lengthBuf := make([]byte, 4)
 		binary.BigEndian.PutUint32(lengthBuf, uint32(len(bytes)))
 		_, err = stream.Write(lengthBuf)
 		if err != nil {
-			response.Error = fmt.Errorf("error writing length to stream: %v", err)
+			response.Error = fmt.Sprintf("error writing length to stream: %v", err)
 			return
 		}
 		_, err = stream.Write(bytes)
 		if err != nil {
-			response.Error = fmt.Errorf("error writing to stream: %v", err)
+			response.Error = fmt.Sprintf("error writing to stream: %v", err)
 			return
 		}
 
@@ -171,7 +171,7 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 		lengthBuf = make([]byte, 4)
 		_, err = io.ReadFull(stream, lengthBuf)
 		if err != nil {
-			response.Error = fmt.Errorf("error reading response length: %v", err)
+			response.Error = fmt.Sprintf("error reading response length: %v", err)
 			return
 		}
 		responseLength := binary.BigEndian.Uint32(lengthBuf)
@@ -180,12 +180,12 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 		responseBuf := make([]byte, responseLength)
 		_, err = io.ReadFull(stream, responseBuf)
 		if err != nil {
-			response.Error = fmt.Errorf("error reading response: %v", err)
+			response.Error = fmt.Sprintf("error reading response: %v", err)
 			return
 		}
 		err = json.Unmarshal(responseBuf, &response)
 		if err != nil {
-			response.Error = fmt.Errorf("error unmarshaling response: %v", err)
+			response.Error = fmt.Sprintf("error unmarshaling response: %v", err)
 			return
 		}
 	}
@@ -197,7 +197,7 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	handler, exists := whm.getWorkHandler(workRequest.WorkType)
 	if !exists {
-		return data_types.WorkResponse{Error: ErrHandlerNotFound}
+		return data_types.WorkResponse{Error: ErrHandlerNotFound.Error()}
 	}
 
 	// Create a context with a 30-second timeout
@@ -211,7 +211,7 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 	go func() {
 		startTime := time.Now()
 		workResponse := handler.HandleWork(workRequest.Data)
-		if workResponse.Error == nil {
+		if workResponse.Error == "" {
 			duration := time.Since(startTime)
 			whm.mu.Lock()
 			handlerInfo := whm.handlers[workRequest.WorkType]
@@ -225,7 +225,7 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 	select {
 	case <-ctx.Done():
 		// Context timed out
-		return data_types.WorkResponse{Error: errors.New("work execution timed out")}
+		return data_types.WorkResponse{Error: "work execution timed out"}
 	case response = <-responseChan:
 		// Work completed within the timeout
 		return response
@@ -264,7 +264,7 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		return
 	}
 	workResponse := whm.ExecuteWork(workRequest)
-	if workResponse.Error != nil {
+	if workResponse.Error == "" {
 		logrus.Errorf("error from remote worker %s: executing work: %v", err)
 	}
 	workResponse.WorkerPeerId = stream.Conn().LocalPeer().String()

@@ -121,8 +121,9 @@ func handleWorkResponse(c *gin.Context, responseCh chan data_types.WorkResponse,
 	for {
 		select {
 		case response := <-responseCh:
-			if response.Error != nil {
+			if response.Error != "" {
 				c.JSON(http.StatusExpectationFailed, response)
+				wg.Done()
 				return
 			}
 			if data, ok := response.Data.(string); ok && IsBase64(data) {
@@ -139,16 +140,14 @@ func handleWorkResponse(c *gin.Context, responseCh chan data_types.WorkResponse,
 				}
 				response.Data = jsonData
 			}
-			response.WorkRequest = data_types.WorkRequest{}
+			response.WorkRequest = &data_types.WorkRequest{}
 			c.JSON(http.StatusOK, response)
 			wg.Done()
 			return
 		case <-time.After(cfg.WorkerResponseTimeout):
 			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out in API layer"})
-			wg.Done()
 			return
 		case <-c.Done():
-			wg.Done()
 			return
 		}
 	}
@@ -238,6 +237,7 @@ func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
 		if wErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -290,6 +290,8 @@ func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
 		}
+		wg.Wait()
+
 	}
 }
 
@@ -342,6 +344,7 @@ func (api *API) SearchTelegramMessagesAndAnalyzeSentiment() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
 			return
 		}
+		wg.Wait()
 	}
 }
 
@@ -432,6 +435,7 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -468,6 +472,7 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -514,6 +519,7 @@ func (api *API) SearchChannelMessages() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		wg.Wait()
 	}
 }
 
@@ -546,6 +552,7 @@ func (api *API) SearchGuildChannels() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -569,6 +576,7 @@ func (api *API) SearchUserGuilds() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -736,6 +744,7 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -776,6 +785,7 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -796,6 +806,7 @@ func (api *API) SearchTweetsTrends() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -844,6 +855,7 @@ func (api *API) WebData() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -928,6 +940,7 @@ func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 
@@ -983,6 +996,7 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+		wg.Wait()
 	}
 }
 

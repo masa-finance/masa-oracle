@@ -16,14 +16,14 @@ type Worker struct {
 }
 
 type WorkRequest struct {
-	WorkType  WorkerType
-	RequestId string
-	Data      []byte
+	WorkType  WorkerType `json:"workType,omitempty"`
+	RequestId string     `json:"requestId,omitempty"`
+	Data      []byte     `json:"data,omitempty"`
 }
 
 type WorkResponse struct {
-	WorkRequest  WorkRequest
-	Data         interface{}
-	Error        error
-	WorkerPeerId string
+	WorkRequest  *WorkRequest `json:"workRequest,omitempty"`
+	Data         interface{}  `json:"data,omitempty"`
+	Error        string       `json:"error,omitempty"`
+	WorkerPeerId string       `json:"workerPeerId,omitempty"`
 }
