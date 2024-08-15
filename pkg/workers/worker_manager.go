@@ -111,7 +111,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
-			logrus.Errorf("error sending work to worker: %s", response.Error)
+			logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
 			continue
 		}
@@ -121,8 +121,10 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	if localWorker != nil {
 		return whm.ExecuteWork(workRequest)
 	}
-	if response.Error != "" {
+	if response.Error == "" {
 		response.Error = "no eligible workers found"
+	} else {
+		response.Error = fmt.Sprintf("no workers could process: remote attempt failed due to: %s", response.Error)
 	}
 	return response
 }
