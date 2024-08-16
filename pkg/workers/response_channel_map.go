@@ -1,30 +1,34 @@
-package pubsub
+package workers
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+)
 
 type ResponseChannelMap struct {
 	mu    sync.RWMutex
-	items map[string]chan []byte
+	items map[string]chan data_types.WorkResponse
 }
 
 var (
-	instance *ResponseChannelMap
-	once     sync.Once
+	rcmInstance *ResponseChannelMap
+	rcmOnce     sync.Once
 )
 
-// GetResponseChannelMap returns the singleton instance of ResponseChannelMap.
+// GetResponseChannelMap returns the singleton rcmInstance of ResponseChannelMap.
 func GetResponseChannelMap() *ResponseChannelMap {
-	once.Do(func() {
-		instance = &ResponseChannelMap{
-			items: make(map[string]chan []byte),
+	rcmOnce.Do(func() {
+		rcmInstance = &ResponseChannelMap{
+			items: make(map[string]chan data_types.WorkResponse),
 		}
 	})
-	return instance
+	return rcmInstance
 }
 
 // Set associates the specified value with the specified key in the ResponseChannelMap.
 // It acquires a write lock to ensure thread-safety while setting the value.
-func (drm *ResponseChannelMap) Set(key string, value chan []byte) {
+func (drm *ResponseChannelMap) Set(key string, value chan data_types.WorkResponse) {
 	drm.mu.Lock()
 	defer drm.mu.Unlock()
 	drm.items[key] = value
@@ -34,7 +38,7 @@ func (drm *ResponseChannelMap) Set(key string, value chan []byte) {
 // It acquires a read lock to ensure thread-safety while reading the value.
 // If the key exists in the ResponseChannelMap, it returns the corresponding value and true.
 // If the key does not exist, it returns nil and false.
-func (drm *ResponseChannelMap) Get(key string) (chan []byte, bool) {
+func (drm *ResponseChannelMap) Get(key string) (chan data_types.WorkResponse, bool) {
 	drm.mu.RLock()
 	defer drm.mu.RUnlock()
 	value, ok := drm.items[key]
@@ -57,8 +61,8 @@ func (drm *ResponseChannelMap) Len() int {
 	return len(drm.items)
 }
 
-func (drm *ResponseChannelMap) CreateChannel(key string) chan []byte {
-	ch := make(chan []byte)
+func (drm *ResponseChannelMap) CreateChannel(key string) chan data_types.WorkResponse {
+	ch := make(chan data_types.WorkResponse)
 	drm.Set(key, ch)
 	return ch
 }

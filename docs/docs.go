@@ -4,6 +4,50 @@ package docs
 import "github.com/swaggo/swag"
 
 const docTemplate = `{
+	"swagger": "2.0",
+	"info": {
+	  "description": "{{escape .Description}}",
+	  "title": "{{.Title}}",
+	  "contact": {
+		"name": "Masa API Support",
+		"url": "https://masa.ai",
+		"email": "support@masa.ai"
+	  },
+	  "license": {
+		"name": "MIT",
+		"url": "https://opensource.org/license/mit"
+	  },
+	  "version": "{{.Version}}"
+	},
+	"host": "{{.Host}}",
+	"basePath": "{{.BasePath}}",
+	"securityDefinitions": {
+	  "Bearer": {
+		"type": "apiKey",
+		"name": "Authorization",
+		"in": "header"
+	  }
+	},
+	"security": [
+	  {
+		"Bearer": []
+	  }
+	],
+	"paths": {
+	  "/data/twitter/profile/{username}": {
+		"get": {
+		  "description": "Retrieves tweets from a specific Twitter profile",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Twitter"],
+		  "summary": "Search Twitter Profile",
+		  "parameters": [
+			{
+			  "type": "string",
+			  "description": "Twitter Username",
+			  "name": "username",
+			  "in": "path",
+			  "required": true
     "schemes": {{ marshal .Schemes }},
     "swagger": "2.0",
     "info": {
@@ -1105,6 +1149,10 @@ const docTemplate = `{
 									},
 									"phone_code_hash": {
 										"type": "string"
+									},
+									"password": {
+										"type": "string",
+										"description": "Optional password for two-factor authentication"
 									}
 								},
 								"required": ["phone_number", "code", "phone_code_hash"]
@@ -1207,249 +1255,535 @@ const docTemplate = `{
 					"type": "string"
 				}
 			}
-		},
-		"SuccessResponse": {
-			"type": "object",
-			"properties": {
-				"message": {
-					"type": "string"
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "List of tweets from the profile",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/Tweet"
 				}
+			  }
+			},
+			"400": {
+			  "description": "Invalid username or error fetching tweets",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
 			}
-		},
-		"WebDataRequest": {
-			"type": "object",
-			"properties": {
-				"query": {
-					"type": "string"
-				},
-				"url": {
-					"type": "string"
-				},
-				"depth": {
-					"type": "integer"
-				}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
 			}
-		},
-		"WebDataResponse": {
-			"type": "object",
-			"properties": {
-				"data": {
-					"type": "string"
-				}
-			}
-		},
-		"SentimentAnalysisResponse": {
-			"type": "object",
-			"properties": {
-				"sentiment": {
-					"type": "string"
-				},
-				"data": {
-					"type": "string"
-				}
-			}
-		},
-		"definitions": {
-			"ChatResponse": {
-				"type": "object",
-				"properties": {
-					"message": {
-						"type": "string"
-					}
-				}
-			},	
-			"DHTResponse": {
-				"type": "object",
-				"properties": {
-					"key": {
-						"type": "string"
-					},
-					"value": {
-						"type": "string"
-					}
-				}
-			},
-			"UserProfile": {
-				"type": "object",
-				"properties": {
-					"id": {
-						"type": "string"
-					},
-					"username": {
-						"type": "string"
-					},
-					"discriminator": {
-						"type": "string"
-					},
-					"avatar": {
-						"type": "string"
-					}
-				}
-			},		
-			"ErrorResponse": {
-				"type": "object",
-				"properties": {
-					"error": {
-						"type": "string"
-					}
-				}
-			},				
-			"Tweet": {
-				"type": "object",
-				"properties": {
-					"id": {
-						"type": "string"
-					},
-					"text": {
-						"type": "string"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"user": {
-						"type": "object",
-						"properties": {
-							"id": {
-								"type": "string"
-							},
-							"name": {
-								"type": "string"
-							},
-							"screen_name": {
-								"type": "string"
-							}
-						}
-					}
-				}
-			},
-			"ChannelMessage": {
-				"type": "object",
-				"properties": {
-				  "id": {
-					"type": "string"
-				  },
-				  "channelID": {
-					"type": "string"
-				  },
-				  "author": {
-					"type": "object",
-					"properties": {
-					  "id": {
-						"type": "string"
-					  },
-					  "username": {
-						"type": "string"
-					  },
-					  "discriminator": {
-						"type": "string"
-					  },
-					  "avatar": {
-						"type": "string"
-					  }
-					}
-				  },
-				  "content": {
-					"type": "string"
-				  },
-				  "timestamp": {
-					"type": "string"
-				  }
-				}
-			  },
-			  "GuildChannel": {
-				"type": "object",
-				"properties": {
-				  "id": {
-					"type": "string"
-				  },
-				  "guildID": {
-					"type": "string"
-				  },
-				  "name": {
-					"type": "string"
-				  },
-				  "type": {
-					"type": "integer"
-				  }
-				}
-			  },
-			  "Guild": {
-				"type": "object",
-				"properties": {
-				  "id": {
-					"type": "string"
-				  },
-				  "name": {
-					"type": "string"
-				  },
-				  "icon": {
-					"type": "string"
-				  },
-				  "owner": {
-					"type": "boolean"
-				  },
-				  "permissions": {
-					"type": "string"
-				  }
-				}
-			  },
-			"Trend": {
-				"type": "object",
-				"properties": {
-					"name": {
-						"type": "string"
-					},
-					"url": {
-						"type": "string"
-					},
-					"tweet_volume": {
-						"type": "integer"
-					}
-				}
-			},
-			"SentimentAnalysisResponse": {
-				"type": "object",
-				"properties": {
-					"sentiment": {
-						"type": "string"
-					},
-					"data": {
-						"type": "string"
-					}
-				}
-			},
-			"WebDataResponse": {
-				"type": "object",
-				"properties": {
-					"data": {
-						"type": "string"
-					}
-				}
-			},
-			"LLMModelsResponse": {
-				"type": "object",
-				"properties": {
-					"models": {
-						"type": "array",
-						"items": {
-							"type": "string"
-						}
-					}
-				}
-			},
-			"NodeDataResponse": {
-				"type": "object",
-				"properties": {
-					"peer_id": {
-						"type": "string"
-					},
-					"data": {
-						"type": "string"
-					}
-				}
-			}
+		  ]
 		}
-}`
+	  },
+	  "/data/twitter/followers/{username}": {
+		"get": {
+		  "description": "Retrieves followers from a specific Twitter profile.",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Twitter"],
+		  "summary": "Search Twitter Followers",
+		  "parameters": [
+			{
+			  "name": "username",
+			  "in": "path",
+			  "description": "Twitter Username",
+			  "required": true,
+			  "type": "string"
+			},
+			{
+			  "name": "limit",
+			  "in": "query",
+			  "description": "The maximum number of followers to return",
+			  "required": false,
+			  "type": "integer",
+			  "format": "int32",
+			  "default": 20
+			}
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "Array of profiles a user has as followers",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/Profile"
+				}
+			  }
+			},
+			"400": {
+			  "description": "Invalid username or error fetching followers",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  }
+		}
+	  },
+	  "/data/twitter/tweets/recent": {
+		"post": {
+		  "description": "Retrieves recent tweets based on query parameters",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Twitter"],
+		  "summary": "Search recent tweets",
+		  "parameters": [
+			{
+			  "in": "body",
+			  "name": "body",
+			  "description": "Search parameters",
+			  "required": true,
+			  "schema": {
+				"type": "object",
+				"properties": {
+				  "query": {
+					"type": "string",
+					"description": "Search Query"
+				  },
+				  "count": {
+					"type": "integer",
+					"description": "Number of tweets to return"
+				  }
+				}
+			  }
+			}
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "List of recent tweets",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/Tweet"
+				}
+			  }
+			},
+			"400": {
+			  "description": "Invalid query or error fetching tweets",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  },
+	  "/data/twitter/tweets/trends": {
+		"get": {
+		  "description": "Retrieves the latest Twitter trending topics",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Twitter"],
+		  "summary": "Twitter Trends",
+		  "responses": {
+			"200": {
+			  "description": "List of trending topics",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/Trend"
+				}
+			  }
+			},
+			"400": {
+			  "description": "Error fetching Twitter trends",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  },
+	  "/data/discord/profile/{userID}": {
+		"get": {
+		  "description": "Retrieves a Discord user profile by user ID.",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Discord"],
+		  "summary": "Search Discord Profile",
+		  "parameters": [
+			{
+			  "name": "userID",
+			  "in": "path",
+			  "description": "Discord User ID",
+			  "required": true,
+			  "type": "string"
+			}
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "Successfully retrieved Discord user profile",
+			  "schema": {
+				"$ref": "#/definitions/UserProfile"
+			  }
+			},
+			"400": {
+			  "description": "Invalid user ID or error fetching profile",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  },
+	  "/data/discord/channels/{channelID}/messages": {
+		"get": {
+		  "description": "Retrieves messages from a specified Discord channel.",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Discord"],
+		  "summary": "Get messages from a Discord channel",
+		  "parameters": [
+			{
+			  "name": "channelID",
+			  "in": "path",
+			  "description": "Discord Channel ID",
+			  "required": true,
+			  "type": "string"
+			},
+			{
+			  "name": "limit",
+			  "in": "query",
+			  "description": "The maximum number of messages to return",
+			  "required": false,
+			  "type": "integer",
+			  "format": "int32"
+			},
+			{
+			  "name": "before",
+			  "in": "query",
+			  "description": "A message ID to return messages posted before this message",
+			  "required": false,
+			  "type": "string"
+			}
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "Successfully retrieved messages from the Discord channel",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/ChannelMessage"
+				}
+			  }
+			},
+			"400": {
+			  "description": "Invalid channel ID or error fetching messages",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  },
+	  "/data/discord/guilds/{guildID}/channels": {
+		"get": {
+		  "description": "Retrieves channels from a specified Discord guild.",
+		  "tags": ["Discord"],
+		  "summary": "Get channels from a Discord guild",
+		  "parameters": [
+			{
+			  "name": "guildID",
+			  "in": "path",
+			  "description": "Discord Guild ID",
+			  "required": true,
+			  "type": "string"
+			}
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "Successfully retrieved channels from the Discord guild",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/GuildChannel"
+				}
+			  }
+			},
+			"400": {
+			  "description": "Invalid guild ID or error fetching channels",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  },
+	  "/data/discord/user/guilds": {
+		"get": {
+		  "description": "Retrieves guilds from a specified Discord user.",
+		  "tags": ["Discord"],
+		  "summary": "Get guilds from a Discord user",
+		  "responses": {
+			"200": {
+			  "description": "Successfully retrieved guilds from the Discord user",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/UserGuild"
+				}
+			  }
+			},
+			"400": {
+			  "description": "Invalid user ID or error fetching guilds",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  },
+	  "/data/discord/guilds/all": {
+		"get": {
+		  "description": "Retrieves all guilds that all the Discord workers are apart of.",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Discord"],
+		  "summary": "Get all guilds",
+		  "responses": {
+			"200": {
+			  "description": "Successfully retrieved all guilds for the Discord user",
+			  "schema": {
+				"type": "array",
+				"items": {
+				  "$ref": "#/definitions/Guild"
+				}
+			  }
+			},
+			"400": {
+			  "description": "Error fetching guilds or invalid access token",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  }
+	},
+	"definitions": {
+	  "UserProfile": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"type": "string"
+		  },
+		  "username": {
+			"type": "string"
+		  },
+		  "discriminator": {
+			"type": "string"
+		  },
+		  "avatar": {
+			"type": "string"
+		  }
+		}
+	  },
+	  "SuccessResponse": {
+		"type": "object",
+		"properties": {
+		  "message": {
+			"type": "string"
+		  }
+		}
+	  },
+	  "ErrorResponse": {
+		"type": "object",
+		"properties": {
+		  "error": {
+			"type": "string"
+		  }
+		}
+	  },
+	  "Tweet": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"type": "string"
+		  },
+		  "text": {
+			"type": "string"
+		  },
+		  "created_at": {
+			"type": "string"
+		  },
+		  "user": {
+			"type": "object",
+			"properties": {
+			  "id": {
+				"type": "string"
+			  },
+			  "name": {
+				"type": "string"
+			  },
+			  "screen_name": {
+				"type": "string"
+			  }
+			}
+		  }
+		}
+	  },
+	  "ChannelMessage": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"type": "string"
+		  },
+		  "channelID": {
+			"type": "string"
+		  },
+		  "author": {
+			"type": "object",
+			"properties": {
+			  "id": {
+				"type": "string"
+			  },
+			  "username": {
+				"type": "string"
+			  },
+			  "discriminator": {
+				"type": "string"
+			  },
+			  "avatar": {
+				"type": "string"
+			  }
+			}
+		  },
+		  "content": {
+			"type": "string"
+		  },
+		  "timestamp": {
+			"type": "string"
+		  }
+		}
+	  },
+	  "GuildChannel": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"type": "string"
+		  },
+		  "guildID": {
+			"type": "string"
+		  },
+		  "name": {
+			"type": "string"
+		  },
+		  "type": {
+			"type": "integer"
+		  }
+		}
+	  },
+	  "Guild": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"type": "string"
+		  },
+		  "name": {
+			"type": "string"
+		  },
+		  "icon": {
+			"type": "string"
+		  },
+		  "owner": {
+			"type": "boolean"
+		  },
+		  "permissions": {
+			"type": "string"
+		  }
+		}
+	  },
+	  "Trend": {
+		"type": "object",
+		"properties": {
+		  "name": {
+			"type": "string"
+		  },
+		  "url": {
+			"type": "string"
+		  },
+		  "tweet_volume": {
+			"type": "integer"
+		  }
+		}
+	  },
+	  "Profile": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"type": "string"
+		  },
+		  "username": {
+			"type": "string"
+		  },
+		  "discriminator": {
+			"type": "string"
+		  },
+		  "avatar": {
+			"type": "string"
+		  }
+		}
+	  },
+	  "UserGuild": {
+		"type": "object",
+		"properties": {
+		  "id": {
+			"type": "string"
+		  },
+		  "name": {
+			"type": "string"
+		  },
+		  "icon": {
+			"type": "string"
+		  },
+		  "owner": {
+			"type": "boolean"
+		  },
+		  "permissions": {
+			"type": "string"
+		  }
+		}
+	  }
+	}
+  }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{

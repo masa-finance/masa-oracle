@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/masa-finance/masa-oracle/internal/versioning"
+
 	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -112,8 +114,8 @@ func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
 
-		instance.setEnvVariableConfig()
 		instance.setDefaultConfig()
+		instance.setEnvVariableConfig()
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 		err := instance.setCommandLineConfig()
 		if err != nil {
@@ -145,7 +147,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault("Version", Version)
+	viper.SetDefault("Version", versioning.ProtocolVersion)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -194,6 +196,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.StakeAmount, "stake", viper.GetString(StakeAmount), "Amount of tokens to stake")
 	pflag.BoolVar(&c.Debug, "debug", viper.GetBool(Debug), "Override some protections for debugging (temporary)")
 	pflag.StringVar(&c.Environment, "env", viper.GetString(Environment), "Environment to connect to")
+	pflag.StringVar(&c.Version, "version", viper.GetString("VERSION"), "application version")
 	pflag.BoolVar(&c.AllowedPeer, "allowedPeer", viper.GetBool(AllowedPeer), "Set to true to allow setting this node as the allowed peer")
 	pflag.StringVar(&c.PrivateKey, "privateKey", viper.GetString(PrivateKey), "The private key")
 	pflag.StringVar(&c.PrivateKeyFile, "privKeyFile", viper.GetString(PrivKeyFile), "The private key file")
@@ -222,6 +225,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
 	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
+
 	pflag.Parse()
 
 	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)
