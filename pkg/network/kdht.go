@@ -30,7 +30,7 @@ func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
 func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 
 func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr,
-	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool, removePeerCallback func(peer.ID)) (*dht.IpfsDHT, error) {
+	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
 	options = append(options, dht.Concurrency(100))                         // Increase concurrency
@@ -46,8 +46,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("[+] Peer added to DHT: %s", p.String())
-
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerAdded,
@@ -57,16 +55,12 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	}
 
 	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
-		logrus.Infof("[-] Peer removed from DHT: %s", p)
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerRemoved,
 			Source:   "kdht",
 		}
 		peerChan <- pe
-		if removePeerCallback != nil {
-			removePeerCallback(p)
-		}
 	}
 
 	if err = kademliaDHT.Bootstrap(ctx); err != nil {
@@ -127,7 +121,14 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 						logrus.Errorf("[-] Error closing stream: %s", err)
 					}
 				}(stream) // Close the stream when done
-				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+
+				multiaddr, err := GetMultiAddressesForHost(host)
+				if err != nil {
+					logrus.Errorf("[-] Error getting multiaddresses for host: %s", err)
+					return
+				}
+				multaddrString := GetPriorityAddress(multiaddr)
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked, multaddrString.String()))
 				if err != nil {
 					logrus.Errorf("[-] Error writing to stream: %s", err)
 					return
@@ -153,10 +154,6 @@ func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Du
 			routingTable := dht.RoutingTable()
 			// Log the size of the routing table
 			logrus.Infof("[+] Routing table size: %d", routingTable.Size())
-			// Log the peer IDs in the routing table
-			for _, p := range routingTable.ListPeers() {
-				logrus.Debugf("[+] Peer in routing table: %s", p.String())
-			}
 		case <-ctx.Done():
 			// If the context is cancelled, stop the goroutine
 			return

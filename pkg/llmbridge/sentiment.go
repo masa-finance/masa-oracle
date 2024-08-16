@@ -10,10 +10,11 @@ import (
 	"strings"
 
 	"github.com/gotd/td/tg"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/ollama/ollama/api"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 // AnalyzeSentimentTweets analyzes the sentiment of the provided tweets by sending them to the Claude API.
@@ -194,8 +195,8 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		genReq := api.ChatRequest{
 			Model: strings.TrimPrefix(model, "ollama/"),
 			Messages: []api.Message{
-				{Role: "user", Content: data},
 				{Role: "assistant", Content: prompt},
+				{Role: "user", Content: data},
 			},
 			Stream: &stream,
 			Options: map[string]interface{}{

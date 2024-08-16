@@ -249,7 +249,7 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 }
 
 // GetEthAddress returns the Ethereum address for the given remote peer.
-// It gets the peer's public key from the network's peerstore, converts
+// It gets the peer's public key from the network's peer store, converts
 // it to a hex string, and converts that to an Ethereum address.
 // Returns an empty string if there is no public key for the peer.
 func GetEthAddress(remotePeer peer.ID, n network.Network) string {
@@ -271,6 +271,18 @@ func GetEthAddress(remotePeer peer.ID, n network.Network) string {
 		}
 	}
 	return publicKeyHex
+}
+
+// GetEligibleWorkerNodes returns a slice of NodeData for nodes that are eligible to perform a specific category of work.
+func (net *NodeEventTracker) GetEligibleWorkerNodes(category WorkerCategory) []NodeData {
+	logrus.Debugf("Getting eligible worker nodes for category: %s", category)
+	result := make([]NodeData, 0)
+	for _, nodeData := range net.GetAllNodeData() {
+		if nodeData.CanDoWork(category) {
+			result = append(result, nodeData)
+		}
+	}
+	return result
 }
 
 // IsStaked returns whether the node with the given peerID is marked as staked in the node data tracker.
@@ -366,7 +378,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 // entry, and if expired, processes the connect and removes the entry.
 func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	for {
-		time.Sleep(30 * time.Second) // E.g., every 5 seconds
+		time.Sleep(1 * time.Minute)
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {
@@ -388,11 +400,13 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 //
 // Parameters:
 //   - peerID: A string representing the ID of the peer to be removed.
-func (net *NodeEventTracker) RemoveNodeData(peerID string) {
-	net.nodeData.Delete(peerID)
-	delete(net.ConnectBuffer, peerID)
-	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
-}
+//
+// TODO: we should never remove node data from the internal map. Otherwise we lose all tracking of activity.
+//func (net *NodeEventTracker) RemoveNodeData(peerID string) {
+//	net.nodeData.Delete(peerID)
+//	delete(net.ConnectBuffer, peerID)
+//	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+//}
 
 // ClearExpiredWorkerTimeouts periodically checks and clears expired worker timeouts.
 // It runs in an infinite loop, sleeping for 5 minutes between each iteration.
@@ -445,7 +459,6 @@ func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
 		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
 			if nodeData.PeerId.String() != hostId {
 				logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
-				net.RemoveNodeData(nodeData.PeerId.String())
 				delete(net.ConnectBuffer, nodeData.PeerId.String())
 
 				// Notify about peer removal
