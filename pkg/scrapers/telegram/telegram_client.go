@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gotd/contrib/bg"
@@ -113,12 +114,13 @@ func StartAuthentication(ctx context.Context, phoneNumber string) (string, error
 }
 
 // CompleteAuthentication uses the provided code to authenticate with Telegram.
-func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHash string) (*tg.AuthAuthorization, error) {
+// CompleteAuthentication uses the provided code to authenticate with Telegram.
+func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHash, password string) (*tg.AuthAuthorization, error) {
 	// Initialize the Telegram client (if not already initialized)
 	client, err := GetClient()
 	if err != nil {
 		logrus.Printf("Failed to initialize Telegram client: %v", err)
-		return nil, err // Edit: Added nil as the first return value
+		return nil, err
 	}
 
 	// Define a variable to hold the authentication result
@@ -127,9 +129,18 @@ func CompleteAuthentication(ctx context.Context, phoneNumber, code, phoneCodeHas
 	err = client.Run(ctx, func(ctx context.Context) error {
 		// Use the provided code and phoneCodeHash to authenticate
 		auth, err := client.Auth().SignIn(ctx, phoneNumber, code, phoneCodeHash)
+
 		if err != nil {
-			log.Printf("Error during SignIn: %v", err)
-			return err
+			if strings.Contains(err.Error(), "2FA required") {
+				auth, err = client.Auth().Password(ctx, password)
+				if err != nil {
+					log.Printf("Error during 2FA SignIn: %v", err)
+					return err
+				}
+			} else {
+				log.Printf("Error during SignIn: %v", err)
+				return err
+			}
 		}
 
 		// At this point, authentication was successful, and you have the user's Telegram auth data.
