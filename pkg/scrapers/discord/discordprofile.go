@@ -1,4 +1,3 @@
-// discordprofile.go
 package discord
 
 import (

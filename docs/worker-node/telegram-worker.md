@@ -58,6 +58,8 @@ TELEGRAM_SCRAPER=true
 
 1. Call the `/api/v1/auth/telegram/complete` endpoint with the code you received on your phone, your phone number, and the `phone_code_hash` from the previous step.
 
+*Note* - If you have 2FA turned on, you will need to pass your 2FA password in the API call.
+
 ### Verifying Node Configuration
 
 Ensure your node is correctly configured to handle Twitter data requests by checkint the initialization message:
