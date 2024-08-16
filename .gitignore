@@ -69,3 +69,6 @@ docs/api-reference.md
 transcription.txt
 snippets.txt
 .env copy
+
+# Build result of goreleaser
+dist/
