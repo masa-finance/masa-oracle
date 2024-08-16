@@ -1,6 +1,7 @@
 module github.com/masa-finance/masa-oracle
 
 go 1.22.0
+
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chyeh/pubip v0.0.0-20170203095919-b7e679cf541c
@@ -28,7 +29,7 @@ require (
 	github.com/masa-finance/masa-twitter-scraper v0.0.0-20240515201201-b83fa3597a31
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/multiformats/go-multihash v0.2.3
-	github.com/ollama/ollama v0.3.6
+	github.com/ollama/ollama v0.3.1
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.28.2
 	github.com/sirupsen/logrus v1.9.3
