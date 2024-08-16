@@ -16,7 +16,7 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 var (
@@ -147,7 +147,7 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 		defer func(stream network.Stream) {
 			err := stream.Close()
 			if err != nil {
-				logrus.Debug("[-] Error closing stream: %s", err)
+				logrus.Debugf("[-] Error closing stream: %s", err)
 			}
 		}(stream) // Close the stream when done
 
