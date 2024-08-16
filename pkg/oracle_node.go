@@ -31,6 +31,7 @@ import (
 	shell "github.com/ipfs/go-ipfs-api"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 
+	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
@@ -155,7 +156,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:           ctx,
 		PeerChan:          make(chan myNetwork.PeerEvent),
-		NodeTracker:       pubsub2.NewNodeEventTracker(config.Version, cfg.Environment, hst.ID().String()),
+		NodeTracker:       pubsub2.NewNodeEventTracker(versioning.ProtocolVersion, cfg.Environment, hst.ID().String()),
 		PubSubManager:     subscriptionManager,
 		IsStaked:          isStaked,
 		IsValidator:       cfg.Validator,

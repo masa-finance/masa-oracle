@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/masa-finance/masa-oracle/internal/versioning"
+
 	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -145,7 +147,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault("Version", Version)
+	viper.SetDefault("Version", versioning.ProtocolVersion)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
