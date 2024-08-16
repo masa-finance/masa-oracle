@@ -211,6 +211,18 @@ Example response:
 
 The Advanced Search feature allows users to perform more complex queries to filter tweets according to various criteria such as date ranges, specific users, hashtags, and more. Below you will find detailed information on how to construct advanced search queries.
 
+### Exact Search
+Search for tweets containing specific hashtags.
+
+**Syntax:** `"\"searchterm\"`
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:8080/api/v1/data/twitter/tweets/recent \
+-H "Content-Type: application/json" \
+-d '{"query": "\"masa\", "count": 10}'
+```
 
 ### Hashtag Search
 Search for tweets containing specific hashtags.
