@@ -46,6 +46,7 @@ func (m *JSONMultiaddr) UnmarshalJSON(b []byte) error {
 
 type NodeData struct {
 	Multiaddrs           []JSONMultiaddr `json:"multiaddrs,omitempty"`
+	MultiaddrsString     string          `json:"multiaddrsString,omitempty"`
 	PeerId               peer.ID         `json:"peerId"`
 	FirstJoinedUnix      int64           `json:"firstJoined,omitempty"`
 	LastJoinedUnix       int64           `json:"lastJoined,omitempty"`
@@ -79,6 +80,7 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
+		MultiaddrsString:  addr.String(),
 		LastUpdatedUnix:   time.Now().Unix(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
@@ -92,6 +94,10 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 // and peer ID in the format "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC".
 // This can be used by other nodes to connect to this node.
 func (n *NodeData) Address() string {
+	// Add a check for empty addresses
+	if len(n.Multiaddrs) == 0 {
+		return ""
+	}
 	return fmt.Sprintf("%s/p2p/%s", n.Multiaddrs[0].String(), n.PeerId.String())
 }
 
@@ -118,16 +124,18 @@ func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
 		logrus.Infof("[+] Skipping worker %s due to timeout", n.PeerId)
 		return false
 	}
-
+	if !(n.IsStaked && n.IsActive) {
+		return false
+	}
 	switch workerType {
 	case CategoryTwitter:
-		return n.IsActive && n.IsTwitterScraper
+		return n.IsTwitterScraper
 	case CategoryDiscord:
-		return n.IsActive && n.IsDiscordScraper
+		return n.IsDiscordScraper
 	case CategoryTelegram:
-		return n.IsActive && n.IsTelegramScraper
+		return n.IsTelegramScraper
 	case CategoryWeb:
-		return n.IsActive && n.IsWebScraper
+		return n.IsWebScraper
 	default:
 		return false
 	}
@@ -251,10 +259,11 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 // It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 // The NodeData struct is then marshalled into a JSON byte array.
 // Returns nil if there is an error marshalling to JSON.
-func GetSelfNodeDataJson(host host.Host, isStaked bool) []byte {
+func GetSelfNodeDataJson(host host.Host, isStaked bool, multiaddrString string) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
 		PeerId:            host.ID(),
+		MultiaddrsString:  multiaddrString,
 		IsStaked:          isStaked,
 		EthAddress:        masacrypto.KeyManagerInstance().EthAddress,
 		IsTwitterScraper:  config.GetInstance().TwitterScraper,

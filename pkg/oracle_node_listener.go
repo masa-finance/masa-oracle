@@ -146,7 +146,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 			logrus.Debugf("[-] Failed to close stream: %v", err)
 		}
 	}(stream) // Ensure the stream is closed after sending the data
-	logrus.Infof("[+] Sending %d node data records to %s", totalRecords, peerID)
+	logrus.Debugf("[+] Sending %d node data records to %s", totalRecords, peerID)
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
 		node.SendNodeDataPage(nodeData, stream, pageNumber)
 	}
