@@ -7,10 +7,11 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 type TweetResult struct {
@@ -151,7 +152,12 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 		}
 		tweets = append(tweets, &tweet)
 	}
-	return tweets, tweets[0].Error
+
+	if len(tweets) == 0 {
+		return nil, fmt.Errorf("no tweets found for the given query")
+	}
+
+	return tweets, nil
 }
 
 // ScrapeTweetsByTrends scrapes the current trending topics on Twitter.
