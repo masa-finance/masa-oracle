@@ -1,7 +1,21 @@
 VERSION := $(shell git describe --tags --abbrev=0)
 
+GORELEASER?=
+# check if goreleaser exists
+ifeq (, $(shell which goreleaser))
+	GORELEASER=curl -sfL https://goreleaser.com/static/run | bash -s --
+else
+	GORELEASER=$(shell which goreleaser)
+endif
+
 print-version:
 	@echo "Version: ${VERSION}"
+
+dev-dist:
+	$(GORELEASER) build --snapshot --single-target --clean
+
+dist:
+	$(GORELEASER) build --single-target --clean
 
 build:
 	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node ./cmd/masa-node

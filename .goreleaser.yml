@@ -1,7 +1,27 @@
 # Make sure to check the documentation at http://goreleaser.com
 version: 2
 builds:
-  - main: ./cmd/masa-node/main.go
+  - main: ./cmd/masa-node
+    id: "masa-node"
+    binary: masa-node
+    ldflags:
+      - -w -s
+      - -X github.com/masa-finance/masa-oracle/internal.Version={{.Tag}}
+      - -X github.com/masa-finance/masa-oracle/internal.Commit={{.Commit}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+      - freebsd
+    goarch:
+      - amd64
+      - arm
+      - arm64
+  - main: ./cmd/masa-node-cli
+    id: "masa-node-cli"
+    binary: masa-node-cli
     ldflags:
       - -w -s
       - -X github.com/masa-finance/masa-oracle/internal.Version={{.Tag}}
