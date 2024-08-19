@@ -51,7 +51,7 @@ func (c *EventClient) SendEvent(event Event) error {
 
 	c.Logger.WithFields(logrus.Fields{
 		"event_name": event.Name,
-		"timestamp":  event.Timestamp,
+		"timestamp":  event.Timestamp.UTC(),
 	}).Info("Event sent")
 
 	return nil

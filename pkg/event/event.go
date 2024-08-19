@@ -10,7 +10,7 @@ import (
 
 type Event struct {
 	Name      string
-	Timestamp time.Time
+	Timestamp time.Time `json:"timestamp"`
 	Data      map[string]interface{}
 }
 
@@ -49,7 +49,7 @@ func (a *EventTracker) TrackEvent(name string, data map[string]interface{}) {
 
 	event := Event{
 		Name:      name,
-		Timestamp: time.Now(),
+		Timestamp: time.Now().UTC(),
 		Data:      data,
 	}
 
@@ -93,7 +93,7 @@ func (a *EventTracker) TrackAndSendEvent(name string, data map[string]interface{
 
 	event := Event{
 		Name:      name,
-		Timestamp: time.Now(),
+		Timestamp: time.Now().UTC(),
 		Data:      data,
 	}
 
