@@ -51,6 +51,9 @@ WORKDIR /home/masa
 # Copy the .env file into the container
 COPY --chown=masa:masa .env .
 
+# Copy the twitter_cookies.json file
+COPY --chown=masa:masa twitter_cookies.json /home/masa/.masa/twitter_cookies.json
+
 # Expose necessary ports
 EXPOSE 4001 8080
 

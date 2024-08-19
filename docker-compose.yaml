@@ -29,6 +29,7 @@ services:
     volumes:
       - .:/app
       - .masa-keys:/home/masa/.masa
+      - ./twitter_cookies.json:/home/masa/.masa/twitter_cookies.json
     restart: always
 
 volumes:
