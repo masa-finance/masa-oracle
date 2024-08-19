@@ -32,19 +32,29 @@ type CollectedData struct {
 // ScrapeWebDataForSentiment initiates the scraping process for the given list of URIs.
 // It returns a CollectedData struct containing the scraped sections from each URI,
 // and an error if any occurred during the scraping process.
-// Usage:
-// @param uri: string - url to scrape
-// @param depth: int - depth of how many subpages to scrape
-// @param model: string - model to use for sentiment analysis
+//
+// Parameters:
+//   - uris: []string - list of URLs to scrape
+//   - depth: int - depth of how many subpages to scrape
+//   - model: string - model to use for sentiment analysis
+//
+// Returns:
+//   - string: Scraped data
+//   - string: Sentiment analysis result
+//   - error: Any error that occurred during the process
+//
 // Example:
 //
 //	go func() {
-//		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
+//		data, sentiment, err := ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5, "gpt-3.5-turbo")
 //		if err != nil {
-//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
-//		return
-//	  }
-//	logrus.Infof("%+v", res)
+//			logrus.WithError(err).Error("Failed to collect data")
+//			return
+//		}
+//		logrus.WithFields(logrus.Fields{
+//			"data":      data,
+//			"sentiment": sentiment,
+//		}).Info("Scraping and sentiment analysis completed")
 //	}()
 func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, string, error) {
 	var collectedData CollectedData
@@ -141,18 +151,24 @@ func ScrapeWebDataForSentiment(uri []string, depth int, model string) (string, s
 // ScrapeWebData initiates the scraping process for the given list of URIs.
 // It returns a CollectedData struct containing the scraped sections from each URI,
 // and an error if any occurred during the scraping process.
-// Usage:
-// @param uri: string - url to scrape
-// @param depth: int - depth of how many subpages to scrape
-// Example:
+//
+// Parameters:
+//   - uri: []string - list of URLs to scrape
+//   - depth: int - depth of how many subpages to scrape
+//
+// Returns:
+//   - []byte - JSON representation of the collected data
+//   - error - any error that occurred during the scraping process
+//
+// Example usage:
 //
 //	go func() {
-//		res, err := scraper.ScrapeWebDataForSentiment([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
+//		res, err := scraper.ScrapeWebData([]string{"https://en.wikipedia.org/wiki/Maize"}, 5)
 //		if err != nil {
-//			logrus.Errorf("[-] Error collecting data: %s", err.Error())
-//		return
-//	  }
-//	logrus.Infof("%+v", res)
+//			logrus.WithError(err).Error("Error collecting data")
+//			return
+//		}
+//		logrus.WithField("result", string(res)).Info("Scraping completed")
 //	}()
 func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 	// Set default depth to 1 if 0 is provided

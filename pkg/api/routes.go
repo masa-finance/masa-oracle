@@ -181,14 +181,31 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		v1.GET("/data/twitter/profile/:username", API.SearchTweetsProfile())
 
 		// @Summary Search recent tweets
-		// @Description Retrieves recent tweets based on query parameters
+		// @Description Retrieves recent tweets based on query parameters, supporting advanced search options
 		// @Tags Twitter
-		// @Accept  json
-		// @Produce  json
-		// @Param   query	string  true  "Search Query"
+		// @Accept json
+		// @Produce json
+		// @Param query body object true "Search Query"
+		// @Param count query int false "Number of tweets to retrieve" default(10)
 		// @Success 200 {array} Tweet "List of recent tweets"
 		// @Failure 400 {object} ErrorResponse "Invalid query or error fetching tweets"
 		// @Router /data/twitter/tweets/recent [post]
+		// @Param example query string false "Example Queries" Enums(hashtag, mention, fromUser, toUser, language, dateRange, excludeRetweets, minLikes, minRetweets, keywordExclusion, orOperator, geoLocation, urlInclusion, questionFilter, safeSearch)
+		// @Example hashtag {"query": "#MasaNode"}
+		// @Example mention {"query": "@getmasafi"}
+		// @Example fromUser {"query": "from:getmasafi"}
+		// @Example toUser {"query": "to:getmasafi"}
+		// @Example language {"query": "Masa lang:en"}
+		// @Example dateRange {"query": "Masa since:2021-01-01 until:2021-12-31"}
+		// @Example excludeRetweets {"query": "Masa -filter:retweets"}
+		// @Example minLikes {"query": "Masa min_faves:100"}
+		// @Example minRetweets {"query": "Masa min_retweets:50"}
+		// @Example keywordExclusion {"query": "Masa -moon"}
+		// @Example orOperator {"query": "Masa OR Oracle"}
+		// @Example geoLocation {"query": "Masa geocode:37.781157,-122.398720,1mi"}
+		// @Example urlInclusion {"query": "url:\"http://example.com\""}
+		// @Example questionFilter {"query": "Masa ?"}
+		// @Example safeSearch {"query": "Masa filter:safe"}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
 		// @Summary Twitter Trends
