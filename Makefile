@@ -3,6 +3,12 @@ VERSION := $(shell git describe --tags --abbrev=0)
 print-version:
 	@echo "Version: ${VERSION}"
 
+dev-dist:
+	@goreleaser build --snapshot --single-target --clean
+
+dist:
+	@goreleaser build --single-target --clean
+
 build:
 	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node ./cmd/masa-node
 	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node-cli ./cmd/masa-node-cli
