@@ -1,35 +1,46 @@
 ---
 id: quickstart
-title: Quickstart
+title: Quickstart Guide
 ---
 
-Follow these steps to get your Masa Oracle node up and running quickly:
+This guide will help you set up and run a Masa Oracle node quickly. 
 
-### 1. Clone the repository
+### 1. Clone and prepare the repository
 
 ```bash
 git clone https://github.com/masa-finance/masa-oracle.git
+```
+
+### 2. Navigate to the project directory
+```bash
 cd masa-oracle
 ```
 
-### 2. Build the node
+### 3. Build the node
 
 ```bash
-go build -v -o masa-node ./cmd/masa-node
+make build
 ```
 
-### 3. Install contract dependencies
-
+### 4. Install contract dependencies
+Navigate to the contract directory:
 ```bash
-cd contracts/
+cd contracts
+```
+
+Install dependencies using yarn
+```bash
 yarn install
-cd ../
 ```
 
-### 4. Set up environment variables
+Return to the root directory
+```bash
+cd ..
+```
 
-Create a `.env` file in the root directory with the following content:
+### 5. Set up basic environment variables
 
+Create a `.env` file in the root directory with these essential variables:
 ```plaintext
 # Default .env configuration
 BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa,/ip4/34.121.111.128/udp/4001/quic-v1/p2p/16Uiu2HAmKULCxKgiQn1EcfKnq1Qam6psYLDTM99XsZFhr57wLadF
@@ -50,24 +61,33 @@ ELAB_KEY=
 OPENAI_API_KEY=
 PROMPT="You are a helpful assistant."
 
-# X
+# Twitter(X)
+TWITTER_SCRAPER=false
 TWITTER_USERNAME="yourusername"
 TWITTER_PASSWORD="yourpassword"
 TWITTER_2FA_CODE="your2fa"
 
-# Worker node config; default = false
-TWITTER_SCRAPER=false
+# Discord
 DISCORD_SCRAPER=false
+DISCORD_BOT_TOKEN=
+
+# Telegram
+TELEGRAM_SCRAPER=false
+TELEGRAM_APP_ID=
+TELEGRAM_APP_HASH=
+
+#Web
 WEB_SCRAPER=false
 ```
+Note: Full configuration (such as API keys, Twitter, Discord and Telegram credentials, and worker node settings) are not required for the initial node setup. We will add those later once we get a node running and staked.
 
-### 5. Start the node
+### 6. Start the node to obtain your public key
 
 ```bash
-./masa-node
+make run
 ```
 
-Your Masa Oracle node should now be running and attempting to connect to the network. Check the logs to ensure it's functioning correctly. You will need your Public Key from the node startup logs to stake the node. Grab some testnet MASA from [Discord](https://discord.gg/masafinance).
+Look for your `Public Key` in the startup logs. You'll need this to stake and participate in the network. Example:
 
 ```bash
 #######################################
@@ -78,50 +98,53 @@ Your Masa Oracle node should now be running and attempting to connect to the net
 #    |_|  |_/_/   \_\____/_/   \_\    #
 #                                     #
 #######################################
-Multiaddress:           /ip4/192.168.1.25/udp/4001/quic-v1/p2p/16Uiu2HAm28dTN2WVWD2y2bjzwPdym59XASDfQsSktCtejtNR9Vox
-IP Address:             /ip4/127.0.0.1/udp/4001/quic-v1
-Public Key:             0x065728510468A2ef48e6E8a860ff42D68Ca612ee
-Is Staked:              false
-Is Validator:              false
-Is TwitterScraper:      false
-Is WebScraper:          false
-INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
-INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.9-beta-dev
+
+Version:             v0.5.0
+Multiaddress:        /ip4/192.168.1.8/udp/4001/quic-v1/p2p/16Uiu2HAmDXWNV9RXVoRsbt9z7pFSsKS2KdpN7HHFVLdFZmS7iCvo
+IP Address:          /ip4/127.0.0.1/udp/4001/quic-v1
+Public Key:          0x5dA36a3eB07fd1624B054b99D6417DdF2904e826
+Is Staked:           false
+Is Validator:        false
+Is TwitterScraper:   false
+Is DiscordScraper:   false
+Is TelegramScraper:  false
 ```
+Once you've noted your Public Key, you can stop the node (Ctrl+C).
 
-### 6. Stake the node with 1000 Sepolia MASA minimum
 
-Grab your Public Key and get some Sepolia MASA from Discord. Then use the following command to initiate staking. Make sure you restart your node once you have staked:
+### 7. Prepare for staking
+To participate in the network, you need:
 
-   ```bash
-   ./masa-node --stake <amount>
-   ```
+1. Sepolia ETH (about 0.015 ETH) to pay for transaction fees
+2. 1,000 Sepolia MASA token to stake
 
-   Replace `<amount>` with the number of tokens you want to stake. For example, to stake 1000 MASA tokens:
-  
-   ```bash
-   ./masa-node --stake 1000
-   ```
+#### a) Get Sepolia ETH:
 
-Your tokens will approve and stake:
+- Use a Sepolia ETH testnet faucet 
+- Send approximately 0.015 Sepolia ETH to your public key address
+
+#### b) Get Sepolia MASA tokens:
+Once you have Sepolia ETH, run: 
 
 ```bash
-Approving staking contract to spend tokens.....
-0x8de79f5111b185fe67090f904b72f3dda7814a8aa81494cd177241549c213ba3
-Approve transaction hash: 0x8de79f5111b185fe67090f904b72f3dda7814a8aa81494cd177241549c213ba3
-Staking tokens.....
-0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
-Stake transaction hash: 0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
+make faucet
 ```
 
-### 7. Start the staked node
+### 8. Stake your Sepolia MASA
+Stake your MASA tokens:
 
 ```bash
-./masa-node
+make stake
 ```
+You'll see approval and staking transaction hashes in the output.
 
-The Is staked flag will change to `true`
 
+
+### 9. Verify staking and start the node again:
+```bash
+make run
+```
+Verify that the `Is Staked` flag has changed to `true` in the startup logs:
 ```bash
 #######################################
 #     __  __    _    ____    _        #
@@ -142,8 +165,11 @@ INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofL
 INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.9-beta-dev
 ```
 
-### 7. View swagger API
+
+### 10. Access the Swagger API
+Open your browser and navigate to:
 
 ```bash
 http://localhost:8080/swagger/index.html
 ```
+Congratulations! You've completed the basic setup of your Masa Oracle node. 
