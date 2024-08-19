@@ -51,8 +51,8 @@ OPENAI_API_KEY=
 PROMPT="You are a helpful assistant."
 
 # X
-TWITTER_USER="yourusername"
-TWITTER_PASS="yourpassword"
+TWITTER_USERNAME="yourusername"
+TWITTER_PASSWORD="yourpassword"
 TWITTER_2FA_CODE="your2fa"
 
 # Worker node config; default = false
