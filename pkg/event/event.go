@@ -85,7 +85,7 @@ func (a *EventTracker) ClearEvents() {
 
 func (a *EventTracker) TrackAndSendEvent(name string, data map[string]interface{}, client *EventClient) error {
 	if a == nil {
-		return fmt.Errorf("analytics is nil")
+		return fmt.Errorf("event tracker is nil")
 	}
 
 	a.mu.Lock()
@@ -103,9 +103,13 @@ func (a *EventTracker) TrackAndSendEvent(name string, data map[string]interface{
 		"data":       data,
 	}).Info("Event tracked")
 
-	if client != nil {
-		return client.SendEvent(event)
+	if client == nil {
+		return fmt.Errorf("no client available")
 	}
 
-	return nil
+	err := client.SendEvent(event)
+	if err != nil {
+		a.logger.WithError(err).Error("Failed to send event")
+	}
+	return err
 }
