@@ -185,27 +185,26 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Tags Twitter
 		// @Accept json
 		// @Produce json
-		// @Param query body object true "Search Query"
-		// @Param count query int false "Number of tweets to retrieve" default(10)
+		// @Param body body object true "Search Query"
 		// @Success 200 {array} Tweet "List of recent tweets"
 		// @Failure 400 {object} ErrorResponse "Invalid query or error fetching tweets"
 		// @Router /data/twitter/tweets/recent [post]
-		// @Param example query string false "Example Queries" Enums(hashtag, mention, fromUser, toUser, language, dateRange, excludeRetweets, minLikes, minRetweets, keywordExclusion, orOperator, geoLocation, urlInclusion, questionFilter, safeSearch)
-		// @Example hashtag {"query": "#MasaNode"}
-		// @Example mention {"query": "@getmasafi"}
-		// @Example fromUser {"query": "from:getmasafi"}
-		// @Example toUser {"query": "to:getmasafi"}
-		// @Example language {"query": "Masa lang:en"}
-		// @Example dateRange {"query": "Masa since:2021-01-01 until:2021-12-31"}
-		// @Example excludeRetweets {"query": "Masa -filter:retweets"}
-		// @Example minLikes {"query": "Masa min_faves:100"}
-		// @Example minRetweets {"query": "Masa min_retweets:50"}
-		// @Example keywordExclusion {"query": "Masa -moon"}
-		// @Example orOperator {"query": "Masa OR Oracle"}
-		// @Example geoLocation {"query": "Masa geocode:37.781157,-122.398720,1mi"}
-		// @Example urlInclusion {"query": "url:\"http://example.com\""}
-		// @Example questionFilter {"query": "Masa ?"}
-		// @Example safeSearch {"query": "Masa filter:safe"}
+		// @Param body body object true "Search Query" SchemaExample({"query": "#MasaNode", "count": 10})
+		// @Example hashtag {"query": "#MasaNode", "count": 10}
+		// @Example mention {"query": "@getmasafi", "count": 10}
+		// @Example fromUser {"query": "from:getmasafi", "count": 10}
+		// @Example toUser {"query": "to:getmasafi", "count": 10}
+		// @Example language {"query": "Masa lang:en", "count": 10}
+		// @Example dateRange {"query": "Masa since:2021-01-01 until:2021-12-31", "count": 10}
+		// @Example excludeRetweets {"query": "Masa -filter:retweets", "count": 10}
+		// @Example minLikes {"query": "Masa min_faves:100", "count": 10}
+		// @Example minRetweets {"query": "Masa min_retweets:50", "count": 10}
+		// @Example keywordExclusion {"query": "Masa -moon", "count": 10}
+		// @Example orOperator {"query": "Masa OR Oracle", "count": 10}
+		// @Example geoLocation {"query": "Masa geocode:37.781157,-122.398720,1mi", "count": 10}
+		// @Example urlInclusion {"query": "url:\"http://example.com\"", "count": 10}
+		// @Example questionFilter {"query": "Masa ?", "count": 10}
+		// @Example safeSearch {"query": "Masa filter:safe", "count": 10}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
 		// @Summary Twitter Trends

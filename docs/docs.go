@@ -119,57 +119,79 @@ const docTemplate = `{
 		}
 	  },
 	  "/data/twitter/tweets/recent": {
-		"post": {
-		  "description": "Retrieves recent tweets based on query parameters",
-		  "consumes": ["application/json"],
-		  "produces": ["application/json"],
-		  "tags": ["Twitter"],
-		  "summary": "Search recent tweets",
-		  "parameters": [
-			{
-			  "in": "body",
-			  "name": "body",
-			  "description": "Search parameters",
-			  "required": true,
-			  "schema": {
-				"type": "object",
-				"properties": {
-				  "query": {
-					"type": "string",
-					"description": "Search Query"
-				  },
-				  "count": {
-					"type": "integer",
-					"description": "Number of tweets to return"
-				  }
-				}
-			  }
-			}
-		  ],
-		  "responses": {
-			"200": {
-			  "description": "List of recent tweets",
-			  "schema": {
-				"type": "array",
-				"items": {
-				  "$ref": "#/definitions/Tweet"
-				}
-			  }
-			},
-			"400": {
-			  "description": "Invalid query or error fetching tweets",
-			  "schema": {
-				"$ref": "#/definitions/ErrorResponse"
-			  }
-			}
-		  },
-		  "security": [
-			{
-			  "Bearer": []
-			}
-		  ]
-		}
-	  },
+  "post": {
+    "description": "Retrieves recent tweets based on query parameters, supporting advanced search options",
+    "consumes": ["application/json"],
+    "produces": ["application/json"],
+    "tags": ["Twitter"],
+    "summary": "Search recent tweets",
+    "parameters": [
+      {
+        "in": "body",
+        "name": "body",
+        "description": "Search parameters",
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search Query"
+            },
+            "count": {
+              "type": "integer",
+              "description": "Number of tweets to return",
+              "default": 10
+            }
+          },
+          "example": {
+            "query": "#Bitcoin",
+            "count": 10
+          }
+        },
+        "examples": {
+          "hashtag": {
+            "summary": "Search by hashtag",
+            "value": {"query": "#MasaNode", "count": 10}
+          },
+          "mention": {
+            "summary": "Search by mention",
+            "value": {"query": "@getmasafi", "count": 10}
+          },
+          "fromUser": {
+            "summary": "Search tweets from a user",
+            "value": {"query": "from:getmasafi", "count": 10}
+          },
+          "language": {
+            "summary": "Search tweets in a specific language",
+            "value": {"query": "Masa lang:en", "count": 10}
+          },
+          "dateRange": {
+            "summary": "Search tweets within a date range",
+            "value": {"query": "Masa since:2021-01-01 until:2021-12-31", "count": 10}
+          }
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "List of recent tweets",
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tweet"
+          }
+        }
+      },
+      "400": {
+        "description": "Invalid query or error fetching tweets",
+        "schema": {
+          "$ref": "#/definitions/ErrorResponse"
+        }
+      }
+    }
+  }
+},
 	  "/data/discord/profile/{userID}": {
 		"get": {
 		  "description": "Retrieves a Discord user profile by user ID.",
