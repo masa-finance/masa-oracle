@@ -35,6 +35,43 @@ events := tracker.GetEvents()
 tracker.ClearEvents()
 ```
 
+## Event Library
+
+The package provides a set of predefined events for common scenarios:
+
+### Work Distribution
+
+```go
+func (a *EventTracker) TrackWorkDistribution(workType data_types.WorkerType, remoteWorker bool, peerId string, client *EventClient) error
+```
+
+Tracks the distribution of work to a worker. Event data includes:
+- `peer_id`: String containing the peer ID
+- `work_type`: The WorkerType as a string
+- `remote_worker`: Boolean indicating if it's a remote worker
+
+### Work Completion
+
+```go
+func (a *EventTracker) TrackWorkCompletion(workType data_types.WorkerType, success bool, peerId string, client *EventClient) error
+```
+
+Records the completion of a work item. Event data includes:
+- `peer_id`: String containing the peer ID
+- `work_type`: The WorkerType as a string
+- `success`: Boolean indicating if the work was successful
+
+### Worker Failure
+
+```go
+func (a *EventTracker) TrackWorkerFailure(workType data_types.WorkerType, errorMessage string, peerId string, client *EventClient) error
+```
+
+Records a failure that occurred during work execution. Event data includes:
+- `peer_id`: String containing the peer ID
+- `work_type`: The WorkerType as a string
+- `error`: String containing the error message
+
 ## Contributing
 
 Contributions are welcome! Please submit a pull request or create an issue for any bugs or feature requests.
