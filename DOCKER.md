@@ -75,7 +75,9 @@ This command displays the logs of the MASA node container. Look for any error me
 The MASA node generates keys that are stored in the `.masa-keys/` directory in your project directory.
 This directory is mapped from `/home/masa/.masa/` inside the Docker container, ensuring that your keys are safely stored on your host machine.
 
-## Funding the Node (in order to Stake)
+## Staking the Node
+
+To access data and become a worker that provides data to the protocol, you must stake your node. Staking is a crucial step that ensures the node's commitment to the network and allows it to participate in data provision and validation processes. Here's how to stake your node:
 
 ### Step 1: Find your Node's public key
 
@@ -85,17 +87,23 @@ The public key of your new node is shown in the output at the beginning of the l
 docker-compose logs -f masa-node
 ```
 
-### Step 2: Send sepolia ETH and MASA to your node's public key address
+### Step 2: Send sepolia ETH
+Send a small amount of Sepolia ETH to your node's ETH public key address
 
-You can obtain sepolia ETH from a faucet such as:
+You can obtain Sepolia ETH from public faucets such as:
+- https://faucet.quicknode.com/ethereum/sepolia
+- https://sepoliafaucet.com/
+- https://www.infura.io/faucet/sepolia
+
+### Step 3: Run the Faucet
+Once you have copied your node's public key address and sent Se and then run the nodes faucet command to get Sepolia MASA
 
 Like so:
+```bash
+docker-compose run --build --rm masa-node /usr/bin/masa-node --faucet
+```
 
-You can obtain test (sepolia) MASA from our faucet:
-
-Like so:
-
-### Step 3: Stake the Node
+### Step 4: Stake the Node
 
 Once the transactions settle, you can stake your node
 
@@ -103,7 +111,7 @@ Once the transactions settle, you can stake your node
 docker-compose run --build --rm masa-node /usr/bin/masa-node --stake 1000
 ```
 
-### Step 4: Restart your Node
+### Step 5: Restart your Node
 
 Stop your running daemonized node:
 

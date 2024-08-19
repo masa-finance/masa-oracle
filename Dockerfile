@@ -56,4 +56,4 @@ EXPOSE 4001 8080
 
 # Set default command to start the Go application
 
-CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --validator="$VALIDATOR" --cachePath="$CACHE_PATH"
+CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --validator="$VALIDATOR"
