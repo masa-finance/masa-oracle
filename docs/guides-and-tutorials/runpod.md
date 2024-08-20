@@ -1,83 +1,159 @@
-# Quickstart: Deploying Masa Oracle Node on RunPod
+# Running a Masa Protocol Node on RunPod
+
+This guide explains how to deploy your Masa Oracle Node on RunPod using Go and access it via SSH.
 
 ## Prerequisites
 
 1. A RunPod account (sign up at https://www.runpod.io/)
-2. Basic knowledge of Docker and command-line interfaces
+2. Funds added to your RunPod account
+3. Your Masa Oracle Node repository
+4. A GitHub account with access to the Masa Oracle repository
 
-## Step 1: Use the Official Masa Finance Docker Image
-
-Instead of building your own Docker image, we'll use the official Masa Finance image from Docker Hub.
-
-## Step 2: Create a RunPod Template
+## Deployment Steps
 
 1. Log in to your RunPod account.
-2. Go to "Templates" in the left sidebar.
-3. Click "New Template".
-4. Fill in the template details:
-   - Name: Masa Protocol Node
-   - Image: masafinance/masa-node:latest
-   - Container Disk: 10 GB (or as needed)
-   - Volume Disk: 20 GB (or as needed)
-   - Ports: 4001/tcp, 4001/udp, 8080/tcp
 
-5. In the "Docker Command" field, enter:
-   ```bash
-   /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --validator="$VALIDATOR" --cachePath="$CACHE_PATH"
+2. Ensure you have sufficient funds:
+   - Go to the Billing section and add funds via credit card or cryptocurrency.
+   - For large transactions (over $5,000), consider business invoicing options.
+
+3. Deploy a pod:
+   - Go to "Pods" in the sidebar and click "Deploy".
+   - Select a CPU-only template.
+   - Choose Runpod Ubuntu as the base image.
+   - Set Container Disk to 10 GB and Volume Disk to 20 GB (or as needed).
+
+4. Once the pod is deployed, click on it to view details.
+
+5. In the pod details, find the SSH connection information in the "Connect" section.
+
+6. Use the provided SSH command to connect to your pod. It will look like:
    ```
-
-6. Add environment variables:
-   - BOOTNODES
-   - ENV
-   - RPC_URL
-   - FILE_PATH
-   - VALIDATOR
-   - CACHE_PATH
-   - TWITTER_PASSwORD
-   - TWITTER_USERNAME
-   - TWITTER_2FA_CODE
-   - TWITTER_SCRAPER
-
-7. Save the template.
-
-## Step 3: Deploy Your Node on RunPod
-
-1. Go to "Pods" in the left sidebar.
-2. Click "Deploy".
-3. Select your "Masa Oracle Node" template.
-4. Choose a GPU type (CPU-only might be sufficient for basic node operation).
-5. Set the values for your environment variables.
-6. Deploy the pod.
-
-## Step 4: Access Your Node
-
-1. Once deployed, go to the "Pods" page.
-2. Find your Masa Oracle Node pod and click on it.
-3. You can access the node's logs and terminal from this page.
-
-## Step 5: Verify Node Operation
-
-1. Use the provided terminal to check if your node is running correctly:
-   ```bash
-   docker logs masa-node
+   ssh root@ssh.runpod.io -p 12345
    ```
+   Replace `12345` with the actual port number provided.
 
-2. Look for the startup message indicating successful connection to the network.
+7. When prompted, enter the SSH password provided in the pod details.
 
-## Step 6: Stake Your Node (if not already staked)
+8. Generate an SSH key and add it to your GitHub account:
+   ```bash
+   ssh-keygen -t ed25519 -C "your_email@example.com"
+   cat /root/.ssh/id_ed25519.pub
+   ```
+   Copy the output and add it to your GitHub account under Settings > SSH and GPG keys > New SSH key
 
-If your node isn't staked, you can stake it using the RunPod terminal:
+9. Clone your repository and set up the node:
+    ```bash
+    git clone git@github.com:masa-finance/masa-oracle.git /masa-node
+    cd /masa-node
+    ```
 
-```bash
-docker exec masa-node /usr/bin/masa-node --stake 1000
-```
+10. Install Go 1.22:
+    ```bash
+    wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
+    sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
+    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+    source ~/.bashrc
+    go version  # Verify installation
+    ```
 
-Replace 1000 with the amount of MASA tokens you want to stake.
+11. Install Node.js and npm:
+    ```bash
+    # Update package lists
+    sudo apt-get update
 
-## Conclusion
+    # Install Node.js and npm
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+    sudo apt-get install -y nodejs
 
-You've now successfully deployed your Masa Oracle Node on RunPod using the official Masa Finance Docker image. Monitor your node's performance and logs regularly to ensure it's operating correctly. Remember to keep your environment variables and node software up to date.
+    # Verify the installation
+    node --version
+    npm --version
+    ```
 
-For more detailed information on node operation and troubleshooting, refer to the main Masa Oracle documentation.
+12. Install node smart contracts
+    ```bash
+    cd contracts
+    npm install
+    ```
 
-[Source: https://hub.docker.com/repositories/masafinance]
+13. Set up your environment variables:
+    ```bash
+    cat << EOF > .env
+    BOOTNODES=/ip4/44.209.96.127/udp/4001/quic-v1/p2p/16Uiu2HAmFF8FCaciAiU3WiodmgxoZ5ibPo2azvR6DPgoftxwsHHA
+    ENV=test
+    FILE_PATH=.
+    PORT=8080
+    RPC_URL=https://ethereum-sepolia.publicnode.com
+    TWITTER_SCRAPER=true
+    TWITTER_USERNAME=username
+    TWITTER_PASSWORD=password
+    TWITTER_2FA_CODE=""
+    EOF
+    ```
+    Edit this file with your actual values using a text editor like nano or vim.
+
+14. Verify the .env contents:
+    ```bash
+    cat .env
+    ```
+
+15. Create and copy your `twitter_cookies.json` file to the appropriate directory:
+    ```bash
+    # Ensure you're in the /app directory
+    cd /app
+
+    # Create the .masa directory if it doesn't exist
+    mkdir -p /root/.masa
+
+    # Create the twitter_cookies.json file
+    nano twitter-cookies.json
+    copy the contents of twitter_cookies.json
+    ctrl-o to save
+    ctrl-x to exit
+
+    # Copy the twitter_cookies.json file
+    cp twitter-cookies.json /root/.masa/twitter_cookies.json
+
+    # Verify the file has been copied
+    ls -l /root/.masa/twitter_cookies.json
+    ```
+
+16. Build the Masa node:
+    ```bash
+    make build
+    ```
+
+17. Run the Masa node to get the ETH address to send Sepolia ETH to:
+    ```bash
+    make run
+    ```
+
+18. To get Sepolia MASA tokens you can use the faucet:
+    ```bash
+    make faucet
+    ```
+
+19. To stake your node:
+    ```bash
+    make stake
+    ```
+
+20. To run your node:
+    ```bash
+    make run
+    ```
+
+21. To get node API endpoints:
+
+    Get the IP address of your pod and use the proxy to access the swagger endpoints:
+    
+    ```
+    https://kgq7ouc1dp68ym-8080.proxy.runpod.net/swagger/#/
+    ```
+
+    Add the following to your .env file in you Bittensor config (this is an example URLfor the runpod proxy):
+
+    ```
+    ORACLE_BASE_URL="https://kgq7ouc1dp68ym-8080.proxy.runpod.net/api/v1"
+    ```

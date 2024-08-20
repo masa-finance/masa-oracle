@@ -1,3 +1,19 @@
+  // How to obtain this information from your browser:
+  // 1. Log in to Twitter in your web browser
+  // 2. Open the browser's developer tools (usually F12 or right-click > Inspect)
+  // 3. Go to the "Application" or "Storage" tab
+  // 4. In the left sidebar, expand "Cookies" and click on "https://twitter.com"
+  // 5. Look for the cookie names listed above and copy their values
+  // 6. Replace the "X" placeholders in the "Value" field with the actual values
+  // 7. Save the file as "twitter_cookies.json" (remove ".example" from the filename)
+  
+  // Note: Most browsers only show the Name, Value, Domain, and Path fields in the developer tools.
+  // The other fields (Expires, MaxAge, Secure, HttpOnly, SameSite) may not be visible or editable.
+  // You can leave these fields as they are in this template.
+  
+  // IMPORTANT: Be extremely cautious with your auth_token and other sensitive cookies. 
+  // Never share them publicly or commit them to version control.
+  
 [
     {
       "Name": "personalization_id",
@@ -70,19 +86,3 @@
       "Unparsed": null
     }
   ]
-  
-  // How to obtain this information from your browser:
-  // 1. Log in to Twitter in your web browser
-  // 2. Open the browser's developer tools (usually F12 or right-click > Inspect)
-  // 3. Go to the "Application" or "Storage" tab
-  // 4. In the left sidebar, expand "Cookies" and click on "https://twitter.com"
-  // 5. Look for the cookie names listed above and copy their values
-  // 6. Replace the "X" placeholders in the "Value" field with the actual values
-  // 7. Save the file as "twitter_cookies.json" (remove ".example" from the filename)
-  
-  // Note: Most browsers only show the Name, Value, Domain, and Path fields in the developer tools.
-  // The other fields (Expires, MaxAge, Secure, HttpOnly, SameSite) may not be visible or editable.
-  // You can leave these fields as they are in this template.
-  
-  // IMPORTANT: Be extremely cautious with your auth_token and other sensitive cookies. 
-  // Never share them publicly or commit them to version control.
