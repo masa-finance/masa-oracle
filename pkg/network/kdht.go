@@ -46,8 +46,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	go monitorRoutingTable(ctx, kademliaDHT, time.Minute)
 
 	kademliaDHT.RoutingTable().PeerAdded = func(p peer.ID) {
-		logrus.Infof("[+] Peer added to DHT: %s", p.String())
-
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerAdded,
@@ -57,7 +55,6 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	}
 
 	kademliaDHT.RoutingTable().PeerRemoved = func(p peer.ID) {
-		logrus.Infof("[-] Peer removed from DHT: %s", p)
 		pe := PeerEvent{
 			AddrInfo: peer.AddrInfo{ID: p},
 			Action:   PeerRemoved,
@@ -113,7 +110,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 					if strings.Contains(err.Error(), "protocols not supported") {
 						logrus.Fatalf("[-] %s Please update to the latest version and make sure you are connecting to the correct network.", err.Error())
 					} else {
-						logrus.Error("[-] Error opening stream:", err)
+						logrus.Error("[-] Error opening stream: ", err)
 					}
 					return
 				}
@@ -124,7 +121,14 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 						logrus.Errorf("[-] Error closing stream: %s", err)
 					}
 				}(stream) // Close the stream when done
-				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked))
+
+				multiaddr, err := GetMultiAddressesForHost(host)
+				if err != nil {
+					logrus.Errorf("[-] Error getting multiaddresses for host: %s", err)
+					return
+				}
+				multaddrString := GetPriorityAddress(multiaddr)
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked, multaddrString.String()))
 				if err != nil {
 					logrus.Errorf("[-] Error writing to stream: %s", err)
 					return
@@ -150,10 +154,6 @@ func monitorRoutingTable(ctx context.Context, dht *dht.IpfsDHT, interval time.Du
 			routingTable := dht.RoutingTable()
 			// Log the size of the routing table
 			logrus.Infof("[+] Routing table size: %d", routingTable.Size())
-			// Log the peer IDs in the routing table
-			for _, p := range routingTable.ListPeers() {
-				logrus.Debugf("[+] Peer in routing table: %s", p.String())
-			}
 		case <-ctx.Done():
 			// If the context is cancelled, stop the goroutine
 			return

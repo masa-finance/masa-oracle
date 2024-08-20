@@ -146,7 +146,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 			logrus.Debugf("[-] Failed to close stream: %v", err)
 		}
 	}(stream) // Ensure the stream is closed after sending the data
-	logrus.Infof("[+] Sending %d node data records to %s", totalRecords, peerID)
+	logrus.Debugf("[+] Sending %d node data records to %s", totalRecords, peerID)
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
 		node.SendNodeDataPage(nodeData, stream, pageNumber)
 	}
@@ -161,6 +161,12 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 		var page NodeDataPage
+
+		if err := json.Unmarshal(data, &page); err != nil {
+			logrus.Errorf("[-] Failed to unmarshal NodeData page: %v %s %+v", err, string(data), page)
+			continue
+		}
+
 		if err := json.Unmarshal(data, &page); err != nil {
 			logrus.Errorf("[-] Failed to unmarshal NodeData page: %v", err)
 			continue

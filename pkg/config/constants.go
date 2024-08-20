@@ -100,6 +100,7 @@ const (
 
 	MasaPrefix           = "/masa"
 	OracleProtocol       = "oracle_protocol"
+	WorkerProtocol       = "worker_protocol"
 	NodeDataSyncProtocol = "nodeDataSync"
 	NodeGossipTopic      = "gossip"
 	PublicKeyTopic       = "bootNodePublicKey"

@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -31,7 +32,7 @@ type ConnectBufferEntry struct {
 // It initializes the node data map, node data channel, node data file path,
 // connect buffer map. It loads existing node data from file, starts a goroutine
 // to clear expired buffer entries, and returns the initialized instance.
-func NewNodeEventTracker(version, environment string) *NodeEventTracker {
+func NewNodeEventTracker(version, environment string, hostId string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
 		NodeDataChan:  make(chan *NodeData),
@@ -39,6 +40,7 @@ func NewNodeEventTracker(version, environment string) *NodeEventTracker {
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
 	go net.ClearExpiredBufferEntries()
+	go net.StartCleanupRoutine(context.Background(), hostId)
 	return net
 }
 
@@ -247,7 +249,7 @@ func (net *NodeEventTracker) GetUpdatedNodes(since time.Time) []NodeData {
 }
 
 // GetEthAddress returns the Ethereum address for the given remote peer.
-// It gets the peer's public key from the network's peerstore, converts
+// It gets the peer's public key from the network's peer store, converts
 // it to a hex string, and converts that to an Ethereum address.
 // Returns an empty string if there is no public key for the peer.
 func GetEthAddress(remotePeer peer.ID, n network.Network) string {
@@ -269,6 +271,18 @@ func GetEthAddress(remotePeer peer.ID, n network.Network) string {
 		}
 	}
 	return publicKeyHex
+}
+
+// GetEligibleWorkerNodes returns a slice of NodeData for nodes that are eligible to perform a specific category of work.
+func (net *NodeEventTracker) GetEligibleWorkerNodes(category WorkerCategory) []NodeData {
+	logrus.Debugf("Getting eligible worker nodes for category: %s", category)
+	result := make([]NodeData, 0)
+	for _, nodeData := range net.GetAllNodeData() {
+		if nodeData.CanDoWork(category) {
+			result = append(result, nodeData)
+		}
+	}
+	return result
 }
 
 // IsStaked returns whether the node with the given peerID is marked as staked in the node data tracker.
@@ -313,24 +327,47 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
 		}
-		// If the node data exists, check if the multiaddress is already in the list
-		multiAddress := nodeData.Multiaddrs[0].Multiaddr
-		addrExists := false
-		for _, addr := range nodeData.Multiaddrs {
-			if addr.Equal(multiAddress) {
-				addrExists = true
-				break
+
+		if len(nodeData.Multiaddrs) > 0 {
+			multiAddress := nodeData.Multiaddrs[0].Multiaddr
+			addrExists := false
+			for _, addr := range nodeData.Multiaddrs {
+				if addr.Equal(multiAddress) {
+					addrExists = true
+					break
+				}
 			}
-		}
-		if !addrExists {
-			nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
-		}
-		if dataChanged || forceGossip {
-			net.NodeDataChan <- nd
+			if !addrExists {
+				nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+			}
+
+			if dataChanged || forceGossip {
+				net.NodeDataChan <- nd
+			}
+
+			nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+			net.nodeData.Set(nodeData.PeerId.String(), nd)
+
 		}
 
-		nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
-		net.nodeData.Set(nodeData.PeerId.String(), nd)
+		// If the node data exists, check if the multiaddress is already in the list
+		// multiAddress := nodeData.Multiaddrs[0].Multiaddr
+		// addrExists := false
+		// for _, addr := range nodeData.Multiaddrs {
+		// 	if addr.Equal(multiAddress) {
+		// 		addrExists = true
+		// 		break
+		// 	}
+		// }
+		// if !addrExists {
+		// 	nodeData.Multiaddrs = append(nodeData.Multiaddrs, JSONMultiaddr{multiAddress})
+		// }
+		// if dataChanged || forceGossip {
+		// 	net.NodeDataChan <- nd
+		// }
+
+		// nd.LastUpdatedUnix = nodeData.LastUpdatedUnix
+		// net.nodeData.Set(nodeData.PeerId.String(), nd)
 	}
 	return nil
 }
@@ -341,7 +378,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 // entry, and if expired, processes the connect and removes the entry.
 func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	for {
-		time.Sleep(30 * time.Second) // E.g., every 5 seconds
+		time.Sleep(1 * time.Minute)
 		now := time.Now()
 		for peerID, entry := range net.ConnectBuffer {
 			if now.Sub(entry.ConnectTime) > time.Minute*1 {
@@ -356,8 +393,85 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 	}
 }
 
-func (net *NodeEventTracker) RemoveNodeData(peerID string) {
-	net.nodeData.Delete(peerID)
-	delete(net.ConnectBuffer, peerID)
-	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+// RemoveNodeData removes the node data associated with the given peer ID from the NodeEventTracker.
+// It deletes the node data from the internal map and removes any corresponding entry
+// from the connect buffer. This function is typically called when a peer disconnects
+// or is no longer part of the network.
+//
+// Parameters:
+//   - peerID: A string representing the ID of the peer to be removed.
+//
+// TODO: we should never remove node data from the internal map. Otherwise we lose all tracking of activity.
+//func (net *NodeEventTracker) RemoveNodeData(peerID string) {
+//	net.nodeData.Delete(peerID)
+//	delete(net.ConnectBuffer, peerID)
+//	logrus.Infof("[+] Removed peer %s from NodeTracker", peerID)
+//}
+
+// ClearExpiredWorkerTimeouts periodically checks and clears expired worker timeouts.
+// It runs in an infinite loop, sleeping for 5 minutes between each iteration.
+// For each node in the network, it checks if the worker timeout has expired (after 60 minutes).
+// If a timeout has expired, it resets the WorkerTimeout to zero and updates the node data.
+// This function helps manage the availability of workers in the network by clearing
+// temporary timeout states.
+func (net *NodeEventTracker) ClearExpiredWorkerTimeouts() {
+	for {
+		time.Sleep(5 * time.Minute) // Check every 5 minutes
+		now := time.Now()
+
+		for _, nodeData := range net.GetAllNodeData() {
+			if !nodeData.WorkerTimeout.IsZero() && now.Sub(nodeData.WorkerTimeout) >= 16*time.Minute {
+				nodeData.WorkerTimeout = time.Time{} // Reset to zero value
+				err := net.AddOrUpdateNodeData(&nodeData, true)
+				if err != nil {
+					logrus.Warnf("Error adding worker timeout %v", err)
+				}
+			}
+		}
+	}
+}
+
+const (
+	maxDisconnectionTime = 1 * time.Minute
+	cleanupInterval      = 2 * time.Minute
+)
+
+// StartCleanupRoutine starts a goroutine that periodically checks for and removes stale peers
+func (net *NodeEventTracker) StartCleanupRoutine(ctx context.Context, hostId string) {
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			net.cleanupStalePeers(hostId)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// cleanupStalePeers checks for and removes stale peers from both the routing table and node data
+func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
+	now := time.Now()
+
+	for _, nodeData := range net.GetAllNodeData() {
+		if now.Sub(time.Unix(nodeData.LastUpdatedUnix, 0)) > maxDisconnectionTime {
+			if nodeData.PeerId.String() != hostId {
+				logrus.Infof("Removing stale peer: %s", nodeData.PeerId)
+				delete(net.ConnectBuffer, nodeData.PeerId.String())
+
+				// Notify about peer removal
+				net.NodeDataChan <- &NodeData{
+					PeerId:          nodeData.PeerId,
+					Activity:        ActivityLeft,
+					LastUpdatedUnix: now.Unix(),
+				}
+			}
+
+			// Use the node parameter to access OracleNode methods if needed
+			// For example:
+			// node.SomeMethod(nodeData.PeerId)
+		}
+	}
 }
