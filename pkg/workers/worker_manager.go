@@ -15,6 +15,7 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/event"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
@@ -27,7 +28,8 @@ var (
 func GetWorkHandlerManager() *WorkHandlerManager {
 	once.Do(func() {
 		instance = &WorkHandlerManager{
-			handlers: make(map[data_types.WorkerType]*WorkHandlerInfo),
+			handlers:     make(map[data_types.WorkerType]*WorkHandlerInfo),
+			eventTracker: event.NewEventTracker(nil),
 		}
 		instance.setupHandlers()
 	})
@@ -51,8 +53,9 @@ type WorkHandlerInfo struct {
 
 // WorkHandlerManager manages work handlers and tracks their execution metrics.
 type WorkHandlerManager struct {
-	handlers map[data_types.WorkerType]*WorkHandlerInfo
-	mu       sync.RWMutex
+	handlers     map[data_types.WorkerType]*WorkHandlerInfo
+	mu           sync.RWMutex
+	eventTracker *event.EventTracker
 }
 
 func (whm *WorkHandlerManager) setupHandlers() {
@@ -111,14 +114,24 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
+			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
 			logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
 			continue
 		}
+		whm.eventTracker.TrackWorkCompletion(workRequest.WorkType, response.Error == "", worker.AddrInfo.ID.String())
 		return response
 	}
 	// Fallback to local execution if local worker is eligible
 	if localWorker != nil {
+		var reason string
+		if len(remoteWorkers) > 0 {
+			reason = "all remote workers failed"
+		} else {
+			reason = "no remote workers available"
+		}
+		whm.eventTracker.TrackLocalWorkerFallback(reason)
+		whm.eventTracker.TrackWorkExecutionStart(workRequest.WorkType, false, localWorker.AddrInfo.ID.String())
 		return whm.ExecuteWork(workRequest)
 	}
 	if response.Error == "" {
@@ -135,21 +148,26 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 
 	if err := node.Host.Connect(ctxWithTimeout, *worker.AddrInfo); err != nil {
 		response.Error = fmt.Sprintf("failed to connect to remote peer %s: %v", worker.AddrInfo.ID.String(), err)
+		whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
 		return
 	} else {
+		whm.eventTracker.TrackRemoteWorkerConnection(worker.AddrInfo.ID.String())
 		logrus.Debugf("[+] Connection established with node: %s", worker.AddrInfo.ID.String())
-		stream, err := node.Host.NewStream(ctxWithTimeout, worker.AddrInfo.ID, config.ProtocolWithVersion(config.WorkerProtocol))
+		protocol := config.ProtocolWithVersion(config.WorkerProtocol)
+		stream, err := node.Host.NewStream(ctxWithTimeout, worker.AddrInfo.ID, protocol)
 		if err != nil {
 			response.Error = fmt.Sprintf("error opening stream: %v", err)
+			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
 			return
 		}
 		// the stream should be closed by the receiver, but keeping this here just in case
+		whm.eventTracker.TrackStreamCreation(worker.AddrInfo.ID.String(), string(protocol))
 		defer func(stream network.Stream) {
 			err := stream.Close()
 			if err != nil {
 				logrus.Debugf("[-] Error closing stream: %s", err)
 			}
-		}(stream) // Close the stream when done
+		}(stream) // Close the stream when done.S
 
 		// Write the request to the stream with length prefix
 		bytes, err := json.Marshal(workRequest)
@@ -164,17 +182,20 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 			response.Error = fmt.Sprintf("error writing length to stream: %v", err)
 			return
 		}
+		whm.eventTracker.TrackWorkRequestSerialization(workRequest.WorkType, len(bytes))
 		_, err = stream.Write(bytes)
 		if err != nil {
 			response.Error = fmt.Sprintf("error writing to stream: %v", err)
+			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
 			return
 		}
-
+		whm.eventTracker.TrackWorkDistribution(workRequest.WorkType, true, worker.AddrInfo.ID.String())
 		// Read the response length
 		lengthBuf = make([]byte, 4)
 		_, err = io.ReadFull(stream, lengthBuf)
 		if err != nil {
 			response.Error = fmt.Sprintf("error reading response length: %v", err)
+			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
 			return
 		}
 		responseLength := binary.BigEndian.Uint32(lengthBuf)
@@ -191,6 +212,7 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker da
 			response.Error = fmt.Sprintf("error unmarshaling response: %v", err)
 			return
 		}
+		whm.eventTracker.TrackWorkResponseDeserialization(workRequest.WorkType, true)
 	}
 	return response
 }
@@ -228,6 +250,8 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 	select {
 	case <-ctx.Done():
 		// Context timed out
+		whm.eventTracker.TrackWorkExecutionTimeout(workRequest.WorkType, workerConfig.WorkerResponseTimeout)
+
 		return data_types.WorkResponse{Error: "work execution timed out"}
 	case response = <-responseChan:
 		// Work completed within the timeout
@@ -267,6 +291,7 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		return
 	}
 	peerId := stream.Conn().LocalPeer().String()
+	whm.eventTracker.TrackWorkExecutionStart(workRequest.WorkType, true, peerId)
 	workResponse := whm.ExecuteWork(workRequest)
 	if workResponse.Error != "" {
 		logrus.Errorf("error from remote worker %s: executing work: %s", peerId, workResponse.Error)

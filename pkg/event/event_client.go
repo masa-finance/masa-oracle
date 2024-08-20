@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -41,7 +42,12 @@ func (c *EventClient) SendEvent(event Event) error {
 		c.Logger.WithError(err).Error("Failed to send event")
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("event service returned non-OK status: %d", resp.StatusCode)

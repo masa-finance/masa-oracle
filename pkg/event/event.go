@@ -8,6 +8,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	WorkCompletion              = "work_completion"
+	WorkFailure                 = "worker_failure"
+	WorkDistribution            = "work_distribution"
+	WorkExecutionStart          = "work_execution_start"
+	WorkExecutionTimeout        = "work_execution_timeout"
+	RemoteWorkerConnection      = "remote_work_connection"
+	StreamCreation              = "stream_creation"
+	WorkRequestSerialization    = "work_request_serialized"
+	WorkResponseDeserialization = "work_response_serialized"
+	LocalWorkerFallback         = "local_work_executed"
+)
+
 type Event struct {
 	Name      string
 	Timestamp time.Time `json:"timestamp"`
@@ -84,10 +97,6 @@ func (a *EventTracker) ClearEvents() {
 }
 
 func (a *EventTracker) TrackAndSendEvent(name string, data map[string]interface{}, client *EventClient) error {
-	if a == nil {
-		return fmt.Errorf("event tracker is nil")
-	}
-
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -103,13 +112,12 @@ func (a *EventTracker) TrackAndSendEvent(name string, data map[string]interface{
 		"data":       data,
 	}).Info("Event tracked")
 
-	if client == nil {
-		return fmt.Errorf("no client available")
+	if client != nil {
+		return client.SendEvent(event)
+	} else {
+		if a.apiClient != nil {
+			return a.apiClient.SendEvent(event)
+		}
 	}
-
-	err := client.SendEvent(event)
-	if err != nil {
-		a.logger.WithError(err).Error("Failed to send event")
-	}
-	return err
+	return fmt.Errorf("no client available")
 }
