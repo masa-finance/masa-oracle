@@ -12,25 +12,20 @@ echo "export RPC_URL=${RPC_URL}" | tee -a /home/masa/.bash_profile
 # Set permissions for the masa user's home directory
 chown masa:masa /home/masa/.bash_profile
 
-# Build go binary
-go build -v -o masa-node ./cmd/masa-node
-cp masa-node /usr/local/bin/masa-node
-chmod +x /usr/local/bin/masa-node
-
 # Install Node.js and Yarn
 curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 apt-get update -y && apt-get install -y yarn nodejs jq
-npm install -g npm@10.4.0
+
+# Build go binary
+make build
+cp masa-node /usr/local/bin/masa-node
+chmod +x /usr/local/bin/masa-node
 
 # Determine global npm modules path and set NODE_PATH
 GLOBAL_NODE_MODULES=$(npm root -g)
 export NODE_PATH=$GLOBAL_NODE_MODULES
-
-# Install the contracts npm module
-cd /home/masa/contracts/
-npm install 
 
 MASANODE_CMD="/usr/bin/masa-node --port=4001 --udp=true --tcp=false --start --bootnodes=${BOOTNODES}"
 
