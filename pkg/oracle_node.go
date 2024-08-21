@@ -176,11 +176,6 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
-	if err != nil {
-		return err
-	}
-
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
 
@@ -192,7 +187,9 @@ func (node *OracleNode) Start() (err error) {
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked)
+	myNodeData := pubsub2.GetSelfNodeData(node.Host, node.IsStaked, node.priorityAddrs)
+
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, node.Protocol, config.MasaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
 		return err
 	}
@@ -205,18 +202,9 @@ func (node *OracleNode) Start() (err error) {
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
-		publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
-		ma := myNetwork.GetMultiAddressesForHostQuiet(node.Host)
-		nodeData = pubsub2.NewNodeData(ma[0], node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
-		nodeData.IsStaked = node.IsStaked
+		nodeData = myNodeData
 		nodeData.SelfIdentified = true
-		nodeData.IsDiscordScraper = node.IsDiscordScraper
-		nodeData.IsTelegramScraper = node.IsTelegramScraper
-		nodeData.IsTwitterScraper = node.IsTwitterScraper
-		nodeData.IsWebScraper = node.IsWebScraper
-		nodeData.IsValidator = node.IsValidator
 	}
-
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
 

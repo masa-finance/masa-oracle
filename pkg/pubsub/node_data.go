@@ -179,7 +179,7 @@ func (n *NodeData) Joined() {
 
 	n.Version = config.GetInstance().Version
 
-	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.Address())
+	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.MultiaddrsString)
 	if n.IsStaked {
 		logrus.Info(logMessage)
 	} else {
@@ -255,31 +255,22 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
 }
 
-// GetSelfNodeDataJson converts the local node's data into a JSON byte array.
+// GetSelfNodeData converts the local node's data into a JSON byte array.
 // It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 // The NodeData struct is then marshalled into a JSON byte array.
 // Returns nil if there is an error marshalling to JSON.
-func GetSelfNodeDataJson(host host.Host, isStaked bool, multiaddrString string) []byte {
+func GetSelfNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr) *NodeData {
 	// Create and populate NodeData
-	nodeData := NodeData{
-		PeerId:            host.ID(),
-		MultiaddrsString:  multiaddrString,
-		IsStaked:          isStaked,
-		EthAddress:        masacrypto.KeyManagerInstance().EthAddress,
-		IsTwitterScraper:  config.GetInstance().TwitterScraper,
-		IsDiscordScraper:  config.GetInstance().DiscordScraper,
-		IsTelegramScraper: config.GetInstance().TelegramScraper,
-		IsWebScraper:      config.GetInstance().WebScraper,
-		IsValidator:       config.GetInstance().Validator,
-		IsActive:          true,
-		Version:           versioning.ProtocolVersion,
-	}
+	nodeData := NewNodeData(addr, host.ID(), masacrypto.KeyManagerInstance().EthAddress, ActivityJoined)
+	nodeData.MultiaddrsString = addr.String()
+	nodeData.IsStaked = isStaked
+	nodeData.IsTwitterScraper = config.GetInstance().TwitterScraper
+	nodeData.IsDiscordScraper = config.GetInstance().DiscordScraper
+	nodeData.IsTelegramScraper = config.GetInstance().TelegramScraper
+	nodeData.IsWebScraper = config.GetInstance().WebScraper
+	nodeData.IsValidator = config.GetInstance().Validator
+	nodeData.IsActive = true
+	nodeData.Version = versioning.ProtocolVersion
 
-	// Convert NodeData to JSON
-	jsonData, err := json.Marshal(nodeData)
-	if err != nil {
-		logrus.Error("[-] Error marshalling NodeData:", err)
-		return nil
-	}
-	return jsonData
+	return nodeData
 }
