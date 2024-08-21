@@ -5,28 +5,13 @@ title: Quickstart
 
 Follow these steps to get your Masa Oracle node up and running quickly:
 
-### 1. Clone the repository
+### 1. Get the MASA Oracle binary
 
 ```bash
-git clone https://github.com/masa-finance/masa-oracle.git
-cd masa-oracle
+curl -sSL https://api.github.com/repos/masa-finance/masa-oracle/releases/latest | grep browser_download_url | grep -E "$(uname -s)-$(uname -m)" | cut -d '"' -f 4 | xargs curl -L -o masa-oracle.tar.gz && tar -xzf masa-oracle.tar.gz && rm masa-oracle.tar.gz
 ```
 
-### 2. Build the node
-
-```bash
-go build -v -o masa-node ./cmd/masa-node
-```
-
-### 3. Install contract dependencies
-
-```bash
-cd contracts/
-yarn install
-cd ../
-```
-
-### 4. Set up environment variables
+### 2. Set up environment variables
 
 Create a `.env` file in the root directory with the following content:
 
@@ -61,7 +46,7 @@ DISCORD_SCRAPER=true
 WEB_SCRAPER=true
 ```
 
-### 5. Start the node
+### 3. Start the node
 
 ```bash
 ./masa-node
@@ -89,7 +74,7 @@ INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofL
 INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.9-beta-dev
 ```
 
-### 6. Stake the node with 1000 Sepolia MASA minimum
+### 4. Stake the node with 1000 Sepolia MASA minimum
 
 Grab your Public Key and get some Sepolia MASA from Discord. Then use the following command to initiate staking. Make sure you restart your node once you have staked:
 
@@ -114,7 +99,7 @@ Staking tokens.....
 Stake transaction hash: 0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
 ```
 
-### 7. Start the staked node
+### 5. Start the staked node
 
 ```bash
 ./masa-node
@@ -142,13 +127,13 @@ INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofL
 INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.9-beta-dev
 ```
 
-### 7. View swagger API
+### 6. View swagger API
 
 ```bash
 http://localhost:8080/swagger/index.html
 ```
 
-### 8. Node Rewards Calculation
+### 7. Node Rewards Calculation
 
 Node rewards are determined by:
 **1. Uptime:** Rewards increase with node availability.
