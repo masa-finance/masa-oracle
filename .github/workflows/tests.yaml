@@ -22,10 +22,9 @@ jobs:
 
     - name: Install dependencies
       run: go mod tidy
-
     - name: Run tests
-      run: go test -coverprofile=coverage.txt -covermode=atomic ./...
-
+      run: |
+        make test
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:

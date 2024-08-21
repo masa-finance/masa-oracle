@@ -42,7 +42,7 @@ client: build
 	@./bin/masa-node-cli
 
 test: contracts/node_modules
-	@go test -v -count=1 ./...
+	@go test -coverprofile=coverage.txt -covermode=atomic -v ./...
 
 clean:
 	@rm -rf bin
