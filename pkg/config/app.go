@@ -110,20 +110,25 @@ type AppConfig struct {
 // If the unmarshalling fails, the instance is set to nil.
 //
 // Subsequent calls to GetInstance will return the same initialized instance.
-func GetInstance() *AppConfig {
+func GetInstance(options ...Option) *AppConfig {
+	o := &AppOption{}
+	o.Apply(options...)
+
 	once.Do(func() {
 		instance = &AppConfig{}
 
 		instance.setDefaultConfig()
 		instance.setEnvVariableConfig()
+
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
-		err := instance.setCommandLineConfig()
-		if err != nil {
-			logrus.Fatal(err)
+
+		if !o.DisableCLIParse {
+			if err := instance.setCommandLineConfig(); err != nil {
+				logrus.Fatal(err)
+			}
 		}
 
-		err = viper.Unmarshal(instance)
-		if err != nil {
+		if err := viper.Unmarshal(instance); err != nil {
 			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
 			instance = nil // Ensure instance is nil if unmarshalling fails
 		}

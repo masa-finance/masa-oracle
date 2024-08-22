@@ -97,9 +97,12 @@ func getOutboundIP() string {
 // NewOracleNode creates a new OracleNode instance with the provided context and
 // staking status. It initializes the libp2p host, DHT, pubsub manager, and other
 // components needed for an Oracle node to join the network and participate.
-func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
+func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, error) {
+	o := &config.AppOption{}
+	o.Apply(opts...)
+
 	// Start with the default scaling limits.
-	cfg := config.GetInstance()
+	cfg := config.GetInstance(opts...)
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
@@ -158,7 +161,7 @@ func NewOracleNode(ctx context.Context, isStaked bool) (*OracleNode, error) {
 		PeerChan:          make(chan myNetwork.PeerEvent),
 		NodeTracker:       pubsub2.NewNodeEventTracker(versioning.ProtocolVersion, cfg.Environment, hst.ID().String()),
 		PubSubManager:     subscriptionManager,
-		IsStaked:          isStaked,
+		IsStaked:          o.IsStaked,
 		IsValidator:       cfg.Validator,
 		IsTwitterScraper:  cfg.TwitterScraper,
 		IsDiscordScraper:  cfg.DiscordScraper,
