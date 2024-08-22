@@ -23,7 +23,7 @@ var DefaultConfig = WorkerConfig{
 	MaxRetries:            1,
 	MaxSpawnAttempts:      1,
 	WorkerBufferSize:      100,
-	MaxRemoteWorkers:      1,
+	MaxRemoteWorkers:      10,
 }
 
 var workerConfig *WorkerConfig
