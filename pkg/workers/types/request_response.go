@@ -2,6 +2,8 @@ package data_types
 
 import (
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
@@ -13,6 +15,31 @@ type Worker struct {
 	AddrInfo *peer.AddrInfo
 	NodeData pubsub.NodeData
 	Node     *masa.OracleNode
+}
+
+func NewWorker(isLocal bool, nd *pubsub.NodeData) *Worker {
+	var ma multiaddr.Multiaddr
+	if len(nd.Multiaddrs) > 0 {
+		ma = nd.Multiaddrs[0].Multiaddr
+	} else {
+		var err error
+		ma, err = multiaddr.NewMultiaddr(nd.MultiaddrsString)
+		if err != nil {
+			logrus.Error(err)
+			return nil
+		}
+	}
+	ip, err := ma.ValueForProtocol(multiaddr.P_IP4)
+	if err != nil {
+		logrus.Error(err)
+	}
+	return &Worker{
+		IsLocal:  isLocal,
+		IPAddr:   ip,
+		AddrInfo: nil,
+		NodeData: pubsub.NodeData{},
+		Node:     nil,
+	}
 }
 
 type WorkRequest struct {

@@ -269,3 +269,16 @@ func GetSelfNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr) *N
 
 	return nodeData
 }
+
+func (n *NodeData) MergeMultiaddresses(addr multiaddr.Multiaddr) {
+	addrExists := false
+	for _, existingAddr := range n.Multiaddrs {
+		if addr.Equal(existingAddr.Multiaddr) {
+			addrExists = true
+			break
+		}
+	}
+	if !addrExists {
+		n.Multiaddrs = append(n.Multiaddrs, JSONMultiaddr{Multiaddr: addr})
+	}
+}

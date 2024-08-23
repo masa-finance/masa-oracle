@@ -261,12 +261,8 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Warnf("[-] Received data from unexpected peer %s", remotePeer)
 		return
 	}
+	nodeData.MergeMultiaddresses(stream.Conn().RemoteMultiaddr())
 
-	multiAddr := stream.Conn().RemoteMultiaddr()
-	nodeData.Multiaddrs = []pubsub2.JSONMultiaddr{{Multiaddr: multiAddr}}
-
-	// newNodeData := pubsub2.NewNodeData(multiAddr, remotePeer, nodeData.EthAddress, pubsub2.ActivityJoined)
-	// newNodeData.IsStaked = nodeData.IsStaked
 	err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, false)
 	if err != nil {
 		logrus.Error("[-] Error adding or updating node data: ", err)
