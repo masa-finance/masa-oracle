@@ -3,21 +3,23 @@ package masa
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
 
+	ethereumCrypto "github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
@@ -61,6 +63,7 @@ type OracleNode struct {
 	WorkerTracker     *pubsub2.WorkerEventTracker
 	BlockTracker      *BlockEventTracker
 	Blockchain        *chain.Chain
+	options           config.AppOption
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -75,22 +78,15 @@ func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
 	return node.priorityAddrs
 }
 
-// getOutboundIP is a function that returns the outbound IP address of the current machine as a string.
-func getOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		fmt.Println("[-] Error getting outbound IP")
-		return ""
+// GetP2PMultiAddrs returns the multiaddresses for the host in P2P format.
+func (node *OracleNode) GetP2PMultiAddrs() ([]multiaddr.Multiaddr, error) {
+	addrs := node.Host.Addrs()
+	pi := peer.AddrInfo{
+		ID:    node.Host.ID(),
+		Addrs: addrs,
 	}
-	defer func(conn net.Conn) {
-		err := conn.Close()
-		if err != nil {
 
-		}
-	}(conn)
-	localAddr := conn.LocalAddr().String()
-	idx := strings.LastIndex(localAddr, ":")
-	return localAddr[0:idx]
+	return peer.AddrInfoToP2pAddrs(&pi)
 }
 
 // NewOracleNode creates a new OracleNode instance with the provided context and
@@ -113,12 +109,17 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 
 	var addrStr []string
 	libp2pOptions := []libp2p.Option{
-		libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey),
 		libp2p.ResourceManager(resourceManager),
 		libp2p.Ping(false), // disable built-in ping
 		libp2p.EnableNATService(),
 		libp2p.NATPortMap(),
 		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop
+	}
+
+	if o.RandomIdentity {
+		libp2pOptions = append(libp2pOptions, libp2p.RandomIdentity)
+	} else {
+		libp2pOptions = append(libp2pOptions, libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey))
 	}
 
 	securityOptions := []libp2p.Option{
@@ -167,7 +168,22 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 		IsWebScraper:      cfg.WebScraper,
 		IsLlmServer:       cfg.LlmServer,
 		Blockchain:        &chain.Chain{},
+		options:           *o,
 	}, nil
+}
+
+func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
+	// If it's a random identity, get the pubkey from Libp2p
+	// and convert these to Ethereum public Hex types
+	pubkey, err := node.Host.ID().ExtractPublicKey()
+	if err != nil {
+		return "", fmt.Errorf("failed to extract public key from p2p identity: %w", err)
+	}
+	rawKey, err := pubkey.Raw()
+	if err != nil {
+		return "", fmt.Errorf("failed to extract public key from p2p identity: %w", err)
+	}
+	return common.BytesToAddress(ethereumCrypto.Keccak256(rawKey[1:])[12:]).Hex(), nil
 }
 
 // Start initializes the OracleNode by setting up libp2p stream handlers,
@@ -177,7 +193,7 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
+	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(append(config.GetInstance().Bootnodes, node.options.Bootnodes...))
 	if err != nil {
 		return err
 	}
@@ -193,7 +209,15 @@ func (node *OracleNode) Start() (err error) {
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked)
+	var publicKeyHex string
+	if node.options.RandomIdentity {
+		publicKeyHex, _ = node.generateEthHexKeyForRandomIdentity()
+	} else {
+		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
+	}
+
+	node.DHT, err = myNetwork.WithDHT(
+		node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, publicKeyHex)
 	if err != nil {
 		return err
 	}
@@ -206,7 +230,6 @@ func (node *OracleNode) Start() (err error) {
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
-		publicKeyHex := masacrypto.KeyManagerInstance().EthAddress
 		ma := myNetwork.GetMultiAddressesForHostQuiet(node.Host)
 		nodeData = pubsub2.NewNodeData(ma[0], node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
 		nodeData.IsStaked = node.IsStaked
