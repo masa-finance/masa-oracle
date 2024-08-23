@@ -30,6 +30,8 @@ require (
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/ollama/ollama v0.3.1
+	github.com/onsi/ginkgo/v2 v2.16.0
+	github.com/onsi/gomega v1.30.0
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
 	github.com/sashabaranov/go-openai v1.28.2
 	github.com/sirupsen/logrus v1.9.3
@@ -104,6 +106,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20240207164012-fb44976bdcd5 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
@@ -170,7 +173,6 @@ require (
 	github.com/multiformats/go-multicodec v0.9.0 // indirect
 	github.com/multiformats/go-multistream v0.5.0 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
-	github.com/onsi/ginkgo/v2 v2.16.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect

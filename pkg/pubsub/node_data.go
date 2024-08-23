@@ -12,8 +12,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
 const (
@@ -259,13 +257,13 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 // It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 // The NodeData struct is then marshalled into a JSON byte array.
 // Returns nil if there is an error marshalling to JSON.
-func GetSelfNodeDataJson(host host.Host, isStaked bool, multiaddrString string) []byte {
+func GetSelfNodeDataJson(host host.Host, isStaked bool, multiaddrString, publicEthAddress string) []byte {
 	// Create and populate NodeData
 	nodeData := NodeData{
 		PeerId:            host.ID(),
 		MultiaddrsString:  multiaddrString,
 		IsStaked:          isStaked,
-		EthAddress:        masacrypto.KeyManagerInstance().EthAddress,
+		EthAddress:        publicEthAddress,
 		IsTwitterScraper:  config.GetInstance().TwitterScraper,
 		IsDiscordScraper:  config.GetInstance().DiscordScraper,
 		IsTelegramScraper: config.GetInstance().TelegramScraper,
