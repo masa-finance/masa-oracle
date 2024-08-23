@@ -41,7 +41,6 @@ import (
 
 type OracleNode struct {
 	Host              host.Host
-	PrivKey           *ecdsa.PrivateKey
 	Protocol          protocol.ID
 	priorityAddrs     multiaddr.Multiaddr
 	multiAddrs        []multiaddr.Multiaddr
@@ -154,7 +153,6 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 
 	return &OracleNode{
 		Host:              hst,
-		PrivKey:           masacrypto.KeyManagerInstance().EcdsaPrivKey,
 		Protocol:          config.ProtocolWithVersion(config.OracleProtocol),
 		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
 		Context:           ctx,

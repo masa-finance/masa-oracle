@@ -9,8 +9,6 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 )
 
 // SubscriptionHandler defines the interface for handling pubsub messages.
@@ -20,13 +18,12 @@ type SubscriptionHandler interface {
 }
 
 type Manager struct {
-	ctx                context.Context
-	topics             map[string]*pubsub.Topic
-	subscriptions      map[string]*pubsub.Subscription
-	handlers           map[string]SubscriptionHandler
-	gossipSub          *pubsub.PubSub
-	host               host.Host
-	PublicKeyPublisher *PublicKeyPublisher // Add this line
+	ctx           context.Context
+	topics        map[string]*pubsub.Topic
+	subscriptions map[string]*pubsub.Subscription
+	handlers      map[string]SubscriptionHandler
+	gossipSub     *pubsub.PubSub
+	host          host.Host
 }
 
 // NewPubSubManager creates a new PubSubManager instance.
@@ -40,16 +37,13 @@ func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) { /
 		return nil, err
 	}
 	manager := &Manager{
-		ctx:                ctx,
-		subscriptions:      make(map[string]*pubsub.Subscription),
-		topics:             make(map[string]*pubsub.Topic),
-		handlers:           make(map[string]SubscriptionHandler),
-		gossipSub:          gossipSub,
-		host:               host,
-		PublicKeyPublisher: NewPublicKeyPublisher(nil, masacrypto.KeyManagerInstance().Libp2pPubKey), // Initialize PublicKeyPublisher here
+		ctx:           ctx,
+		subscriptions: make(map[string]*pubsub.Subscription),
+		topics:        make(map[string]*pubsub.Topic),
+		handlers:      make(map[string]SubscriptionHandler),
+		gossipSub:     gossipSub,
+		host:          host,
 	}
-
-	manager.PublicKeyPublisher.pubSubManager = manager // Ensure the publisher has a reference back to the manager
 
 	return manager, nil
 }
