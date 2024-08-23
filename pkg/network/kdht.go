@@ -29,8 +29,9 @@ type dbValidator struct{}
 func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
 func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 
-func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr,
-	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool) (*dht.IpfsDHT, error) {
+func WithDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr,
+	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool, publicHexKey string) (*dht.IpfsDHT, error) {
+
 	options := make([]dht.Option, 0)
 	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
 	options = append(options, dht.Concurrency(100))                         // Increase concurrency
@@ -128,7 +129,7 @@ func WithDht(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 					return
 				}
 				multaddrString := GetPriorityAddress(multiaddr)
-				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked, multaddrString.String()))
+				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked, multaddrString.String(), publicHexKey))
 				if err != nil {
 					logrus.Errorf("[-] Error writing to stream: %s", err)
 					return

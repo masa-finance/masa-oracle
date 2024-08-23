@@ -31,8 +31,8 @@ Example `.env` file content:
 BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
 RPC_URL=https://ethereum-sepolia.publicnode.com
 ENV=test
-TWITTER_USER="your_username"
-TWITTER_PASS="your_password"
+TWITTER_USERNAME="your_username"
+TWITTER_PASSWORD="your_password"
 TWITTER_2FA_CODE="your_2fa_code"
 TWITTER_SCRAPER=True
 
