@@ -71,7 +71,7 @@ func main() {
 	isValidator := cfg.Validator
 
 	// Create a new OracleNode
-	node, err := masa.NewOracleNode(ctx, isStaked)
+	node, err := masa.NewOracleNode(ctx, config.EnableStaked)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -80,6 +80,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	node.NodeTracker.GetAllNodeData()
 	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {
 		logrus.Warn("[+] Node is set as all types of scrapers. This may not be intended behavior.")
 	}
