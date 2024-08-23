@@ -5,8 +5,6 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
@@ -33,27 +31,22 @@ func GetEligibleWorkers(node *masa.OracleNode, category pubsub.WorkerCategory, c
 			continue
 		}
 
-		addr, err := multiaddr.NewMultiaddr(eligible.MultiaddrsString)
+		// Use the DHT to find the peer's address information
+		peerInfo, err := node.DHT.FindPeer(context.Background(), eligible.PeerId)
 		if err != nil {
-			logrus.Warnf("Error creating multiaddress for peer %s: %v", eligible.PeerId.String(), err)
-			continue
-		}
-
-		peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
-		if err != nil {
-			logrus.Warnf("Failed to get peer info for %s: %v", eligible.PeerId.String(), err)
+			logrus.Warnf("Failed to find peer %s in DHT: %v", eligible.PeerId.String(), err)
 			continue
 		}
 
 		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), config.ConnectionTimeout)
-		err = node.Host.Connect(ctxWithTimeout, *peerInfo)
+		err = node.Host.Connect(ctxWithTimeout, peerInfo)
 		cancel()
 		if err != nil {
 			logrus.Warnf("Failed to connect to peer %s: %v", eligible.PeerId.String(), err)
 			continue
 		}
 
-		workers = append(workers, data_types.Worker{IsLocal: false, NodeData: eligible, AddrInfo: peerInfo})
+		workers = append(workers, data_types.Worker{IsLocal: false, NodeData: eligible, AddrInfo: &peerInfo})
 		dur := time.Since(start).Milliseconds()
 		logrus.Infof("Worker selection took %v milliseconds", dur)
 		break
