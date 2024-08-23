@@ -4,7 +4,6 @@ package masa_test
 import (
 	"context"
 	"fmt"
-	"os"
 
 	. "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -18,11 +17,6 @@ var _ = Describe("Oracle integration tests", func() {
 			ctx := context.Background()
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
-
-			// Create a new temp file
-			dir, err := os.MkdirTemp("", "config")
-			Expect(err).ToNot(HaveOccurred())
-			defer os.RemoveAll(dir)
 
 			n, err := NewOracleNode(
 				ctx,
