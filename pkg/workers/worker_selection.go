@@ -31,7 +31,11 @@ func GetEligibleWorkers(node *masa.OracleNode, category pubsub.WorkerCategory, c
 	start := time.Now()
 	for _, eligible := range nodes {
 		if eligible.PeerId.String() == node.Host.ID().String() {
-			localWorker = &data_types.Worker{IsLocal: true, NodeData: eligible}
+			localAddrInfo := peer.AddrInfo{
+				ID:    node.Host.ID(),
+				Addrs: node.Host.Addrs(),
+			}
+			localWorker = &data_types.Worker{IsLocal: true, NodeData: eligible, AddrInfo: &localAddrInfo}
 			continue
 		}
 		addr, err := multiaddr.NewMultiaddr(eligible.MultiaddrsString)
@@ -60,7 +64,11 @@ func GetEligibleWorkers(node *masa.OracleNode, category pubsub.WorkerCategory, c
 	if localWorker == nil {
 		nd := node.NodeTracker.GetNodeData(node.Host.ID().String())
 		if nd.CanDoWork(category) {
-			localWorker = &data_types.Worker{IsLocal: true, NodeData: *nd}
+			localAddrInfo := peer.AddrInfo{
+				ID:    node.Host.ID(),
+				Addrs: node.Host.Addrs(),
+			}
+			localWorker = &data_types.Worker{IsLocal: true, NodeData: *nd, AddrInfo: &localAddrInfo}
 		}
 	}
 	return workers, localWorker
