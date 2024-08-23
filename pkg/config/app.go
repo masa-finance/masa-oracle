@@ -265,5 +265,9 @@ func (c *AppConfig) LogConfig() {
 // It returns true if there is at least one bootnode in the Bootnodes slice and it is not an empty string.
 // Otherwise, it returns false, indicating that no bootnodes are configured.
 func (c *AppConfig) HasBootnodes() bool {
+	if len(c.Bootnodes) == 0 {
+		return false
+	}
+
 	return c.Bootnodes[0] != ""
 }
