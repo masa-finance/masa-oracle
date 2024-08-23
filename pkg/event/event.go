@@ -1,6 +1,7 @@
 package event
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -22,9 +23,13 @@ const (
 )
 
 type Event struct {
-	Name      string
-	Timestamp time.Time `json:"timestamp"`
-	Data      map[string]interface{}
+	Name         string    `json:"name"`
+	Timestamp    time.Time `json:"timestamp"`
+	PeerID       string    `json:"peer_id"`
+	WorkType     string    `json:"work_type"`
+	RemoteWorker bool      `json:"remote_worker"`
+	Success      bool      `json:"success"`
+	Error        string    `json:"error"`
 }
 
 type EventTracker struct {
@@ -52,7 +57,7 @@ func NewEventTracker(config *Config) *EventTracker {
 	}
 }
 
-func (a *EventTracker) TrackEvent(name string, data map[string]interface{}) {
+func (a *EventTracker) TrackEvent(event Event) {
 	if a == nil {
 		return
 	}
@@ -60,16 +65,11 @@ func (a *EventTracker) TrackEvent(name string, data map[string]interface{}) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	event := Event{
-		Name:      name,
-		Timestamp: time.Now().UTC(),
-		Data:      data,
-	}
-
+	event.Timestamp = time.Now().UTC()
 	a.events = append(a.events, event)
 	a.logger.WithFields(logrus.Fields{
-		"event_name": name,
-		"data":       data,
+		"event_name": event.Name,
+		"data":       event,
 	}).Info("Event tracked")
 }
 
@@ -96,28 +96,46 @@ func (a *EventTracker) ClearEvents() {
 	a.logger.Info("Events cleared")
 }
 
-func (a *EventTracker) TrackAndSendEvent(name string, data map[string]interface{}, client *EventClient) error {
+func (a *EventTracker) TrackAndSendEvent(event Event, client *EventClient) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	event := Event{
-		Name:      name,
-		Timestamp: time.Now().UTC(),
-		Data:      data,
-	}
-
+	event.Timestamp = time.Now().UTC()
 	a.events = append(a.events, event)
 	a.logger.WithFields(logrus.Fields{
-		"event_name": name,
-		"data":       data,
+		"event_name": event.Name,
+		"data":       event,
 	}).Info("Event tracked")
 
 	if client != nil {
 		return client.SendEvent(event)
 	} else {
 		if a.apiClient != nil {
+			err := validateEvent(event)
+			if err != nil {
+				return err
+			}
 			return a.apiClient.SendEvent(event)
 		}
 	}
 	return fmt.Errorf("no client available")
+}
+
+func validateEvent(event Event) error {
+	if event.Name == "" {
+		return errors.New("Event name is required")
+	}
+	if event.Timestamp.IsZero() {
+		return errors.New("Invalid timestamp")
+	}
+	if event.Timestamp.After(time.Now().UTC()) {
+		return errors.New("Timestamp cannot be in the future")
+	}
+	if event.PeerID == "" {
+		return errors.New("Peer ID is required")
+	}
+	if event.WorkType == "" {
+		return errors.New("Work type is required")
+	}
+	return nil
 }
