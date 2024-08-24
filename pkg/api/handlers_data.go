@@ -78,30 +78,6 @@ func SendWorkRequest(api *API, requestID string, workType data_types.WorkerType,
 	return nil
 }
 
-// SendWorkRequest sends a work request to the PubSubManager for processing by a worker.
-// It marshals the request details into JSON and publishes it to the configured topic.
-//
-// Parameters:
-// - api: The API instance containing the Node and PubSubManager.
-// - requestID: A unique identifier for the request.
-// - request: The type of work to be performed by the worker.
-// - bodyBytes: The request body in byte slice format.
-//
-// Returns:
-// - error: An error object if the request could not be published, otherwise nil.
-func publishWorkRequest(api *API, requestID string, request data_types.WorkerType, bodyBytes []byte) error {
-	workRequest := map[string]string{
-		"request":    string(request),
-		"request_id": requestID,
-		"body":       string(bodyBytes),
-	}
-	jsn, err := json.Marshal(workRequest)
-	if err != nil {
-		return err
-	}
-	return api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn)
-}
-
 // handleWorkResponse processes the response from a worker and sends it back to the client.
 // It listens on the provided response channel for a response or a timeout signal.
 // If a response is received within the timeout period, it unmarshals the JSON response and sends it back to the client.
