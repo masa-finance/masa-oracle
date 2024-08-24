@@ -86,44 +86,70 @@ func SendWorkRequest(api *API, requestID string, workType data_types.WorkerType,
 // Parameters:
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
-func handleWorkResponse(c *gin.Context, responseCh chan data_types.WorkResponse, wg *sync.WaitGroup) {
+func handleWorkResponse(c *gin.Context, responseCh <-chan data_types.WorkResponse, wg *sync.WaitGroup) {
 	cfg, err := LoadConfig()
 	if err != nil {
-		logrus.Errorf("Failed to load API cfg: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		handleError(c, "Failed to load API cfg", err)
 		return
 	}
 
-	for {
-		select {
-		case response := <-responseCh:
-			if response.Error != "" {
-				logrus.Errorf("[+] Work error: %s", response.Error)
-				if strings.Contains(response.Error, "Rate limit exceeded") {
-					c.JSON(http.StatusTooManyRequests, gin.H{"error": "Twitter API rate limit exceeded"})
-				} else {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": response.Error})
-				}
-				wg.Done()
-				return
-			}
-
-			if response.Data == nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "No data returned"})
-				wg.Done()
-				return
-			}
-
-			c.JSON(http.StatusOK, response)
-			wg.Done()
-			return
-		case <-time.After(cfg.WorkerResponseTimeout):
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out in API layer"})
-			return
-		case <-c.Done():
-			return
-		}
+	select {
+	case response := <-responseCh:
+		handleResponse(c, response, wg)
+	case <-time.After(cfg.WorkerResponseTimeout):
+		handleTimeout(c)
+	case <-c.Done():
+		// Context cancelled, no action needed
 	}
+}
+
+func handleResponse(c *gin.Context, response data_types.WorkResponse, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	if response.Error != "" {
+		handleErrorResponse(c, response)
+		return
+	}
+
+	if response.Data == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":        "No data returned",
+			"workerPeerId": response.WorkerPeerId,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func handleErrorResponse(c *gin.Context, response data_types.WorkResponse) {
+	logrus.Errorf("[+] Work error: %s", response.Error)
+
+	errorResponse := func(status int, message string) {
+		c.JSON(status, gin.H{
+			"error":        message,
+			"details":      response.Error,
+			"workerPeerId": response.WorkerPeerId,
+		})
+	}
+
+	switch {
+	case strings.Contains(response.Error, "Twitter API rate limit exceeded (429 error)"):
+		errorResponse(http.StatusTooManyRequests, "Twitter API rate limit exceeded")
+	case strings.Contains(response.Error, "no workers could process"):
+		errorResponse(http.StatusServiceUnavailable, "No available workers to process the request")
+	default:
+		errorResponse(http.StatusInternalServerError, "An error occurred while processing the request")
+	}
+}
+
+func handleError(c *gin.Context, message string, err error) {
+	logrus.Errorf("%s: %v", message, err)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+}
+
+func handleTimeout(c *gin.Context) {
+	c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out in API layer"})
 }
 
 // GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.
