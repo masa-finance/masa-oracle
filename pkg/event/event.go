@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	WorkRequest                 = "work_request"
 	WorkCompletion              = "work_completion"
 	WorkFailure                 = "worker_failure"
 	WorkDistribution            = "work_distribution"

@@ -21,6 +21,9 @@ import (
 
 func main() {
 
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.Debug("Log level set to Debug")
+
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
 		logrus.Infof("Masa Oracle Node Version: %s\nMasa Oracle Protocol verison: %s", versioning.ApplicationVersion, versioning.ProtocolVersion)
 		os.Exit(0)

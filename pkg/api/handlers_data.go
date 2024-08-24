@@ -26,7 +26,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 type LLMChat struct {
@@ -770,7 +770,14 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 			return
 		}
 
-		// worker handler implementation
+		if api.EventTracker != nil && api.Node != nil {
+			peerID := api.Node.Host.ID().String()
+			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID)
+		} else {
+			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
+		}
+
+		// Rest of the function remains the same
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
