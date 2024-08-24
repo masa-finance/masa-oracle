@@ -26,7 +26,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 type LLMChat struct {
@@ -122,25 +122,22 @@ func handleWorkResponse(c *gin.Context, responseCh chan data_types.WorkResponse,
 		select {
 		case response := <-responseCh:
 			if response.Error != "" {
-				c.JSON(http.StatusExpectationFailed, response)
+				logrus.Errorf("[+] Work error: %s", response.Error)
+				if strings.Contains(response.Error, "Rate limit exceeded") {
+					c.JSON(http.StatusTooManyRequests, gin.H{"error": "Twitter API rate limit exceeded"})
+				} else {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": response.Error})
+				}
 				wg.Done()
 				return
 			}
-			if data, ok := response.Data.(string); ok && IsBase64(data) {
-				decodedData, err := base64.StdEncoding.DecodeString(response.Data.(string))
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode base64 data"})
-					return
-				}
-				var jsonData map[string]interface{}
-				err = json.Unmarshal(decodedData, &jsonData)
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON data"})
-					return
-				}
-				response.Data = jsonData
+
+			if response.Data == nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "No data returned"})
+				wg.Done()
+				return
 			}
-			response.WorkRequest = nil
+
 			c.JSON(http.StatusOK, response)
 			wg.Done()
 			return

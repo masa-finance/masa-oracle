@@ -4,7 +4,6 @@ go 1.22.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/chyeh/pubip v0.0.0-20170203095919-b7e679cf541c
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/dgraph-io/badger v1.6.2
 	github.com/ethereum/go-ethereum v1.14.8
@@ -128,7 +127,6 @@ require (
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
