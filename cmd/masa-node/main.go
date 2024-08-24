@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/multiformats/go-multiaddr"
+
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
@@ -134,10 +136,10 @@ func main() {
 	}()
 
 	// Get the multiaddress and IP address of the node
-	multiAddr := node.GetMultiAddrs().String() // Get the multiaddress
-	ipAddr := node.Host.Addrs()[0].String()    // Get the IP address
+	multiAddr := node.GetMultiAddrs()                          // Get the multiaddress
+	ipAddr, err := multiAddr.ValueForProtocol(multiaddr.P_IP4) // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr, ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
+	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 
 	<-ctx.Done()
 }

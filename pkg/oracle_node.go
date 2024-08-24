@@ -193,11 +193,6 @@ func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	bootNodeAddrs, err := myNetwork.GetBootNodesMultiAddress(append(config.GetInstance().Bootnodes, node.options.Bootnodes...))
-	if err != nil {
-		return err
-	}
-
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
 
@@ -209,15 +204,9 @@ func (node *OracleNode) Start() (err error) {
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
-	var publicKeyHex string
-	if node.options.RandomIdentity {
-		publicKeyHex, _ = node.generateEthHexKeyForRandomIdentity()
-	} else {
-		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
-	}
+	myNodeData := pubsub2.GetSelfNodeData(node.Host, node.IsStaked, node.priorityAddrs)
 
-	node.DHT, err = myNetwork.WithDHT(
-		node.Context, node.Host, bootNodeAddrs, node.Protocol, config.MasaPrefix, node.PeerChan, node.IsStaked, publicKeyHex)
+	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, node.Protocol, config.MasaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
 		return err
 	}
@@ -230,17 +219,9 @@ func (node *OracleNode) Start() (err error) {
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
-		ma := myNetwork.GetMultiAddressesForHostQuiet(node.Host)
-		nodeData = pubsub2.NewNodeData(ma[0], node.Host.ID(), publicKeyHex, pubsub2.ActivityJoined)
-		nodeData.IsStaked = node.IsStaked
+		nodeData = myNodeData
 		nodeData.SelfIdentified = true
-		nodeData.IsDiscordScraper = node.IsDiscordScraper
-		nodeData.IsTelegramScraper = node.IsTelegramScraper
-		nodeData.IsTwitterScraper = node.IsTwitterScraper
-		nodeData.IsWebScraper = node.IsWebScraper
-		nodeData.IsValidator = node.IsValidator
 	}
-
 	nodeData.Joined()
 	node.NodeTracker.HandleNodeData(*nodeData)
 
@@ -297,12 +278,8 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 		logrus.Warnf("[-] Received data from unexpected peer %s", remotePeer)
 		return
 	}
+	nodeData.MergeMultiaddresses(stream.Conn().RemoteMultiaddr())
 
-	multiAddr := stream.Conn().RemoteMultiaddr()
-	nodeData.Multiaddrs = []pubsub2.JSONMultiaddr{{Multiaddr: multiAddr}}
-
-	// newNodeData := pubsub2.NewNodeData(multiAddr, remotePeer, nodeData.EthAddress, pubsub2.ActivityJoined)
-	// newNodeData.IsStaked = nodeData.IsStaked
 	err = node.NodeTracker.AddOrUpdateNodeData(&nodeData, false)
 	if err != nil {
 		logrus.Error("[-] Error adding or updating node data: ", err)

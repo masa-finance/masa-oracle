@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 type TwitterQueryHandler struct{}
@@ -16,17 +16,25 @@ type TwitterSentimentHandler struct{}
 type TwitterTrendsHandler struct{}
 
 func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
-	logrus.Infof("[+] TwitterQueryHandler %s", data)
+	logrus.Infof("[+] TwitterQueryHandler input: %s", data)
 	dataMap, err := JsonBytesToMap(data)
 	if err != nil {
+		logrus.Errorf("[+] TwitterQueryHandler error parsing data: %v", err)
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
 	}
 	count := int(dataMap["count"].(float64))
 	query := dataMap["query"].(string)
+
+	logrus.Infof("[+] Scraping tweets for query: %s, count: %d", query, count)
+
 	resp, err := twitter.ScrapeTweetsByQuery(query, count)
 	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter query: %v", err)}
+		logrus.Errorf("[+] TwitterQueryHandler error scraping tweets: %v", err)
+		return data_types.WorkResponse{Error: err.Error()}
 	}
+
+	logrus.Infof("[+] TwitterQueryHandler response: %d tweets found", len(resp))
+
 	return data_types.WorkResponse{Data: resp}
 }
 

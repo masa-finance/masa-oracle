@@ -15,6 +15,7 @@ import (
 
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
@@ -214,13 +215,29 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 	go func() {
 		startTime := time.Now()
 		workResponse := handler.HandleWork(workRequest.Data)
-		if workResponse.Error == "" {
-			duration := time.Since(startTime)
-			whm.mu.Lock()
-			handlerInfo := whm.handlers[workRequest.WorkType]
-			handlerInfo.CallCount++
-			handlerInfo.TotalRuntime += duration
-			whm.mu.Unlock()
+		duration := time.Since(startTime)
+		whm.mu.Lock()
+		handlerInfo := whm.handlers[workRequest.WorkType]
+		handlerInfo.CallCount++
+		handlerInfo.TotalRuntime += duration
+		whm.mu.Unlock()
+
+		if workResponse.Error != "" {
+			logrus.Errorf("[+] Work error for %s: %s", workRequest.WorkType, workResponse.Error)
+		} else if workResponse.Data == nil {
+			logrus.Warnf("[+] Work response for %s: No data returned", workRequest.WorkType)
+		} else {
+			switch data := workResponse.Data.(type) {
+			case []*twitter.TweetResult:
+				logrus.Infof("[+] Work response for %s: %d tweets returned", workRequest.WorkType, len(data))
+				if len(data) > 0 && data[0].Tweet != nil {
+					tweet := data[0].Tweet
+					logrus.Infof("[+] First tweet: ID: %s, Text: %s, Author: %s, CreatedAt: %s",
+						tweet.ID, tweet.Text, tweet.Username, tweet.TimeParsed)
+				}
+			default:
+				logrus.Infof("[+] Work response for %s: Data successfully returned (type: %T)", workRequest.WorkType, workResponse.Data)
+			}
 		}
 		responseChan <- workResponse
 	}()

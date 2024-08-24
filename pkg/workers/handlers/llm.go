@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
@@ -40,7 +41,7 @@ func (h *LLMChatHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to marshal LLM chat data: %v", err)}
 	}
-	resp, err := Post(uri, jsnBytes, nil)
+	resp, err := network.Post(uri, jsnBytes, nil)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to post LLM chat data: %v", err)}
 	}

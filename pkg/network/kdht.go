@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"sync"
 	"time"
@@ -11,9 +12,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -29,9 +30,8 @@ type dbValidator struct{}
 func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
 func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 
-func WithDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr,
-	protocolId, prefix protocol.ID, peerChan chan PeerEvent, isStaked bool, publicHexKey string) (*dht.IpfsDHT, error) {
-
+func WithDht(ctx context.Context, host host.Host, protocolId, prefix protocol.ID,
+	peerChan chan PeerEvent, nodeData *pubsub.NodeData) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
 	options = append(options, dht.Concurrency(100))                         // Increase concurrency
@@ -39,6 +39,11 @@ func WithDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
 	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
+
+	bootstrapNodes, err := GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
+	if err != nil {
+		return nil, err
+	}
 
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {
@@ -123,13 +128,13 @@ func WithDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Mul
 					}
 				}(stream) // Close the stream when done
 
-				multiaddr, err := GetMultiAddressesForHost(host)
+				// Convert NodeData to JSON
+				jsonData, err := json.Marshal(nodeData)
 				if err != nil {
-					logrus.Errorf("[-] Error getting multiaddresses for host: %s", err)
+					logrus.Error("[-] Error marshalling NodeData:", err)
 					return
 				}
-				multaddrString := GetPriorityAddress(multiaddr)
-				_, err = stream.Write(pubsub.GetSelfNodeDataJson(host, isStaked, multaddrString.String(), publicHexKey))
+				_, err = stream.Write(jsonData)
 				if err != nil {
 					logrus.Errorf("[-] Error writing to stream: %s", err)
 					return
