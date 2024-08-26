@@ -204,12 +204,25 @@ func (node *OracleNode) Start() (err error) {
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
 
-	myNodeData := pubsub2.GetSelfNodeData(node.Host, node.IsStaked, node.priorityAddrs)
+	var publicKeyHex string
+	if node.options.RandomIdentity {
+		publicKeyHex, _ = node.generateEthHexKeyForRandomIdentity()
+	} else {
+		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
+	}
 
-	node.DHT, err = myNetwork.WithDht(node.Context, node.Host, node.Protocol, config.MasaPrefix, node.PeerChan, myNodeData)
+	myNodeData := pubsub2.GetSelfNodeData(node.Host, node.IsStaked, node.priorityAddrs, publicKeyHex)
+
+	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(append(config.GetInstance().Bootnodes, node.options.Bootnodes...))
 	if err != nil {
 		return err
 	}
+
+	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, config.MasaPrefix, node.PeerChan, myNodeData)
+	if err != nil {
+		return err
+	}
+
 	err = myNetwork.WithMDNS(node.Host, config.Rendezvous, node.PeerChan)
 	if err != nil {
 		return err

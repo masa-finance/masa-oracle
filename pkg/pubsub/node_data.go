@@ -7,7 +7,6 @@ import (
 
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -253,9 +252,9 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 // It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 // The NodeData struct is then marshalled into a JSON byte array.
 // Returns nil if there is an error marshalling to JSON.
-func GetSelfNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr) *NodeData {
+func GetSelfNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr, publicEthAddress string) *NodeData {
 	// Create and populate NodeData
-	nodeData := NewNodeData(addr, host.ID(), masacrypto.KeyManagerInstance().EthAddress, ActivityJoined)
+	nodeData := NewNodeData(addr, host.ID(), publicEthAddress, ActivityJoined)
 	nodeData.MultiaddrsString = addr.String()
 	nodeData.IsStaked = isStaked
 	nodeData.IsTwitterScraper = config.GetInstance().TwitterScraper
