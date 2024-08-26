@@ -14,12 +14,14 @@ import (
 // Parameters:
 // - workType: String indicating the type of work being requested (e.g., "SearchTweetsRecent")
 // - peerId: String containing the peer ID (or client IP in this case)
-func (a *EventTracker) TrackWorkRequest(workType string, peerId string) {
+func (a *EventTracker) TrackWorkRequest(workType string, peerId string, payload string, dataSource string) {
 	event := Event{
-		Name:      WorkRequest,
-		PeerID:    peerId,
-		WorkType:  workType,
-		Timestamp: time.Now().UTC(),
+		Name:       WorkRequest,
+		PeerID:     peerId,
+		Payload:    payload,
+		DataSource: dataSource,
+		WorkType:   workType,
+		Timestamp:  time.Now().UTC(),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {

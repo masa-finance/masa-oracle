@@ -22,6 +22,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/event"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
@@ -772,12 +773,11 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 
 		if api.EventTracker != nil && api.Node != nil {
 			peerID := api.Node.Host.ID().String()
-			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID)
+			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, reqBody.Query, event.DataSourceTwitter)
 		} else {
 			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
 		}
 
-		// Rest of the function remains the same
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

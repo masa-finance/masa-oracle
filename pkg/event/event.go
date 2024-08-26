@@ -21,12 +21,18 @@ const (
 	WorkRequestSerialization    = "work_request_serialized"
 	WorkResponseDeserialization = "work_response_serialized"
 	LocalWorkerFallback         = "local_work_executed"
+	DataSourceTwitter           = "twitter"
+	DataSourceDiscord           = "discord"
+	DataSourceWeb               = "web"
+	DataSourceTelegram          = "telegram"
 )
 
 type Event struct {
 	Name         string    `json:"name"`
 	Timestamp    time.Time `json:"timestamp"`
 	PeerID       string    `json:"peer_id"`
+	Payload      string    `json:"payload"`
+	DataSource   string    `json:"data_source"`
 	WorkType     string    `json:"work_type"`
 	RemoteWorker bool      `json:"remote_worker"`
 	Success      bool      `json:"success"`
