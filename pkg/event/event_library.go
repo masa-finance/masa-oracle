@@ -21,7 +21,6 @@ func (a *EventTracker) TrackWorkRequest(workType string, peerId string, payload 
 		Payload:    payload,
 		DataSource: dataSource,
 		WorkType:   workType,
-		Timestamp:  time.Now().UTC(),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -40,7 +39,6 @@ func (a *EventTracker) TrackWorkDistribution(remoteWorker bool, peerId string) {
 		PeerID:       peerId,
 		WorkType:     WorkDistribution,
 		RemoteWorker: remoteWorker,
-		Timestamp:    time.Now().UTC(),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -55,11 +53,10 @@ func (a *EventTracker) TrackWorkDistribution(remoteWorker bool, peerId string) {
 // - peerId: String containing the peer ID
 func (a *EventTracker) TrackWorkCompletion(success bool, peerId string) {
 	event := Event{
-		Name:      WorkCompletion,
-		PeerID:    peerId,
-		WorkType:  WorkCompletion,
-		Success:   success,
-		Timestamp: time.Now().UTC(),
+		Name:     WorkCompletion,
+		PeerID:   peerId,
+		WorkType: WorkCompletion,
+		Success:  success,
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -74,11 +71,10 @@ func (a *EventTracker) TrackWorkCompletion(success bool, peerId string) {
 // - peerId: String containing the peer ID
 func (a *EventTracker) TrackWorkerFailure(errorMessage string, peerId string) {
 	event := Event{
-		Name:      WorkFailure,
-		PeerID:    peerId,
-		WorkType:  WorkFailure,
-		Error:     errorMessage,
-		Timestamp: time.Now().UTC(),
+		Name:     WorkFailure,
+		PeerID:   peerId,
+		WorkType: WorkFailure,
+		Error:    errorMessage,
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -97,7 +93,6 @@ func (a *EventTracker) TrackWorkExecutionStart(remoteWorker bool, peerId string)
 		PeerID:       peerId,
 		WorkType:     WorkExecutionStart,
 		RemoteWorker: remoteWorker,
-		Timestamp:    time.Now().UTC(),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -112,11 +107,10 @@ func (a *EventTracker) TrackWorkExecutionStart(remoteWorker bool, peerId string)
 // - peerId: String containing the peer ID
 func (a *EventTracker) TrackWorkExecutionTimeout(timeoutDuration time.Duration, peerId string) {
 	event := Event{
-		Name:      WorkExecutionTimeout,
-		PeerID:    peerId,
-		WorkType:  WorkExecutionTimeout,
-		Error:     fmt.Sprintf("timeout after %s", timeoutDuration),
-		Timestamp: time.Now().UTC(),
+		Name:     WorkExecutionTimeout,
+		PeerID:   peerId,
+		WorkType: WorkExecutionTimeout,
+		Error:    fmt.Sprintf("timeout after %s", timeoutDuration),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -130,10 +124,9 @@ func (a *EventTracker) TrackWorkExecutionTimeout(timeoutDuration time.Duration, 
 // - peerId: String containing the peer ID
 func (a *EventTracker) TrackRemoteWorkerConnection(peerId string) {
 	event := Event{
-		Name:      RemoteWorkerConnection,
-		PeerID:    peerId,
-		WorkType:  RemoteWorkerConnection,
-		Timestamp: time.Now().UTC(),
+		Name:     RemoteWorkerConnection,
+		PeerID:   peerId,
+		WorkType: RemoteWorkerConnection,
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -148,11 +141,11 @@ func (a *EventTracker) TrackRemoteWorkerConnection(peerId string) {
 // - protocol: The protocol used for the stream
 func (a *EventTracker) TrackStreamCreation(peerId string, protocol string) {
 	event := Event{
-		Name:      StreamCreation,
-		PeerID:    peerId,
-		WorkType:  StreamCreation,
-		Error:     protocol, // Assuming protocol is stored in Error field for now
-		Timestamp: time.Now().UTC(),
+		Name:     StreamCreation,
+		PeerID:   peerId,
+		WorkType: StreamCreation,
+		Error:    protocol, // Assuming protocol is stored in Error field for now
+
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -167,11 +160,11 @@ func (a *EventTracker) TrackStreamCreation(peerId string, protocol string) {
 // - peerId: String containing the peer ID
 func (a *EventTracker) TrackWorkRequestSerialization(dataSize int, peerId string) {
 	event := Event{
-		Name:      WorkRequestSerialization,
-		PeerID:    peerId,
-		WorkType:  WorkRequestSerialization,
-		Error:     fmt.Sprintf("data size: %d", dataSize), // Assuming data size is stored in Error field for now
-		Timestamp: time.Now().UTC(),
+		Name:     WorkRequestSerialization,
+		PeerID:   peerId,
+		WorkType: WorkRequestSerialization,
+		Error:    fmt.Sprintf("data size: %d", dataSize), // Assuming data size is stored in Error field for now
+
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -186,11 +179,10 @@ func (a *EventTracker) TrackWorkRequestSerialization(dataSize int, peerId string
 // - peerId: String containing the peer ID
 func (a *EventTracker) TrackWorkResponseDeserialization(success bool, peerId string) {
 	event := Event{
-		Name:      WorkResponseDeserialization,
-		PeerID:    peerId,
-		WorkType:  WorkResponseDeserialization,
-		Success:   success,
-		Timestamp: time.Now().UTC(),
+		Name:     WorkResponseDeserialization,
+		PeerID:   peerId,
+		WorkType: WorkResponseDeserialization,
+		Success:  success,
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -205,11 +197,10 @@ func (a *EventTracker) TrackWorkResponseDeserialization(success bool, peerId str
 // - peerId: String containing the peer ID
 func (a *EventTracker) TrackLocalWorkerFallback(reason string, peerId string) {
 	event := Event{
-		Name:      LocalWorkerFallback,
-		PeerID:    peerId,
-		WorkType:  LocalWorkerFallback,
-		Error:     reason, // Assuming reason is stored in Error field for now
-		Timestamp: time.Now().UTC(),
+		Name:     LocalWorkerFallback,
+		PeerID:   peerId,
+		WorkType: LocalWorkerFallback,
+		Error:    reason,
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {

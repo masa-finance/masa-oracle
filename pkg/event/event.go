@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -28,15 +27,14 @@ const (
 )
 
 type Event struct {
-	Name         string    `json:"name"`
-	Timestamp    time.Time `json:"timestamp"`
-	PeerID       string    `json:"peer_id"`
-	Payload      string    `json:"payload"`
-	DataSource   string    `json:"data_source"`
-	WorkType     string    `json:"work_type"`
-	RemoteWorker bool      `json:"remote_worker"`
-	Success      bool      `json:"success"`
-	Error        string    `json:"error"`
+	Name         string `json:"name"`
+	PeerID       string `json:"peer_id"`
+	Payload      string `json:"payload"`
+	DataSource   string `json:"data_source"`
+	WorkType     string `json:"work_type"`
+	RemoteWorker bool   `json:"remote_worker"`
+	Success      bool   `json:"success"`
+	Error        string `json:"error"`
 }
 
 type EventTracker struct {
@@ -72,7 +70,6 @@ func (a *EventTracker) TrackEvent(event Event) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	event.Timestamp = time.Now().UTC()
 	a.events = append(a.events, event)
 	a.logger.WithFields(logrus.Fields{
 		"event_name": event.Name,
@@ -107,7 +104,6 @@ func (a *EventTracker) TrackAndSendEvent(event Event, client *EventClient) error
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	event.Timestamp = time.Now().UTC()
 	a.events = append(a.events, event)
 	a.logger.WithFields(logrus.Fields{
 		"event_name": event.Name,
@@ -131,12 +127,6 @@ func (a *EventTracker) TrackAndSendEvent(event Event, client *EventClient) error
 func validateEvent(event Event) error {
 	if event.Name == "" {
 		return errors.New("Event name is required")
-	}
-	if event.Timestamp.IsZero() {
-		return errors.New("Invalid timestamp")
-	}
-	if event.Timestamp.After(time.Now().UTC()) {
-		return errors.New("Timestamp cannot be in the future")
 	}
 	if event.PeerID == "" {
 		return errors.New("Peer ID is required")
