@@ -12,9 +12,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -30,8 +30,7 @@ type dbValidator struct{}
 func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
 func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 
-func WithDht(ctx context.Context, host host.Host, protocolId, prefix protocol.ID,
-	peerChan chan PeerEvent, nodeData *pubsub.NodeData) (*dht.IpfsDHT, error) {
+func WithDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr, protocolId, prefix protocol.ID, peerChan chan PeerEvent, nodeData *pubsub.NodeData) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
 	options = append(options, dht.Concurrency(100))                         // Increase concurrency
@@ -39,11 +38,6 @@ func WithDht(ctx context.Context, host host.Host, protocolId, prefix protocol.ID
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
 	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
-
-	bootstrapNodes, err := GetBootNodesMultiAddress(config.GetInstance().Bootnodes)
-	if err != nil {
-		return nil, err
-	}
 
 	kademliaDHT, err := dht.New(ctx, host, options...)
 	if err != nil {
