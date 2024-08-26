@@ -1,4 +1,4 @@
-package masa
+package node
 
 import (
 	"github.com/masa-finance/masa-oracle/pkg/config"

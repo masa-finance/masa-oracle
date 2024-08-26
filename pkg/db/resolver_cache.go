@@ -11,7 +11,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
@@ -43,7 +43,7 @@ type Record struct {
 // The purpose of this function is to initialize the resolver cache and perform any necessary setup or configuration. It associates the resolver cache with the provided Masa Oracle node and key manager.
 //
 // Note: The specific implementation details of the `InitResolverCache` function are not provided in the given code snippet. The function signature suggests that it initializes the resolver cache, but the actual initialization logic would be present in the function body.
-func InitResolverCache(node *masa.OracleNode, keyManager *masacrypto.KeyManager) {
+func InitResolverCache(node *node.OracleNode, keyManager *masacrypto.KeyManager) {
 	var err error
 	cachePath := config.GetInstance().CachePath
 	if cachePath == "" {
@@ -170,7 +170,7 @@ func QueryAll(ctx context.Context) ([]Record, error) {
 // sync periodically calls iterateAndPublish to synchronize the node's state with
 // the dht on the provided interval. It runs this in a loop, exiting
 // when the context is canceled.
-func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
+func sync(ctx context.Context, node *node.OracleNode, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -188,7 +188,7 @@ func sync(ctx context.Context, node *masa.OracleNode, interval time.Duration) {
 // by querying all records, and publishing each one to the dht. It
 // logs any errors encountered. This allows periodically syncing the node's
 // cached data with the latest dht state.
-func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
+func iterateAndPublish(ctx context.Context, node *node.OracleNode) {
 	records, err := QueryAll(ctx)
 	if err != nil {
 		logrus.Errorf("[-] Error querying all records: %+v", err)
@@ -232,7 +232,7 @@ func iterateAndPublish(ctx context.Context, node *masa.OracleNode) {
 // monitorNodeData periodically publishes the local node's status to the
 // dht, and syncs node status data published by other nodes.
 // It runs a ticker to call iterateAndPublish on the provided interval.
-func monitorNodeData(ctx context.Context, node *masa.OracleNode) {
+func monitorNodeData(ctx context.Context, node *node.OracleNode) {
 	syncInterval := time.Second * 60
 	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker)
 	if err != nil {

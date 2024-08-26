@@ -7,17 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	node "github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/event"
 )
 
 type API struct {
-	Node         *masa.OracleNode
+	Node         *node.OracleNode
 	EventTracker *event.EventTracker
 }
 
 // NewAPI creates a new API instance with the given OracleNode.
-func NewAPI(node *masa.OracleNode) *API {
+func NewAPI(node *node.OracleNode) *API {
 	eventTracker := event.NewEventTracker(nil)
 	if eventTracker == nil {
 		logrus.Error("Failed to create EventTracker")

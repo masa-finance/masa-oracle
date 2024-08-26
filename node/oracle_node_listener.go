@@ -1,4 +1,4 @@
-package masa
+package node
 
 import (
 	"bufio"

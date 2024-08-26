@@ -16,7 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -52,7 +52,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 		if endIndex > totalRecords {
 			endIndex = totalRecords
 		}
-		nodeDataPage := masa.NodeDataPage{
+		nodeDataPage := node.NodeDataPage{
 			Data:         allNodeData[startIndex:endIndex],
 			PageNumber:   pageNbr,
 			TotalPages:   totalPages,

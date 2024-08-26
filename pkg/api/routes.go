@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 	swaggerFiles "github.com/swaggo/files"     // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
 )
@@ -31,7 +31,7 @@ var htmlTemplates embed.FS
 // Routes are added for peers, ads, subscriptions, node data, public keys,
 // topics, the DHT, node status, and serving HTML pages. Middleware is added
 // for CORS and templates.
-func SetupRoutes(node *masa.OracleNode) *gin.Engine {
+func SetupRoutes(node *node.OracleNode) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 

@@ -3,16 +3,16 @@ package tests
 import (
 	"testing"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 )
 
 func TestAPI(t *testing.T) {
 	// Create a new OracleNode instance
-	node := &masa.OracleNode{}
+	n := &node.OracleNode{}
 
 	// Initialize the API
-	api := api.NewAPI(node)
+	api := api.NewAPI(n)
 
 	// Test API initialization
 	if api == nil {

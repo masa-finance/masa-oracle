@@ -14,7 +14,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/sirupsen/logrus"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/event"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
@@ -102,7 +102,7 @@ func (whm *WorkHandlerManager) getWorkHandler(wType data_types.WorkerType) (Work
 	return info.Handler, true
 }
 
-func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
+func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	category := data_types.WorkerTypeToCategory(workRequest.WorkType)
 	remoteWorkers, localWorker := GetEligibleWorkers(node, category)
 
@@ -181,7 +181,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	return response
 }
 
-func (whm *WorkHandlerManager) sendWorkToWorker(node *masa.OracleNode, worker data_types.Worker, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
+func (whm *WorkHandlerManager) sendWorkToWorker(node *node.OracleNode, worker data_types.Worker, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), workerConfig.WorkerResponseTimeout)
 	defer cancel() // Cancel the context when done to release resources
 
