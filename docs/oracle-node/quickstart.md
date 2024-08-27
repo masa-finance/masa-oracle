@@ -3,9 +3,23 @@ id: quickstart
 title: Quickstart Guide
 ---
 
-This guide will help you set up and run a Masa Oracle node quickly. 
+This guide will help you set up and run a Masa Oracle node quickly.
 
-### 1. Clone and prepare the repository
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- Go 1.22 (do not use 1.23)
+- Yarn or npm (for installing contracts)
+- Make (for building the binary)
+
+:::warning
+
+You must use Go 1.22 for building the node: `brew install go@1.22`.
+
+:::
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/masa-finance/masa-oracle.git
@@ -16,21 +30,19 @@ git clone https://github.com/masa-finance/masa-oracle.git
 cd masa-oracle
 ```
 
-### 3. Build the node
-
-```bash
-make build
-```
-
-### 4. Install contract dependencies
+### 3. Install contract dependencies
 Navigate to the contract directory:
 ```bash
 cd contracts
 ```
 
-Install dependencies using yarn
+Install dependencies using yarn or npm
 ```bash
 yarn install
+```
+or
+```bash
+npm install
 ```
 
 Return to the root directory
@@ -38,57 +50,42 @@ Return to the root directory
 cd ..
 ```
 
-### 5. Set up basic environment variables
+### 4. Build the node
+
+```bash
+make build
+```
+
+### 5. Set up environment variables to connect your node to the Masa Testnet
+
+:::info
+
+This guide will configure your node as a **Local Bootnode**, for a list of network bootnodes, please refer to the [Bootnode Configuration](https://docs.masa.finance/masa-node/bootnode-configuration) bootnode configuration documentation.
+
+:::
 
 Create a `.env` file in the root directory with these essential variables:
 ```plaintext
 # Default .env configuration
-BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa,/ip4/34.121.111.128/udp/4001/quic-v1/p2p/16Uiu2HAmKULCxKgiQn1EcfKnq1Qam6psYLDTM99XsZFhr57wLadF
 
-API_KEY=
 RPC_URL=https://ethereum-sepolia.publicnode.com
 ENV=test
 FILE_PATH=.
 VALIDATOR=false
 PORT=8080
-
-# AI LLM
-CLAUDE_API_KEY=
-CLAUDE_API_URL=https://api.anthropic.com/v1/messages
-CLAUDE_API_VERSION=2023-06-01
-ELAB_URL=https://api.elevenlabs.io/v1/text-to-speech/ErXwobaYiN019PkySvjV/stream
-ELAB_KEY=
-OPENAI_API_KEY=
-PROMPT="You are a helpful assistant."
-
-# Twitter(X)
-TWITTER_SCRAPER=false
-TWITTER_USERNAME="yourusername"
-TWITTER_PASSWORD="yourpassword"
-TWITTER_2FA_CODE="your2fa"
-
-# Discord
-DISCORD_SCRAPER=false
-DISCORD_BOT_TOKEN=
-
-# Telegram
-TELEGRAM_SCRAPER=false
-TELEGRAM_APP_ID=
-TELEGRAM_APP_HASH=
-
-#Web
-WEB_SCRAPER=false
 ```
-Note: Full configuration (such as API keys, Twitter, Discord and Telegram credentials, and worker node settings) are not required for the initial node setup. We will add those later once we get a node running and staked.
 
-### 6. Start the node to obtain your public key
+:::info
+
+This guide will use the default .env configuration. For a comprehensive list of other .env configuration examples, please refer to our [Environment Configuration Guide](https://docs.masa.finance/masa-node/environment-configuration).
+
+:::
+
+### 6. Start the node
 
 ```bash
 make run
 ```
-
-Look for your `Public Key` in the startup logs. You'll need this to stake and participate in the network. Example:
-
 ```bash
 #######################################
 #     __  __    _    ____    _        #
@@ -99,7 +96,6 @@ Look for your `Public Key` in the startup logs. You'll need this to stake and pa
 #                                     #
 #######################################
 
-Version:             v0.5.0
 Multiaddress:        /ip4/192.168.1.8/udp/4001/quic-v1/p2p/16Uiu2HAmDXWNV9RXVoRsbt9z7pFSsKS2KdpN7HHFVLdFZmS7iCvo
 IP Address:          /ip4/127.0.0.1/udp/4001/quic-v1
 Public Key:          0x5dA36a3eB07fd1624B054b99D6417DdF2904e826
@@ -109,67 +105,57 @@ Is TwitterScraper:   false
 Is DiscordScraper:   false
 Is TelegramScraper:  false
 ```
-Once you've noted your Public Key, you can stop the node (Ctrl+C).
+:::tip
 
+You now have a running node in **Local Bootnode** configuration, you can now proceed to setup your node to start scraping data or to start participating in the network.
 
-### 7. Prepare for staking
-To participate in the network, you need:
+:::
 
-1. Sepolia ETH (about 0.015 ETH) to pay for transaction fees
-2. 1,000 Sepolia MASA token to stake
+### 7. Configure Your Node
 
-#### a) Get Sepolia ETH:
+Now that you have a running node, you can configure it for specific roles or functionalities. Choose one of the following paths based on your goals:
 
-- Use a Sepolia ETH testnet faucet 
-- Send approximately 0.015 Sepolia ETH to your public key address
+### Masa Bittensor Subnet Setup
 
-#### b) Get Sepolia MASA tokens:
-Once you have Sepolia ETH, run: 
+#### a) Set Up a Subnet Validator Node
+If you want your node to validate subnet transactions:
+- [Subnet Validator Configuration](./subnet-validator-node-setup.md)
 
-```bash
-make faucet
-```
+#### b) Set Up a Subnet Miner Node
+If you want your node to participate in subnet mining:
+- [Subnet Miner Node Configuration](./subnet-miner-node-setup.md)
+- [Subnet Miner Node Digital Ocean Deployment Guide](./digital-ocean-setup.md)
+- [Digital Ocean Performance Optimization](./digital-ocean-optimization.md)
 
-### 8. Stake your Sepolia MASA
-Stake your MASA tokens:
+:::info
 
-```bash
-make stake
-```
-You'll see approval and staking transaction hashes in the output.
+Masa operates on Bittensor subnet 42. You can view the network statistics and performance at [Taostats Subnet 42](https://x.taostats.io/subnet/42).
 
+:::
 
+### Masa Protocol Setup
 
-### 9. Verify staking and start the node again:
-```bash
-make run
-```
-Verify that the `Is Staked` flag has changed to `true` in the startup logs:
-```bash
-#######################################
-#     __  __    _    ____    _        #
-#    |  \/  |  / \  / ___|  / \       #
-#    | |\/| | / _ \ \___ \ / _ \      #
-#    | |  | |/ ___ \ ___) / ___ \     #
-#    |_|  |_/_/   \_\____/_/   \_\    #
-#                                     #
-#######################################
-Multiaddress:           /ip4/192.168.1.25/udp/4001/quic-v1/p2p/16Uiu2HAm28dTN2WVWD2y2bjzwPdym59XASDfQsSktCtejtNR9Vox
-IP Address:             /ip4/127.0.0.1/udp/4001/quic-v1
-Public Key:             0x065728510468A2ef48e6E8a860ff42D68Ca612ee
-Is Staked:              true
-Is Validator:              false
-Is TwitterScraper:      false
-Is WebScraper:          false
-INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofLNoq 
-INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.9-beta-dev
-```
+#### a) Set Up a Data Scraper (Woker) Node
+If you want your node to earn rewards by scraping data on the Masa Protocol:
+- [Twitter Scraper Configuration](./twitter-scraper-setup.md)
+- [Web Scraper Configuration](./web-scraper-setup.md)
+- [Discord Scraper Configuration](./discord-scraper-setup.md)
+- [Telegram Scraper Configuration](./telegram-scraper-setup.md)
 
+#### b) Get data from the Network
+To get data from the Masa Protocol as a developer you need to stake your node (no free leech):
+- [Staking Your Node](./staking-guide.md)
+- [Becoming a Validator](./validator-setup.md)
 
-### 10. Access the Swagger API
-Open your browser and navigate to:
+#### c) Advanced Configuration
+For more detailed setup options:
+- [Environment Configuration Guide](./environment-configuration.md)
+- [Network Configuration Guide](./network-configuration.md)
 
-```bash
-http://localhost:8080/swagger/index.html
-```
-Congratulations! You've completed the basic setup of your Masa Oracle node. 
+#### d) Troubleshooting and Support
+If you encounter any issues:
+- [Common Issues and Solutions](./troubleshooting.md)
+- [Community Support Channels](./community-support.md)
+
+Choose the path that best fits your needs and follow the respective guide for detailed instructions.
+
