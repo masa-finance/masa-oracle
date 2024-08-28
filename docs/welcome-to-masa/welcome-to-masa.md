@@ -27,12 +27,12 @@ Masa operates on Bittensors Subnet 42 (SN42). You can view the network statistic
 
 ## Masa Protocol
 Learn how to set up a Masa node in your environment ready for configuration and deployment:
-- [Masa Protocol Binary Installation](./quickstart.md)
-- [Masa Protocol Docker Setup](./docker-setup.md)
-- [Masa Protocol Digital Ocean Setup](./digital-ocean-setup.md)
+- [Masa Protocol Binary Installation](./protocol-binary-installation.md)
+- [Masa Protocol Docker Setup](./protocol-docker-setup.md)
+- [Masa Protocol Digital Ocean Setup](./protocol-digital-ocean-setup.md)
 
 ### Staking Your Node
-- [Staking Your Node](./staking-guide.md)
+- [Staking Your Node](./protocol-staking-guide.md)
 
 :::danger
 
@@ -44,10 +44,10 @@ All protocol nodes need to stake test MASA on Sepolia, this requires **Sepolia E
 ### Set Up a Data Scraper (Worker Node)
 If you want your node to earn rewards configure it to to scrape data on the Masa Protocol.
 
-- [Twitter Scraper Configuration](./twitter-scraper-setup.md)
-- [Web Scraper Configuration](./web-scraper-setup.md)
-- [Discord Scraper Configuration](./discord-scraper-setup.md)
-- [Telegram Scraper Configuration](./telegram-scraper-setup.md)
+- [Twitter Scraper Configuration](./protocol-twitter-scraper-setup.md)
+- [Web Scraper Configuration](./protocol-web-scraper-setup.md)
+- [Discord Scraper Configuration](./protocol-discord-scraper-setup.md)
+- [Telegram Scraper Configuration](./protocol-telegram-scraper-setup.md)
 
 :::info
 
@@ -58,8 +58,8 @@ You need to have **setup** your node and **staked** your node first to be able t
 ### Get data from the Network (Developer Node)
 AI developers can get data from the Masa Protocol for free by running a Masa node locally or by using our API (**coming soon**).
 
-- [Staking Your Node](./staking-guide.md)
-- [Developer Playground](./validator-setup.md)
+- [Staking Your Node](./protocol-staking-guide.md)
+- [Developer Playground](./protocol-validator-setup.md)
 
 :::info
 
@@ -70,12 +70,12 @@ To get data from the Masa Protocol as a developer you need to stake your node (n
 ### Secure the Network (Validator Node)
 Earn MASA rewards by securing the network:
 
-- [Validator Configuration](./validator-setup.md)
+- [Validator Configuration](./protocol-validator-setup.md)
 
 ### Advanced Configuration
 For more detailed setup options:
-- [Environment Configuration Guide](./environment-configuration.md)
-- [Network Configuration Guide](./network-configuration.md)
+- [Environment Configuration Guide](./protocol-environment-configuration.md)
+- [Network Configuration Guide](./protocol-network-configuration.md)
 
 ### Troubleshooting and Support
 If you encounter any issues:

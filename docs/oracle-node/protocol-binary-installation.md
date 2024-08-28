@@ -1,9 +1,9 @@
 ---
-id: quickstart
-title: Quickstart Guide
+id: protocol-binary-installation
+title: Protocol Binary Installation
 ---
 
-This guide will help you set up and run a Masa Oracle node quickly.
+This guide will help you set up and run a Masa Node ready for configuration and deployment.
 
 ### Prerequisites
 
@@ -110,52 +110,46 @@ Is TelegramScraper:  false
 You now have a running node in **Local Bootnode** configuration, you can now proceed to setup your node to start scraping data or to start participating in the network.
 
 :::
+## Masa Protocol Configuration
+### Set Up a Data Scraper (Worker Node)
+If you want your node to earn rewards configure it to to scrape data on the Masa Protocol.
 
-### 7. Configure Your Node
-
-Now that you have a running node, you can configure it for specific roles or functionalities. Choose one of the following paths based on your goals:
-
-### Masa Bittensor Subnet Setup
-
-#### a) Set Up a Subnet Validator Node
-If you want your node to validate subnet transactions:
-- [Subnet Validator Configuration](./subnet-validator-node-setup.md)
-
-#### b) Set Up a Subnet Miner Node
-If you want your node to participate in subnet mining:
-- [Subnet Miner Node Configuration](./subnet-miner-node-setup.md)
-- [Subnet Miner Node Digital Ocean Deployment Guide](./digital-ocean-setup.md)
-- [Digital Ocean Performance Optimization](./digital-ocean-optimization.md)
-
-:::info
-
-Masa operates on Bittensor subnet 42. You can view the network statistics and performance at [Taostats Subnet 42](https://x.taostats.io/subnet/42).
-
-:::
-
-### Masa Protocol Setup
-
-#### a) Set Up a Data Scraper (Woker) Node
-If you want your node to earn rewards by scraping data on the Masa Protocol:
 - [Twitter Scraper Configuration](./twitter-scraper-setup.md)
 - [Web Scraper Configuration](./web-scraper-setup.md)
 - [Discord Scraper Configuration](./discord-scraper-setup.md)
 - [Telegram Scraper Configuration](./telegram-scraper-setup.md)
 
-#### b) Get data from the Network
-To get data from the Masa Protocol as a developer you need to stake your node (no free leech):
-- [Staking Your Node](./staking-guide.md)
-- [Becoming a Validator](./validator-setup.md)
+:::info
 
-#### c) Advanced Configuration
+You need to have **setup** your node and **staked** your node first to be able to scrape data:
+
+:::
+
+### Get data from the Network (Developer Node)
+AI developers can get data from the Masa Protocol for free by running a Masa node locally or by using our API (**coming soon**).
+
+- [Staking Your Node](./staking-guide.md)
+- [Developer Playground](./validator-setup.md)
+
+:::info
+
+To get data from the Masa Protocol as a developer you need to stake your node (no free leech) - **you need Sepolia ETH** to stake.
+
+:::
+
+### Secure the Network (Validator Node)
+Earn MASA rewards by securing the network:
+
+- [Validator Configuration](./validator-setup.md)
+
+### Advanced Configuration
 For more detailed setup options:
 - [Environment Configuration Guide](./environment-configuration.md)
 - [Network Configuration Guide](./network-configuration.md)
 
-#### d) Troubleshooting and Support
+### Troubleshooting and Support
 If you encounter any issues:
 - [Common Issues and Solutions](./troubleshooting.md)
 - [Community Support Channels](./community-support.md)
 
 Choose the path that best fits your needs and follow the respective guide for detailed instructions.
-
