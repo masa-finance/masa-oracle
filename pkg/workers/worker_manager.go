@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -100,6 +101,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	remoteWorkers, localWorker := GetEligibleWorkers(node, category, workerConfig)
 
 	remoteWorkersAttempted := 0
+	var errors []string
 	logrus.Info("Starting round-robin worker selection")
 
 	// Try remote workers first, up to MaxRemoteWorkers
@@ -112,20 +114,30 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
-			logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
+			errorMsg := fmt.Sprintf("Worker %s: %s", worker.NodeData.PeerId, response.Error)
+			errors = append(errors, errorMsg)
+			logrus.Errorf("error sending work to worker: %s", errorMsg)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
 			continue
 		}
-		return response
+		return response // Return immediately if a worker succeeds
 	}
+
 	// Fallback to local execution if local worker is eligible
 	if localWorker != nil {
-		return whm.ExecuteWork(workRequest)
+		response = whm.ExecuteWork(workRequest)
+		if response.Error != "" {
+			errors = append(errors, fmt.Sprintf("Local worker: %s", response.Error))
+		} else {
+			return response
+		}
 	}
-	if response.Error == "" {
+
+	// If we reach here, all attempts failed
+	if len(errors) == 0 {
 		response.Error = "no eligible workers found"
 	} else {
-		response.Error = fmt.Sprintf("no workers could process: remote attempt failed due to: %s", response.Error)
+		response.Error = fmt.Sprintf("All workers failed. Errors: %s", strings.Join(errors, "; "))
 	}
 	return response
 }
