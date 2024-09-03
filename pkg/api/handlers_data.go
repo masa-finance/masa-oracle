@@ -79,30 +79,6 @@ func SendWorkRequest(api *API, requestID string, workType data_types.WorkerType,
 	return nil
 }
 
-// SendWorkRequest sends a work request to the PubSubManager for processing by a worker.
-// It marshals the request details into JSON and publishes it to the configured topic.
-//
-// Parameters:
-// - api: The API instance containing the Node and PubSubManager.
-// - requestID: A unique identifier for the request.
-// - request: The type of work to be performed by the worker.
-// - bodyBytes: The request body in byte slice format.
-//
-// Returns:
-// - error: An error object if the request could not be published, otherwise nil.
-func publishWorkRequest(api *API, requestID string, request data_types.WorkerType, bodyBytes []byte) error {
-	workRequest := map[string]string{
-		"request":    string(request),
-		"request_id": requestID,
-		"body":       string(bodyBytes),
-	}
-	jsn, err := json.Marshal(workRequest)
-	if err != nil {
-		return err
-	}
-	return api.Node.PubSubManager.Publish(config.TopicWithVersion(config.WorkerTopic), jsn)
-}
-
 // handleWorkResponse processes the response from a worker and sends it back to the client.
 // It listens on the provided response channel for a response or a timeout signal.
 // If a response is received within the timeout period, it unmarshals the JSON response and sends it back to the client.
@@ -111,47 +87,70 @@ func publishWorkRequest(api *API, requestID string, request data_types.WorkerTyp
 // Parameters:
 // - c: The gin.Context object, which provides the context for the HTTP request.
 // - responseCh: A channel that receives the worker's response as a byte slice.
-func handleWorkResponse(c *gin.Context, responseCh chan data_types.WorkResponse, wg *sync.WaitGroup) {
+func handleWorkResponse(c *gin.Context, responseCh <-chan data_types.WorkResponse, wg *sync.WaitGroup) {
 	cfg, err := LoadConfig()
 	if err != nil {
-		logrus.Errorf("Failed to load API cfg: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		handleError(c, "Failed to load API cfg", err)
 		return
 	}
 
-	for {
-		select {
-		case response := <-responseCh:
-			if response.Error != "" {
-				c.JSON(http.StatusExpectationFailed, response)
-				wg.Done()
-				return
-			}
-			if data, ok := response.Data.(string); ok && IsBase64(data) {
-				decodedData, err := base64.StdEncoding.DecodeString(response.Data.(string))
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode base64 data"})
-					return
-				}
-				var jsonData map[string]interface{}
-				err = json.Unmarshal(decodedData, &jsonData)
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON data"})
-					return
-				}
-				response.Data = jsonData
-			}
-			response.WorkRequest = nil
-			c.JSON(http.StatusOK, response)
-			wg.Done()
-			return
-		case <-time.After(cfg.WorkerResponseTimeout):
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out in API layer"})
-			return
-		case <-c.Done():
-			return
-		}
+	select {
+	case response := <-responseCh:
+		handleResponse(c, response, wg)
+	case <-time.After(cfg.WorkerResponseTimeout):
+		handleTimeout(c)
+	case <-c.Done():
+		// Context cancelled, no action needed
 	}
+}
+
+func handleResponse(c *gin.Context, response data_types.WorkResponse, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	if response.Error != "" {
+		handleErrorResponse(c, response)
+		return
+	}
+
+	if response.Data == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":        "No data returned",
+			"workerPeerId": response.WorkerPeerId,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func handleErrorResponse(c *gin.Context, response data_types.WorkResponse) {
+	logrus.Errorf("[+] Work error: %s", response.Error)
+
+	errorResponse := func(status int, message string) {
+		c.JSON(status, gin.H{
+			"error":        message,
+			"details":      response.Error,
+			"workerPeerId": response.WorkerPeerId,
+		})
+	}
+
+	switch {
+	case strings.Contains(response.Error, "Twitter API rate limit exceeded (429 error)"):
+		errorResponse(http.StatusTooManyRequests, "Twitter API rate limit exceeded")
+	case strings.Contains(response.Error, "no workers could process"):
+		errorResponse(http.StatusServiceUnavailable, "No available workers to process the request")
+	default:
+		errorResponse(http.StatusInternalServerError, "An error occurred while processing the request")
+	}
+}
+
+func handleError(c *gin.Context, message string, err error) {
+	logrus.Errorf("%s: %v", message, err)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+}
+
+func handleTimeout(c *gin.Context) {
+	c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out in API layer"})
 }
 
 // GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.

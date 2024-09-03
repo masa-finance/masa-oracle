@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	_ "github.com/lib/pq"
 
@@ -128,6 +129,7 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 	scraper := auth()
 	var tweets []*TweetResult
+	var lastError error
 
 	if scraper == nil {
 		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")
@@ -138,23 +140,19 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 
 	// Perform the search with the specified query and count
 	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
-		var tweet TweetResult
 		if tweetResult.Error != nil {
-			tweet = TweetResult{
-				Tweet: nil,
-				Error: tweetResult.Error,
+			lastError = tweetResult.Error
+			logrus.Warnf("[+] Error encountered while scraping tweet: %v", tweetResult.Error)
+			if strings.Contains(tweetResult.Error.Error(), "Rate limit exceeded") {
+				return nil, fmt.Errorf("Twitter API rate limit exceeded (429 error)")
 			}
-		} else {
-			tweet = TweetResult{
-				Tweet: &tweetResult.Tweet,
-				Error: nil,
-			}
+			continue
 		}
-		tweets = append(tweets, &tweet)
+		tweets = append(tweets, &TweetResult{Tweet: &tweetResult.Tweet, Error: nil})
 	}
 
-	if len(tweets) == 0 {
-		return nil, fmt.Errorf("no tweets found for the given query")
+	if len(tweets) == 0 && lastError != nil {
+		return nil, lastError
 	}
 
 	return tweets, nil
