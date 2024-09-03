@@ -122,14 +122,14 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 			// Check if the error is related to Twitter authentication
 			if strings.Contains(response.Error, "unable to get twitter profile: there was an error authenticating with your Twitter credentials") {
 				logrus.Warnf("Worker %s failed due to Twitter authentication error. Skipping to the next worker.", worker.NodeData.PeerId)
-				continue // Skip to the next worker
+				continue
 			}
 		} else {
 			return response
 		}
 	}
 
-	// Fallback to local execution if local worker is eligible
+	// Fallback to local execution if local worker is eligible and all remote workers failed
 	if localWorker != nil {
 		response = whm.ExecuteWork(workRequest)
 		if response.Error != "" {
