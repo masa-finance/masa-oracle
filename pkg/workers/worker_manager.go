@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -100,6 +101,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	remoteWorkers, localWorker := GetEligibleWorkers(node, category, workerConfig)
 
 	remoteWorkersAttempted := 0
+	var errors []string
 	logrus.Info("Starting round-robin worker selection")
 
 	// Try remote workers first, up to MaxRemoteWorkers
@@ -109,23 +111,57 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 			break
 		}
 		remoteWorkersAttempted++
+
+		// Attempt to connect to the worker
+		peerInfo, err := node.DHT.FindPeer(context.Background(), worker.NodeData.PeerId)
+		if err != nil {
+			logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
+			continue
+		}
+
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), workerConfig.ConnectionTimeout)
+		err = node.Host.Connect(ctxWithTimeout, peerInfo)
+		cancel()
+		if err != nil {
+			logrus.Warnf("Failed to connect to peer %s: %v", worker.NodeData.PeerId.String(), err)
+			continue
+		}
+
+		worker.AddrInfo = &peerInfo
+
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
-			logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
+			errorMsg := fmt.Sprintf("Worker %s: %s", worker.NodeData.PeerId, response.Error)
+			errors = append(errors, errorMsg)
+			logrus.Errorf("error sending work to worker: %s", errorMsg)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
-			continue
+
+			// Check if the error is related to Twitter authentication
+			if strings.Contains(response.Error, "unable to get twitter profile: there was an error authenticating with your Twitter credentials") {
+				logrus.Warnf("Worker %s failed due to Twitter authentication error. Skipping to the next worker.", worker.NodeData.PeerId)
+				continue
+			}
+		} else {
+			return response
 		}
-		return response
 	}
-	// Fallback to local execution if local worker is eligible
+
+	// Fallback to local execution if local worker is eligible and all remote workers failed
 	if localWorker != nil {
-		return whm.ExecuteWork(workRequest)
+		response = whm.ExecuteWork(workRequest)
+		if response.Error != "" {
+			errors = append(errors, fmt.Sprintf("Local worker: %s", response.Error))
+		} else {
+			return response
+		}
 	}
-	if response.Error == "" {
+
+	// If we reach here, all attempts failed
+	if len(errors) == 0 {
 		response.Error = "no eligible workers found"
 	} else {
-		response.Error = fmt.Sprintf("no workers could process: remote attempt failed due to: %s", response.Error)
+		response.Error = fmt.Sprintf("All workers failed. Errors: %s", strings.Join(errors, "; "))
 	}
 	return response
 }
