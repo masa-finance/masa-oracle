@@ -111,6 +111,24 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 			break
 		}
 		remoteWorkersAttempted++
+
+		// Attempt to connect to the worker
+		peerInfo, err := node.DHT.FindPeer(context.Background(), worker.NodeData.PeerId)
+		if err != nil {
+			logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
+			continue
+		}
+
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), workerConfig.ConnectionTimeout)
+		err = node.Host.Connect(ctxWithTimeout, peerInfo)
+		cancel()
+		if err != nil {
+			logrus.Warnf("Failed to connect to peer %s: %v", worker.NodeData.PeerId.String(), err)
+			continue
+		}
+
+		worker.AddrInfo = &peerInfo
+
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
