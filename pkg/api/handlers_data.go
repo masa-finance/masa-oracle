@@ -169,6 +169,19 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		}
 		reqBody.Username = c.Param("username")
 
+		// Track work request event
+		if api.EventTracker != nil && api.Node != nil {
+			peerID := api.Node.Host.ID().String()
+			payload, err := json.Marshal(reqBody)
+			if err != nil {
+				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
+			} else {
+				api.EventTracker.TrackWorkRequest("SearchTweetsProfile", peerID, string(payload), event.DataSourceTwitter)
+			}
+		} else {
+			logrus.Warn("EventTracker or Node is nil in SearchTweetsProfile")
+		}
+
 		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
@@ -181,6 +194,108 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		go handleWorkResponse(c, responseCh, wg)
 
 		err = SendWorkRequest(api, requestID, data_types.TwitterProfile, bodyBytes, wg)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		wg.Wait()
+	}
+}
+
+// SearchTweetsRecent returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
+// It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
+// The handler validates the request body, ensuring the query is not empty and the count is positive.
+// If the request is valid, it attempts to scrape tweets using the specified query and count.
+// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) SearchTweetsRecent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Query string `json:"query"`
+			Count int    `json:"count"`
+		}
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Query == "" || reqBody.Count <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query and count must be provided and valid"})
+			return
+		}
+
+		if api.EventTracker != nil && api.Node != nil {
+			peerID := api.Node.Host.ID().String()
+			payload, _ := json.Marshal(reqBody)
+			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, string(payload), event.DataSourceTwitter)
+		} else {
+			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
+		}
+
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, data_types.Twitter, bodyBytes, wg)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		wg.Wait()
+	}
+}
+
+// SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
+//
+// Dev Notes:
+// - This function uses URL parameters to get the username.
+// - The default count is set to 20 if not provided.
+func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Username string `json:"username"`
+			Count    int    `json:"count"`
+		}
+
+		username := c.Param("username")
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+		reqBody.Username = username
+		if reqBody.Count == 0 {
+			reqBody.Count = 20
+		}
+
+		// Track work request event
+		if api.EventTracker != nil && api.Node != nil {
+			peerID := api.Node.Host.ID().String()
+			payload, err := json.Marshal(reqBody)
+			if err != nil {
+				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
+			} else {
+				api.EventTracker.TrackWorkRequest("SearchTwitterFollowers", peerID, string(payload), event.DataSourceTwitter)
+			}
+		} else {
+			logrus.Warn("EventTracker or Node is nil in SearchTwitterFollowers")
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, data_types.TwitterFollowers, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -438,110 +553,6 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		} else {
 			c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
 		}
-	}
-}
-
-// ExchangeDiscordTokenHandler returns a gin.HandlerFunc that exchanges a Discord OAuth2 authorization code for an access token.
-//func (api *API) ExchangeDiscordTokenHandler() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		code := c.Param("code")
-//		if code == "" {
-//			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code must be provided"})
-//			return
-//		}
-//
-//		tokenResponse, err := discord.ExchangeCode(code)
-//		if err != nil {
-//			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code for access token", "details": err.Error()})
-//			return
-//		}
-//
-//		c.JSON(http.StatusOK, tokenResponse)
-//	}
-//}
-
-// SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
-func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			Username string `json:"username"`
-			Count    int    `json:"count"`
-		}
-
-		username := c.Param("username") // Assuming you're using a URL parameter for the username
-		if username == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
-			return
-		}
-		reqBody.Username = username
-		if reqBody.Count == 0 {
-			reqBody.Count = 20
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = SendWorkRequest(api, requestID, data_types.TwitterFollowers, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// SearchTweetsRecent returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
-// It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
-// The handler validates the request body, ensuring the query is not empty and the count is positive.
-// If the request is valid, it attempts to scrape tweets using the specified query and count.
-// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) SearchTweetsRecent() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			Query string `json:"query"`
-			Count int    `json:"count"`
-		}
-
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.Query == "" || reqBody.Count <= 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Query and count must be provided and valid"})
-			return
-		}
-
-		if api.EventTracker != nil && api.Node != nil {
-			peerID := api.Node.Host.ID().String()
-			payload, _ := json.Marshal(reqBody)
-			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, string(payload), event.DataSourceTwitter)
-		} else {
-			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
-		}
-
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = SendWorkRequest(api, requestID, data_types.Twitter, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
 	}
 }
 
