@@ -26,6 +26,8 @@ func (a *EventTracker) TrackWorkRequest(workType string, peerId string, payload 
 	if err != nil {
 		logrus.Errorf("error tracking work request event: %s", err)
 	}
+
+	logrus.Infof("[+] %s input: %s", workType, payload)
 }
 
 // TrackWorkDistribution records the distribution of work to a worker.

@@ -772,7 +772,8 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 
 		if api.EventTracker != nil && api.Node != nil {
 			peerID := api.Node.Host.ID().String()
-			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, reqBody.Query, event.DataSourceTwitter)
+			payload, _ := json.Marshal(reqBody)
+			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, string(payload), event.DataSourceTwitter)
 		} else {
 			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
 		}
