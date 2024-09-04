@@ -146,6 +146,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 			logrus.Debugf("[-] Failed to close stream: %v", err)
 		}
 	}(stream) // Ensure the stream is closed after sending the data
+
 	logrus.Debugf("[+] Sending %d node data records to %s", totalRecords, peerID)
 	for pageNumber := 0; pageNumber < totalPages; pageNumber++ {
 		node.SendNodeDataPage(nodeData, stream, pageNumber)
@@ -156,6 +157,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 // over a network stream. It scans the stream and unmarshals each
 // page of NodeData, refreshing the local NodeTracker with the data.
 func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
+	// The stream is closed by the sender
 	logrus.Debug("[+] ReceiveNodeData")
 	scanner := bufio.NewScanner(stream)
 	for scanner.Scan() {
@@ -188,11 +190,9 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 					}
 				}
 			}
-
 			node.NodeTracker.RefreshFromBoot(nd)
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
 		logrus.Errorf("[-] Failed to read stream: %v", err)
 	}
@@ -205,6 +205,13 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 // stream when finished.
 func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	logrus.Info("[+] GossipNodeData")
+	defer func(stream network.Stream) {
+		err := stream.Close()
+		if err != nil {
+			logrus.Debugf("[-] Failed to close stream: %v", err)
+		}
+	}(stream) // Ensure the stream is closed after sending the data
+
 	remotePeerId, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
 		logrus.Errorf("[-] Failed to read stream: %v", err)
@@ -213,10 +220,6 @@ func (node *OracleNode) GossipNodeData(stream network.Stream) {
 	// Only allow gossip about a node from other nodes
 	if remotePeerId.String() != nodeData.PeerId.String() {
 		node.NodeTracker.HandleNodeData(nodeData)
-	}
-	err = stream.Close()
-	if err != nil {
-		logrus.Errorf("[-] Failed to close stream: %v", err)
 	}
 }
 

@@ -278,6 +278,13 @@ func (node *OracleNode) handleDiscoveredPeers() {
 // It reads the stream data, validates the remote peer ID, updates the node tracker
 // with the remote peer's information, and logs the event.
 func (node *OracleNode) handleStream(stream network.Stream) {
+	defer func(stream network.Stream) {
+		err := stream.Close()
+		if err != nil {
+			logrus.Errorf("[-] Error closing stream: %v", err)
+		}
+	}(stream)
+
 	remotePeer, nodeData, err := node.handleStreamData(stream)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "un-staked") {
