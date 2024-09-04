@@ -796,27 +796,6 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 	}
 }
 
-// SearchTweetsTrends returns a gin.HandlerFunc that processes a request to search for trending tweets.
-// It does not expect any request parameters.
-// The handler attempts to scrape trending tweets using the ScrapeTweetsByTrends function.
-// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) SearchTweetsTrends() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// worker handler implementation
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err := SendWorkRequest(api, requestID, data_types.TwitterTrends, nil, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
 // WebData returns a gin.HandlerFunc that processes web scraping requests.
 // It expects a JSON body with fields "url" (string) and "depth" (int), representing the URL to scrape and the depth of the scrape, respectively.
 // The handler validates the request body, ensuring the URL is not empty and the depth is positive.

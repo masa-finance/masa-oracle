@@ -207,16 +207,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Example safeSearch {"query": "Masa filter:safe", "count": 10}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
-		// @Summary Twitter Trends
-		// @Description Retrieves the latest Twitter trending topics
-		// @Tags Twitter
-		// @Accept  json
-		// @Produce  json
-		// @Success 200 {array} Trend "List of trending topics"
-		// @Failure 400 {object} ErrorResponse "Error fetching Twitter trends"
-		// @Router /data/twitter/tweets/trends [get]
-		v1.GET("/data/twitter/tweets/trends", API.SearchTweetsTrends())
-
 		// @Summary Search Discord Profile
 		// @Description Retrieves a Discord user profile by user ID.
 		// @Tags Discord
