@@ -28,7 +28,7 @@ Create a `.env` file in the root of your project directory. This file will store
 Example `.env` file content:
 
 ```env
-BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa
+BOOTNODES=/ip4/52.20.183.116/udp/4001/quic-v1/p2p/16Uiu2HAm9Nkz9kEMnL1YqPTtXZHQZ1E9rhquwSqKNsUViqTojLZt
 RPC_URL=https://ethereum-sepolia.publicnode.com
 ENV=test
 TWITTER_USERNAME="your_username"
