@@ -34,6 +34,7 @@ type Event struct {
 	WorkType     string `json:"work_type"`
 	RemoteWorker bool   `json:"remote_worker"`
 	Success      bool   `json:"success"`
+	RecordCount  int    `json:"record_count"`
 	Error        string `json:"error"`
 }
 

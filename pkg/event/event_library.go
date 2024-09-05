@@ -53,12 +53,13 @@ func (a *EventTracker) TrackWorkDistribution(remoteWorker bool, peerId string) {
 // Parameters:
 // - success: Boolean indicating if the work was completed successfully
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkCompletion(success bool, peerId string) {
+func (a *EventTracker) TrackWorkCompletion(success bool, recordCount int, peerId string) {
 	event := Event{
-		Name:     WorkCompletion,
-		PeerID:   peerId,
-		WorkType: WorkCompletion,
-		Success:  success,
+		Name:        WorkCompletion,
+		PeerID:      peerId,
+		WorkType:    WorkCompletion,
+		Success:     success,
+		RecordCount: recordCount,
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {

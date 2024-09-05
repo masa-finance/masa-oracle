@@ -35,7 +35,7 @@ func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 
 	logrus.Infof("[+] TwitterQueryHandler response: %d tweets found", len(resp))
 
-	return data_types.WorkResponse{Data: resp}
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }
 
 func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkResponse {

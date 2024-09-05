@@ -160,7 +160,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		whm.eventTracker.TrackLocalWorkerFallback(reason, localWorker.AddrInfo.ID.String())
 
 		response = whm.ExecuteWork(workRequest)
-		whm.eventTracker.TrackWorkCompletion(response.Error == "", localWorker.AddrInfo.ID.String())
+		whm.eventTracker.TrackWorkCompletion(response.Error == "", response.RecordCount, localWorker.AddrInfo.ID.String())
 
 		if response.Error != "" {
 			errors = append(errors, fmt.Sprintf("Local worker: %s", response.Error))
@@ -280,6 +280,7 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 		} else if workResponse.Data == nil {
 			logrus.Warnf("[+] Work response for %s: No data returned", workRequest.WorkType)
 		} else {
+			// TODO: consider moving this logging into the individual handlers
 			switch data := workResponse.Data.(type) {
 			case []*twitter.TweetResult:
 				logrus.Infof("[+] Work response for %s: %d tweets returned", workRequest.WorkType, len(data))
@@ -342,7 +343,7 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		logrus.Errorf("error from remote worker %s: executing work: %s", peerId, workResponse.Error)
 	}
 	workResponse.WorkerPeerId = peerId
-	whm.eventTracker.TrackWorkCompletion(workResponse.Error == "", peerId)
+	whm.eventTracker.TrackWorkCompletion(workResponse.Error == "", workResponse.RecordCount, peerId)
 
 	// Write the response to the stream
 	responseBytes, err := json.Marshal(workResponse)
