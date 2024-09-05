@@ -84,6 +84,8 @@ func (a *EventTracker) TrackWorkerFailure(errorMessage string, peerId string) {
 	}
 }
 
+// TODO: Do not implement the following for now we can focus only on the baove events
+
 // TrackWorkExecutionStart records the start of work execution.
 //
 // Parameters:
