@@ -281,7 +281,7 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 	defer func(stream network.Stream) {
 		err := stream.Close()
 		if err != nil {
-			logrus.Errorf("[-] Error closing stream: %v", err)
+			logrus.Infof("[-] Error closing stream: %v", err)
 		}
 	}(stream)
 
