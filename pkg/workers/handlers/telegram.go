@@ -27,7 +27,8 @@ func (h *TelegramSentimentHandler) HandleWork(data []byte) data_types.WorkRespon
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get telegram sentiment: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] TelegramSentimentHandler Work response for %s: %d records returned", data_types.TelegramSentiment, 1)
+	return data_types.WorkResponse{Data: resp, RecordCount: 1}
 }
 
 // HandleWork implements the WorkHandler interface for TelegramChannelHandler.
@@ -42,5 +43,6 @@ func (h *TelegramChannelHandler) HandleWork(data []byte) data_types.WorkResponse
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get telegram channel messages: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] TelegramChannelHandler Work response for %s: %d records returned", data_types.TelegramChannelMessages, len(resp))
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }
