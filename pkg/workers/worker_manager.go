@@ -17,7 +17,6 @@ import (
 	masa "github.com/masa-finance/masa-oracle/pkg"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/event"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
@@ -78,6 +77,10 @@ func (whm *WorkHandlerManager) setupHandlers() {
 	}
 	if cfg.DiscordScraper {
 		whm.addWorkHandler(data_types.Discord, &handlers.DiscordProfileHandler{})
+		whm.addWorkHandler(data_types.DiscordChannelMessages, &handlers.DiscordChannelHandler{})
+		whm.addWorkHandler(data_types.DiscordSentiment, &handlers.DiscordSentimentHandler{})
+		whm.addWorkHandler(data_types.DiscordGuildChannels, &handlers.DiscordGuildHandler{})
+		whm.addWorkHandler(data_types.DiscordUserGuilds, &handlers.DiscoreUserGuildsHandler{})
 	}
 }
 
@@ -104,7 +107,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 	remoteWorkers, localWorker := GetEligibleWorkers(node, category, workerConfig)
 
 	remoteWorkersAttempted := 0
-	var errors []string
+	var errorList []string
 	logrus.Info("Starting round-robin worker selection")
 
 	// Try remote workers first, up to MaxRemoteWorkers
@@ -163,17 +166,17 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		whm.eventTracker.TrackWorkCompletion(response.Error == "", response.RecordCount, localWorker.AddrInfo.ID.String())
 
 		if response.Error != "" {
-			errors = append(errors, fmt.Sprintf("Local worker: %s", response.Error))
+			errorList = append(errorList, fmt.Sprintf("Local worker: %s", response.Error))
 		} else {
 			return response
 		}
 	}
 
 	// If we reach here, all attempts failed
-	if len(errors) == 0 {
+	if len(errorList) == 0 {
 		response.Error = "no eligible workers found"
 	} else {
-		response.Error = fmt.Sprintf("All workers failed. Errors: %s", strings.Join(errors, "; "))
+		response.Error = fmt.Sprintf("All workers failed. Errors: %s", strings.Join(errorList, "; "))
 	}
 	return response
 }
@@ -276,22 +279,9 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 		whm.mu.Unlock()
 
 		if workResponse.Error != "" {
-			logrus.Errorf("[+] Work error for %s: %s", workRequest.WorkType, workResponse.Error)
+			logrus.Errorf("[-] Work error for %s: %s", workRequest.WorkType, workResponse.Error)
 		} else if workResponse.Data == nil {
-			logrus.Warnf("[+] Work response for %s: No data returned", workRequest.WorkType)
-		} else {
-			// TODO: consider moving this logging into the individual handlers
-			switch data := workResponse.Data.(type) {
-			case []*twitter.TweetResult:
-				logrus.Infof("[+] Work response for %s: %d tweets returned", workRequest.WorkType, len(data))
-				if len(data) > 0 && data[0].Tweet != nil {
-					tweet := data[0].Tweet
-					logrus.Infof("[+] First tweet: ID: %s, Text: %s, Author: %s, CreatedAt: %s",
-						tweet.ID, tweet.Text, tweet.Username, tweet.TimeParsed)
-				}
-			default:
-				logrus.Infof("[+] Work response for %s: Data successfully returned (type: %T)", workRequest.WorkType, workResponse.Data)
-			}
+			logrus.Warnf("[-] Work response for %s: No data returned", workRequest.WorkType)
 		}
 		responseChan <- workResponse
 	}()
