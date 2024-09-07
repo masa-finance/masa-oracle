@@ -22,7 +22,6 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/event"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
@@ -37,11 +36,6 @@ type LLMChat struct {
 		Content string `json:"content"`
 	} `json:"messages,omitempty"`
 	Stream bool `json:"stream"`
-}
-
-func IsBase64(s string) bool {
-	_, err := base64.StdEncoding.DecodeString(s)
-	return err == nil
 }
 
 // SendWorkRequest sends a work request to a worker for processing.
@@ -176,7 +170,7 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 			if err != nil {
 				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
 			} else {
-				api.EventTracker.TrackWorkRequest("SearchTweetsProfile", peerID, string(payload), event.DataSourceTwitter)
+				api.EventTracker.TrackWorkRequest("SearchTweetsProfile", peerID, string(payload), data_types.DataSourceTwitter)
 			}
 		} else {
 			logrus.Warn("EventTracker or Node is nil in SearchTweetsProfile")
@@ -226,7 +220,7 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 		if api.EventTracker != nil && api.Node != nil {
 			peerID := api.Node.Host.ID().String()
 			payload, _ := json.Marshal(reqBody)
-			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, string(payload), event.DataSourceTwitter)
+			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, string(payload), data_types.DataSourceTwitter)
 		} else {
 			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
 		}
@@ -278,7 +272,7 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 			if err != nil {
 				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
 			} else {
-				api.EventTracker.TrackWorkRequest("SearchTwitterFollowers", peerID, string(payload), event.DataSourceTwitter)
+				api.EventTracker.TrackWorkRequest("SearchTwitterFollowers", peerID, string(payload), data_types.DataSourceTwitter)
 			}
 		} else {
 			logrus.Warn("EventTracker or Node is nil in SearchTwitterFollowers")
@@ -597,7 +591,6 @@ func (api *API) WebData() gin.HandlerFunc {
 		go handleWorkResponse(c, responseCh, wg)
 
 		err = SendWorkRequest(api, requestID, data_types.Web, bodyBytes, wg)
-		defer workers.GetResponseChannelMap().Delete(requestID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}

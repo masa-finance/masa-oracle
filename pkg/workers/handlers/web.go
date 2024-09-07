@@ -25,8 +25,12 @@ func (h *WebHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get web data: %v", err)}
 	}
+	result, err := JsonBytesToMap(resp)
+	if err != nil {
+		logrus.Errorf("unable to parse web data: %v", err)
+	}
 	logrus.Infof("[+] WebHandler Work response for %s: %d records returned", data_types.Web, 1)
-	return data_types.WorkResponse{Data: resp, RecordCount: 1}
+	return data_types.WorkResponse{Data: result, RecordCount: 1}
 }
 
 func (h *WebSentimentHandler) HandleWork(data []byte) data_types.WorkResponse {

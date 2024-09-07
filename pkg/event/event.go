@@ -20,10 +20,6 @@ const (
 	WorkRequestSerialization    = "work_request_serialized"
 	WorkResponseDeserialization = "work_response_serialized"
 	LocalWorkerFallback         = "local_work_executed"
-	DataSourceTwitter           = "twitter"
-	DataSourceDiscord           = "discord"
-	DataSourceWeb               = "web"
-	DataSourceTelegram          = "telegram"
 )
 
 type Event struct {
@@ -134,6 +130,9 @@ func validateEvent(event Event) error {
 	}
 	if event.WorkType == "" {
 		return errors.New("Work type is required")
+	}
+	if event.DataSource == "" {
+		return errors.New("Data source is required")
 	}
 	return nil
 }
