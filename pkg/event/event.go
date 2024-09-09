@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 const (
@@ -23,15 +25,15 @@ const (
 )
 
 type Event struct {
-	Name         string `json:"name"`
-	PeerID       string `json:"peer_id"`
-	Payload      string `json:"payload"`
-	DataSource   string `json:"data_source"`
-	WorkType     string `json:"work_type"`
-	RemoteWorker bool   `json:"remote_worker"`
-	Success      bool   `json:"success"`
-	RecordCount  int    `json:"record_count"`
-	Error        string `json:"error"`
+	Name         string                `json:"name"`
+	PeerID       string                `json:"peer_id"`
+	Payload      string                `json:"payload"`
+	DataSource   string                `json:"data_source"`
+	WorkType     data_types.WorkerType `json:"work_type"`
+	RemoteWorker bool                  `json:"remote_worker"`
+	Success      bool                  `json:"success"`
+	RecordCount  int                   `json:"record_count"`
+	Error        string                `json:"error"`
 }
 
 type EventTracker struct {
