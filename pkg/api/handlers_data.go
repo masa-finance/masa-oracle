@@ -22,6 +22,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/event"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
@@ -152,257 +153,6 @@ func handleTimeout(c *gin.Context) {
 	c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Request timed out in API layer"})
 }
 
-// GetLLMModelsHandler returns a gin.HandlerFunc that retrieves the available LLM models.
-// It does not expect any request parameters.
-// The handler returns a JSON response containing an array of supported LLM model names.
-func (api *API) GetLLMModelsHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		models := []string{
-			string(config.Models.ClaudeOpus),
-			string(config.Models.ClaudeSonnet),
-			string(config.Models.ClaudeHaiku),
-			string(config.Models.GPT4),
-			string(config.Models.GPT4o),
-			string(config.Models.GPT4Turbo),
-			string(config.Models.GPT35Turbo),
-			string(config.Models.LLama2),
-			string(config.Models.LLama3),
-			string(config.Models.Mistral),
-			string(config.Models.Gemma),
-			string(config.Models.Mixtral),
-			string(config.Models.OpenChat),
-			string(config.Models.NeuralChat),
-			string(config.Models.CloudflareQwen15Chat),
-			string(config.Models.CloudflareLlama27bChatFp16),
-			string(config.Models.CloudflareLlama38bInstruct),
-			string(config.Models.CloudflareMistral7bInstruct),
-			string(config.Models.CloudflareMistral7bInstructV01),
-			string(config.Models.CloudflareOpenchat350106),
-			string(config.Models.CloudflareMicrosoftPhi2),
-			string(config.Models.HuggingFaceGoogleGemma7bIt),
-			string(config.Models.HuggingFaceNousresearchHermes2ProMistral7b),
-			string(config.Models.HuggingFaceTheblokeLlama213bChatAwq),
-			string(config.Models.HuggingFaceTheblokeNeuralChat7bV31Awq),
-		}
-		c.JSON(http.StatusOK, gin.H{"models": models})
-	}
-}
-
-// SearchTweetsAndAnalyzeSentiment method adjusted to match the pattern
-// Models Supported:
-//
-//	chose a model or use "all"
-func (api *API) SearchTweetsAndAnalyzeSentiment() gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-		if !api.Node.IsStaked {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
-			return
-		}
-		var reqBody struct {
-			Query string `json:"query"`
-			Count int    `json:"count"`
-			Model string `json:"model"`
-		}
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.Query == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter is missing"})
-			return
-		}
-		if reqBody.Count <= 0 {
-			reqBody.Count = 50 // Default count
-		}
-		if reqBody.Model == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing. Available models are claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307, gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo"})
-			return
-		}
-
-		// worker handler implementation
-		bodyBytes, wErr := json.Marshal(reqBody)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-		}
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		wErr = SendWorkRequest(api, requestID, data_types.TwitterSentiment, bodyBytes, wg)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// SearchDiscordMessagesAndAnalyzeSentiment processes a request to search Discord messages and analyze sentiment.
-func (api *API) SearchDiscordMessagesAndAnalyzeSentiment() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if !api.Node.IsStaked {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
-			return
-		}
-
-		var reqBody struct {
-			ChannelID string `json:"channelID"`
-			Prompt    string `json:"prompt"`
-			Model     string `json:"model"`
-		}
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.ChannelID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID parameter is missing"})
-			return
-		}
-
-		if reqBody.Prompt == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID parameter is missing"})
-			return
-		}
-
-		if reqBody.Model == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing"})
-			return
-		}
-
-		bodyBytes, wErr := json.Marshal(reqBody)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-			return
-		}
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		wErr = SendWorkRequest(api, requestID, data_types.DiscordSentiment, bodyBytes, wg)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-			return
-		}
-		wg.Wait()
-
-	}
-}
-
-// SearchTelegramMessagesAndAnalyzeSentiment processes a request to search Telegram messages and analyze sentiment.
-func (api *API) SearchTelegramMessagesAndAnalyzeSentiment() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if !api.Node.IsStaked {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
-			return
-		}
-
-		var reqBody struct {
-			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
-			Prompt   string `json:"prompt"`
-			Model    string `json:"model"`
-		}
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.Username == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
-			return
-		}
-
-		if reqBody.Prompt == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Prompt parameter is missing"})
-			return
-		}
-
-		if reqBody.Model == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing"})
-			return
-		}
-
-		bodyBytes, wErr := json.Marshal(reqBody)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-			return
-		}
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		wErr = SendWorkRequest(api, requestID, data_types.TelegramSentiment, bodyBytes, wg)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-			return
-		}
-		wg.Wait()
-	}
-}
-
-// SearchWebAndAnalyzeSentiment returns a gin.HandlerFunc that processes web search requests and performs sentiment analysis.
-// It first validates the request body for required fields such as URL, Depth, and Model. If the Model is set to "all",
-// it iterates through all available models to perform sentiment analysis on the web content fetched from the specified URL.
-// The function responds with the sentiment analysis results in JSON format.// Models Supported:
-// Models Supported:
-//
-//	chose a model or use "all"
-func (api *API) SearchWebAndAnalyzeSentiment() gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-		if !api.Node.IsStaked {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
-			return
-		}
-		var reqBody struct {
-			Url   string `json:"url"`
-			Depth int    `json:"depth"`
-			Model string `json:"model"`
-		}
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.Url == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "URL parameter is missing"})
-			return
-		}
-		if reqBody.Depth <= 0 {
-			reqBody.Depth = 1 // Default count
-		}
-		if reqBody.Model == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Model parameter is missing. Available models are claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307, gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo"})
-			return
-		}
-
-		// worker handler implementation
-		bodyBytes, wErr := json.Marshal(reqBody)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-		}
-
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		wErr = SendWorkRequest(api, requestID, data_types.WebSentiment, bodyBytes, wg)
-		if wErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": wErr.Error()})
-		}
-		wg.Wait()
-	}
-}
-
 // SearchTweetsProfile returns a gin.HandlerFunc that processes a request to search for tweets from a specific user profile.
 // It expects a URL parameter "username" representing the Twitter username to search for.
 // The handler validates the username, ensuring it is provided.
@@ -419,6 +169,19 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		}
 		reqBody.Username = c.Param("username")
 
+		// Track work request event
+		if api.EventTracker != nil && api.Node != nil {
+			peerID := api.Node.Host.ID().String()
+			payload, err := json.Marshal(reqBody)
+			if err != nil {
+				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
+			} else {
+				api.EventTracker.TrackWorkRequest("SearchTweetsProfile", peerID, string(payload), event.DataSourceTwitter)
+			}
+		} else {
+			logrus.Warn("EventTracker or Node is nil in SearchTweetsProfile")
+		}
+
 		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
@@ -431,6 +194,108 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		go handleWorkResponse(c, responseCh, wg)
 
 		err = SendWorkRequest(api, requestID, data_types.TwitterProfile, bodyBytes, wg)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		wg.Wait()
+	}
+}
+
+// SearchTweetsRecent returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
+// It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
+// The handler validates the request body, ensuring the query is not empty and the count is positive.
+// If the request is valid, it attempts to scrape tweets using the specified query and count.
+// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) SearchTweetsRecent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Query string `json:"query"`
+			Count int    `json:"count"`
+		}
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Query == "" || reqBody.Count <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query and count must be provided and valid"})
+			return
+		}
+
+		if api.EventTracker != nil && api.Node != nil {
+			peerID := api.Node.Host.ID().String()
+			payload, _ := json.Marshal(reqBody)
+			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, string(payload), event.DataSourceTwitter)
+		} else {
+			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
+		}
+
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, data_types.Twitter, bodyBytes, wg)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		wg.Wait()
+	}
+}
+
+// SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
+//
+// Dev Notes:
+// - This function uses URL parameters to get the username.
+// - The default count is set to 20 if not provided.
+func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Username string `json:"username"`
+			Count    int    `json:"count"`
+		}
+
+		username := c.Param("username")
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
+			return
+		}
+		reqBody.Username = username
+		if reqBody.Count == 0 {
+			reqBody.Count = 20
+		}
+
+		// Track work request event
+		if api.EventTracker != nil && api.Node != nil {
+			peerID := api.Node.Host.ID().String()
+			payload, err := json.Marshal(reqBody)
+			if err != nil {
+				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
+			} else {
+				api.EventTracker.TrackWorkRequest("SearchTwitterFollowers", peerID, string(payload), event.DataSourceTwitter)
+			}
+		} else {
+			logrus.Warn("EventTracker or Node is nil in SearchTwitterFollowers")
+		}
+
+		// worker handler implementation
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		requestID := uuid.New().String()
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = SendWorkRequest(api, requestID, data_types.TwitterFollowers, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -688,124 +553,6 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 		} else {
 			c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
 		}
-	}
-}
-
-// ExchangeDiscordTokenHandler returns a gin.HandlerFunc that exchanges a Discord OAuth2 authorization code for an access token.
-//func (api *API) ExchangeDiscordTokenHandler() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		code := c.Param("code")
-//		if code == "" {
-//			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code must be provided"})
-//			return
-//		}
-//
-//		tokenResponse, err := discord.ExchangeCode(code)
-//		if err != nil {
-//			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code for access token", "details": err.Error()})
-//			return
-//		}
-//
-//		c.JSON(http.StatusOK, tokenResponse)
-//	}
-//}
-
-// SearchTwitterFollowers returns a gin.HandlerFunc that retrieves the followers of a given Twitter user.
-func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			Username string `json:"username"`
-			Count    int    `json:"count"`
-		}
-
-		username := c.Param("username") // Assuming you're using a URL parameter for the username
-		if username == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
-			return
-		}
-		reqBody.Username = username
-		if reqBody.Count == 0 {
-			reqBody.Count = 20
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = SendWorkRequest(api, requestID, data_types.TwitterFollowers, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// SearchTweetsRecent returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
-// It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
-// The handler validates the request body, ensuring the query is not empty and the count is positive.
-// If the request is valid, it attempts to scrape tweets using the specified query and count.
-// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) SearchTweetsRecent() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			Query string `json:"query"`
-			Count int    `json:"count"`
-		}
-
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.Query == "" || reqBody.Count <= 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Query and count must be provided and valid"})
-			return
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = SendWorkRequest(api, requestID, data_types.Twitter, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// SearchTweetsTrends returns a gin.HandlerFunc that processes a request to search for trending tweets.
-// It does not expect any request parameters.
-// The handler attempts to scrape trending tweets using the ScrapeTweetsByTrends function.
-// On success, it returns the scraped tweets in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) SearchTweetsTrends() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// worker handler implementation
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err := SendWorkRequest(api, requestID, data_types.TwitterTrends, nil, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
 	}
 }
 

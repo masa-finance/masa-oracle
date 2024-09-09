@@ -207,16 +207,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Example safeSearch {"query": "Masa filter:safe", "count": 10}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
-		// @Summary Twitter Trends
-		// @Description Retrieves the latest Twitter trending topics
-		// @Tags Twitter
-		// @Accept  json
-		// @Produce  json
-		// @Success 200 {array} Trend "List of trending topics"
-		// @Failure 400 {object} ErrorResponse "Error fetching Twitter trends"
-		// @Router /data/twitter/tweets/trends [get]
-		v1.GET("/data/twitter/tweets/trends", API.SearchTweetsTrends())
-
 		// @Summary Search Discord Profile
 		// @Description Retrieves a Discord user profile by user ID.
 		// @Tags Discord
@@ -343,16 +333,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Router /dht [post]
 		v1.POST("/dht", API.PostToDHT())
 
-		// @Summary Get LLM Models
-		// @Description Retrieves the available LLM models
-		// @Tags LLM
-		// @Accept  json
-		// @Produce  json
-		// @Success 200 {object} LLMModelsResponse "Successfully retrieved LLM models"
-		// @Failure 400 {object} ErrorResponse "Error retrieving LLM models"
-		// @Router /llm/models [get]
-		v1.GET("/llm/models", API.GetLLMModelsHandler())
-
 		// @Summary Node Data
 		// @Description Retrieves data from the node
 		// @Tags Node
@@ -405,50 +385,6 @@ func SetupRoutes(node *masa.OracleNode) *gin.Engine {
 		// @Failure 400 {object} ErrorResponse "Error publishing public key"
 		// @Router /publickey/publish [post]
 		v1.POST("/publickey/publish", API.PublishPublicKeyHandler())
-
-		// @Summary Analyze Sentiment of Tweets
-		// @Description Searches for tweets and analyzes their sentiment
-		// @Tags Sentiment
-		// @Accept  json
-		// @Produce  json
-		// @Param   query   body    string  true  "Search Query"
-		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of tweets"
-		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of tweets"
-		// @Router /sentiment/tweets [post]
-		v1.POST("/sentiment/tweets", API.SearchTweetsAndAnalyzeSentiment())
-
-		// @Summary Analyze Sentiment of Tweets
-		// @Description Searches for tweets and analyzes their sentiment
-		// @Tags Sentiment
-		// @Accept  json
-		// @Produce  json
-		// @Param   query   body    string  true  "Prompt"
-		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of discord"
-		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of discord"
-		// @Router /sentiment/tweets [post]
-		v1.POST("/sentiment/discord", API.SearchDiscordMessagesAndAnalyzeSentiment())
-
-		// @Summary Analyze Sentiment of Telegram Messages
-		// @Description Searches for Telegram messages and analyzes their sentiment
-		// @Tags Sentiment
-		// @Accept  json
-		// @Produce  json
-		// @Param   query   body    string  true  "Search Query"
-		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of Telegram messages"
-		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of Telegram messages"
-		// @Router /sentiment/telegram [post]
-		v1.POST("/sentiment/telegram", API.SearchTelegramMessagesAndAnalyzeSentiment())
-
-		// @Summary Analyze Sentiment of Web Content
-		// @Description Searches for web content and analyzes its sentiment
-		// @Tags Sentiment
-		// @Accept  json
-		// @Produce  json
-		// @Param   query   body    string  true  "Search Query"
-		// @Success 200 {object} SentimentAnalysisResponse "Successfully analyzed sentiment of web content"
-		// @Failure 400 {object} ErrorResponse "Error analyzing sentiment of web content"
-		// @Router /sentiment/web [post]
-		v1.POST("/sentiment/web", API.SearchWebAndAnalyzeSentiment())
 
 		// @Summary Create New Topic
 		// @Description Creates a new discussion topic
