@@ -170,7 +170,7 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 			if err != nil {
 				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
 			} else {
-				api.EventTracker.TrackWorkRequest("SearchTweetsProfile", peerID, string(payload), data_types.DataSourceTwitter)
+				api.EventTracker.TrackWorkRequest(data_types.TwitterProfile, peerID, string(payload), data_types.DataSourceTwitter)
 			}
 		} else {
 			logrus.Warn("EventTracker or Node is nil in SearchTweetsProfile")

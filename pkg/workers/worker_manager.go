@@ -160,7 +160,6 @@ func (whm *WorkHandlerManager) DistributeWork(node *masa.OracleNode, workRequest
 		} else {
 			reason = "no remote workers available"
 		}
-		logrus.Info(localWorker.AddrInfo.String())
 		whm.eventTracker.TrackLocalWorkerFallback(reason, localWorker.AddrInfo.ID.String(), data_types.WorkerTypeToDataSource(workRequest.WorkType))
 
 		response = whm.ExecuteWork(workRequest)
