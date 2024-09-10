@@ -22,7 +22,6 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/event"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
@@ -37,11 +36,6 @@ type LLMChat struct {
 		Content string `json:"content"`
 	} `json:"messages,omitempty"`
 	Stream bool `json:"stream"`
-}
-
-func IsBase64(s string) bool {
-	_, err := base64.StdEncoding.DecodeString(s)
-	return err == nil
 }
 
 // SendWorkRequest sends a work request to a worker for processing.
@@ -169,24 +163,13 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 		}
 		reqBody.Username = c.Param("username")
 
-		// Track work request event
-		if api.EventTracker != nil && api.Node != nil {
-			peerID := api.Node.Host.ID().String()
-			payload, err := json.Marshal(reqBody)
-			if err != nil {
-				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
-			} else {
-				api.EventTracker.TrackWorkRequest("SearchTweetsProfile", peerID, string(payload), event.DataSourceTwitter)
-			}
-		} else {
-			logrus.Warn("EventTracker or Node is nil in SearchTweetsProfile")
-		}
-
 		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.TwitterProfile, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -223,18 +206,12 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 			return
 		}
 
-		if api.EventTracker != nil && api.Node != nil {
-			peerID := api.Node.Host.ID().String()
-			payload, _ := json.Marshal(reqBody)
-			api.EventTracker.TrackWorkRequest("SearchTweetsRecent", peerID, string(payload), event.DataSourceTwitter)
-		} else {
-			logrus.Warn("EventTracker or Node is nil in SearchTweetsRecent")
-		}
-
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.Twitter, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -271,24 +248,13 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 			reqBody.Count = 20
 		}
 
-		// Track work request event
-		if api.EventTracker != nil && api.Node != nil {
-			peerID := api.Node.Host.ID().String()
-			payload, err := json.Marshal(reqBody)
-			if err != nil {
-				logrus.Errorf("Failed to marshal request body for event tracking: %v", err)
-			} else {
-				api.EventTracker.TrackWorkRequest("SearchTwitterFollowers", peerID, string(payload), event.DataSourceTwitter)
-			}
-		} else {
-			logrus.Warn("EventTracker or Node is nil in SearchTwitterFollowers")
-		}
-
 		// worker handler implementation
 		bodyBytes, err := json.Marshal(reqBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.TwitterFollowers, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -326,6 +292,8 @@ func (api *API) SearchDiscordProfile() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.DiscordProfile, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -372,6 +340,7 @@ func (api *API) SearchChannelMessages() gin.HandlerFunc {
 			return
 		}
 
+		api.sendTrackingEvent(data_types.DiscordChannelMessages, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -406,6 +375,8 @@ func (api *API) SearchGuildChannels() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.DiscordGuildChannels, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -430,6 +401,8 @@ func (api *API) SearchUserGuilds() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.DiscordUserGuilds, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -590,6 +563,8 @@ func (api *API) WebData() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.Web, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -597,7 +572,6 @@ func (api *API) WebData() gin.HandlerFunc {
 		go handleWorkResponse(c, responseCh, wg)
 
 		err = SendWorkRequest(api, requestID, data_types.Web, bodyBytes, wg)
-		defer workers.GetResponseChannelMap().Delete(requestID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
@@ -677,6 +651,8 @@ func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
+
+		api.sendTrackingEvent(data_types.TelegramChannelMessages, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -733,6 +709,7 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 
+		api.sendTrackingEvent(data_types.LLMChat, bodyBytes)
 		requestID := uuid.New().String()
 		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
 		wg := &sync.WaitGroup{}
@@ -746,6 +723,8 @@ func (api *API) LocalLlmChat() gin.HandlerFunc {
 		wg.Wait()
 	}
 }
+
+// TODO: review if we are still planning on doing the DfLlmChat and if so, make it conform to how we are doing other work
 
 // CfLlmChat handles the Cloudflare LLM chat requests.
 // It reads the request body, appends a system message, and forwards the request to the configured LLM endpoint.
@@ -800,6 +779,7 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		api.sendTrackingEvent(data_types.LLMChat, bodyBytes)
 
 		cfUrl := config.GetInstance().LLMCfUrl
 		if cfUrl == "" {
@@ -988,5 +968,15 @@ func (api *API) Test() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "message sent", "data": reqBody})
+	}
+}
+
+func (api *API) sendTrackingEvent(workType data_types.WorkerType, jsonBytes []byte) {
+	// Track work request event
+	if api.EventTracker != nil && api.Node != nil {
+		peerID := api.Node.Host.ID().String()
+		api.EventTracker.TrackWorkRequest(workType, peerID, string(jsonBytes))
+	} else {
+		logrus.Warn("EventTracker or Node is nil in API")
 	}
 }

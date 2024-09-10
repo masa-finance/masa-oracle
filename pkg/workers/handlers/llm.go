@@ -12,6 +12,7 @@ import (
 )
 
 // TODO: LLMChatBody isn't used anywhere in the codebase. Remove after testing
+
 type LLMChatBody struct {
 	Model    string `json:"model,omitempty"`
 	Messages []struct {
@@ -24,7 +25,6 @@ type LLMChatBody struct {
 type LLMChatHandler struct{}
 
 // HandleWork implements the WorkHandler interface for LLMChatHandler.
-// It contains the logic for processing LLMChat work.
 func (h *LLMChatHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] LLM Chat %s", data)
 	uri := config.GetInstance().LLMChatUrl
@@ -45,5 +45,6 @@ func (h *LLMChatHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to post LLM chat data: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] LLMChatHandler Work response for %s: %d records returned", data_types.LLMChat, 1)
+	return data_types.WorkResponse{Data: resp, RecordCount: 1}
 }

@@ -27,7 +27,8 @@ func (h *DiscordProfileHandler) HandleWork(data []byte) data_types.WorkResponse 
 	if err != nil {
 		return data_types.WorkResponse{Data: resp, Error: fmt.Sprintf("unable to get discord user profile: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] DiscordProfileHandler Work response for %s: %d records returned", data_types.DiscordProfile, 1)
+	return data_types.WorkResponse{Data: resp, RecordCount: 1}
 }
 
 // HandleWork implements the WorkHandler interface for DiscordChannelHandler.
@@ -44,7 +45,8 @@ func (h *DiscordChannelHandler) HandleWork(data []byte) data_types.WorkResponse 
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get discord channel messages: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] DiscordChannelHandler Work response for %s: %d records returned", data_types.DiscordChannelMessages, len(resp))
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }
 
 // HandleWork implements the WorkHandler interface for DiscordSentimentHandler.
@@ -61,7 +63,8 @@ func (h *DiscordSentimentHandler) HandleWork(data []byte) data_types.WorkRespons
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get discord channel messages: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] DiscordSentimentHandler Work response for %s: %d records returned", data_types.DiscordSentiment, 1)
+	return data_types.WorkResponse{Data: resp, RecordCount: 1}
 }
 
 // HandleWork implements the WorkHandler interface for DiscordGuildHandler.
@@ -76,7 +79,8 @@ func (h *DiscordGuildHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get discord guild channels: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] DiscordGuildHandler Work response for %s: %d records returned", data_types.DiscordGuildChannels, len(resp))
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }
 
 func (h *DiscoreUserGuildsHandler) HandleWork(data []byte) data_types.WorkResponse {
@@ -85,5 +89,6 @@ func (h *DiscoreUserGuildsHandler) HandleWork(data []byte) data_types.WorkRespon
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get discord user guilds: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] DiscordUserGuildsHandler Work response for %s: %d records returned", data_types.DiscordUserGuilds, len(resp))
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }

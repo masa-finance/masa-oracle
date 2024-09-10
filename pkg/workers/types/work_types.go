@@ -26,6 +26,11 @@ const (
 	Web                     WorkerType = "web"
 	WebSentiment            WorkerType = "web-sentiment"
 	Test                    WorkerType = "test"
+
+	DataSourceTwitter  = "twitter"
+	DataSourceDiscord  = "discord"
+	DataSourceWeb      = "web"
+	DataSourceTelegram = "telegram"
 )
 
 // WorkerTypeToCategory maps WorkerType to WorkerCategory
@@ -47,5 +52,27 @@ func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
 	default:
 		logrus.Warn("WorkerType is invalid or not recognized")
 		return -1 // Invalid category
+	}
+}
+
+// WorkerTypeToDataSource maps WorkerType to WorkerCategory
+func WorkerTypeToDataSource(wt WorkerType) string {
+	logrus.Infof("Mapping WorkerType %s to WorkerCategory", wt)
+	switch wt {
+	case Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds:
+		logrus.Info("WorkerType is related to Discord")
+		return DataSourceDiscord
+	case TelegramSentiment, TelegramChannelMessages:
+		logrus.Info("WorkerType is related to Telegram")
+		return DataSourceTelegram
+	case Twitter, TwitterFollowers, TwitterProfile, TwitterSentiment, TwitterTrends:
+		logrus.Info("WorkerType is related to Twitter")
+		return DataSourceTwitter
+	case Web, WebSentiment:
+		logrus.Info("WorkerType is related to Web")
+		return DataSourceWeb
+	default:
+		logrus.Warn("WorkerType is invalid or not recognized")
+		return "" // Invalid category
 	}
 }

@@ -53,4 +53,5 @@ type WorkResponse struct {
 	Data         interface{}  `json:"data,omitempty"`
 	Error        string       `json:"error,omitempty"`
 	WorkerPeerId string       `json:"workerPeerId,omitempty"`
+	RecordCount  int          `json:"recordCount,omitempty"`
 }

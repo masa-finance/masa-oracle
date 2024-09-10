@@ -33,9 +33,13 @@ func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 		return data_types.WorkResponse{Error: err.Error()}
 	}
 
-	logrus.Infof("[+] TwitterQueryHandler response: %d tweets found", len(resp))
-
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %d tweets returned", data_types.Twitter, len(resp))
+	if len(resp) > 0 && resp[0].Tweet != nil {
+		tweet := resp[0].Tweet
+		logrus.Infof("[+] First tweet: ID: %s, Text: %s, Author: %s, CreatedAt: %s",
+			tweet.ID, tweet.Text, tweet.Username, tweet.TimeParsed)
+	}
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }
 
 func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkResponse {
@@ -50,7 +54,9 @@ func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkRespons
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter followers: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+
+	logrus.Infof("[+] TwitterFollowersHandler Work response for %s: %d records returned", data_types.TwitterFollowers, len(resp))
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }
 
 func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse {
@@ -64,7 +70,8 @@ func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse 
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter profile: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] TwitterProfileHandler Work response for %s: %d records returned", data_types.TwitterProfile, 1)
+	return data_types.WorkResponse{Data: resp, RecordCount: 1}
 }
 
 func (h *TwitterSentimentHandler) HandleWork(data []byte) data_types.WorkResponse {
@@ -80,7 +87,8 @@ func (h *TwitterSentimentHandler) HandleWork(data []byte) data_types.WorkRespons
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter sentiment: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] TwitterSentimentHandler Work response for %s: %d records returned", data_types.TwitterSentiment, 1)
+	return data_types.WorkResponse{Data: resp, RecordCount: 1}
 }
 
 func (h *TwitterTrendsHandler) HandleWork(data []byte) data_types.WorkResponse {
@@ -89,5 +97,6 @@ func (h *TwitterTrendsHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter trends: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp}
+	logrus.Infof("[+] TwitterTrendsHandler Work response for %s: %d records returned", data_types.TwitterTrends, len(resp))
+	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }

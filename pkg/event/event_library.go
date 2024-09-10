@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 // Add this function to the existing file
@@ -14,12 +16,12 @@ import (
 // Parameters:
 // - workType: String indicating the type of work being requested (e.g., "SearchTweetsRecent")
 // - peerId: String containing the peer ID (or client IP in this case)
-func (a *EventTracker) TrackWorkRequest(workType string, peerId string, payload string, dataSource string) {
+func (a *EventTracker) TrackWorkRequest(workType data_types.WorkerType, peerId, payload string) {
 	event := Event{
 		Name:       WorkRequest,
 		PeerID:     peerId,
 		Payload:    payload,
-		DataSource: dataSource,
+		DataSource: data_types.WorkerTypeToDataSource(workType),
 		WorkType:   workType,
 	}
 	err := a.TrackAndSendEvent(event, nil)
@@ -35,12 +37,13 @@ func (a *EventTracker) TrackWorkRequest(workType string, peerId string, payload 
 // Parameters:
 // - remoteWorker: Boolean indicating if the work is sent to a remote worker (true) or executed locally (false)
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkDistribution(remoteWorker bool, peerId string) {
+func (a *EventTracker) TrackWorkDistribution(workType data_types.WorkerType, remoteWorker bool, peerId string) {
 	event := Event{
 		Name:         WorkDistribution,
 		PeerID:       peerId,
-		WorkType:     WorkDistribution,
+		WorkType:     workType,
 		RemoteWorker: remoteWorker,
+		DataSource:   data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -53,12 +56,14 @@ func (a *EventTracker) TrackWorkDistribution(remoteWorker bool, peerId string) {
 // Parameters:
 // - success: Boolean indicating if the work was completed successfully
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkCompletion(success bool, peerId string) {
+func (a *EventTracker) TrackWorkCompletion(workType data_types.WorkerType, success bool, recordCount int, peerId string) {
 	event := Event{
-		Name:     WorkCompletion,
-		PeerID:   peerId,
-		WorkType: WorkCompletion,
-		Success:  success,
+		Name:        WorkCompletion,
+		PeerID:      peerId,
+		WorkType:    workType,
+		Success:     success,
+		RecordCount: recordCount,
+		DataSource:  data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -71,12 +76,13 @@ func (a *EventTracker) TrackWorkCompletion(success bool, peerId string) {
 // Parameters:
 // - errorMessage: A string describing the error that occurred
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkerFailure(errorMessage string, peerId string) {
+func (a *EventTracker) TrackWorkerFailure(workType data_types.WorkerType, errorMessage string, peerId string) {
 	event := Event{
-		Name:     WorkFailure,
-		PeerID:   peerId,
-		WorkType: WorkFailure,
-		Error:    errorMessage,
+		Name:       WorkFailure,
+		PeerID:     peerId,
+		WorkType:   workType,
+		Error:      errorMessage,
+		DataSource: data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -91,12 +97,13 @@ func (a *EventTracker) TrackWorkerFailure(errorMessage string, peerId string) {
 // Parameters:
 // - remoteWorker: Boolean indicating if the work is executed by a remote worker (true) or locally (false)
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkExecutionStart(remoteWorker bool, peerId string) {
+func (a *EventTracker) TrackWorkExecutionStart(workType data_types.WorkerType, remoteWorker bool, peerId string) {
 	event := Event{
 		Name:         WorkExecutionStart,
 		PeerID:       peerId,
-		WorkType:     WorkExecutionStart,
+		WorkType:     workType,
 		RemoteWorker: remoteWorker,
+		DataSource:   data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -109,12 +116,13 @@ func (a *EventTracker) TrackWorkExecutionStart(remoteWorker bool, peerId string)
 // Parameters:
 // - timeoutDuration: The duration of the timeout
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkExecutionTimeout(timeoutDuration time.Duration, peerId string) {
+func (a *EventTracker) TrackWorkExecutionTimeout(workType data_types.WorkerType, timeoutDuration time.Duration, peerId string) {
 	event := Event{
-		Name:     WorkExecutionTimeout,
-		PeerID:   peerId,
-		WorkType: WorkExecutionTimeout,
-		Error:    fmt.Sprintf("timeout after %s", timeoutDuration),
+		Name:       WorkExecutionTimeout,
+		PeerID:     peerId,
+		WorkType:   workType,
+		Error:      fmt.Sprintf("timeout after %s", timeoutDuration),
+		DataSource: data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -126,11 +134,12 @@ func (a *EventTracker) TrackWorkExecutionTimeout(timeoutDuration time.Duration, 
 //
 // Parameters:
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackRemoteWorkerConnection(peerId string) {
+func (a *EventTracker) TrackRemoteWorkerConnection(workType data_types.WorkerType, peerId string) {
 	event := Event{
-		Name:     RemoteWorkerConnection,
-		PeerID:   peerId,
-		WorkType: RemoteWorkerConnection,
+		Name:       RemoteWorkerConnection,
+		PeerID:     peerId,
+		WorkType:   workType,
+		DataSource: data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
@@ -143,11 +152,11 @@ func (a *EventTracker) TrackRemoteWorkerConnection(peerId string) {
 // Parameters:
 // - peerId: String containing the peer ID
 // - protocol: The protocol used for the stream
-func (a *EventTracker) TrackStreamCreation(peerId string, protocol string) {
+func (a *EventTracker) TrackStreamCreation(workType data_types.WorkerType, peerId string, protocol string) {
 	event := Event{
 		Name:     StreamCreation,
 		PeerID:   peerId,
-		WorkType: StreamCreation,
+		WorkType: workType,
 		Error:    protocol, // Assuming protocol is stored in Error field for now
 
 	}
@@ -162,11 +171,11 @@ func (a *EventTracker) TrackStreamCreation(peerId string, protocol string) {
 // Parameters:
 // - dataSize: The size of the serialized data
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkRequestSerialization(dataSize int, peerId string) {
+func (a *EventTracker) TrackWorkRequestSerialization(workType data_types.WorkerType, dataSize int, peerId string) {
 	event := Event{
 		Name:     WorkRequestSerialization,
 		PeerID:   peerId,
-		WorkType: WorkRequestSerialization,
+		WorkType: workType,
 		Error:    fmt.Sprintf("data size: %d", dataSize), // Assuming data size is stored in Error field for now
 
 	}
@@ -181,11 +190,11 @@ func (a *EventTracker) TrackWorkRequestSerialization(dataSize int, peerId string
 // Parameters:
 // - success: Boolean indicating if the deserialization was successful
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkResponseDeserialization(success bool, peerId string) {
+func (a *EventTracker) TrackWorkResponseDeserialization(workType data_types.WorkerType, success bool, peerId string) {
 	event := Event{
 		Name:     WorkResponseDeserialization,
 		PeerID:   peerId,
-		WorkType: WorkResponseDeserialization,
+		WorkType: workType,
 		Success:  success,
 	}
 	err := a.TrackAndSendEvent(event, nil)
@@ -199,12 +208,13 @@ func (a *EventTracker) TrackWorkResponseDeserialization(success bool, peerId str
 // Parameters:
 // - reason: The reason for the fallback
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackLocalWorkerFallback(reason string, peerId string) {
+func (a *EventTracker) TrackLocalWorkerFallback(workType data_types.WorkerType, reason string, peerId string) {
 	event := Event{
-		Name:     LocalWorkerFallback,
-		PeerID:   peerId,
-		WorkType: LocalWorkerFallback,
-		Error:    reason,
+		Name:       LocalWorkerFallback,
+		PeerID:     peerId,
+		WorkType:   workType,
+		Error:      reason,
+		DataSource: data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {

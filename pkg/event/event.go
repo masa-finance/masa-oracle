@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 const (
@@ -20,21 +22,18 @@ const (
 	WorkRequestSerialization    = "work_request_serialized"
 	WorkResponseDeserialization = "work_response_serialized"
 	LocalWorkerFallback         = "local_work_executed"
-	DataSourceTwitter           = "twitter"
-	DataSourceDiscord           = "discord"
-	DataSourceWeb               = "web"
-	DataSourceTelegram          = "telegram"
 )
 
 type Event struct {
-	Name         string `json:"name"`
-	PeerID       string `json:"peer_id"`
-	Payload      string `json:"payload"`
-	DataSource   string `json:"data_source"`
-	WorkType     string `json:"work_type"`
-	RemoteWorker bool   `json:"remote_worker"`
-	Success      bool   `json:"success"`
-	Error        string `json:"error"`
+	Name         string                `json:"name"`
+	PeerID       string                `json:"peer_id"`
+	Payload      string                `json:"payload"`
+	DataSource   string                `json:"data_source"`
+	WorkType     data_types.WorkerType `json:"work_type"`
+	RemoteWorker bool                  `json:"remote_worker"`
+	Success      bool                  `json:"success"`
+	RecordCount  int                   `json:"record_count"`
+	Error        string                `json:"error"`
 }
 
 type EventTracker struct {
@@ -133,6 +132,9 @@ func validateEvent(event Event) error {
 	}
 	if event.WorkType == "" {
 		return errors.New("Work type is required")
+	}
+	if event.DataSource == "" {
+		return errors.New("Data source is required")
 	}
 	return nil
 }
