@@ -42,7 +42,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 				continue
 			}
 			// Publish the JSON data on the node.topic
-			err = node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
+			err = node.PublishTopic(config.NodeGossipTopic, jsonData)
 			if err != nil {
 				logrus.Errorf("[-] Error publishing node data: %v", err)
 			}
@@ -135,7 +135,7 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 	totalRecords := len(nodeData)
 	totalPages := int(math.Ceil(float64(totalRecords) / float64(config.PageSize)))
 
-	stream, err := node.Host.NewStream(node.Context, peerID, config.ProtocolWithVersion(config.NodeDataSyncProtocol))
+	stream, err := node.Host.NewStream(node.Context, peerID, node.protocolWithVersion(config.NodeDataSyncProtocol))
 	if err != nil {
 		// node.NodeTracker.RemoveNodeData(peerID.String())
 		return

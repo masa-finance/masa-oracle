@@ -18,9 +18,6 @@ import (
 )
 
 // Blockchain Implementation
-var (
-	blocksCh = make(chan *pubsub.Message)
-)
 
 type BlockData struct {
 	Block            uint64      `json:"block"`
@@ -40,6 +37,13 @@ type BlockEventTracker struct {
 	BlockEvents []BlockEvents
 	BlockTopic  *pubsub.Topic
 	mu          sync.Mutex
+	blocksCh    chan *pubsub.Message
+}
+
+func NewBlockChain() *BlockEventTracker {
+	return &BlockEventTracker{
+		blocksCh: make(chan *pubsub.Message),
+	}
 }
 
 // HandleMessage processes incoming pubsub messages containing block events.
@@ -90,7 +94,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 		logrus.Warnf("[-] Unexpected data type in message: %v", reflect.TypeOf(v))
 	}
 
-	blocksCh <- m
+	b.blocksCh <- m
 }
 
 func updateBlocks(ctx context.Context, node *OracleNode) error {
@@ -149,24 +153,18 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 	return nil
 }
 
-func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
-	if !node.IsValidator {
-		return
+func (b *BlockEventTracker) Start(ctx context.Context, node *OracleNode) {
+	err := node.Blockchain.Init()
+	if err != nil {
+		logrus.Error(err)
 	}
-
-	go func() {
-		err := node.Blockchain.Init()
-		if err != nil {
-			logrus.Error(err)
-		}
-	}()
 
 	updateTicker := time.NewTicker(time.Second * 60)
 	defer updateTicker.Stop()
 
 	for {
 		select {
-		case block, ok := <-blocksCh:
+		case block, ok := <-b.blocksCh:
 			if !ok {
 				logrus.Error("[-] Block channel closed")
 				return

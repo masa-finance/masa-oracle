@@ -9,15 +9,19 @@ import (
 
 	node "github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/event"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
 
 type API struct {
-	Node         *node.OracleNode
-	EventTracker *event.EventTracker
+	Node                      *node.OracleNode
+	EventTracker              *event.EventTracker
+	WorkManager               *workers.WorkHandlerManager
+	PubKeySubscriptionHandler *pubsub.PublicKeySubscriptionHandler
 }
 
 // NewAPI creates a new API instance with the given OracleNode.
-func NewAPI(node *node.OracleNode) *API {
+func NewAPI(node *node.OracleNode, workManager *workers.WorkHandlerManager, pubkeySubscriptionHandler *pubsub.PublicKeySubscriptionHandler) *API {
 	eventTracker := event.NewEventTracker(nil)
 	if eventTracker == nil {
 		logrus.Error("Failed to create EventTracker")
@@ -26,8 +30,10 @@ func NewAPI(node *node.OracleNode) *API {
 	}
 
 	api := &API{
-		Node:         node,
-		EventTracker: eventTracker,
+		Node:                      node,
+		EventTracker:              eventTracker,
+		WorkManager:               workManager,
+		PubKeySubscriptionHandler: pubkeySubscriptionHandler,
 	}
 
 	logrus.Debugf("Created API instance with EventTracker: %v", api.EventTracker)

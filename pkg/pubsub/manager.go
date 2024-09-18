@@ -6,22 +6,18 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/masa-finance/masa-oracle/node/types"
+
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 )
 
-// SubscriptionHandler defines the interface for handling pubsub messages.
-// Implementations should subscribe to topics and handle incoming messages.
-type SubscriptionHandler interface {
-	HandleMessage(msg *pubsub.Message)
-}
-
 type Manager struct {
 	ctx           context.Context
 	topics        map[string]*pubsub.Topic
 	subscriptions map[string]*pubsub.Subscription
-	handlers      map[string]SubscriptionHandler
+	handlers      map[string]types.SubscriptionHandler
 	gossipSub     *pubsub.PubSub
 	host          host.Host
 }
@@ -40,7 +36,7 @@ func NewPubSubManager(ctx context.Context, host host.Host) (*Manager, error) { /
 		ctx:           ctx,
 		subscriptions: make(map[string]*pubsub.Subscription),
 		topics:        make(map[string]*pubsub.Topic),
-		handlers:      make(map[string]SubscriptionHandler),
+		handlers:      make(map[string]types.SubscriptionHandler),
 		gossipSub:     gossipSub,
 		host:          host,
 	}
@@ -70,7 +66,7 @@ func (sm *Manager) createTopic(topicName string) (*pubsub.Topic, error) {
 // It creates the topic if needed, subscribes to it, and adds the subscription
 // and handler to the manager's maps. It launches a goroutine to handle incoming
 // messages, skipping messages from self, and calling the handler on each message.
-func (sm *Manager) AddSubscription(topicName string, handler SubscriptionHandler, includeSelf bool) error {
+func (sm *Manager) AddSubscription(topicName string, handler types.SubscriptionHandler, includeSelf bool) error {
 	topic, err := sm.createTopic(topicName)
 	if err != nil {
 		return err
@@ -141,9 +137,9 @@ func (sm *Manager) Publish(topic string, data []byte) error {
 	return t.Publish(sm.ctx, data)
 }
 
-// GetHandler returns the SubscriptionHandler for the given topic name.
+// GetHandler returns the types.SubscriptionHandler for the given topic name.
 // It returns an error if no handler exists for the given topic.
-func (sm *Manager) GetHandler(topic string) (SubscriptionHandler, error) {
+func (sm *Manager) GetHandler(topic string) (types.SubscriptionHandler, error) {
 	handler, ok := sm.handlers[topic]
 	if !ok {
 		return nil, fmt.Errorf("no handler for topic %s", topic)
@@ -209,7 +205,7 @@ func (sm *Manager) PublishMessage(topicName, message string) error {
 // given topic name. It gets the existing subscription, saves it and the
 // handler, and starts a goroutine to call the handler for each new message.
 // Returns an error if unable to get the subscription.
-func (sm *Manager) Subscribe(topicName string, handler SubscriptionHandler) error {
+func (sm *Manager) Subscribe(topicName string, handler types.SubscriptionHandler) error {
 	sub, err := sm.GetSubscription(topicName)
 	if err != nil {
 		return err

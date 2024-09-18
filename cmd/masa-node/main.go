@@ -11,6 +11,7 @@ import (
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
+	pubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/node"
@@ -73,11 +74,58 @@ func main() {
 
 	isValidator := cfg.Validator
 
+	// WorkerManager configuration
+	// XXX: this needs to be moved under config, but now it's here as there are import cycles given singletons
+	workerManagerOptions := []workers.WorkerOptionFunc{}
+
+	if cfg.TwitterScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableTwitterWorker)
+	}
+
+	if cfg.TelegramScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableDiscordScraperWorker)
+	}
+
+	if cfg.DiscordScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableDiscordScraperWorker)
+	}
+
+	if cfg.WebScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableWebScraperWorker)
+	}
+
+	workHandlerManager := workers.NewWorkHandlerManager(workerManagerOptions...)
+	blockChainEventTracker := node.NewBlockChain()
+
+	masaNodeOptions := []config.Option{
+		config.EnableStaked,
+		//	config.WithService(),
+		config.WithEnvironment(config.GetInstance().Environment),
+		config.WithVersion(config.GetInstance().Version),
+	}
+
+	// Register the worker manager
+	masaNodeOptions = append(masaNodeOptions,
+		config.WithMasaProtocolHandler(
+			config.WorkerProtocol,
+			workHandlerManager.HandleWorkerStream,
+		),
+	)
+
+	pubKeySub := &pubsub.PublicKeySubscriptionHandler{}
+
+	masaNodeOptions = append(masaNodeOptions,
+		config.WithPubSubHandler(config.PublicKeyTopic, pubKeySub, false),
+		config.WithPubSubHandler(config.BlockTopic, blockChainEventTracker, true),
+	)
+
 	// Create a new OracleNode
-	masaNode, err := node.NewOracleNode(ctx, config.EnableStaked)
+	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
+
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
 	err = masaNode.Start()
 	if err != nil {
 		logrus.Fatal(err)
@@ -104,8 +152,10 @@ func main() {
 	// and other peers can do work we only need to check this here
 	// if this peer can or cannot scrape or write that is checked in other places
 	if masaNode.IsStaked {
-		masaNode.Host.SetStreamHandler(config.ProtocolWithVersion(config.WorkerProtocol), workers.GetWorkHandlerManager().HandleWorkerStream)
-		go node.SubscribeToBlocks(ctx, masaNode)
+		if masaNode.IsValidator {
+			go blockChainEventTracker.Start(ctx, masaNode)
+		}
+
 		go masaNode.NodeTracker.ClearExpiredWorkerTimeouts()
 	}
 
@@ -130,7 +180,7 @@ func main() {
 		}
 	}()
 
-	router := api.SetupRoutes(masaNode)
+	router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub)
 	go func() {
 		err = router.Run()
 		if err != nil {

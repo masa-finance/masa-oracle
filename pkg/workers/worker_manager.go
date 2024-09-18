@@ -21,20 +21,41 @@ import (
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
-var (
-	instance *WorkHandlerManager
-	once     sync.Once
-)
+func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
+	options := &WorkerOption{}
+	options.Apply(opts...)
 
-func GetWorkHandlerManager() *WorkHandlerManager {
-	once.Do(func() {
-		instance = &WorkHandlerManager{
-			handlers:     make(map[data_types.WorkerType]*WorkHandlerInfo),
-			eventTracker: event.NewEventTracker(nil),
-		}
-		instance.setupHandlers()
-	})
-	return instance
+	whm := &WorkHandlerManager{
+		handlers:     make(map[data_types.WorkerType]*WorkHandlerInfo),
+		eventTracker: event.NewEventTracker(nil),
+	}
+
+	if options.isTwitterWorker {
+		whm.addWorkHandler(data_types.Twitter, &handlers.TwitterQueryHandler{})
+		whm.addWorkHandler(data_types.TwitterFollowers, &handlers.TwitterFollowersHandler{})
+		whm.addWorkHandler(data_types.TwitterProfile, &handlers.TwitterProfileHandler{})
+		whm.addWorkHandler(data_types.TwitterSentiment, &handlers.TwitterSentimentHandler{})
+		whm.addWorkHandler(data_types.TwitterTrends, &handlers.TwitterTrendsHandler{})
+	}
+
+	if options.isWebScraperWorker {
+		whm.addWorkHandler(data_types.Web, &handlers.WebHandler{})
+		whm.addWorkHandler(data_types.WebSentiment, &handlers.WebSentimentHandler{})
+	}
+
+	if options.isLLMServerWorker {
+		whm.addWorkHandler(data_types.LLMChat, &handlers.LLMChatHandler{})
+	}
+
+	if options.isDiscordScraperWorker {
+		whm.addWorkHandler(data_types.Discord, &handlers.DiscordProfileHandler{})
+		whm.addWorkHandler(data_types.DiscordChannelMessages, &handlers.DiscordChannelHandler{})
+		whm.addWorkHandler(data_types.DiscordSentiment, &handlers.DiscordSentimentHandler{})
+		whm.addWorkHandler(data_types.DiscordGuildChannels, &handlers.DiscordGuildHandler{})
+		whm.addWorkHandler(data_types.DiscordUserGuilds, &handlers.DiscoreUserGuildsHandler{})
+	}
+
+	return whm
 }
 
 // ErrHandlerNotFound is an error returned when a work handler cannot be found.
@@ -57,31 +78,6 @@ type WorkHandlerManager struct {
 	handlers     map[data_types.WorkerType]*WorkHandlerInfo
 	mu           sync.RWMutex
 	eventTracker *event.EventTracker
-}
-
-func (whm *WorkHandlerManager) setupHandlers() {
-	cfg := config.GetInstance()
-	if cfg.TwitterScraper {
-		whm.addWorkHandler(data_types.Twitter, &handlers.TwitterQueryHandler{})
-		whm.addWorkHandler(data_types.TwitterFollowers, &handlers.TwitterFollowersHandler{})
-		whm.addWorkHandler(data_types.TwitterProfile, &handlers.TwitterProfileHandler{})
-		whm.addWorkHandler(data_types.TwitterSentiment, &handlers.TwitterSentimentHandler{})
-		whm.addWorkHandler(data_types.TwitterTrends, &handlers.TwitterTrendsHandler{})
-	}
-	if cfg.WebScraper {
-		whm.addWorkHandler(data_types.Web, &handlers.WebHandler{})
-		whm.addWorkHandler(data_types.WebSentiment, &handlers.WebSentimentHandler{})
-	}
-	if cfg.LlmServer {
-		whm.addWorkHandler(data_types.LLMChat, &handlers.LLMChatHandler{})
-	}
-	if cfg.DiscordScraper {
-		whm.addWorkHandler(data_types.Discord, &handlers.DiscordProfileHandler{})
-		whm.addWorkHandler(data_types.DiscordChannelMessages, &handlers.DiscordChannelHandler{})
-		whm.addWorkHandler(data_types.DiscordSentiment, &handlers.DiscordSentimentHandler{})
-		whm.addWorkHandler(data_types.DiscordGuildChannels, &handlers.DiscordGuildHandler{})
-		whm.addWorkHandler(data_types.DiscordUserGuilds, &handlers.DiscoreUserGuildsHandler{})
-	}
 }
 
 // addWorkHandler registers a new work handler under a specific name.
@@ -192,7 +188,7 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *node.OracleNode, worker da
 	} else {
 		//whm.eventTracker.TrackRemoteWorkerConnection(worker.AddrInfo.ID.String())
 		logrus.Debugf("[+] Connection established with node: %s", worker.AddrInfo.ID.String())
-		stream, err := node.Host.NewStream(ctxWithTimeout, worker.AddrInfo.ID, config.ProtocolWithVersion(config.WorkerProtocol))
+		stream, err := node.ProtocolStream(ctxWithTimeout, worker.AddrInfo.ID, config.WorkerProtocol)
 		if err != nil {
 			response.Error = fmt.Sprintf("error opening stream: %v", err)
 			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())

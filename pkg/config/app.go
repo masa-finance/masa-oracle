@@ -271,3 +271,28 @@ func (c *AppConfig) HasBootnodes() bool {
 
 	return c.Bootnodes[0] != ""
 }
+
+/*
+
+func (c *AppConfig) WorkerManagerOptions() []workers.WorkerOptionFunc {
+	workerManagerOptions := []workers.WorkerOptionFunc{}
+	if c.TwitterScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableTwitterWorker)
+	}
+
+	if c.TelegramScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableDiscordScraperWorker)
+	}
+
+	if c.DiscordScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableDiscordScraperWorker)
+	}
+
+	if c.WebScraper {
+		workerManagerOptions = append(workerManagerOptions, workers.EnableWebScraperWorker)
+	}
+
+	return workerManagerOptions
+}
+
+*/

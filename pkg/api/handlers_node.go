@@ -206,8 +206,7 @@ func (api *API) PublishPublicKeyHandler() gin.HandlerFunc {
 		}
 
 		// Publish the public key using its string representation, data, and signature
-		publicKeyTopic := config.TopicWithVersion(config.PublicKeyTopic)
-		if err := api.Node.PubSubManager.Publish(publicKeyTopic, msgBytes); err != nil {
+		if err := api.Node.PublishTopic(config.PublicKeyTopic, msgBytes); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -229,20 +228,7 @@ func (api *API) GetPublicKeysHandler() gin.HandlerFunc {
 			return
 		}
 
-		// Use the PublicKeyTopic constant from the masa package
-		handler, err := api.Node.PubSubManager.GetHandler(string(config.ProtocolWithVersion(config.PublicKeyTopic)))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		publicKeyHandler, ok := handler.(*pubsub.PublicKeySubscriptionHandler)
-		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "handler is not of type PublicKeySubscriptionHandler"})
-			return
-		}
-
-		publicKeys := publicKeyHandler.GetPublicKeys()
+		publicKeys := api.PubKeySubscriptionHandler.GetPublicKeys()
 		c.JSON(http.StatusOK, gin.H{
 			"success":    true,
 			"publicKeys": publicKeys,
@@ -363,7 +349,7 @@ func (api *API) PostNodeStatusHandler() gin.HandlerFunc {
 		logrus.Printf("jsonData %s", jsonData)
 
 		// Publish the message to the specified topic.
-		if err := api.Node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData); err != nil {
+		if err := api.Node.PublishTopic(config.NodeGossipTopic, jsonData); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

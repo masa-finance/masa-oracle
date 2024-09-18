@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/internal/versioning"
-	"github.com/masa-finance/masa-oracle/pkg/config"
-
-	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -160,7 +156,7 @@ func (n *NodeData) WebScraper() bool {
 
 // Joined updates the NodeData when the node joins the network.
 // It sets the join times, activity, active status, and logs based on stake status.
-func (n *NodeData) Joined() {
+func (n *NodeData) Joined(nodeVersion string) {
 	now := time.Now()
 	if n.FirstJoinedUnix == 0 {
 		n.FirstJoinedUnix = now.Unix()
@@ -170,7 +166,7 @@ func (n *NodeData) Joined() {
 	n.Activity = ActivityJoined
 	n.IsActive = true
 
-	n.Version = config.GetInstance().Version
+	n.Version = nodeVersion
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.MultiaddrsString)
 	if n.IsStaked {
@@ -246,26 +242,6 @@ func (n *NodeData) UpdateAccumulatedUptime() {
 		}
 	}
 	n.AccumulatedUptimeStr = n.AccumulatedUptime.String()
-}
-
-// GetSelfNodeData converts the local node's data into a JSON byte array.
-// It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
-// The NodeData struct is then marshalled into a JSON byte array.
-// Returns nil if there is an error marshalling to JSON.
-func GetSelfNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr, publicEthAddress string) *NodeData {
-	// Create and populate NodeData
-	nodeData := NewNodeData(addr, host.ID(), publicEthAddress, ActivityJoined)
-	nodeData.MultiaddrsString = addr.String()
-	nodeData.IsStaked = isStaked
-	nodeData.IsTwitterScraper = config.GetInstance().TwitterScraper
-	nodeData.IsDiscordScraper = config.GetInstance().DiscordScraper
-	nodeData.IsTelegramScraper = config.GetInstance().TelegramScraper
-	nodeData.IsWebScraper = config.GetInstance().WebScraper
-	nodeData.IsValidator = config.GetInstance().Validator
-	nodeData.IsActive = true
-	nodeData.Version = versioning.ProtocolVersion
-
-	return nodeData
 }
 
 func (n *NodeData) MergeMultiaddresses(addr multiaddr.Multiaddr) {

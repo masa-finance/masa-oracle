@@ -143,9 +143,8 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 		return nil, err
 	}
 
-	return &OracleNode{
+	n := &OracleNode{
 		Host:              hst,
-		Protocol:          config.ProtocolWithVersion(config.OracleProtocol),
 		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
 		PeerChan:          make(chan myNetwork.PeerEvent),
 		NodeTracker:       pubsub.NewNodeEventTracker(versioning.ProtocolVersion, cfg.Environment, hst.ID().String()),
@@ -160,7 +159,10 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 		IsLlmServer:       cfg.LlmServer,
 		Blockchain:        &chain.Chain{},
 		options:           *o,
-	}, nil
+	}
+
+	n.Protocol = n.protocolWithVersion(config.OracleProtocol)
+	return n, nil
 }
 
 func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
@@ -177,6 +179,26 @@ func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
 	return common.BytesToAddress(ethereumCrypto.Keccak256(rawKey[1:])[12:]).Hex(), nil
 }
 
+func getNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr, publicEthAddress string) *pubsub.NodeData {
+	// GetSelfNodeData converts the local node's data into a JSON byte array.
+	// It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
+	// The NodeData struct is then marshalled into a JSON byte array.
+	// Returns nil if there is an error marshalling to JSON.
+	// Create and populate NodeData
+	nodeData := pubsub.NewNodeData(addr, host.ID(), publicEthAddress, pubsub.ActivityJoined)
+	nodeData.MultiaddrsString = addr.String()
+	nodeData.IsStaked = isStaked
+	nodeData.IsTwitterScraper = config.GetInstance().TwitterScraper
+	nodeData.IsDiscordScraper = config.GetInstance().DiscordScraper
+	nodeData.IsTelegramScraper = config.GetInstance().TelegramScraper
+	nodeData.IsWebScraper = config.GetInstance().WebScraper
+	nodeData.IsValidator = config.GetInstance().Validator
+	nodeData.IsActive = true
+	nodeData.Version = versioning.ProtocolVersion
+
+	return nodeData
+}
+
 // Start initializes the OracleNode by setting up libp2p stream handlers,
 // connecting to the DHT and bootnodes, and subscribing to topics. It launches
 // goroutines to handle discovered peers, listen to the node tracker, and
@@ -185,14 +207,18 @@ func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
 
 	for pid, n := range node.options.ProtocolHandlers {
 		node.Host.SetStreamHandler(pid, n)
 	}
 
+	for protocol, n := range node.options.MasaProtocolHandlers {
+		node.Host.SetStreamHandler(node.protocolWithVersion(protocol), n)
+	}
+
 	if node.IsStaked {
-		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
 	}
 
 	node.Host.Network().Notify(node.NodeTracker)
@@ -207,14 +233,14 @@ func (node *OracleNode) Start() (err error) {
 		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
 	}
 
-	myNodeData := pubsub.GetSelfNodeData(node.Host, node.IsStaked, node.priorityAddrs, publicKeyHex)
+	myNodeData := getNodeData(node.Host, node.IsStaked, node.priorityAddrs, publicKeyHex)
 
 	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(append(config.GetInstance().Bootnodes, node.options.Bootnodes...))
 	if err != nil {
 		return err
 	}
 
-	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, config.MasaPrefix, node.PeerChan, myNodeData)
+	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
 		return err
 	}
@@ -235,13 +261,14 @@ func (node *OracleNode) Start() (err error) {
 		nodeData = myNodeData
 		nodeData.SelfIdentified = true
 	}
-	nodeData.Joined()
+	nodeData.Joined(node.options.Version)
 	node.NodeTracker.HandleNodeData(*nodeData)
 
 	// call SubscribeToTopics on startup
-	if err := SubscribeToTopics(node); err != nil {
+	if err := node.subscribeToTopics(); err != nil {
 		return err
 	}
+
 	node.StartTime = time.Now()
 
 	return nil

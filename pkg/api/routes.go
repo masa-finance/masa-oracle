@@ -12,6 +12,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/masa-finance/masa-oracle/docs"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	"github.com/gin-contrib/cors"
 
@@ -31,11 +33,11 @@ var htmlTemplates embed.FS
 // Routes are added for peers, ads, subscriptions, node data, public keys,
 // topics, the DHT, node status, and serving HTML pages. Middleware is added
 // for CORS and templates.
-func SetupRoutes(node *node.OracleNode) *gin.Engine {
+func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManager, pubkeySubscriptionHandler *pubsub.PublicKeySubscriptionHandler) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
-	API := NewAPI(node)
+	API := NewAPI(node, workerManager, pubkeySubscriptionHandler)
 
 	// Initialize CORS middleware with a configuration that allows all origins and specifies
 	// the HTTP methods and headers that can be used in requests.

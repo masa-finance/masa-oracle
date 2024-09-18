@@ -234,7 +234,8 @@ func iterateAndPublish(ctx context.Context, node *node.OracleNode) {
 // It runs a ticker to call iterateAndPublish on the provided interval.
 func monitorNodeData(ctx context.Context, node *node.OracleNode) {
 	syncInterval := time.Second * 60
-	err := node.PubSubManager.Subscribe(config.TopicWithVersion(config.NodeGossipTopic), node.NodeTracker)
+
+	err := node.Subscribe(config.NodeGossipTopic, node.NodeTracker)
 	if err != nil {
 		logrus.Errorf("[-] Error subscribing to node gossip topic: %v", err)
 	}
@@ -257,7 +258,7 @@ func monitorNodeData(ctx context.Context, node *node.OracleNode) {
 			}
 
 			jsonData, _ := json.Marshal(nodeData)
-			e := node.PubSubManager.Publish(config.TopicWithVersion(config.NodeGossipTopic), jsonData)
+			e := node.PublishTopic(config.NodeGossipTopic, jsonData)
 			if e != nil {
 				logrus.Errorf("[-] Error publishing node data: %v", e)
 			}

@@ -6,8 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/libp2p/go-libp2p/core/protocol"
 )
 
 // ModelType defines a type for model strings.
@@ -98,7 +96,6 @@ const (
 	CachePath   = "CACHE_PATH"
 	Faucet      = "FAUCET"
 
-	MasaPrefix           = "/masa"
 	OracleProtocol       = "oracle_protocol"
 	WorkerProtocol       = "worker_protocol"
 	NodeDataSyncProtocol = "nodeDataSync"
@@ -126,26 +123,7 @@ const (
 	LlmCfUrl         = "LLM_CF_URL"
 )
 
-// ProtocolWithVersion returns a libp2p protocol ID string
-// with the configured version and environment suffix.
-func ProtocolWithVersion(protocolName string) protocol.ID {
-	if GetInstance().Environment == "" {
-		return protocol.ID(fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, GetInstance().Version))
-	}
-	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, GetInstance().Version, GetInstance().Environment))
-}
-
-// TopicWithVersion returns a topic string with the configured version
-// and environment suffix.
-func TopicWithVersion(protocolName string) string {
-	if GetInstance().Environment == "" {
-		return fmt.Sprintf("%s/%s/%s", MasaPrefix, protocolName, GetInstance().Version)
-	}
-	return fmt.Sprintf("%s/%s/%s-%s", MasaPrefix, protocolName, GetInstance().Version, GetInstance().Environment)
-}
-
 // Function to call the Cloudflare API and parse the response
-
 func GetCloudflareModels() ([]string, error) {
 	url := "https://api.cloudflare.com/client/v4/accounts/a72433aa3bb83aecaca1bc8acecdb166/ai/models/search"
 	req, err := http.NewRequest("GET", url, nil)
