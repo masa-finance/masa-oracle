@@ -9,7 +9,7 @@ on:
   - cron: '0 0 * * 0'
 
 jobs:
-  tests:
+  gosec:
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
