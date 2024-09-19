@@ -537,7 +537,7 @@ func (api *API) SearchAllGuilds() gin.HandlerFunc {
 // On success, it returns the scraped data in a sanitized JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) WebData() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !api.Node.IsStaked {
+		if !api.Node.Options.IsStaked {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Node has not staked and cannot participate"})
 			return
 		}
@@ -836,7 +836,7 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 func (api *API) GetBlocks() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		if !api.Node.IsValidator {
+		if !api.Node.Options.IsValidator {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Node is not a validator and cannot access this endpoint"})
 			return
 		}
@@ -902,7 +902,7 @@ func (api *API) GetBlocks() gin.HandlerFunc {
 func (api *API) GetBlockByHash() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		if !api.Node.IsValidator {
+		if !api.Node.Options.IsValidator {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Node is not a validator and cannot access this endpoint"})
 			return
 		}

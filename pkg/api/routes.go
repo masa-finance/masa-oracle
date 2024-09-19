@@ -56,7 +56,7 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 	// Middleware to enforce API token authentication, excluding ignored routes.
 	router.Use(func(c *gin.Context) {
 
-		if API.Node.IsStaked {
+		if API.Node.Options.IsStaked {
 			c.Next() // Proceed to the next middleware or handler as a staked node.
 			return
 		}

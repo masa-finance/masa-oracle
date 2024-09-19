@@ -33,28 +33,21 @@ import (
 )
 
 type OracleNode struct {
-	Host              host.Host
-	Protocol          protocol.ID
-	priorityAddrs     multiaddr.Multiaddr
-	multiAddrs        []multiaddr.Multiaddr
-	DHT               *dht.IpfsDHT
-	PeerChan          chan myNetwork.PeerEvent
-	NodeTracker       *pubsub.NodeEventTracker
-	PubSubManager     *pubsub.Manager
-	Signature         string
-	IsStaked          bool
-	IsValidator       bool
-	IsTwitterScraper  bool
-	IsDiscordScraper  bool
-	IsTelegramScraper bool
-	IsWebScraper      bool
-	IsLlmServer       bool
-	StartTime         time.Time
-	WorkerTracker     *pubsub.WorkerEventTracker
-	BlockTracker      *BlockEventTracker
-	Blockchain        *chain.Chain
-	options           config.AppOption
-	Context           context.Context
+	Host          host.Host
+	Protocol      protocol.ID
+	priorityAddrs multiaddr.Multiaddr
+	multiAddrs    []multiaddr.Multiaddr
+	DHT           *dht.IpfsDHT
+	PeerChan      chan myNetwork.PeerEvent
+	NodeTracker   *pubsub.NodeEventTracker
+	PubSubManager *pubsub.Manager
+	Signature     string
+	StartTime     time.Time
+	WorkerTracker *pubsub.WorkerEventTracker
+	BlockTracker  *BlockEventTracker
+	Blockchain    *chain.Chain
+	Options       NodeOption
+	Context       context.Context
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -83,12 +76,11 @@ func (node *OracleNode) GetP2PMultiAddrs() ([]multiaddr.Multiaddr, error) {
 // NewOracleNode creates a new OracleNode instance with the provided context and
 // staking status. It initializes the libp2p host, DHT, pubsub manager, and other
 // components needed for an Oracle node to join the network and participate.
-func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, error) {
-	o := &config.AppOption{}
+func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
+	o := &NodeOption{}
 	o.Apply(opts...)
 
 	// Start with the default scaling limits.
-	cfg := config.GetInstance(opts...)
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
@@ -120,13 +112,13 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 	// sudo sysctl -w net.core.rmem_max=7500000
 	// sudo sysctl -w net.core.wmem_max=7500000
 	// sudo sysctl -p
-	if cfg.UDP {
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
+	if o.UDP {
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", o.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))
 	}
-	if cfg.TCP {
+	if o.TCP {
 		securityOptions = append(securityOptions, libp2p.Security(libp2ptls.ID, libp2ptls.New))
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", cfg.PortNbr))
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", o.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(tcp.NewTCPTransport))
 		libp2pOptions = append(libp2pOptions, libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport))
 	}
@@ -144,21 +136,14 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 	}
 
 	n := &OracleNode{
-		Host:              hst,
-		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
-		PeerChan:          make(chan myNetwork.PeerEvent),
-		NodeTracker:       pubsub.NewNodeEventTracker(versioning.ProtocolVersion, cfg.Environment, hst.ID().String()),
-		Context:           ctx,
-		PubSubManager:     subscriptionManager,
-		IsStaked:          o.IsStaked,
-		IsValidator:       cfg.Validator,
-		IsTwitterScraper:  cfg.TwitterScraper,
-		IsDiscordScraper:  cfg.DiscordScraper,
-		IsTelegramScraper: cfg.TelegramScraper,
-		IsWebScraper:      cfg.WebScraper,
-		IsLlmServer:       cfg.LlmServer,
-		Blockchain:        &chain.Chain{},
-		options:           *o,
+		Host:          hst,
+		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
+		PeerChan:      make(chan myNetwork.PeerEvent),
+		NodeTracker:   pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
+		Context:       ctx,
+		PubSubManager: subscriptionManager,
+		Blockchain:    &chain.Chain{},
+		Options:       *o,
 	}
 
 	n.Protocol = n.protocolWithVersion(config.OracleProtocol)
@@ -179,7 +164,7 @@ func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
 	return common.BytesToAddress(ethereumCrypto.Keccak256(rawKey[1:])[12:]).Hex(), nil
 }
 
-func getNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr, publicEthAddress string) *pubsub.NodeData {
+func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, publicEthAddress string) *pubsub.NodeData {
 	// GetSelfNodeData converts the local node's data into a JSON byte array.
 	// It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 	// The NodeData struct is then marshalled into a JSON byte array.
@@ -187,12 +172,12 @@ func getNodeData(host host.Host, isStaked bool, addr multiaddr.Multiaddr, public
 	// Create and populate NodeData
 	nodeData := pubsub.NewNodeData(addr, host.ID(), publicEthAddress, pubsub.ActivityJoined)
 	nodeData.MultiaddrsString = addr.String()
-	nodeData.IsStaked = isStaked
-	nodeData.IsTwitterScraper = config.GetInstance().TwitterScraper
-	nodeData.IsDiscordScraper = config.GetInstance().DiscordScraper
-	nodeData.IsTelegramScraper = config.GetInstance().TelegramScraper
-	nodeData.IsWebScraper = config.GetInstance().WebScraper
-	nodeData.IsValidator = config.GetInstance().Validator
+	nodeData.IsStaked = node.Options.IsStaked
+	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
+	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
+	nodeData.IsTelegramScraper = node.Options.IsLlmServer
+	nodeData.IsWebScraper = node.Options.IsWebScraper
+	nodeData.IsValidator = node.Options.IsValidator
 	nodeData.IsActive = true
 	nodeData.Version = versioning.ProtocolVersion
 
@@ -209,15 +194,15 @@ func (node *OracleNode) Start() (err error) {
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
 
-	for pid, n := range node.options.ProtocolHandlers {
+	for pid, n := range node.Options.ProtocolHandlers {
 		node.Host.SetStreamHandler(pid, n)
 	}
 
-	for protocol, n := range node.options.MasaProtocolHandlers {
+	for protocol, n := range node.Options.MasaProtocolHandlers {
 		node.Host.SetStreamHandler(node.protocolWithVersion(protocol), n)
 	}
 
-	if node.IsStaked {
+	if node.Options.IsStaked {
 		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
 	}
 
@@ -225,17 +210,18 @@ func (node *OracleNode) Start() (err error) {
 
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
+	go node.NodeTracker.ClearExpiredWorkerTimeouts()
 
 	var publicKeyHex string
-	if node.options.RandomIdentity {
+	if node.Options.RandomIdentity {
 		publicKeyHex, _ = node.generateEthHexKeyForRandomIdentity()
 	} else {
 		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
 	}
 
-	myNodeData := getNodeData(node.Host, node.IsStaked, node.priorityAddrs, publicKeyHex)
+	myNodeData := node.getNodeData(node.Host, node.priorityAddrs, publicKeyHex)
 
-	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(append(config.GetInstance().Bootnodes, node.options.Bootnodes...))
+	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(node.Options.Bootnodes)
 	if err != nil {
 		return err
 	}
@@ -250,8 +236,8 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
-	for _, p := range node.options.Services {
-		go p(node.Context, node.Host)
+	for _, p := range node.Options.Services {
+		go p(node.Context, node)
 	}
 
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
@@ -261,7 +247,7 @@ func (node *OracleNode) Start() (err error) {
 		nodeData = myNodeData
 		nodeData.SelfIdentified = true
 	}
-	nodeData.Joined(node.options.Version)
+	nodeData.Joined(node.Options.Version)
 	node.NodeTracker.HandleNodeData(*nodeData)
 
 	// call SubscribeToTopics on startup

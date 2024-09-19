@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	. "github.com/masa-finance/masa-oracle/node"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -20,9 +19,9 @@ var _ = Describe("Oracle integration tests", func() {
 
 			n, err := NewOracleNode(
 				ctx,
-				config.EnableStaked,
-				config.DisableCLIParse,
-				config.EnableRandomIdentity,
+				EnableStaked,
+				DisableCLIParse,
+				EnableRandomIdentity,
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -39,10 +38,10 @@ var _ = Describe("Oracle integration tests", func() {
 
 			By(fmt.Sprintf("Generating second node with bootnodes %+v", bootNodes))
 			n2, err := NewOracleNode(ctx,
-				config.EnableStaked,
-				config.DisableCLIParse,
-				config.WithBootNodes(bootNodes...),
-				config.EnableRandomIdentity,
+				EnableStaked,
+				DisableCLIParse,
+				WithBootNodes(bootNodes...),
+				EnableRandomIdentity,
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(n.Host.ID()).ToNot(Equal(n2.Host.ID()))

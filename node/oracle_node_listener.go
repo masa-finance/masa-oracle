@@ -29,7 +29,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 		case nodeData := <-node.NodeTracker.NodeDataChan:
 			time.Sleep(1 * time.Second)
 			jsonData, err := json.Marshal(nodeData)
-			if node.IsValidator {
+			if node.Options.IsValidator {
 				_ = json.Unmarshal(jsonData, &nodeData)
 				err = node.DHT.PutValue(context.Background(), "/db/"+nodeData.PeerId.String(), jsonData)
 				if err != nil {
@@ -51,7 +51,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 			// the node start time is greater than 5 minutes ago,
 			// call SendNodeData in a separate goroutine
 			if nodeData.Activity == pubsub2.ActivityJoined &&
-				(!config.GetInstance().HasBootnodes() || time.Since(node.StartTime) > time.Minute*5) {
+				(!node.Options.HasBootnodes() || time.Since(node.StartTime) > time.Minute*5) {
 				go node.SendNodeData(nodeData.PeerId)
 			}
 		case <-node.Context.Done():
@@ -176,7 +176,7 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 
 		for _, nd := range page.Data {
 
-			if node.IsValidator {
+			if node.Options.IsValidator {
 				for _, p := range page.Data {
 					jsonData, _ := json.Marshal(p)
 					_ = json.Unmarshal(jsonData, &nd)

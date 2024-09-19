@@ -19,19 +19,19 @@ const (
 // ProtocolWithVersion returns a libp2p protocol ID string
 // with the configured version and environment suffix.
 func (node *OracleNode) protocolWithVersion(protocolName string) protocol.ID {
-	if node.options.Environment == "" {
-		return protocol.ID(fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, node.options.Version))
+	if node.Options.Environment == "" {
+		return protocol.ID(fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, node.Options.Version))
 	}
-	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, node.options.Version, node.options.Environment))
+	return protocol.ID(fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, node.Options.Version, node.Options.Environment))
 }
 
 // TopicWithVersion returns a topic string with the configured version
 // and environment suffix.
 func (node *OracleNode) topicWithVersion(protocolName string) string {
-	if node.options.Environment == "" {
-		return fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, node.options.Version)
+	if node.Options.Environment == "" {
+		return fmt.Sprintf("%s/%s/%s", masaPrefix, protocolName, node.Options.Version)
 	}
-	return fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, node.options.Version, node.options.Environment)
+	return fmt.Sprintf("%s/%s/%s-%s", masaPrefix, protocolName, node.Options.Version, node.Options.Environment)
 }
 
 func (node *OracleNode) ProtocolStream(ctx context.Context, peerID peer.ID, protocolName string) (network.Stream, error) {
@@ -43,7 +43,7 @@ func (node *OracleNode) ProtocolStream(ctx context.Context, peerID peer.ID, prot
 // Each subscription is managed through the node's PubSubManager, which orchestrates the message passing for these topics.
 // Errors during subscription are logged and returned, halting the process to ensure the node's correct setup before operation.
 func (node *OracleNode) subscribeToTopics() error {
-	for _, handler := range node.options.PubSubHandles {
+	for _, handler := range node.Options.PubSubHandles {
 		if err := node.SubscribeTopic(handler.ProtocolName, handler.Handler, handler.IncludeSelf); err != nil {
 			return err
 		}

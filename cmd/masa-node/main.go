@@ -9,9 +9,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 
 	"github.com/masa-finance/masa-oracle/internal/versioning"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 
-	pubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/node"
@@ -74,51 +72,7 @@ func main() {
 
 	isValidator := cfg.Validator
 
-	// WorkerManager configuration
-	// XXX: this needs to be moved under config, but now it's here as there are import cycles given singletons
-	workerManagerOptions := []workers.WorkerOptionFunc{}
-
-	if cfg.TwitterScraper {
-		workerManagerOptions = append(workerManagerOptions, workers.EnableTwitterWorker)
-	}
-
-	if cfg.TelegramScraper {
-		workerManagerOptions = append(workerManagerOptions, workers.EnableDiscordScraperWorker)
-	}
-
-	if cfg.DiscordScraper {
-		workerManagerOptions = append(workerManagerOptions, workers.EnableDiscordScraperWorker)
-	}
-
-	if cfg.WebScraper {
-		workerManagerOptions = append(workerManagerOptions, workers.EnableWebScraperWorker)
-	}
-
-	workHandlerManager := workers.NewWorkHandlerManager(workerManagerOptions...)
-	blockChainEventTracker := node.NewBlockChain()
-
-	masaNodeOptions := []config.Option{
-		config.EnableStaked,
-		//	config.WithService(),
-		config.WithEnvironment(config.GetInstance().Environment),
-		config.WithVersion(config.GetInstance().Version),
-	}
-
-	// Register the worker manager
-	masaNodeOptions = append(masaNodeOptions,
-		config.WithMasaProtocolHandler(
-			config.WorkerProtocol,
-			workHandlerManager.HandleWorkerStream,
-		),
-	)
-
-	pubKeySub := &pubsub.PublicKeySubscriptionHandler{}
-
-	masaNodeOptions = append(masaNodeOptions,
-		config.WithPubSubHandler(config.PublicKeyTopic, pubKeySub, false),
-		config.WithPubSubHandler(config.BlockTopic, blockChainEventTracker, true),
-	)
-
+	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg)
 	// Create a new OracleNode
 	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
 
@@ -131,7 +85,6 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	masaNode.NodeTracker.GetAllNodeData()
 	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {
 		logrus.Warn("[+] Node is set as all types of scrapers. This may not be intended behavior.")
 	}
@@ -146,18 +99,6 @@ func main() {
 
 	// Init cache resolver
 	db.InitResolverCache(masaNode, keyManager)
-
-	// Subscribe and if actor start monitoring actor workers
-	// considering all that matters is if the node is staked
-	// and other peers can do work we only need to check this here
-	// if this peer can or cannot scrape or write that is checked in other places
-	if masaNode.IsStaked {
-		if masaNode.IsValidator {
-			go blockChainEventTracker.Start(ctx, masaNode)
-		}
-
-		go masaNode.NodeTracker.ClearExpiredWorkerTimeouts()
-	}
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
