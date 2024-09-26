@@ -15,10 +15,11 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
-	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	twitterscraper "github.com/masa-finance/twitter-scraper"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"

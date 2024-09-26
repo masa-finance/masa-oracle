@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	_ "github.com/lib/pq"
-	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	twitterscraper "github.com/masa-finance/twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
 
 // ScrapeFollowersForProfile scrapes the profile and tweets of a specific Twitter user.
 // It takes the username as a parameter and returns the scraped profile information and an error if any.
-func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Legacy, error) {
+func ScrapeFollowersForProfile(username string, count int) ([]*twitterscraper.Profile, error) {
 	scraper := auth()
 
 	if scraper == nil {

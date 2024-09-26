@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gotd/td/tg"
-	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	twitterscraper "github.com/masa-finance/twitter-scraper"
 	"github.com/ollama/ollama/api"
 	"github.com/sirupsen/logrus"
 

@@ -4,9 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
-	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	twitterscraper "github.com/masa-finance/twitter-scraper"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 )
 
 func TestAuth(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	twitterscraper "github.com/masa-finance/twitter-scraper"
 )
 
 func SaveCookies(scraper *twitterscraper.Scraper, filePath string) error {
