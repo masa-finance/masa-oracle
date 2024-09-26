@@ -19,6 +19,12 @@ func SaveCookies(scraper *twitterscraper.Scraper, filePath string) error {
 	if err != nil {
 		return fmt.Errorf("error saving cookies to file: %v", err)
 	}
+
+	// Load the saved cookies back into the scraper
+	if err := LoadCookies(scraper, filePath); err != nil {
+		return fmt.Errorf("error loading saved cookies: %v", err)
+	}
+
 	return nil
 }
 

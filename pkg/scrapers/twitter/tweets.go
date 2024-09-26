@@ -41,8 +41,7 @@ func auth() *twitterscraper.Scraper {
 	password := appConfig.TwitterPassword
 	twoFACode := appConfig.Twitter2FaCode
 
-	// Add a short delay before login attempt
-	time.Sleep(2 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	var err error
 	if twoFACode != "" {
@@ -56,8 +55,7 @@ func auth() *twitterscraper.Scraper {
 		return nil
 	}
 
-	// Add a short delay after login attempt
-	time.Sleep(2 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	if err = SaveCookies(scraper, cookieFilePath); err != nil {
 		logrus.WithError(err).Error("[-] Failed to save cookies")
