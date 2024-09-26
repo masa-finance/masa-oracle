@@ -451,8 +451,8 @@ github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd h1:br0buuQ854V8u83wA0rVZ8ttrq5CpaPZdvrK0LP2lOk=
 github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd/go.mod h1:QuCEs1Nt24+FYQEqAAncTDPJIuGs+LxK1MCiFL25pMU=
-github.com/masa-finance/masa-twitter-scraper v0.0.0-20240910224030-76a02c878bd6 h1:m+WxxpznTnJtqnI0zogkhWEsVF+Dd1UP/lG3ZijDwkg=
-github.com/masa-finance/masa-twitter-scraper v0.0.0-20240910224030-76a02c878bd6/go.mod h1:Q6UBbAZsaBNDZ4hZQr8lvUUDmkJgQAhHiYWJcj0E+BM=
+github.com/masa-finance/masa-twitter-scraper v0.0.1 h1:n6GQZXmTCWqRr3c9m2wzKOjJfHDaRinLRmXUt10S/8U=
+github.com/masa-finance/masa-twitter-scraper v0.0.1/go.mod h1:Q6UBbAZsaBNDZ4hZQr8lvUUDmkJgQAhHiYWJcj0E+BM=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
 github.com/mattn/go-colorable v0.1.13/go.mod h1:7S9/ev0klgBDR4GtXTXX8a3vIGJpMovkB8vQcUbaXHg=
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=

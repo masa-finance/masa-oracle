@@ -7,7 +7,7 @@ const (
 	APIVersion = "v1"
 
 	// DefaultBaseURL is the default URL for the external API
-	DefaultBaseURL = "http://127.0.0.1:8081"
+	DefaultBaseURL = "https://test.protocol-api.masa.ai"
 
 	// DefaultHTTPTimeout is the default timeout for HTTP requests
 	DefaultHTTPTimeout = 10 * time.Second

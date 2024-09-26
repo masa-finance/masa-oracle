@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -40,6 +41,9 @@ func auth() *twitterscraper.Scraper {
 	password := appConfig.TwitterPassword
 	twoFACode := appConfig.Twitter2FaCode
 
+	// Add a short delay before login attempt
+	time.Sleep(2 * time.Second)
+
 	var err error
 	if twoFACode != "" {
 		err = Login(scraper, username, password, twoFACode)
@@ -51,6 +55,9 @@ func auth() *twitterscraper.Scraper {
 		logrus.WithError(err).Warning("[-] Login failed")
 		return nil
 	}
+
+	// Add a short delay after login attempt
+	time.Sleep(2 * time.Second)
 
 	if err = SaveCookies(scraper, cookieFilePath); err != nil {
 		logrus.WithError(err).Error("[-] Failed to save cookies")
