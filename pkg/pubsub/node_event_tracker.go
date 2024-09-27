@@ -21,6 +21,7 @@ type NodeEventTracker struct {
 	nodeData      *SafeMap
 	nodeDataFile  string
 	ConnectBuffer map[string]ConnectBufferEntry
+	nodeVersion   string
 }
 
 type ConnectBufferEntry struct {
@@ -35,6 +36,7 @@ type ConnectBufferEntry struct {
 func NewNodeEventTracker(version, environment string, hostId string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
+		nodeVersion:   version,
 		NodeDataChan:  make(chan *NodeData),
 		nodeDataFile:  fmt.Sprintf("%s_%s_node_data.json", version, environment),
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
@@ -83,7 +85,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			// Node appears already connected, buffer this connect event
 			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
 		} else {
-			nodeData.Joined()
+			nodeData.Joined(net.nodeVersion)
 			err := net.AddOrUpdateNodeData(nodeData, true)
 			if err != nil {
 				logrus.Error("[-] Error adding or updating node data: ", err)
@@ -118,7 +120,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	if buffered.NodeData != nil {
 		buffered.NodeData.Left()
 		delete(net.ConnectBuffer, peerID)
-		buffered.NodeData.Joined()
+		buffered.NodeData.Joined(net.nodeVersion)
 		net.NodeDataChan <- buffered.NodeData
 	} else {
 		nodeData.Left()
@@ -306,7 +308,7 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 	nd, ok := net.nodeData.Get(nodeData.PeerId.String())
 	if !ok {
 		nodeData.SelfIdentified = true
-		nodeData.Joined()
+		nodeData.Joined(net.nodeVersion)
 		net.NodeDataChan <- nodeData
 		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
 	} else {
@@ -385,7 +387,7 @@ func (net *NodeEventTracker) ClearExpiredBufferEntries() {
 				// first force a leave event so that timestamps are updated properly
 				entry.NodeData.Left()
 				// Buffer period expired without a disconnect, process connect
-				entry.NodeData.Joined()
+				entry.NodeData.Joined(net.nodeVersion)
 				net.NodeDataChan <- entry.NodeData
 				delete(net.ConnectBuffer, peerID)
 			}

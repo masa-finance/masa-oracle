@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +24,7 @@ type WorkEvent struct {
 
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
-func WriteData(node *masa.OracleNode, key string, value []byte) error {
+func WriteData(node *node.OracleNode, key string, value []byte) error {
 	if !isAuthorized(node.Host.ID().String()) {
 		logrus.WithFields(logrus.Fields{
 			"nodeID":       node.Host.ID().String(),
@@ -67,7 +67,7 @@ func WriteData(node *masa.OracleNode, key string, value []byte) error {
 
 // ReadData reads the value for the given key from the database.
 // It requires the host for access control verification before reading.
-func ReadData(node *masa.OracleNode, key string) ([]byte, error) {
+func ReadData(node *node.OracleNode, key string) ([]byte, error) {
 	logrus.WithFields(logrus.Fields{
 		"nodeID":       node.Host.ID().String(),
 		"isAuthorized": true,

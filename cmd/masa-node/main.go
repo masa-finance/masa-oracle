@@ -9,11 +9,10 @@ import (
 	"github.com/multiformats/go-multiaddr"
 
 	"github.com/masa-finance/masa-oracle/internal/versioning"
-	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	"github.com/sirupsen/logrus"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
@@ -73,23 +72,25 @@ func main() {
 
 	isValidator := cfg.Validator
 
+	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg)
 	// Create a new OracleNode
-	node, err := masa.NewOracleNode(ctx, config.EnableStaked)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	err = node.Start()
+	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
+
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	node.NodeTracker.GetAllNodeData()
+	err = masaNode.Start()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {
 		logrus.Warn("[+] Node is set as all types of scrapers. This may not be intended behavior.")
 	}
 
 	if cfg.AllowedPeer {
-		cfg.AllowedPeerId = node.Host.ID().String()
+		cfg.AllowedPeerId = masaNode.Host.ID().String()
 		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
 		logrus.Infof("[+] Allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
 	} else {
@@ -97,17 +98,7 @@ func main() {
 	}
 
 	// Init cache resolver
-	db.InitResolverCache(node, keyManager)
-
-	// Subscribe and if actor start monitoring actor workers
-	// considering all that matters is if the node is staked
-	// and other peers can do work we only need to check this here
-	// if this peer can or cannot scrape or write that is checked in other places
-	if node.IsStaked {
-		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.WorkerProtocol), workers.GetWorkHandlerManager().HandleWorkerStream)
-		go masa.SubscribeToBlocks(ctx, node)
-		go node.NodeTracker.ClearExpiredWorkerTimeouts()
-	}
+	db.InitResolverCache(masaNode, keyManager)
 
 	// Listen for SIGINT (CTRL+C)
 	c := make(chan os.Signal, 1)
@@ -116,7 +107,7 @@ func main() {
 	// Cancel the context when SIGINT is received
 	go func() {
 		<-c
-		nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
+		nodeData := masaNode.NodeTracker.GetNodeData(masaNode.Host.ID().String())
 		if nodeData != nil {
 			nodeData.Left()
 		}
@@ -130,7 +121,7 @@ func main() {
 		}
 	}()
 
-	router := api.SetupRoutes(node)
+	router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub)
 	go func() {
 		err = router.Run()
 		if err != nil {
@@ -139,7 +130,7 @@ func main() {
 	}()
 
 	// Get the multiaddress and IP address of the node
-	multiAddr := node.GetMultiAddrs()                          // Get the multiaddress
+	multiAddr := masaNode.GetMultiAddrs()                      // Get the multiaddress
 	ipAddr, err := multiAddr.ValueForProtocol(multiaddr.P_IP4) // Get the IP address
 	// Display the welcome message with the multiaddress and IP address
 	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
