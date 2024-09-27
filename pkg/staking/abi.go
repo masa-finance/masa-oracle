@@ -3,16 +3,17 @@ package staking
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+
+	"github.com/masa-finance/masa-oracle/contracts"
 )
 
 const (
-	MasaTokenABIPath       = "contracts/node_modules/@masa-finance/masa-token/deployments/sepolia/MasaToken.json"
-	MasaFaucetABIPath      = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/MasaFaucet.sol/MasaFaucet.json"
-	ProtocolStakingABIPath = "contracts/node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/ProtocolStaking.sol/ProtocolStaking.json"
+	MasaTokenABIPath       = "node_modules/@masa-finance/masa-token/deployments/sepolia/MasaToken.json"
+	MasaFaucetABIPath      = "node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/MasaFaucet.sol/MasaFaucet.json"
+	ProtocolStakingABIPath = "node_modules/@masa-finance/masa-contracts-oracle/artifacts/contracts/ProtocolStaking.sol/ProtocolStaking.json"
 )
 
 type ContractAddresses struct {
@@ -26,7 +27,7 @@ type ContractAddresses struct {
 // GetABI parses the ABI from the given JSON file path.
 // It returns the parsed ABI, or an error if reading or parsing fails.
 func GetABI(jsonPath string) (abi.ABI, error) {
-	jsonFile, err := ioutil.ReadFile(jsonPath)
+	jsonFile, err := contracts.EmbeddedContracts.ReadFile(jsonPath)
 	if err != nil {
 		return abi.ABI{}, fmt.Errorf("failed to read ABI: %v", err)
 	}

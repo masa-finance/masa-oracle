@@ -1,35 +1,15 @@
-# Use the official Ubuntu 22.04 image as a base for the final image
-FROM ubuntu:22.04 AS base
+# Build the Go binary in a separate stage utilizing Makefile
+FROM golang:1.22 AS builder
 
 # Install necessary packages for the final image
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl sudo gpg lsb-release software-properties-common \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
-    && apt-get install -y apt-utils \
-    && apt-get install -y nodejs \
-    && npm install -g npm@latest \
-    && apt-get update && apt-get install -y git
+    && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg \
+    && apt remove cmdtest \
+    && echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+    && apt-get update && apt-get install -y git yarn apt-utils
 
-# Create the 'masa' user and set up the home directory
-RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:masa /home/masa
-
-
-# Switch to user 'masa' for following commands
-USER masa
-WORKDIR /home/masa
-
-# Copy and install Node.js dependencies for the contracts
-# Assuming your contracts directory is ready for copy at this stage
-COPY --chown=masa:masa contracts/ ./contracts/
-RUN cd contracts && npm install
-
-
-
-# Switch back to root to install the Go binary
-USER root
-
-# Build the Go binary in a separate stage utilizing Makefile
-FROM golang:1.22 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -37,14 +17,16 @@ COPY . .
 
 RUN make build
 
-# Continue with the final image
-FROM base
+# Use the official Ubuntu 22.04 image as a base for the final image
+FROM ubuntu:22.04 AS base
 
 COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
-
 RUN chmod +x /usr/bin/masa-node
 
-# Switch to 'masa' to run the application
+# Create the 'masa' user and set up the home directory
+RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:masa /home/masa
+
+# Switch to user 'masa' for following commands
 USER masa
 WORKDIR /home/masa
 
