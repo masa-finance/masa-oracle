@@ -10,7 +10,9 @@ permissions:
   contents: read
 
 jobs:  
-  goreleaser: # Add this new job for GoReleaser
+  goreleaser:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
