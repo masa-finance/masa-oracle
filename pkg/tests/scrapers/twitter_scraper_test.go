@@ -1,3 +1,10 @@
+// Package scrapers_test contains integration tests for the Twitter scraper functionality.
+//
+// Dev Notes:
+// - These tests require valid Twitter credentials set in environment variables.
+// - The tests use a temporary directory for storing cookies and other data.
+// - Make sure to run these tests in a controlled environment to avoid rate limiting.
+// - The tests cover authentication, session reuse, and basic scraping operations.
 package scrapers_test
 
 import (
