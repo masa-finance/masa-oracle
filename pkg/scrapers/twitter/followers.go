@@ -12,7 +12,7 @@ import (
 // ScrapeFollowersForProfile scrapes the profile and tweets of a specific Twitter user.
 // It takes the username as a parameter and returns the scraped profile information and an error if any.
 func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Legacy, error) {
-	scraper := auth()
+	scraper := Auth()
 
 	if scraper == nil {
 		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")

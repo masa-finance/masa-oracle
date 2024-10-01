@@ -13,7 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 type TweetResult struct {
@@ -24,7 +23,7 @@ type TweetResult struct {
 // auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
 // If no valid session is found, it performs a login with credentials specified in the application's configuration.
 // On successful login, it saves the session cookies for future use. If the login fails, it returns nil.
-func auth() *twitterscraper.Scraper {
+func Auth() *twitterscraper.Scraper {
 	scraper := twitterscraper.New()
 	appConfig := config.GetInstance()
 	cookieFilePath := filepath.Join(appConfig.MasaDir, "twitter_cookies.json")
@@ -41,7 +40,7 @@ func auth() *twitterscraper.Scraper {
 	password := appConfig.TwitterPassword
 	twoFACode := appConfig.Twitter2FaCode
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	var err error
 	if twoFACode != "" {
@@ -55,7 +54,7 @@ func auth() *twitterscraper.Scraper {
 		return nil
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	if err = SaveCookies(scraper, cookieFilePath); err != nil {
 		logrus.WithError(err).Error("[-] Failed to save cookies")
@@ -69,59 +68,6 @@ func auth() *twitterscraper.Scraper {
 	return scraper
 }
 
-// ScrapeTweetsForSentiment is a function that scrapes tweets based on a given query, analyzes their sentiment using a specified model, and returns the sentiment analysis results.
-// Parameters:
-//   - query: The search query string to find matching tweets.
-//   - count: The maximum number of tweets to retrieve and analyze.
-//   - model: The model to use for sentiment analysis.
-//
-// Returns:
-//   - A string representing the sentiment analysis prompt.
-//   - A string representing the sentiment analysis result.
-//   - An error if the scraping or sentiment analysis process encounters any issues.
-func ScrapeTweetsForSentiment(query string, count int, model string) (string, string, error) {
-	scraper := auth()
-	var tweets []*TweetResult
-
-	if scraper == nil {
-		return "", "", fmt.Errorf("there was an error authenticating with your Twitter credentials")
-	}
-
-	// Set search mode
-	scraper.SetSearchMode(twitterscraper.SearchLatest)
-
-	// Perform the search with the specified query and count
-	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
-		var tweet TweetResult
-		if tweetResult.Error != nil {
-			tweet = TweetResult{
-				Tweet: nil,
-				Error: tweetResult.Error,
-			}
-		} else {
-			tweet = TweetResult{
-				Tweet: &tweetResult.Tweet,
-				Error: nil,
-			}
-		}
-		tweets = append(tweets, &tweet)
-	}
-	sentimentPrompt := "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer's attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable."
-
-	twitterScraperTweets := make([]*twitterscraper.TweetResult, len(tweets))
-	for i, tweet := range tweets {
-		twitterScraperTweets[i] = &twitterscraper.TweetResult{
-			Tweet: *tweet.Tweet,
-			Error: tweet.Error,
-		}
-	}
-	prompt, sentiment, err := llmbridge.AnalyzeSentimentTweets(twitterScraperTweets, model, sentimentPrompt)
-	if err != nil {
-		return "", "", err
-	}
-	return prompt, sentiment, tweets[0].Error
-}
-
 // ScrapeTweetsByQuery performs a search on Twitter for tweets matching the specified query.
 // It fetches up to the specified count of tweets and returns a slice of Tweet pointers.
 // Parameters:
@@ -132,7 +78,7 @@ func ScrapeTweetsForSentiment(query string, count int, model string) (string, st
 //   - A slice of pointers to twitterscraper.Tweet objects that match the search query.
 //   - An error if the scraping process encounters any issues.
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
-	scraper := auth()
+	scraper := Auth()
 	var tweets []*TweetResult
 	var lastError error
 
@@ -167,7 +113,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 // It returns a slice of strings representing the trending topics.
 // If an error occurs during the scraping process, it returns an error.
 func ScrapeTweetsByTrends() ([]*TweetResult, error) {
-	scraper := auth()
+	scraper := Auth()
 	var trendResults []*TweetResult
 
 	if scraper == nil {
@@ -196,7 +142,7 @@ func ScrapeTweetsByTrends() ([]*TweetResult, error) {
 // ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
 // It takes the username as a parameter and returns the scraped profile information and an error if any.
 func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
-	scraper := auth()
+	scraper := Auth()
 
 	if scraper == nil {
 		return twitterscraper.Profile{}, fmt.Errorf("there was an error authenticating with your Twitter credentials")
