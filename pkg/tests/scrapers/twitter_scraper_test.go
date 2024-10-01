@@ -3,6 +3,7 @@ package scrapers_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/joho/godotenv"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -21,9 +22,15 @@ var _ = Describe("Twitter Auth Function", func() {
 	)
 
 	loadEnv := func() {
-		err := godotenv.Load()
+		_, filename, _, _ := runtime.Caller(0)
+		projectRoot := filepath.Join(filepath.Dir(filename), "..", "..", "..")
+		envPath := filepath.Join(projectRoot, ".env")
+
+		err := godotenv.Load(envPath)
 		if err != nil {
-			logrus.Warn("Error loading .env file")
+			logrus.Warnf("Error loading .env file from %s: %v", envPath, err)
+		} else {
+			logrus.Infof("Loaded .env from %s", envPath)
 		}
 	}
 
