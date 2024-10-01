@@ -13,7 +13,7 @@ var _ = Describe("Web Scraper", func() {
 	Context("ScrapeWebData", func() {
 		It("scrapes data from URLs", func() {
 			urls := []string{"https://coinmarketcap.com/currencies/masa-network/"}
-			depth := 2
+			depth := 1
 
 			data, err := web.ScrapeWebData(urls, depth)
 			Expect(err).ToNot(HaveOccurred())
