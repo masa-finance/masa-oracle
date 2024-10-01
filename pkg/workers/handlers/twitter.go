@@ -12,8 +12,6 @@ import (
 type TwitterQueryHandler struct{}
 type TwitterFollowersHandler struct{}
 type TwitterProfileHandler struct{}
-type TwitterSentimentHandler struct{}
-type TwitterTrendsHandler struct{}
 
 func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterQueryHandler input: %s", data)
@@ -72,31 +70,4 @@ func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse 
 	}
 	logrus.Infof("[+] TwitterProfileHandler Work response for %s: %d records returned", data_types.TwitterProfile, 1)
 	return data_types.WorkResponse{Data: resp, RecordCount: 1}
-}
-
-func (h *TwitterSentimentHandler) HandleWork(data []byte) data_types.WorkResponse {
-	logrus.Infof("[+] TwitterSentimentHandler %s", data)
-	dataMap, err := JsonBytesToMap(data)
-	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter sentiment data: %v", err)}
-	}
-	count := int(dataMap["count"].(float64))
-	query := dataMap["query"].(string)
-	model := dataMap["model"].(string)
-	_, resp, err := twitter.ScrapeTweetsForSentiment(query, count, model)
-	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter sentiment: %v", err)}
-	}
-	logrus.Infof("[+] TwitterSentimentHandler Work response for %s: %d records returned", data_types.TwitterSentiment, 1)
-	return data_types.WorkResponse{Data: resp, RecordCount: 1}
-}
-
-func (h *TwitterTrendsHandler) HandleWork(data []byte) data_types.WorkResponse {
-	logrus.Infof("[+] TwitterTrendsHandler %s", data)
-	resp, err := twitter.ScrapeTweetsByTrends()
-	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter trends: %v", err)}
-	}
-	logrus.Infof("[+] TwitterTrendsHandler Work response for %s: %d records returned", data_types.TwitterTrends, len(resp))
-	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
 }
