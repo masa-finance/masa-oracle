@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/joho/godotenv"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
@@ -19,7 +20,16 @@ var _ = Describe("Twitter Auth Function", func() {
 		twoFACode       string
 	)
 
+	loadEnv := func() {
+		err := godotenv.Load()
+		if err != nil {
+			logrus.Warn("Error loading .env file")
+		}
+	}
+
 	BeforeEach(func() {
+		loadEnv()
+
 		tempDir := GinkgoT().TempDir()
 		config.GetInstance().MasaDir = tempDir
 
@@ -44,25 +54,88 @@ var _ = Describe("Twitter Auth Function", func() {
 	}
 
 	It("authenticates and logs in successfully", func() {
+		// Ensure cookie file doesn't exist before authentication
+		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		Expect(cookieFile).NotTo(BeAnExistingFile())
+
+		// Authenticate
 		scraper := authenticate()
 		Expect(scraper).NotTo(BeNil())
 
-		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		// Check if cookie file was created
 		Expect(cookieFile).To(BeAnExistingFile())
 
+		// Verify logged in state
 		Expect(checkLoggedIn(scraper)).To(BeTrue())
-		logrus.Info("Authenticated and logged in to Twitter")
+
+		// Attempt a simple operation to verify the session is valid
+		profile, err := twitter.ScrapeTweetsProfile("twitter")
+		Expect(err).To(BeNil())
+		Expect(profile.Username).To(Equal("twitter"))
+
+		logrus.Info("Authenticated and logged in to Twitter successfully")
 	})
 
 	It("reuses session from cookies", func() {
+		// First authentication
 		firstScraper := authenticate()
 		Expect(firstScraper).NotTo(BeNil())
 
+		// Verify cookie file is created
+		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		Expect(cookieFile).To(BeAnExistingFile())
+
+		// Clear the scraper to force cookie reuse
+		firstScraper = nil
+
+		// Second authentication (should use cookies)
 		secondScraper := authenticate()
 		Expect(secondScraper).NotTo(BeNil())
 
+		// Verify logged in state
 		Expect(checkLoggedIn(secondScraper)).To(BeTrue())
-		logrus.Info("Reused session from cookies")
+
+		// Attempt a simple operation to verify the session is valid
+		profile, err := twitter.ScrapeTweetsProfile("twitter")
+		Expect(err).To(BeNil())
+		Expect(profile.Username).To(Equal("twitter"))
+
+		logrus.Info("Reused session from cookies successfully")
+	})
+
+	It("scrapes the profile of 'god' and recent #Bitcoin tweets using saved cookies", func() {
+		// First authentication
+		firstScraper := authenticate()
+		Expect(firstScraper).NotTo(BeNil())
+
+		// Verify cookie file is created
+		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		Expect(cookieFile).To(BeAnExistingFile())
+
+		// Clear the scraper to force cookie reuse
+		firstScraper = nil
+
+		// Second authentication (should use cookies)
+		secondScraper := authenticate()
+		Expect(secondScraper).NotTo(BeNil())
+
+		// Verify logged in state
+		Expect(twitter.IsLoggedIn(secondScraper)).To(BeTrue())
+
+		// Attempt to scrape profile
+		profile, err := twitter.ScrapeTweetsProfile("god")
+		Expect(err).To(BeNil())
+		logrus.Infof("Profile of 'god': %+v", profile)
+
+		// Scrape recent #Bitcoin tweets
+		tweets, err := twitter.ScrapeTweetsByQuery("#Bitcoin", 3)
+		Expect(err).To(BeNil())
+		Expect(tweets).To(HaveLen(3))
+
+		logrus.Info("Recent #Bitcoin tweets:")
+		for i, tweet := range tweets {
+			logrus.Infof("Tweet %d: %s", i+1, tweet.Tweet.Text)
+		}
 	})
 
 	AfterEach(func() {
