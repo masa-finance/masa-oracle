@@ -38,7 +38,6 @@ func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
 
 	if options.isWebScraperWorker {
 		whm.addWorkHandler(data_types.Web, &handlers.WebHandler{})
-		whm.addWorkHandler(data_types.WebSentiment, &handlers.WebSentimentHandler{})
 	}
 
 	if options.isLLMServerWorker {
