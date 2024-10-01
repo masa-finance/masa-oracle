@@ -1,3 +1,11 @@
+// Package scrapers_test contains tests for web scraping functionality.
+//
+// Dev Notes:
+// - This test suite uses Ginkgo and Gomega for BDD-style testing.
+// - It tests the ScrapeWebData function from the web package.
+// - The test currently scrapes data from a single URL (CoinMarketCap) with a depth of 1.
+// - TODO: Consider adding more diverse test cases with multiple URLs and depths.
+// - TODO: Add more specific assertions on the scraped data structure and content.
 package scrapers_test
 
 import (
