@@ -110,10 +110,7 @@ type AppConfig struct {
 // If the unmarshalling fails, the instance is set to nil.
 //
 // Subsequent calls to GetInstance will return the same initialized instance.
-func GetInstance(options ...Option) *AppConfig {
-	o := &AppOption{}
-	o.Apply(options...)
-
+func GetInstance() *AppConfig {
 	once.Do(func() {
 		instance = &AppConfig{}
 
@@ -122,10 +119,8 @@ func GetInstance(options ...Option) *AppConfig {
 
 		instance.setFileConfig(viper.GetString("FILE_PATH"))
 
-		if !o.DisableCLIParse {
-			if err := instance.setCommandLineConfig(); err != nil {
-				logrus.Fatal(err)
-			}
+		if err := instance.setCommandLineConfig(); err != nil {
+			logrus.Fatal(err)
 		}
 
 		if err := viper.Unmarshal(instance); err != nil {
@@ -259,15 +254,4 @@ func (c *AppConfig) LogConfig() {
 		}
 		logrus.Infof("%s: %v", field.Name, value)
 	}
-}
-
-// HasBootnodes checks if the AppConfig has any bootnodes configured.
-// It returns true if there is at least one bootnode in the Bootnodes slice and it is not an empty string.
-// Otherwise, it returns false, indicating that no bootnodes are configured.
-func (c *AppConfig) HasBootnodes() bool {
-	if len(c.Bootnodes) == 0 {
-		return false
-	}
-
-	return c.Bootnodes[0] != ""
 }

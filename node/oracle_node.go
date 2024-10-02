@@ -1,15 +1,9 @@
-package masa
+package node
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"os"
-	"reflect"
 	"strings"
-	"sync"
 	"time"
 
 	ethereumCrypto "github.com/ethereum/go-ethereum/crypto"
@@ -30,40 +24,30 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	shell "github.com/ipfs/go-ipfs-api"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
-
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
-	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
-	Host              host.Host
-	Protocol          protocol.ID
-	priorityAddrs     multiaddr.Multiaddr
-	multiAddrs        []multiaddr.Multiaddr
-	DHT               *dht.IpfsDHT
-	Context           context.Context
-	PeerChan          chan myNetwork.PeerEvent
-	NodeTracker       *pubsub2.NodeEventTracker
-	PubSubManager     *pubsub2.Manager
-	Signature         string
-	IsStaked          bool
-	IsValidator       bool
-	IsTwitterScraper  bool
-	IsDiscordScraper  bool
-	IsTelegramScraper bool
-	IsWebScraper      bool
-	IsLlmServer       bool
-	StartTime         time.Time
-	WorkerTracker     *pubsub2.WorkerEventTracker
-	BlockTracker      *BlockEventTracker
-	Blockchain        *chain.Chain
-	options           config.AppOption
+	Host          host.Host
+	Protocol      protocol.ID
+	priorityAddrs multiaddr.Multiaddr
+	multiAddrs    []multiaddr.Multiaddr
+	DHT           *dht.IpfsDHT
+	PeerChan      chan myNetwork.PeerEvent
+	NodeTracker   *pubsub.NodeEventTracker
+	PubSubManager *pubsub.Manager
+	Signature     string
+	StartTime     time.Time
+	WorkerTracker *pubsub.WorkerEventTracker
+	BlockTracker  *BlockEventTracker
+	Blockchain    *chain.Chain
+	Options       NodeOption
+	Context       context.Context
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -92,12 +76,11 @@ func (node *OracleNode) GetP2PMultiAddrs() ([]multiaddr.Multiaddr, error) {
 // NewOracleNode creates a new OracleNode instance with the provided context and
 // staking status. It initializes the libp2p host, DHT, pubsub manager, and other
 // components needed for an Oracle node to join the network and participate.
-func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, error) {
-	o := &config.AppOption{}
+func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
+	o := &NodeOption{}
 	o.Apply(opts...)
 
 	// Start with the default scaling limits.
-	cfg := config.GetInstance(opts...)
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
@@ -129,13 +112,13 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 	// sudo sysctl -w net.core.rmem_max=7500000
 	// sudo sysctl -w net.core.wmem_max=7500000
 	// sudo sysctl -p
-	if cfg.UDP {
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", cfg.PortNbr))
+	if o.UDP {
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", o.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(quic.NewTransport))
 	}
-	if cfg.TCP {
+	if o.TCP {
 		securityOptions = append(securityOptions, libp2p.Security(libp2ptls.ID, libp2ptls.New))
-		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", cfg.PortNbr))
+		addrStr = append(addrStr, fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", o.PortNbr))
 		libp2pOptions = append(libp2pOptions, libp2p.Transport(tcp.NewTCPTransport))
 		libp2pOptions = append(libp2pOptions, libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport))
 	}
@@ -147,29 +130,24 @@ func NewOracleNode(ctx context.Context, opts ...config.Option) (*OracleNode, err
 		return nil, err
 	}
 
-	subscriptionManager, err := pubsub2.NewPubSubManager(ctx, hst)
+	subscriptionManager, err := pubsub.NewPubSubManager(ctx, hst)
 	if err != nil {
 		return nil, err
 	}
 
-	return &OracleNode{
-		Host:              hst,
-		Protocol:          config.ProtocolWithVersion(config.OracleProtocol),
-		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
-		Context:           ctx,
-		PeerChan:          make(chan myNetwork.PeerEvent),
-		NodeTracker:       pubsub2.NewNodeEventTracker(versioning.ProtocolVersion, cfg.Environment, hst.ID().String()),
-		PubSubManager:     subscriptionManager,
-		IsStaked:          o.IsStaked,
-		IsValidator:       cfg.Validator,
-		IsTwitterScraper:  cfg.TwitterScraper,
-		IsDiscordScraper:  cfg.DiscordScraper,
-		IsTelegramScraper: cfg.TelegramScraper,
-		IsWebScraper:      cfg.WebScraper,
-		IsLlmServer:       cfg.LlmServer,
-		Blockchain:        &chain.Chain{},
-		options:           *o,
-	}, nil
+	n := &OracleNode{
+		Host:          hst,
+		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
+		PeerChan:      make(chan myNetwork.PeerEvent),
+		NodeTracker:   pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
+		Context:       ctx,
+		PubSubManager: subscriptionManager,
+		Blockchain:    &chain.Chain{},
+		Options:       *o,
+	}
+
+	n.Protocol = n.protocolWithVersion(config.OracleProtocol)
+	return n, nil
 }
 
 func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
@@ -186,6 +164,26 @@ func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
 	return common.BytesToAddress(ethereumCrypto.Keccak256(rawKey[1:])[12:]).Hex(), nil
 }
 
+func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, publicEthAddress string) *pubsub.NodeData {
+	// GetSelfNodeData converts the local node's data into a JSON byte array.
+	// It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
+	// The NodeData struct is then marshalled into a JSON byte array.
+	// Returns nil if there is an error marshalling to JSON.
+	// Create and populate NodeData
+	nodeData := pubsub.NewNodeData(addr, host.ID(), publicEthAddress, pubsub.ActivityJoined)
+	nodeData.MultiaddrsString = addr.String()
+	nodeData.IsStaked = node.Options.IsStaked
+	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
+	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
+	nodeData.IsTelegramScraper = node.Options.IsLlmServer
+	nodeData.IsWebScraper = node.Options.IsWebScraper
+	nodeData.IsValidator = node.Options.IsValidator
+	nodeData.IsActive = true
+	nodeData.Version = versioning.ProtocolVersion
+
+	return nodeData
+}
+
 // Start initializes the OracleNode by setting up libp2p stream handlers,
 // connecting to the DHT and bootnodes, and subscribing to topics. It launches
 // goroutines to handle discovered peers, listen to the node tracker, and
@@ -194,31 +192,41 @@ func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
 
-	if node.IsStaked {
-		node.Host.SetStreamHandler(config.ProtocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+	for pid, n := range node.Options.ProtocolHandlers {
+		node.Host.SetStreamHandler(pid, n)
 	}
+
+	for protocol, n := range node.Options.MasaProtocolHandlers {
+		node.Host.SetStreamHandler(node.protocolWithVersion(protocol), n)
+	}
+
+	if node.Options.IsStaked {
+		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+	}
+
 	node.Host.Network().Notify(node.NodeTracker)
 
 	go node.ListenToNodeTracker()
 	go node.handleDiscoveredPeers()
+	go node.NodeTracker.ClearExpiredWorkerTimeouts()
 
 	var publicKeyHex string
-	if node.options.RandomIdentity {
+	if node.Options.RandomIdentity {
 		publicKeyHex, _ = node.generateEthHexKeyForRandomIdentity()
 	} else {
 		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
 	}
 
-	myNodeData := pubsub2.GetSelfNodeData(node.Host, node.IsStaked, node.priorityAddrs, publicKeyHex)
+	myNodeData := node.getNodeData(node.Host, node.priorityAddrs, publicKeyHex)
 
-	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(append(config.GetInstance().Bootnodes, node.options.Bootnodes...))
+	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(node.Options.Bootnodes)
 	if err != nil {
 		return err
 	}
 
-	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, config.MasaPrefix, node.PeerChan, myNodeData)
+	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
 		return err
 	}
@@ -228,6 +236,10 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
+	for _, p := range node.Options.Services {
+		go p(node.Context, node)
+	}
+
 	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
@@ -235,13 +247,14 @@ func (node *OracleNode) Start() (err error) {
 		nodeData = myNodeData
 		nodeData.SelfIdentified = true
 	}
-	nodeData.Joined()
+	nodeData.Joined(node.Options.Version)
 	node.NodeTracker.HandleNodeData(*nodeData)
 
 	// call SubscribeToTopics on startup
-	if err := SubscribeToTopics(node); err != nil {
+	if err := node.subscribeToTopics(); err != nil {
 		return err
 	}
+
 	node.StartTime = time.Now()
 
 	return nil
@@ -359,200 +372,4 @@ func (node *OracleNode) LogActiveTopics() {
 	} else {
 		logrus.Info("[-] No active topics.")
 	}
-}
-
-// Blockchain Implementation
-var (
-	blocksCh = make(chan *pubsub.Message)
-)
-
-type BlockData struct {
-	Block            uint64      `json:"block"`
-	InputData        interface{} `json:"input_data"`
-	TransactionHash  string      `json:"transaction_hash"`
-	PreviousHash     string      `json:"previous_hash"`
-	TransactionNonce int         `json:"nonce"`
-}
-
-type Blocks struct {
-	BlockData []BlockData `json:"blocks"`
-}
-
-type BlockEvents struct{}
-
-type BlockEventTracker struct {
-	BlockEvents []BlockEvents
-	BlockTopic  *pubsub.Topic
-	mu          sync.Mutex
-}
-
-// HandleMessage processes incoming pubsub messages containing block events.
-// It unmarshals the message data into a slice of BlockEvents and appends them
-// to the tracker's BlockEvents slice.
-func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
-	var blockEvents any
-
-	// Try to decode as base64 first
-	decodedData, err := base64.StdEncoding.DecodeString(string(m.Data))
-	if err == nil {
-		m.Data = decodedData
-	}
-
-	// Try to unmarshal as JSON
-	err = json.Unmarshal(m.Data, &blockEvents)
-	if err != nil {
-		// If JSON unmarshal fails, try to interpret as string
-		blockEvents = string(m.Data)
-	}
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	switch v := blockEvents.(type) {
-	case []BlockEvents:
-		b.BlockEvents = append(b.BlockEvents, v...)
-	case BlockEvents:
-		b.BlockEvents = append(b.BlockEvents, v)
-	case map[string]interface{}:
-		// Convert map to BlockEvents struct
-		newBlockEvent := BlockEvents{}
-		// You might need to add logic here to properly convert the map to BlockEvents
-		b.BlockEvents = append(b.BlockEvents, newBlockEvent)
-	case []interface{}:
-		// Convert each item in the slice to BlockEvents
-		for _, item := range v {
-			if be, ok := item.(BlockEvents); ok {
-				b.BlockEvents = append(b.BlockEvents, be)
-			}
-		}
-	case string:
-		// Handle string data
-		newBlockEvent := BlockEvents{}
-		// You might need to add logic here to properly convert the string to BlockEvents
-		b.BlockEvents = append(b.BlockEvents, newBlockEvent)
-	default:
-		logrus.Warnf("[-] Unexpected data type in message: %v", reflect.TypeOf(v))
-	}
-
-	blocksCh <- m
-}
-
-func updateBlocks(ctx context.Context, node *OracleNode) error {
-
-	var existingBlocks Blocks
-	blocks := chain.GetBlockchain(node.Blockchain)
-
-	for _, block := range blocks {
-		var inputData interface{}
-		err := json.Unmarshal(block.Data, &inputData)
-		if err != nil {
-			inputData = string(block.Data) // Fallback to string if unmarshal fails
-		}
-
-		blockData := BlockData{
-			Block:            block.Block,
-			InputData:        base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v", inputData))),
-			TransactionHash:  fmt.Sprintf("%x", block.Hash),
-			PreviousHash:     fmt.Sprintf("%x", block.Link),
-			TransactionNonce: int(block.Nonce),
-		}
-		existingBlocks.BlockData = append(existingBlocks.BlockData, blockData)
-	}
-	jsonData, err := json.Marshal(existingBlocks)
-	if err != nil {
-		return err
-	}
-
-	err = node.DHT.PutValue(ctx, "/db/blocks", jsonData)
-	if err != nil {
-		logrus.Warningf("[-] Unable to store block on DHT: %v", err)
-	}
-
-	if os.Getenv("IPFS_URL") != "" {
-
-		infuraURL := fmt.Sprintf("https://%s:%s@%s", os.Getenv("PID"), os.Getenv("PS"), os.Getenv("IPFS_URL"))
-		sh := shell.NewShell(infuraURL)
-
-		jsonBytes, err := json.Marshal(jsonData)
-		if err != nil {
-			logrus.Errorf("[-] Error marshalling JSON: %s", err)
-		}
-
-		reader := bytes.NewReader(jsonBytes)
-
-		hash, err := sh.AddWithOpts(reader, true, true)
-		if err != nil {
-			logrus.Errorf("[-] Error persisting to IPFS: %s", err)
-		} else {
-			logrus.Printf("[+] Ledger persisted with IPFS hash: https://dwn.infura-ipfs.io/ipfs/%s\n", hash)
-			_ = node.DHT.PutValue(ctx, "/db/ipfs", []byte(fmt.Sprintf("https://dwn.infura-ipfs.io/ipfs/%s", hash)))
-
-		}
-	}
-
-	return nil
-}
-
-func SubscribeToBlocks(ctx context.Context, node *OracleNode) {
-	if !node.IsValidator {
-		return
-	}
-
-	go func() {
-		err := node.Blockchain.Init()
-		if err != nil {
-			logrus.Error(err)
-		}
-	}()
-
-	updateTicker := time.NewTicker(time.Second * 60)
-	defer updateTicker.Stop()
-
-	for {
-		select {
-		case block, ok := <-blocksCh:
-			if !ok {
-				logrus.Error("[-] Block channel closed")
-				return
-			}
-			if err := processBlock(node, block); err != nil {
-				logrus.Errorf("[-] Error processing block: %v", err)
-				// Consider adding a retry mechanism or circuit breaker here
-			}
-
-		case <-updateTicker.C:
-			logrus.Info("[+] blockchain tick")
-			if err := updateBlocks(ctx, node); err != nil {
-				logrus.Errorf("[-] Error updating blocks: %v", err)
-				// Consider adding a retry mechanism or circuit breaker here
-			}
-
-		case <-ctx.Done():
-			logrus.Info("[+] Context cancelled, stopping block subscription")
-			return
-		}
-	}
-}
-
-func processBlock(node *OracleNode, block *pubsub.Message) error {
-	blocks := chain.GetBlockchain(node.Blockchain)
-	for _, b := range blocks {
-		if string(b.Data) == string(block.Data) {
-			return nil // Block already exists
-		}
-	}
-
-	if err := node.Blockchain.AddBlock(block.Data); err != nil {
-		return fmt.Errorf("[-] failed to add block: %w", err)
-	}
-
-	if node.Blockchain.LastHash != nil {
-		b, err := node.Blockchain.GetBlock(node.Blockchain.LastHash)
-		if err != nil {
-			return fmt.Errorf("[-] failed to get last block: %w", err)
-		}
-		b.Print()
-	}
-
-	return nil
 }

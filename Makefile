@@ -1,6 +1,8 @@
 VERSION := $(shell git describe --tags --abbrev=0)
 
 GORELEASER?=
+CGO_ENABLED?=0
+
 # check if goreleaser exists
 ifeq (, $(shell which goreleaser))
 	GORELEASER=curl -sfL https://goreleaser.com/static/run | bash -s --
@@ -11,16 +13,19 @@ endif
 print-version:
 	@echo "Version: ${VERSION}"
 
+contracts/node_modules:
+	@go generate ./...
+
 dev-dist:
 	$(GORELEASER) build --snapshot --single-target --clean
 
 dist:
 	$(GORELEASER) build --single-target --clean
 
-build:
+build: contracts/node_modules
 	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node ./cmd/masa-node
 	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node-cli ./cmd/masa-node-cli
-	
+
 install:
 	@sh ./node_install.sh
 	
@@ -36,8 +41,8 @@ stake: build
 client: build	
 	@./bin/masa-node-cli
 
-test:
-	@go test -v -count=1 ./...
+test: contracts/node_modules
+	@go test -coverprofile=coverage.txt -covermode=atomic -v ./...
 
 clean:
 	@rm -rf bin

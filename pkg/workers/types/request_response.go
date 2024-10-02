@@ -5,7 +5,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
-	masa "github.com/masa-finance/masa-oracle/pkg"
+	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -14,7 +14,7 @@ type Worker struct {
 	IPAddr   string
 	AddrInfo *peer.AddrInfo
 	NodeData pubsub.NodeData
-	Node     *masa.OracleNode
+	Node     *node.OracleNode
 }
 
 func NewWorker(isLocal bool, nd *pubsub.NodeData) *Worker {

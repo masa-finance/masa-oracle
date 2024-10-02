@@ -1,5 +1,9 @@
 # Make sure to check the documentation at http://goreleaser.com
 version: 2
+# Get MASA Contract dependencies (requires yarn)
+before:
+  hooks:
+  - go generate ./...
 builds:
   - main: ./cmd/masa-node
     id: "masa-node"
