@@ -197,6 +197,8 @@ func processBlock(node *OracleNode, block *pubsub.Message) error {
 		}
 	}
 
+	// XXX: We miss here the logic to check if the block is actually valid
+	// and built AFTER our current block (!)
 	if err := node.Blockchain.AddBlock(block.Data); err != nil {
 		return fmt.Errorf("[-] failed to add block: %w", err)
 	}
