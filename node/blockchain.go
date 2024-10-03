@@ -31,11 +31,10 @@ type Blocks struct {
 	BlockData []BlockData `json:"blocks"`
 }
 
-type BlockEvents struct{}
+type BlockEvents map[string]interface{}
 
 type BlockEventTracker struct {
 	BlockEvents []BlockEvents
-	BlockTopic  *pubsub.Topic
 	mu          sync.Mutex
 	blocksCh    chan *pubsub.Message
 }
@@ -75,7 +74,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 		b.BlockEvents = append(b.BlockEvents, v)
 	case map[string]interface{}:
 		// Convert map to BlockEvents struct
-		newBlockEvent := BlockEvents{}
+		newBlockEvent := BlockEvents(v)
 		// You might need to add logic here to properly convert the map to BlockEvents
 		b.BlockEvents = append(b.BlockEvents, newBlockEvent)
 	case []interface{}:
