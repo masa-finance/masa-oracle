@@ -88,7 +88,6 @@ var _ = Describe("Blockchain tests", func() {
 
 			// Eventually we should have at least one event
 			Eventually(func() int {
-				fmt.Println(blockChainEventTracker2.BlockEvents)
 				return len(blockChainEventTracker2.BlockEvents)
 			}, "30s").ShouldNot(Equal(0))
 
