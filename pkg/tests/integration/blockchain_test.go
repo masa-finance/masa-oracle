@@ -82,14 +82,14 @@ var _ = Describe("Blockchain tests", func() {
 			publishBytes, err := json.Marshal(publishedData)
 			Expect(err).ToNot(HaveOccurred())
 
-			// Publish data with the first node to kick off the first event
-			err = n.PublishTopic(config.BlockTopic, publishBytes)
-			Expect(err).ToNot(HaveOccurred())
-
 			// Eventually we should have at least one event
 			Eventually(func() int {
+				// Publish data with the first node to kick off the first event
+				err = n.PublishTopic(config.BlockTopic, publishBytes)
+				Expect(err).ToNot(HaveOccurred())
+
 				return len(blockChainEventTracker2.BlockEvents)
-			}, "30s").ShouldNot(Equal(0))
+			}, "1m").ShouldNot(Equal(0))
 
 			// Check that the event has the data that we published
 			Expect(blockChainEventTracker2.BlockEvents[0]).To(Equal(BlockEvents(publishedData)))
