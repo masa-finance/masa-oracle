@@ -68,7 +68,7 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 		// and other peers can do work we only need to check this here
 		// if this peer can or cannot scrape or write that is checked in other places
 		masaNodeOptions = append(masaNodeOptions,
-			node.WithService(blockChainEventTracker.Start),
+			node.WithService(blockChainEventTracker.Start(config.GetInstance().MasaDir)),
 		)
 	}
 

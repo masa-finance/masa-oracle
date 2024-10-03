@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,8 +24,8 @@ type Chain struct {
 //
 // Returns:
 //   - error: An error if any step in the initialization process fails, nil otherwise.
-func (c *Chain) Init() error {
-	dataDir := filepath.Join(config.GetInstance().MasaDir, "./blocks")
+func (c *Chain) Init(path string) error {
+	dataDir := filepath.Join(path, "./blocks")
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		err = os.MkdirAll(dataDir, 0755)
 		if err != nil {

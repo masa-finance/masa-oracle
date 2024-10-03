@@ -152,37 +152,39 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 	return nil
 }
 
-func (b *BlockEventTracker) Start(ctx context.Context, node *OracleNode) {
-	err := node.Blockchain.Init()
-	if err != nil {
-		logrus.Error(err)
-	}
+func (b *BlockEventTracker) Start(path string) func(ctx context.Context, node *OracleNode) {
+	return func(ctx context.Context, node *OracleNode) {
+		err := node.Blockchain.Init(path)
+		if err != nil {
+			logrus.Error(err)
+		}
 
-	updateTicker := time.NewTicker(time.Second * 60)
-	defer updateTicker.Stop()
+		updateTicker := time.NewTicker(time.Second * 60)
+		defer updateTicker.Stop()
 
-	for {
-		select {
-		case block, ok := <-b.blocksCh:
-			if !ok {
-				logrus.Error("[-] Block channel closed")
+		for {
+			select {
+			case block, ok := <-b.blocksCh:
+				if !ok {
+					logrus.Error("[-] Block channel closed")
+					return
+				}
+				if err := processBlock(node, block); err != nil {
+					logrus.Errorf("[-] Error processing block: %v", err)
+					// Consider adding a retry mechanism or circuit breaker here
+				}
+
+			case <-updateTicker.C:
+				logrus.Info("[+] blockchain tick")
+				if err := updateBlocks(ctx, node); err != nil {
+					logrus.Errorf("[-] Error updating blocks: %v", err)
+					// Consider adding a retry mechanism or circuit breaker here
+				}
+
+			case <-ctx.Done():
+				logrus.Info("[+] Context cancelled, stopping block subscription")
 				return
 			}
-			if err := processBlock(node, block); err != nil {
-				logrus.Errorf("[-] Error processing block: %v", err)
-				// Consider adding a retry mechanism or circuit breaker here
-			}
-
-		case <-updateTicker.C:
-			logrus.Info("[+] blockchain tick")
-			if err := updateBlocks(ctx, node); err != nil {
-				logrus.Errorf("[-] Error updating blocks: %v", err)
-				// Consider adding a retry mechanism or circuit breaker here
-			}
-
-		case <-ctx.Done():
-			logrus.Info("[+] Context cancelled, stopping block subscription")
-			return
 		}
 	}
 }
