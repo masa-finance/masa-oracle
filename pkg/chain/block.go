@@ -23,7 +23,7 @@ func (b *Block) Build(data []byte, link []byte, stake *big.Int, block uint64) {
 	b.Data = data
 	b.Link = link
 
-	pos := &ProofOfStake{Block: b, Target: getProofOfStakeTarget(stake), Stake: stake}
+	pos := &ProofOfStake{Block: b, Target: GetProofOfStakeTarget(stake), Stake: stake}
 	b.Nonce, b.Hash = pos.Run()
 }
 

@@ -19,7 +19,7 @@ type ProofOfStake struct {
 	Stake  *big.Int
 }
 
-func getProofOfStakeTarget(stake *big.Int) *big.Int {
+func GetProofOfStakeTarget(stake *big.Int) *big.Int {
 	logrus.WithFields(logrus.Fields{"stake": stake}).Info("[+] Staked amount")
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-Difficulty))
@@ -67,7 +67,7 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 
 func IsValidPoS(block *Block, stake *big.Int) bool {
 	var hashIntegerRep big.Int
-	pos := &ProofOfStake{Block: block, Target: getProofOfStakeTarget(stake), Stake: stake}
+	pos := &ProofOfStake{Block: block, Target: GetProofOfStakeTarget(stake), Stake: stake}
 	data := pos.joinData(block.Nonce)
 	hash := sha256.Sum256(data)
 	hashIntegerRep.SetBytes(hash[:])
