@@ -8,7 +8,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/dgraph-io/badger v1.6.2
-	github.com/ethereum/go-ethereum v1.14.8
+	github.com/ethereum/go-ethereum v1.14.11
 	github.com/fatih/color v1.17.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/gin-contrib/cors v1.7.2
@@ -17,7 +17,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.6.0
 	github.com/gotd/contrib v0.20.0
-	github.com/gotd/td v0.110.0
+	github.com/gotd/td v0.110.1
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ds-leveldb v0.5.0
@@ -30,11 +30,11 @@ require (
 	github.com/masa-finance/masa-twitter-scraper v0.0.1
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/multiformats/go-multihash v0.2.3
-	github.com/ollama/ollama v0.3.11
+	github.com/ollama/ollama v0.3.12
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/rivo/tview v0.0.0-20240505185119-ed116790de0f
-	github.com/sashabaranov/go-openai v1.29.2
+	github.com/sashabaranov/go-openai v1.31.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
@@ -71,6 +71,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/crackcomm/go-gitignore v0.0.0-20231225121904-e25f5bc08668 // indirect
+	github.com/crate-crypto/go-ipa v0.0.0-20240223125850-b1e8a79f509c // indirect
 	github.com/crate-crypto/go-kzg-4844 v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
@@ -80,6 +81,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/elastic/gosigar v0.14.3 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
+	github.com/ethereum/go-verkle v0.1.1-0.20240829091221-dffa7562dbe9 // indirect
 	github.com/flynn/noise v1.1.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -217,7 +219,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/supranational/blst v0.3.11 // indirect
+	github.com/supranational/blst v0.3.13 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/temoto/robotstxt v1.1.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
