@@ -3,7 +3,6 @@ package chain
 import (
 	"bytes"
 	"crypto/sha256"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -47,13 +46,13 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 	currentTime := time.Now().Unix()
 
 	logrus.WithFields(logrus.Fields{"nonce": currentTime}).Info("[+] Running Proof of Stake...")
-	spinner := []string{"|", "/", "-", "\\"}
+	//spinner := []string{"|", "/", "-", "\\"}
 	i := 0
 	for {
 		data := pos.joinData(currentTime)
 		hash = sha256.Sum256(data)
 		hashInt.SetBytes(hash[:])
-		fmt.Printf("\r%s %x", spinner[i%len(spinner)], hash)
+		//	fmt.Printf("\r%s %x", spinner[i%len(spinner)], hash)
 		i++
 		if hashInt.Cmp(pos.Target) == -1 {
 			break
@@ -61,7 +60,7 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 			currentTime++
 		}
 	}
-	fmt.Println()
+	//fmt.Println()
 	return currentTime, hash[:]
 }
 
