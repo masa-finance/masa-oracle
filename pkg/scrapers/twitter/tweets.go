@@ -3,20 +3,16 @@ package twitter
 import (
 	"context"
 	"fmt"
-	"os"
+	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
-)
 
-var (
-	accountManager *TwitterAccountManager
-	once           sync.Once
-	maxRetries     = 3
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 type TweetResult struct {
@@ -24,163 +20,111 @@ type TweetResult struct {
 	Error error
 }
 
-func initializeAccountManager() {
-	accounts := loadAccountsFromConfig()
-	accountManager = NewTwitterAccountManager(accounts)
+// auth initializes and returns a new Twitter scraper instance. It attempts to load cookies from a file to reuse an existing session.
+// If no valid session is found, it performs a login with credentials specified in the application's configuration.
+// On successful login, it saves the session cookies for future use. If the login fails, it returns nil.
+func Auth() *twitterscraper.Scraper {
+	scraper := twitterscraper.New()
+	appConfig := config.GetInstance()
+	cookieFilePath := filepath.Join(appConfig.MasaDir, "twitter_cookies.json")
+
+	if err := LoadCookies(scraper, cookieFilePath); err == nil {
+		logrus.Debug("Cookies loaded successfully.")
+		if IsLoggedIn(scraper) {
+			logrus.Debug("Already logged in via cookies.")
+			return scraper
+		}
+	}
+
+	username := appConfig.TwitterUsername
+	password := appConfig.TwitterPassword
+	twoFACode := appConfig.Twitter2FaCode
+
+	time.Sleep(100 * time.Millisecond)
+
+	var err error
+	if twoFACode != "" {
+		err = Login(scraper, username, password, twoFACode)
+	} else {
+		err = Login(scraper, username, password)
+	}
+
+	if err != nil {
+		logrus.WithError(err).Warning("[-] Login failed")
+		return nil
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	if err = SaveCookies(scraper, cookieFilePath); err != nil {
+		logrus.WithError(err).Error("[-] Failed to save cookies")
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"auth":     true,
+		"username": username,
+	}).Debug("Login successful")
+
+	return scraper
 }
 
-// loadAccountsFromConfig reads Twitter accounts from the .env file
-func loadAccountsFromConfig() []*TwitterAccount {
-	err := godotenv.Load()
-	if err != nil {
-		logrus.Fatalf("error loading .env file: %v", err)
+// ScrapeTweetsByQuery performs a search on Twitter for tweets matching the specified query.
+// It fetches up to the specified count of tweets and returns a slice of Tweet pointers.
+// Parameters:
+//   - query: The search query string to find matching tweets.
+//   - count: The maximum number of tweets to retrieve.
+//
+// Returns:
+//   - A slice of pointers to twitterscraper.Tweet objects that match the search query.
+//   - An error if the scraping process encounters any issues.
+func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
+	scraper := Auth()
+	var tweets []*TweetResult
+	var lastError error
+
+	if scraper == nil {
+		return nil, fmt.Errorf("there was an error authenticating with your Twitter credentials")
 	}
 
-	accountsEnv := os.Getenv("TWITTER_ACCOUNTS")
-	if accountsEnv == "" {
-		logrus.Fatal("TWITTER_ACCOUNTS not set in .env file")
-	}
+	// Set search mode
+	scraper.SetSearchMode(twitterscraper.SearchLatest)
 
-	accountPairs := strings.Split(accountsEnv, ",")
-	var accounts []*TwitterAccount
-
-	for _, pair := range accountPairs {
-		credentials := strings.Split(pair, ":")
-		if len(credentials) != 2 {
-			logrus.Warnf("invalid account credentials: %s", pair)
+	// Perform the search with the specified query and count
+	for tweetResult := range scraper.SearchTweets(context.Background(), query, count) {
+		if tweetResult.Error != nil {
+			lastError = tweetResult.Error
+			logrus.Warnf("[+] Error encountered while scraping tweet: %v", tweetResult.Error)
+			if strings.Contains(tweetResult.Error.Error(), "Rate limit exceeded") {
+				return nil, fmt.Errorf("Twitter API rate limit exceeded (429 error)")
+			}
 			continue
 		}
-		account := &TwitterAccount{
-			Username: strings.TrimSpace(credentials[0]),
-			Password: strings.TrimSpace(credentials[1]),
-		}
-		accounts = append(accounts, account)
+		tweets = append(tweets, &TweetResult{Tweet: &tweetResult.Tweet, Error: nil})
 	}
 
-	return accounts
+	if len(tweets) == 0 && lastError != nil {
+		return nil, lastError
+	}
+
+	return tweets, nil
 }
 
-func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
-	once.Do(initializeAccountManager)
-
-	getAuthenticatedScraper := func() (*twitterscraper.Scraper, *TwitterAccount, error) {
-		account := accountManager.GetNextAccount()
-		if account == nil {
-			return nil, nil, fmt.Errorf("all accounts are rate-limited")
-		}
-		scraper := Auth(account)
-		if scraper == nil {
-			logrus.Errorf("authentication failed for %s", account.Username)
-			return nil, account, fmt.Errorf("authentication failed for %s", account.Username)
-		}
-		return scraper, account, nil
-	}
-
-	scrapeTweets := func(scraper *twitterscraper.Scraper) ([]*TweetResult, error) {
-		var tweets []*TweetResult
-		ctx := context.Background()
-		scraper.SetSearchMode(twitterscraper.SearchLatest)
-		for tweet := range scraper.SearchTweets(ctx, query, count) {
-			if tweet.Error != nil {
-				return nil, tweet.Error
-			}
-			tweets = append(tweets, &TweetResult{Tweet: &tweet.Tweet})
-		}
-		return tweets, nil
-	}
-
-	handleRateLimit := func(err error, account *TwitterAccount) bool {
-		if strings.Contains(err.Error(), "Rate limit exceeded") {
-			accountManager.MarkAccountRateLimited(account)
-			logrus.Warnf("rate limited: %s", account.Username)
-			return true
-		}
-		return false
-	}
-
-	return retryTweets(func() ([]*TweetResult, error) {
-		scraper, account, err := getAuthenticatedScraper()
-		if err != nil {
-			return nil, err
-		}
-
-		tweets, err := scrapeTweets(scraper)
-		if err != nil {
-			if handleRateLimit(err, account) {
-				return nil, err
-			}
-			return nil, err
-		}
-		return tweets, nil
-	}, maxRetries)
-}
-
+// ScrapeTweetsProfile scrapes the profile and tweets of a specific Twitter user.
+// It takes the username as a parameter and returns the scraped profile information and an error if any.
 func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
-	once.Do(initializeAccountManager)
+	scraper := Auth()
 
-	getAuthenticatedScraper := func() (*twitterscraper.Scraper, *TwitterAccount, error) {
-		account := accountManager.GetNextAccount()
-		if account == nil {
-			return nil, nil, fmt.Errorf("all accounts are rate-limited")
-		}
-		scraper := Auth(account)
-		if scraper == nil {
-			logrus.Errorf("authentication failed for %s", account.Username)
-			return nil, account, fmt.Errorf("authentication failed for %s", account.Username)
-		}
-		return scraper, account, nil
+	if scraper == nil {
+		return twitterscraper.Profile{}, fmt.Errorf("there was an error authenticating with your Twitter credentials")
 	}
 
-	getProfile := func(scraper *twitterscraper.Scraper) (twitterscraper.Profile, error) {
-		return scraper.GetProfile(username)
+	// Set search mode
+	scraper.SetSearchMode(twitterscraper.SearchLatest)
+
+	profile, err := scraper.GetProfile(username)
+	if err != nil {
+		return twitterscraper.Profile{}, err
 	}
 
-	handleRateLimit := func(err error, account *TwitterAccount) bool {
-		if strings.Contains(err.Error(), "Rate limit exceeded") {
-			accountManager.MarkAccountRateLimited(account)
-			logrus.Warnf("rate limited: %s", account.Username)
-			return true
-		}
-		return false
-	}
-
-	return retryProfile(func() (twitterscraper.Profile, error) {
-		scraper, account, err := getAuthenticatedScraper()
-		if err != nil {
-			return twitterscraper.Profile{}, err
-		}
-
-		profile, err := getProfile(scraper)
-		if err != nil {
-			if handleRateLimit(err, account) {
-				return twitterscraper.Profile{}, err
-			}
-			return twitterscraper.Profile{}, err
-		}
-		return profile, nil
-	}, maxRetries)
-}
-
-func retryTweets(operation func() ([]*TweetResult, error), maxAttempts int) ([]*TweetResult, error) {
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		result, err := operation()
-		if err == nil {
-			return result, nil
-		}
-		logrus.Errorf("retry attempt %d failed: %v", attempt, err)
-		time.Sleep(time.Duration(attempt) * time.Second)
-	}
-	return nil, fmt.Errorf("operation failed after %d attempts", maxAttempts)
-}
-
-func retryProfile(operation func() (twitterscraper.Profile, error), maxAttempts int) (twitterscraper.Profile, error) {
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		result, err := operation()
-		if err == nil {
-			return result, nil
-		}
-		logrus.Errorf("retry attempt %d failed: %v", attempt, err)
-		time.Sleep(time.Duration(attempt) * time.Second)
-	}
-	return twitterscraper.Profile{}, fmt.Errorf("operation failed after %d attempts", maxAttempts)
+	return profile, nil
 }
