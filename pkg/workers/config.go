@@ -18,7 +18,7 @@ type WorkerConfig struct {
 
 var DefaultConfig = WorkerConfig{
 	WorkerTimeout:         55 * time.Second,
-	WorkerResponseTimeout: 30 * time.Second,
+	WorkerResponseTimeout: 45 * time.Second,
 	ConnectionTimeout:     10 * time.Second,
 	MaxRetries:            1,
 	MaxSpawnAttempts:      1,
