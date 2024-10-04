@@ -20,7 +20,6 @@ var _ = Describe("Oracle integration tests", func() {
 			n, err := NewOracleNode(
 				ctx,
 				EnableStaked,
-				DisableCLIParse,
 				EnableRandomIdentity,
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -39,7 +38,6 @@ var _ = Describe("Oracle integration tests", func() {
 			By(fmt.Sprintf("Generating second node with bootnodes %+v", bootNodes))
 			n2, err := NewOracleNode(ctx,
 				EnableStaked,
-				DisableCLIParse,
 				WithBootNodes(bootNodes...),
 				EnableRandomIdentity,
 			)
@@ -70,7 +68,6 @@ var _ = Describe("Oracle integration tests", func() {
 
 			Expect(peerIds).To(ContainElement(n.Host.ID().String()))
 			Expect(peerIds).To(ContainElement(n2.Host.ID().String()))
-
 		})
 	})
 })

@@ -31,11 +31,10 @@ type Blocks struct {
 	BlockData []BlockData `json:"blocks"`
 }
 
-type BlockEvents struct{}
+type BlockEvents map[string]interface{}
 
 type BlockEventTracker struct {
 	BlockEvents []BlockEvents
-	BlockTopic  *pubsub.Topic
 	mu          sync.Mutex
 	blocksCh    chan *pubsub.Message
 }
@@ -75,7 +74,7 @@ func (b *BlockEventTracker) HandleMessage(m *pubsub.Message) {
 		b.BlockEvents = append(b.BlockEvents, v)
 	case map[string]interface{}:
 		// Convert map to BlockEvents struct
-		newBlockEvent := BlockEvents{}
+		newBlockEvent := BlockEvents(v)
 		// You might need to add logic here to properly convert the map to BlockEvents
 		b.BlockEvents = append(b.BlockEvents, newBlockEvent)
 	case []interface{}:
@@ -153,37 +152,39 @@ func updateBlocks(ctx context.Context, node *OracleNode) error {
 	return nil
 }
 
-func (b *BlockEventTracker) Start(ctx context.Context, node *OracleNode) {
-	err := node.Blockchain.Init()
-	if err != nil {
-		logrus.Error(err)
-	}
+func (b *BlockEventTracker) Start(path string) func(ctx context.Context, node *OracleNode) {
+	return func(ctx context.Context, node *OracleNode) {
+		err := node.Blockchain.Init(path)
+		if err != nil {
+			logrus.Error(err)
+		}
 
-	updateTicker := time.NewTicker(time.Second * 60)
-	defer updateTicker.Stop()
+		updateTicker := time.NewTicker(time.Second * 60)
+		defer updateTicker.Stop()
 
-	for {
-		select {
-		case block, ok := <-b.blocksCh:
-			if !ok {
-				logrus.Error("[-] Block channel closed")
+		for {
+			select {
+			case block, ok := <-b.blocksCh:
+				if !ok {
+					logrus.Error("[-] Block channel closed")
+					return
+				}
+				if err := processBlock(node, block); err != nil {
+					logrus.Errorf("[-] Error processing block: %v", err)
+					// Consider adding a retry mechanism or circuit breaker here
+				}
+
+			case <-updateTicker.C:
+				logrus.Info("[+] blockchain tick")
+				if err := updateBlocks(ctx, node); err != nil {
+					logrus.Errorf("[-] Error updating blocks: %v", err)
+					// Consider adding a retry mechanism or circuit breaker here
+				}
+
+			case <-ctx.Done():
+				logrus.Info("[+] Context cancelled, stopping block subscription")
 				return
 			}
-			if err := processBlock(node, block); err != nil {
-				logrus.Errorf("[-] Error processing block: %v", err)
-				// Consider adding a retry mechanism or circuit breaker here
-			}
-
-		case <-updateTicker.C:
-			logrus.Info("[+] blockchain tick")
-			if err := updateBlocks(ctx, node); err != nil {
-				logrus.Errorf("[-] Error updating blocks: %v", err)
-				// Consider adding a retry mechanism or circuit breaker here
-			}
-
-		case <-ctx.Done():
-			logrus.Info("[+] Context cancelled, stopping block subscription")
-			return
 		}
 	}
 }
@@ -196,6 +197,8 @@ func processBlock(node *OracleNode, block *pubsub.Message) error {
 		}
 	}
 
+	// XXX: We miss here the logic to check if the block is actually valid
+	// and built AFTER our current block (!)
 	if err := node.Blockchain.AddBlock(block.Data); err != nil {
 		return fmt.Errorf("[-] failed to add block: %w", err)
 	}

@@ -3,6 +3,7 @@ package pubsub
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -83,6 +84,9 @@ func (sm *Manager) AddSubscription(topicName string, handler types.SubscriptionH
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
 				logrus.Errorf("[-] Error reading from topic: %v", err)
+				if errors.Is(err, context.Canceled) {
+					return
+				}
 				continue
 			}
 			if !includeSelf {
@@ -218,6 +222,9 @@ func (sm *Manager) Subscribe(topicName string, handler types.SubscriptionHandler
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
 				logrus.Errorf("[-] Error reading from topic: %v", err)
+				if errors.Is(err, context.Canceled) {
+					return
+				}
 				continue
 			}
 			// Skip messages from the same node

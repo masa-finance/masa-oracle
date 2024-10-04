@@ -44,7 +44,6 @@ type OracleNode struct {
 	Signature     string
 	StartTime     time.Time
 	WorkerTracker *pubsub.WorkerEventTracker
-	BlockTracker  *BlockEventTracker
 	Blockchain    *chain.Chain
 	Options       NodeOption
 	Context       context.Context

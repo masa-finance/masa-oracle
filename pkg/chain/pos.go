@@ -3,7 +3,6 @@ package chain
 import (
 	"bytes"
 	"crypto/sha256"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -19,7 +18,7 @@ type ProofOfStake struct {
 	Stake  *big.Int
 }
 
-func getProofOfStakeTarget(stake *big.Int) *big.Int {
+func GetProofOfStakeTarget(stake *big.Int) *big.Int {
 	logrus.WithFields(logrus.Fields{"stake": stake}).Info("[+] Staked amount")
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-Difficulty))
@@ -47,13 +46,13 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 	currentTime := time.Now().Unix()
 
 	logrus.WithFields(logrus.Fields{"nonce": currentTime}).Info("[+] Running Proof of Stake...")
-	spinner := []string{"|", "/", "-", "\\"}
+	//spinner := []string{"|", "/", "-", "\\"}
 	i := 0
 	for {
 		data := pos.joinData(currentTime)
 		hash = sha256.Sum256(data)
 		hashInt.SetBytes(hash[:])
-		fmt.Printf("\r%s %x", spinner[i%len(spinner)], hash)
+		//	fmt.Printf("\r%s %x", spinner[i%len(spinner)], hash)
 		i++
 		if hashInt.Cmp(pos.Target) == -1 {
 			break
@@ -61,13 +60,13 @@ func (pos *ProofOfStake) Run() (int64, []byte) {
 			currentTime++
 		}
 	}
-	fmt.Println()
+	//fmt.Println()
 	return currentTime, hash[:]
 }
 
 func IsValidPoS(block *Block, stake *big.Int) bool {
 	var hashIntegerRep big.Int
-	pos := &ProofOfStake{Block: block, Target: getProofOfStakeTarget(stake), Stake: stake}
+	pos := &ProofOfStake{Block: block, Target: GetProofOfStakeTarget(stake), Stake: stake}
 	data := pos.joinData(block.Nonce)
 	hash := sha256.Sum256(data)
 	hashIntegerRep.SetBytes(hash[:])

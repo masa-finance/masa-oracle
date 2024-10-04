@@ -10,12 +10,11 @@ import (
 )
 
 type NodeOption struct {
-	DisableCLIParse bool
-	IsStaked        bool
-	UDP             bool
-	TCP             bool
-	IsValidator     bool
-	PortNbr         int
+	IsStaked    bool
+	UDP         bool
+	TCP         bool
+	IsValidator bool
+	PortNbr     int
 
 	IsTwitterScraper  bool
 	IsDiscordScraper  bool
@@ -40,10 +39,6 @@ type PubSubHandlers struct {
 }
 
 type Option func(*NodeOption)
-
-var DisableCLIParse = func(o *NodeOption) {
-	o.DisableCLIParse = true
-}
 
 var EnableStaked = func(o *NodeOption) {
 	o.IsStaked = true
