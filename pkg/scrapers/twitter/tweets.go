@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
@@ -62,21 +63,22 @@ func loadAccountsFromConfig() []*TwitterAccount {
 
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 	once.Do(initializeAccountManager)
+	baseDir := config.GetInstance().MasaDir
 
-	getAuthenticatedScraper := func() (*twitterscraper.Scraper, *TwitterAccount, error) {
+	getAuthenticatedScraper := func() (*Scraper, *TwitterAccount, error) {
 		account := accountManager.GetNextAccount()
 		if account == nil {
 			return nil, nil, fmt.Errorf("all accounts are rate-limited")
 		}
-		scraper := NewScraper(account)
+		scraper := NewScraper(account, baseDir)
 		if scraper == nil {
-			logrus.Errorf("authentication failed for %s", account.Username)
-			return nil, account, fmt.Errorf("authentication failed for %s", account.Username)
+			logrus.Errorf("Authentication failed for %s", account.Username)
+			return nil, account, fmt.Errorf(" Twitter authentication failed for %s", account.Username)
 		}
 		return scraper, account, nil
 	}
 
-	scrapeTweets := func(scraper *twitterscraper.Scraper) ([]*TweetResult, error) {
+	scrapeTweets := func(scraper *Scraper) ([]*TweetResult, error) {
 		var tweets []*TweetResult
 		ctx := context.Background()
 		scraper.SetSearchMode(twitterscraper.SearchLatest)
@@ -117,21 +119,22 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 
 func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
 	once.Do(initializeAccountManager)
+	baseDir := config.GetInstance().MasaDir
 
-	getAuthenticatedScraper := func() (*twitterscraper.Scraper, *TwitterAccount, error) {
+	getAuthenticatedScraper := func() (*Scraper, *TwitterAccount, error) {
 		account := accountManager.GetNextAccount()
 		if account == nil {
 			return nil, nil, fmt.Errorf("all accounts are rate-limited")
 		}
-		scraper := NewScraper(account)
+		scraper := NewScraper(account, baseDir)
 		if scraper == nil {
-			logrus.Errorf("authentication failed for %s", account.Username)
-			return nil, account, fmt.Errorf("authentication failed for %s", account.Username)
+			logrus.Errorf("Authentication failed for %s", account.Username)
+			return nil, account, fmt.Errorf("Twitter authentication failed for %s", account.Username)
 		}
 		return scraper, account, nil
 	}
 
-	getProfile := func(scraper *twitterscraper.Scraper) (twitterscraper.Profile, error) {
+	getProfile := func(scraper *Scraper) (twitterscraper.Profile, error) {
 		return scraper.GetProfile(username)
 	}
 

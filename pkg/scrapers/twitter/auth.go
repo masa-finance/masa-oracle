@@ -5,10 +5,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
+
+type Scraper struct {
+	*twitterscraper.Scraper
+}
 
 type TwitterAccount struct {
 	Username         string
@@ -49,13 +52,13 @@ func (manager *TwitterAccountManager) MarkAccountRateLimited(account *TwitterAcc
 	account.RateLimitedUntil = time.Now().Add(GetRateLimitDuration())
 }
 
-func NewScraper(account *TwitterAccount) *twitterscraper.Scraper {
-	scraper := twitterscraper.New()
-	baseDir := config.GetInstance().MasaDir
+func NewScraper(account *TwitterAccount, cookieDir string) *Scraper {
+	ts := twitterscraper.New()
+	scraper := &Scraper{Scraper: ts}
 
-	if err := LoadCookies(scraper, account, baseDir); err == nil {
+	if err := LoadCookies(scraper.Scraper, account, cookieDir); err == nil {
 		logrus.Debugf("Cookies loaded for user %s.", account.Username)
-		if IsLoggedIn(scraper) {
+		if scraper.IsLoggedIn() {
 			logrus.Debugf("Already logged in as %s.", account.Username)
 			return scraper
 		}
@@ -63,21 +66,14 @@ func NewScraper(account *TwitterAccount) *twitterscraper.Scraper {
 
 	ShortSleep()
 
-	var err error
-	if account.TwoFACode != "" {
-		err = Login(scraper, account.Username, account.Password, account.TwoFACode)
-	} else {
-		err = Login(scraper, account.Username, account.Password)
-	}
-
-	if err != nil {
+	if err := scraper.Login(account.Username, account.Password, account.TwoFACode); err != nil {
 		logrus.WithError(err).Warnf("Login failed for %s", account.Username)
 		return nil
 	}
 
 	ShortSleep()
 
-	if err = SaveCookies(scraper, account, baseDir); err != nil {
+	if err := SaveCookies(scraper.Scraper, account, cookieDir); err != nil {
 		logrus.WithError(err).Errorf("Failed to save cookies for %s", account.Username)
 	}
 
@@ -85,29 +81,26 @@ func NewScraper(account *TwitterAccount) *twitterscraper.Scraper {
 	return scraper
 }
 
-func Login(scraper *twitterscraper.Scraper, credentials ...string) error {
+func (scraper *Scraper) Login(username, password string, twoFACode ...string) error {
 	var err error
-	switch len(credentials) {
-	case 2:
-		err = scraper.Login(credentials[0], credentials[1])
-	case 3:
-		err = scraper.Login(credentials[0], credentials[1], credentials[2])
-	default:
-		return fmt.Errorf("invalid number of credentials")
+	if len(twoFACode) > 0 {
+		err = scraper.Scraper.Login(username, password, twoFACode[0])
+	} else {
+		err = scraper.Scraper.Login(username, password)
 	}
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("login failed: %v", err)
 	}
 	return nil
 }
 
-func IsLoggedIn(scraper *twitterscraper.Scraper) bool {
-	return scraper.IsLoggedIn()
-}
-
-func Logout(scraper *twitterscraper.Scraper) error {
-	if err := scraper.Logout(); err != nil {
+func (scraper *Scraper) Logout() error {
+	if err := scraper.Scraper.Logout(); err != nil {
 		return fmt.Errorf("logout failed: %v", err)
 	}
 	return nil
+}
+
+func (scraper *Scraper) IsLoggedIn() bool {
+	return scraper.Scraper.IsLoggedIn()
 }

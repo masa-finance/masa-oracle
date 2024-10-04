@@ -1,11 +1,11 @@
 package twitter
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	_ "github.com/lib/pq"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
@@ -14,6 +14,7 @@ import (
 // It takes the username and count as parameters and returns the scraped followers information and an error if any.
 func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Legacy, error) {
 	once.Do(initializeAccountManager)
+	baseDir := config.GetInstance().MasaDir
 
 	for {
 		account := accountManager.GetNextAccount()
@@ -21,7 +22,7 @@ func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Leg
 			return nil, fmt.Errorf("all accounts are rate-limited")
 		}
 
-		scraper := NewScraper(account)
+		scraper := NewScraper(account, baseDir)
 		if scraper == nil {
 			logrus.Errorf("Authentication failed for %s", account.Username)
 			continue
@@ -36,14 +37,6 @@ func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Leg
 			}
 			logrus.Errorf("Error fetching followers: %v", errString)
 			return nil, fmt.Errorf("%v", errString)
-		}
-
-		// Marshal the followingResponse into a JSON string for logging
-		responseJSON, err := json.Marshal(followingResponse)
-		if err != nil {
-			logrus.Errorf("Error marshaling followingResponse: %v", err)
-		} else {
-			logrus.Debugf("Following response: %s", responseJSON)
 		}
 
 		return followingResponse, nil
