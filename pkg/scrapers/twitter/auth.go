@@ -46,7 +46,7 @@ func (manager *TwitterAccountManager) GetNextAccount() *TwitterAccount {
 func (manager *TwitterAccountManager) MarkAccountRateLimited(account *TwitterAccount) {
 	manager.mutex.Lock()
 	defer manager.mutex.Unlock()
-	account.RateLimitedUntil = time.Now().Add(time.Hour)
+	account.RateLimitedUntil = time.Now().Add(GetRateLimitDuration())
 }
 
 func Auth(account *TwitterAccount) *twitterscraper.Scraper {
@@ -61,7 +61,7 @@ func Auth(account *TwitterAccount) *twitterscraper.Scraper {
 		}
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	ShortSleep()
 
 	var err error
 	if account.TwoFACode != "" {
@@ -75,7 +75,7 @@ func Auth(account *TwitterAccount) *twitterscraper.Scraper {
 		return nil
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	ShortSleep()
 
 	if err = SaveCookies(scraper, account, baseDir); err != nil {
 		logrus.WithError(err).Errorf("Failed to save cookies for %s", account.Username)
