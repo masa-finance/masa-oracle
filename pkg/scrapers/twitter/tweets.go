@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/masa-finance/masa-oracle/pkg/config"
@@ -17,7 +16,6 @@ import (
 var (
 	accountManager *TwitterAccountManager
 	once           sync.Once
-	maxRetries     = 3
 )
 
 type TweetResult struct {
@@ -73,7 +71,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 		scraper := NewScraper(account, baseDir)
 		if scraper == nil {
 			logrus.Errorf("Authentication failed for %s", account.Username)
-			return nil, account, fmt.Errorf(" Twitter authentication failed for %s", account.Username)
+			return nil, account, fmt.Errorf("Twitter authentication failed for %s", account.Username)
 		}
 		return scraper, account, nil
 	}
@@ -100,7 +98,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 		return false
 	}
 
-	return retryTweets(func() ([]*TweetResult, error) {
+	return Retry(func() ([]*TweetResult, error) {
 		scraper, account, err := getAuthenticatedScraper()
 		if err != nil {
 			return nil, err
@@ -114,7 +112,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 			return nil, err
 		}
 		return tweets, nil
-	}, maxRetries)
+	}, MaxRetries)
 }
 
 func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
@@ -147,7 +145,7 @@ func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
 		return false
 	}
 
-	return retryProfile(func() (twitterscraper.Profile, error) {
+	return Retry(func() (twitterscraper.Profile, error) {
 		scraper, account, err := getAuthenticatedScraper()
 		if err != nil {
 			return twitterscraper.Profile{}, err
@@ -161,29 +159,5 @@ func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
 			return twitterscraper.Profile{}, err
 		}
 		return profile, nil
-	}, maxRetries)
-}
-
-func retryTweets(operation func() ([]*TweetResult, error), maxAttempts int) ([]*TweetResult, error) {
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		result, err := operation()
-		if err == nil {
-			return result, nil
-		}
-		logrus.Errorf("retry attempt %d failed: %v", attempt, err)
-		time.Sleep(time.Duration(attempt) * time.Second)
-	}
-	return nil, fmt.Errorf("operation failed after %d attempts", maxAttempts)
-}
-
-func retryProfile(operation func() (twitterscraper.Profile, error), maxAttempts int) (twitterscraper.Profile, error) {
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		result, err := operation()
-		if err == nil {
-			return result, nil
-		}
-		logrus.Errorf("retry attempt %d failed: %v", attempt, err)
-		time.Sleep(time.Duration(attempt) * time.Second)
-	}
-	return twitterscraper.Profile{}, fmt.Errorf("operation failed after %d attempts", maxAttempts)
+	}, MaxRetries)
 }
