@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	"github.com/sirupsen/logrus"
 )
@@ -48,7 +49,7 @@ func (manager *TwitterAccountManager) MarkAccountRateLimited(account *TwitterAcc
 	account.RateLimitedUntil = time.Now().Add(time.Hour)
 }
 
-func Auth(account *TwitterAccount, config *twitter.TwitterConfig) *twitterscraper.Scraper {
+func Auth(account *TwitterAccount) *twitterscraper.Scraper {
 	scraper := twitterscraper.New()
 	baseDir := config.GetInstance().MasaDir
 
@@ -60,7 +61,7 @@ func Auth(account *TwitterAccount, config *twitter.TwitterConfig) *twitterscrape
 		}
 	}
 
-	time.Sleep(config.SleepTime)
+	time.Sleep(100 * time.Millisecond)
 
 	var err error
 	if account.TwoFACode != "" {
@@ -74,7 +75,7 @@ func Auth(account *TwitterAccount, config *twitter.TwitterConfig) *twitterscrape
 		return nil
 	}
 
-	time.Sleep(config.SleepTime)
+	time.Sleep(100 * time.Millisecond)
 
 	if err = SaveCookies(scraper, account, baseDir); err != nil {
 		logrus.WithError(err).Errorf("Failed to save cookies for %s", account.Username)
