@@ -10,7 +10,6 @@ type TweetResult struct {
 	Tweet *twitterscraper.Tweet
 	Error error
 }
-
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 	return Retry(func() ([]*TweetResult, error) {
 		scraper, account, err := getAuthenticatedScraper()
