@@ -68,7 +68,7 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 		if account == nil {
 			return nil, nil, fmt.Errorf("all accounts are rate-limited")
 		}
-		scraper := Auth(account)
+		scraper := NewScraper(account)
 		if scraper == nil {
 			logrus.Errorf("authentication failed for %s", account.Username)
 			return nil, account, fmt.Errorf("authentication failed for %s", account.Username)
@@ -123,7 +123,7 @@ func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
 		if account == nil {
 			return nil, nil, fmt.Errorf("all accounts are rate-limited")
 		}
-		scraper := Auth(account)
+		scraper := NewScraper(account)
 		if scraper == nil {
 			logrus.Errorf("authentication failed for %s", account.Username)
 			return nil, account, fmt.Errorf("authentication failed for %s", account.Username)

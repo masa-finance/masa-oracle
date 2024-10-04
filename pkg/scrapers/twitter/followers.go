@@ -21,7 +21,7 @@ func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Leg
 			return nil, fmt.Errorf("all accounts are rate-limited")
 		}
 
-		scraper := Auth(account)
+		scraper := NewScraper(account)
 		if scraper == nil {
 			logrus.Errorf("Authentication failed for %s", account.Username)
 			continue

@@ -49,7 +49,7 @@ func (manager *TwitterAccountManager) MarkAccountRateLimited(account *TwitterAcc
 	account.RateLimitedUntil = time.Now().Add(GetRateLimitDuration())
 }
 
-func Auth(account *TwitterAccount) *twitterscraper.Scraper {
+func NewScraper(account *TwitterAccount) *twitterscraper.Scraper {
 	scraper := twitterscraper.New()
 	baseDir := config.GetInstance().MasaDir
 
