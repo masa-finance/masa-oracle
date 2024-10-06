@@ -177,7 +177,7 @@ func (c *AppConfig) setFileConfig(path string) {
 func (c *AppConfig) setEnvVariableConfig() {
 	err := godotenv.Load()
 	if err != nil {
-		logrus.Error("[-] Error loading .env file")
+		logrus.Errorf("[-] Error loading .env file %s", err)
 	}
 	viper.AutomaticEnv()
 }
