@@ -95,6 +95,8 @@ type AppConfig struct {
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
 
 	TelegramStop bg.StopFunc
+
+	APIEnabled bool `mapstructure:"apiEnabled"`
 }
 
 // GetInstance returns the singleton instance of AppConfig.
@@ -157,6 +159,8 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
+
+	viper.SetDefault("apiEnabled", false)
 }
 
 // setFileConfig loads configuration from a YAML file.
@@ -234,6 +238,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 		return err
 	}
 	c.Bootnodes = strings.Split(bootnodes, ",")
+	pflag.BoolVar(&c.APIEnabled, "apiEnabled", viper.GetBool("apiEnabled"), "Enable API server")
 	return nil
 }
 

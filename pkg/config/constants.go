@@ -121,6 +121,7 @@ const (
 	LlmServer        = "LLM_SERVER"
 	LlmChatUrl       = "LLM_CHAT_URL"
 	LlmCfUrl         = "LLM_CF_URL"
+	APIEnabled       = "API_ENABLED"
 )
 
 // Function to call the Cloudflare API and parse the response
