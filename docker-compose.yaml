@@ -14,13 +14,15 @@ services:
       FILE_PATH: "${FILE_PATH}"
       VALIDATOR: "${VALIDATOR}"
       CACHE_PATH: "${CACHE_PATH}"
-      TWITTER_PASS: "${TWITTER_PASS}"
-      TWITTER_USER: "${TWITTER_USER}"
+      TWITTER_PASSWORD: "${TWITTER_PASSWORD}"
+      TWITTER_USERNAME: "${TWITTER_USERNAME}"
       TWITTER_2FA_CODE: "${TWITTER_2FA_CODE}"
       TWITTER_SCRAPER: "${TWITTER_SCRAPER}"
-    volumes:
+    volumes: 
       - .:/app
       - .masa-keys:/home/masa/.masa
+      # optional if using twitter cookies, will track changes on host machine, see twitter_cookies.example.json for how to populate
+      #- ./twitter_cookies.json:/home/masa/.masa/twitter_cookies.json
     restart: always
 
 volumes:
