@@ -1,0 +1,36 @@
+{
+ "exe": "./../bin/masa-node",
+ "key": "private.pem",
+ "debug": true,
+ "heapSize": 512,
+ "executableHeap": false,
+ "productID": 1,
+ "securityVersion": 1,
+ "mounts": [
+    {
+        "source": "./.masa",
+        "target": "./.masa",
+        "type": "hostfs",
+        "readOnly": false
+    },
+    {
+        "target": "/tmp",
+        "type": "memfs"
+    }
+  ],
+  "env": [
+        {
+            "name": "LANG",
+            "fromHost": true
+        },
+        {
+            "name": "HOMEDIR",
+            "fromHost": true
+        },
+        {
+            "name": "PWD",
+            "value": "/data"
+        }
+    ],
+ "files": null
+}

@@ -30,23 +30,25 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/tee"
 )
 
 type OracleNode struct {
-	Host          host.Host
-	Protocol      protocol.ID
-	priorityAddrs multiaddr.Multiaddr
-	multiAddrs    []multiaddr.Multiaddr
-	DHT           *dht.IpfsDHT
-	PeerChan      chan myNetwork.PeerEvent
-	NodeTracker   *pubsub.NodeEventTracker
-	PubSubManager *pubsub.Manager
-	Signature     string
-	StartTime     time.Time
-	WorkerTracker *pubsub.WorkerEventTracker
-	Blockchain    *chain.Chain
-	Options       NodeOption
-	Context       context.Context
+	Host              host.Host
+	Protocol          protocol.ID
+	priorityAddrs     multiaddr.Multiaddr
+	multiAddrs        []multiaddr.Multiaddr
+	DHT               *dht.IpfsDHT
+	PeerChan          chan myNetwork.PeerEvent
+	NodeTracker       *pubsub.NodeEventTracker
+	PubSubManager     *pubsub.Manager
+	Signature         string
+	StartTime         time.Time
+	WorkerTracker     *pubsub.WorkerEventTracker
+	Blockchain        *chain.Chain
+	Options           NodeOption
+	Context           context.Context
+	raConnectionGater *tee.RemoteAttestationConnectionGater
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -83,6 +85,7 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
+	var remoteConnectionGater *tee.RemoteAttestationConnectionGater
 
 	resourceManager, err := rcmgr.NewResourceManager(limiter)
 	if err != nil {
@@ -96,6 +99,11 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 		libp2p.EnableNATService(),
 		libp2p.NATPortMap(),
 		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop
+	}
+
+	if o.RemoteAttestationChallenge {
+		remoteConnectionGater = tee.NewRemoteAttestationConnectionGater(ctx, o.Signer, o.ProductionMode)
+		libp2pOptions = append(libp2pOptions, libp2p.ConnectionGater(remoteConnectionGater))
 	}
 
 	if o.RandomIdentity {
@@ -135,14 +143,15 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	}
 
 	n := &OracleNode{
-		Host:          hst,
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
-		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
-		Context:       ctx,
-		PubSubManager: subscriptionManager,
-		Blockchain:    &chain.Chain{},
-		Options:       *o,
+		Host:              hst,
+		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
+		PeerChan:          make(chan myNetwork.PeerEvent),
+		NodeTracker:       pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
+		Context:           ctx,
+		PubSubManager:     subscriptionManager,
+		Blockchain:        &chain.Chain{},
+		Options:           *o,
+		raConnectionGater: remoteConnectionGater,
 	}
 
 	n.Protocol = n.protocolWithVersion(config.OracleProtocol)
@@ -190,19 +199,44 @@ func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, pu
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	if node.Options.RemoteAttestationChallenge {
+		tee.RegisterRemoteAttestation(node.Host)
+		node.raConnectionGater.SetNode(node.Host)
+	}
+
+	if node.Options.RemoteAttestationChallenge {
+		node.Host.SetStreamHandler(node.Protocol,
+			tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, node.handleStream),
+		)
+		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol),
+			tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, node.ReceiveNodeData))
+	} else {
+		node.Host.SetStreamHandler(node.Protocol, node.handleStream)
+		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	}
 
 	for pid, n := range node.Options.ProtocolHandlers {
-		node.Host.SetStreamHandler(pid, n)
+		if node.Options.RemoteAttestationChallenge {
+			node.Host.SetStreamHandler(pid, tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, n))
+		} else {
+			node.Host.SetStreamHandler(pid, n)
+		}
 	}
 
 	for protocol, n := range node.Options.MasaProtocolHandlers {
-		node.Host.SetStreamHandler(node.protocolWithVersion(protocol), n)
+		if node.Options.RemoteAttestationChallenge {
+			node.Host.SetStreamHandler(node.protocolWithVersion(protocol), tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, n))
+		} else {
+			node.Host.SetStreamHandler(node.protocolWithVersion(protocol), n)
+		}
 	}
 
 	if node.Options.IsStaked {
-		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+		if node.Options.RemoteAttestationChallenge {
+			node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, node.GossipNodeData))
+		} else {
+			node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+		}
 	}
 
 	node.Host.Network().Notify(node.NodeTracker)

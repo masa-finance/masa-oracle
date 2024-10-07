@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
@@ -50,6 +51,7 @@ type AppConfig struct {
 	Validator            bool     `mapstructure:"validator"`
 	CachePath            string   `mapstructure:"cachePath"`
 	Faucet               bool     `mapstructure:"faucet"`
+	RemoteAttestation    bool     `mapstructure:"remoteAttestation"`
 
 	// These may be moved to a separate struct
 	TwitterCookiesPath string `mapstructure:"twitterCookiesPath"`
@@ -114,13 +116,24 @@ func GetInstance() *AppConfig {
 // such as the MasaDir, Bootnodes, RpcUrl, Environment, FilePath, Validator, and CachePath.
 func (c *AppConfig) setDefaultConfig() {
 
-	usr, err := user.Current()
+	cwd, err := os.Getwd()
 	if err != nil {
-		log.Fatal("could not find user.home directory")
+		logrus.Fatal("Unable to get current working directory")
 	}
 
+	homeDir := cwd
+
+	usr, err := user.Current()
+	if err != nil {
+		log.Println("could not find user.home directory - defaulting to tmp")
+	} else {
+		homeDir = usr.HomeDir
+	}
+
+	masaDir := filepath.Join(homeDir, ".masa")
+
 	// Set defaults
-	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
+	viper.SetDefault(MasaDir, masaDir)
 
 	// Set defaults
 	viper.SetDefault("version", versioning.ProtocolVersion)
@@ -204,6 +217,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool("api_enabled"), "Enable API server")
+	pflag.BoolVar(&c.RemoteAttestation, "remoteAttestation", viper.GetBool(RemoteAttestation), "Enable challenging with Remote attestation (requires signed binaries)")
 
 	pflag.Parse()
 

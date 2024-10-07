@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	teekeys "github.com/masa-finance/masa-oracle/tee"
+
 	pubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
@@ -24,6 +28,19 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 	if cfg.TwitterScraper {
 		workerManagerOptions = append(workerManagerOptions, workers.EnableTwitterWorker)
 		masaNodeOptions = append(masaNodeOptions, node.IsTwitterScraper)
+	}
+
+	if cfg.RemoteAttestation {
+		masaNodeOptions = append(masaNodeOptions, node.EnableRemoteAttestationChallenge)
+		signer, err := teekeys.EmbeddedCertificates.ReadFile("public.pem")
+		if err != nil {
+			panic(fmt.Sprintf("Remote attestation enabled, but we failed to read public key (should be embedded in the binary during build time..): %v", err))
+		}
+		masaNodeOptions = append(masaNodeOptions, node.WithSigner(signer))
+	}
+
+	if !cfg.Debug {
+		masaNodeOptions = append(masaNodeOptions, node.EnableProductionMode)
 	}
 
 	if cfg.TelegramScraper {
