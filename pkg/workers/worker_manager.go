@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/event"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
@@ -97,11 +99,25 @@ func (whm *WorkHandlerManager) getWorkHandler(wType data_types.WorkerType) (Work
 
 func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	category := data_types.WorkerTypeToCategory(workRequest.WorkType)
-	remoteWorkers, localWorker := GetEligibleWorkers(node, category)
+	var remoteWorkers []data_types.Worker
+	var localWorker *data_types.Worker
+
+	if category == pubsub.CategoryTwitter {
+		// Use priority-based selection for Twitter work
+		remoteWorkers, localWorker = GetEligibleWorkers(node, category, workerConfig.MaxRemoteWorkers)
+		logrus.Info("Starting priority-based worker selection for Twitter work")
+	} else {
+		// Use existing selection for other work types
+		remoteWorkers, localWorker = GetEligibleWorkers(node, category, 0)
+		// Shuffle the workers to maintain round-robin behavior
+		rand.Shuffle(len(remoteWorkers), func(i, j int) {
+			remoteWorkers[i], remoteWorkers[j] = remoteWorkers[j], remoteWorkers[i]
+		})
+		logrus.Info("Starting round-robin worker selection for non-Twitter work")
+	}
 
 	remoteWorkersAttempted := 0
 	var errorList []string
-	logrus.Info("Starting round-robin worker selection")
 
 	// Try remote workers first, up to MaxRemoteWorkers
 	for _, worker := range remoteWorkers {

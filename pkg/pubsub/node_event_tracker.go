@@ -62,7 +62,11 @@ func SortNodesByTwitterReliability(nodes []NodeData) {
 				return i.TweetTimeouts < j.TweetTimeouts
 			}
 			// Quaternary sort: Less recent last timeout
-			return i.LastTweetTimeout.Before(j.LastTweetTimeout)
+			if !i.LastTweetTimeout.Equal(j.LastTweetTimeout) {
+				return i.LastTweetTimeout.Before(j.LastTweetTimeout)
+			}
+			// Default sort: By PeerId (ensures stable sorting when no performance data is available)
+			return i.PeerId.String() < j.PeerId.String()
 		},
 	}
 	sort.Sort(sorter)
