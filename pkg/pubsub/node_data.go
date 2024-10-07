@@ -63,6 +63,11 @@ type NodeData struct {
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
 	WorkerTimeout        time.Time       `json:"workerTimeout,omitempty"`
+	ReturnedTweets       int             `json:"returnedTweets"`
+	LastReturnedTweet    time.Time       `json:"lastReturnedTweet"`
+	TweetTimeout         bool            `json:"tweetTimeout"`
+	TweetTimeouts        int             `json:"tweetTimeouts"`
+	LastTweetTimeout     time.Time       `json:"lastTweetTimeout"`
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given

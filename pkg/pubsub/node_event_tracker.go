@@ -29,6 +29,45 @@ type ConnectBufferEntry struct {
 	ConnectTime time.Time
 }
 
+// NodeSorter provides methods for sorting NodeData slices
+type NodeSorter struct {
+	nodes []NodeData
+	less  func(i, j NodeData) bool
+}
+
+// Len returns the length of the nodes slice
+func (s NodeSorter) Len() int { return len(s.nodes) }
+
+// Swap swaps the nodes at indices i and j
+func (s NodeSorter) Swap(i, j int) { s.nodes[i], s.nodes[j] = s.nodes[j], s.nodes[i] }
+
+// Less compares nodes at indices i and j using the provided less function
+func (s NodeSorter) Less(i, j int) bool { return s.less(s.nodes[i], s.nodes[j]) }
+
+// SortNodesByTwitterReliability sorts the given nodes based on their Twitter reliability
+func SortNodesByTwitterReliability(nodes []NodeData) {
+	sorter := NodeSorter{
+		nodes: nodes,
+		less: func(i, j NodeData) bool {
+			// Primary sort: Higher number of returned tweets
+			if i.ReturnedTweets != j.ReturnedTweets {
+				return i.ReturnedTweets > j.ReturnedTweets
+			}
+			// Secondary sort: More recent last returned tweet
+			if !i.LastReturnedTweet.Equal(j.LastReturnedTweet) {
+				return i.LastReturnedTweet.After(j.LastReturnedTweet)
+			}
+			// Tertiary sort: Lower number of timeouts
+			if i.TweetTimeouts != j.TweetTimeouts {
+				return i.TweetTimeouts < j.TweetTimeouts
+			}
+			// Quaternary sort: Less recent last timeout
+			return i.LastTweetTimeout.Before(j.LastTweetTimeout)
+		},
+	}
+	sort.Sort(sorter)
+}
+
 // NewNodeEventTracker creates a new NodeEventTracker instance.
 // It initializes the node data map, node data channel, node data file path,
 // connect buffer map. It loads existing node data from file, starts a goroutine
@@ -284,6 +323,17 @@ func (net *NodeEventTracker) GetEligibleWorkerNodes(category WorkerCategory) []N
 			result = append(result, nodeData)
 		}
 	}
+
+	// Sort the eligible nodes based on the worker category
+	switch category {
+	case CategoryTwitter:
+		SortNodesByTwitterReliability(result)
+		// Add cases for other categories as needed such as
+		// web
+		// discord
+		// telegram
+	}
+
 	return result
 }
 
