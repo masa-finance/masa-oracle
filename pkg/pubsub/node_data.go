@@ -68,6 +68,8 @@ type NodeData struct {
 	TweetTimeout         bool            `json:"tweetTimeout"`
 	TweetTimeouts        int             `json:"tweetTimeouts"`
 	LastTweetTimeout     time.Time       `json:"lastTweetTimeout"`
+	LastNotFoundTime     time.Time       `json:"lastNotFoundTime"`
+	NotFoundCount        int             `json:"notFoundCount"` // New field
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given

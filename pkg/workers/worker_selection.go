@@ -1,8 +1,6 @@
 package workers
 
 import (
-	"math/rand/v2"
-
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 
@@ -17,10 +15,6 @@ func GetEligibleWorkers(node *node.OracleNode, category pubsub.WorkerCategory, l
 	workers := make([]data_types.Worker, 0)
 	nodes := node.NodeTracker.GetEligibleWorkerNodes(category)
 	var localWorker *data_types.Worker
-
-	rand.Shuffle(len(nodes), func(i, j int) {
-		nodes[i], nodes[j] = nodes[j], nodes[i]
-	})
 
 	logrus.Info("Getting eligible workers")
 	for _, eligible := range nodes {

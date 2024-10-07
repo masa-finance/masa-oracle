@@ -44,11 +44,29 @@ func (s NodeSorter) Swap(i, j int) { s.nodes[i], s.nodes[j] = s.nodes[j], s.node
 // Less compares nodes at indices i and j using the provided less function
 func (s NodeSorter) Less(i, j int) bool { return s.less(s.nodes[i], s.nodes[j]) }
 
-// SortNodesByTwitterReliability sorts the given nodes based on their Twitter reliability
+// SortNodesByTwitterReliability sorts the given nodes based on their Twitter reliability.
+// It uses multiple criteria to determine the reliability and performance of nodes:
+//  1. Prioritizes nodes that have been found more often (lower NotFoundCount)
+//  2. Considers the last time a node was not found (earlier LastNotFoundTime is better)
+//  3. Sorts by higher number of returned tweets
+//  4. Then by more recent last returned tweet
+//  5. Then by lower number of timeouts
+//  6. Then by less recent last timeout
+//  7. Finally, sorts by PeerId for stability when no performance data is available
+//
+// The function modifies the input slice in-place, sorting the nodes from most to least reliable.
 func SortNodesByTwitterReliability(nodes []NodeData) {
 	sorter := NodeSorter{
 		nodes: nodes,
 		less: func(i, j NodeData) bool {
+			// First, prioritize nodes that have been found more often
+			if i.NotFoundCount != j.NotFoundCount {
+				return i.NotFoundCount < j.NotFoundCount
+			}
+			// Then, consider the last time they were not found
+			if !i.LastNotFoundTime.Equal(j.LastNotFoundTime) {
+				return i.LastNotFoundTime.Before(j.LastNotFoundTime)
+			}
 			// Primary sort: Higher number of returned tweets
 			if i.ReturnedTweets != j.ReturnedTweets {
 				return i.ReturnedTweets > j.ReturnedTweets
