@@ -72,3 +72,6 @@ snippets.txt
 
 # Build result of goreleaser
 dist/
+
+# masa agent specific
+twitter_cookies.json

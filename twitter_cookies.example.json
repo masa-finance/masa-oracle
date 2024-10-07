@@ -2,7 +2,7 @@
   // 1. Log in to Twitter in your web browser
   // 2. Open the browser's developer tools (usually F12 or right-click > Inspect)
   // 3. Go to the "Application" or "Storage" tab
-  // 4. In the left sidebar, expand "Cookies" and click on "https://twitter.com"
+  // 4. In the left sidebar, expand "Cookies" and click on "https://x.com"
   // 5. Look for the cookie names listed above and copy their values
   // 6. Replace the "X" placeholders in the "Value" field with the actual values
   // 7. Save the file as "twitter_cookies.json" (remove ".example" from the filename)
@@ -19,7 +19,7 @@
       "Name": "personalization_id",
       "Value": "v1_XXXXXXXXXXXXXXXXXXXXXXXX==",
       "Path": "",
-      "Domain": "twitter.com",
+      "Domain": "x.com",
       "Expires": "0001-01-01T00:00:00Z",
       "RawExpires": "",
       "MaxAge": 0,
@@ -33,7 +33,7 @@
       "Name": "kdt",
       "Value": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
       "Path": "",
-      "Domain": "twitter.com",
+      "Domain": "x.com",
       "Expires": "0001-01-01T00:00:00Z",
       "RawExpires": "",
       "MaxAge": 0,
@@ -47,7 +47,7 @@
       "Name": "twid",
       "Value": "u=XXXXXXXXX",
       "Path": "",
-      "Domain": "twitter.com",
+      "Domain": "x.com",
       "Expires": "0001-01-01T00:00:00Z",
       "RawExpires": "",
       "MaxAge": 0,
@@ -61,7 +61,7 @@
       "Name": "ct0",
       "Value": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
       "Path": "",
-      "Domain": "twitter.com",
+      "Domain": "x.com",
       "Expires": "0001-01-01T00:00:00Z",
       "RawExpires": "",
       "MaxAge": 0,
@@ -75,7 +75,7 @@
       "Name": "auth_token",
       "Value": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
       "Path": "",
-      "Domain": "twitter.com",
+      "Domain": "x.com",
       "Expires": "0001-01-01T00:00:00Z",
       "RawExpires": "",
       "MaxAge": 0,
