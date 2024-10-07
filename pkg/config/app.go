@@ -17,31 +17,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// AppConfig is designed as a singleton to ensure that there is only one instance
-// of the configuration throughout the application. This design pattern is useful
-// for managing global application settings, allowing various parts of the application
-// to access configuration settings consistently without the need to pass the configuration
-// object around or risk having multiple, potentially conflicting instances of the configuration.
-//
-// The singleton pattern is implemented using a combination of a private instance variable
-// (`instance`) and a public `GetInstance` method. The `instance` variable holds the single
-// instance of AppConfig, while the `GetInstance` method provides a global access point to that instance.
-// Additionally, the `sync.Once` mechanism ensures that the AppConfig instance is initialized only once,
-// making the initialization thread-safe.
-//
-// Usage:
-// To access the AppConfig instance, call the GetInstance method from anywhere in your application:
-//
-//     config := config.GetInstance()
-//
-// This call will return the singleton AppConfig instance. If the instance has not been initialized yet,
-// `GetInstance` will initialize it by setting default values, reading configuration from files,
-// environment variables, and command-line flags, and then return the instance. Subsequent calls to
-// `GetInstance` will return the same instance without reinitializing it.
-//
-// It's important to note that since AppConfig is a singleton, any modifications to the configuration
-// settings through the AppConfig instance will be reflected across the entire application.
-
 var (
 	instance *AppConfig
 	once     sync.Once
@@ -93,10 +68,9 @@ type AppConfig struct {
 	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
+	APIEnabled         bool   `mapstructure:"api_enabled"`
 
 	TelegramStop bg.StopFunc
-
-	APIEnabled bool `mapstructure:"apiEnabled"`
 }
 
 // GetInstance returns the singleton instance of AppConfig.
@@ -127,9 +101,10 @@ func GetInstance() *AppConfig {
 
 		if err := viper.Unmarshal(instance); err != nil {
 			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
-			instance = nil // Ensure instance is nil if unmarshalling fails
+			instance = nil
 		}
 
+		instance.APIEnabled = viper.GetBool("api_enabled")
 	})
 	return instance
 }
@@ -137,7 +112,6 @@ func GetInstance() *AppConfig {
 // setDefaultConfig sets the default configuration values for the AppConfig instance.
 // It retrieves the user's home directory and sets default values for various configuration options
 // such as the MasaDir, Bootnodes, RpcUrl, Environment, FilePath, Validator, and CachePath.
-// It also fetches bootnode information from a remote URL based on the environment (dev, test, or main).
 func (c *AppConfig) setDefaultConfig() {
 
 	usr, err := user.Current()
@@ -149,7 +123,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(MasaDir, filepath.Join(usr.HomeDir, ".masa"))
 
 	// Set defaults
-	viper.SetDefault("Version", versioning.ProtocolVersion)
+	viper.SetDefault("version", versioning.ProtocolVersion)
 	viper.SetDefault(PortNbr, "4001")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
@@ -160,7 +134,7 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(LogFilePath, "masa_node.log")
 	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
 
-	viper.SetDefault("apiEnabled", false)
+	viper.SetDefault("api_enabled", false)
 }
 
 // setFileConfig loads configuration from a YAML file.
@@ -200,7 +174,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.StakeAmount, "stake", viper.GetString(StakeAmount), "Amount of tokens to stake")
 	pflag.BoolVar(&c.Debug, "debug", viper.GetBool(Debug), "Override some protections for debugging (temporary)")
 	pflag.StringVar(&c.Environment, "env", viper.GetString(Environment), "Environment to connect to")
-	pflag.StringVar(&c.Version, "version", viper.GetString("VERSION"), "application version")
+	pflag.StringVar(&c.Version, "version", viper.GetString("version"), "Application version")
 	pflag.BoolVar(&c.AllowedPeer, "allowedPeer", viper.GetBool(AllowedPeer), "Set to true to allow setting this node as the allowed peer")
 	pflag.StringVar(&c.PrivateKey, "privateKey", viper.GetString(PrivateKey), "The private key")
 	pflag.StringVar(&c.PrivateKeyFile, "privKeyFile", viper.GetString(PrivKeyFile), "The private key file")
@@ -218,27 +192,32 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.Twitter2FaCode, "twitter2FaCode", viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
 	pflag.StringVar(&c.DiscordBotToken, "discordBotToken", viper.GetString(DiscordBotToken), "Discord Bot Token")
 	pflag.StringVar(&c.ClaudeApiKey, "claudeApiKey", viper.GetString(ClaudeApiKey), "Claude API Key")
-	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API Url")
+	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API URL")
 	pflag.StringVar(&c.ClaudeApiVersion, "claudeApiVersion", viper.GetString(ClaudeApiVersion), "Claude API Version")
 	pflag.StringVar(&c.GPTApiKey, "gptApiKey", viper.GetString(GPTApiKey), "OpenAI API Key")
 	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
 	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
-	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "TwitterScraper")
-	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "DiscordScraper")
-	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "TelegramScraper")
-	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "WebScraper")
+	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "Twitter Scraper")
+	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "Discord Scraper")
+	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "Telegram Scraper")
+	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "Web Scraper")
 	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
+	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool("api_enabled"), "Enable API server")
 
 	pflag.Parse()
 
-	// Bind command line flags to Viper (optional, if you want to use Viper for additional configuration)
+	// Bind command line flags to Viper
 	err := viper.BindPFlags(pflag.CommandLine)
 	if err != nil {
 		return err
 	}
+
+	// Add this line after binding flags
+	viper.Set("api_enabled", c.APIEnabled)
+
 	c.Bootnodes = strings.Split(bootnodes, ",")
-	pflag.BoolVar(&c.APIEnabled, "apiEnabled", viper.GetBool("apiEnabled"), "Enable API server")
+
 	return nil
 }
 
@@ -248,13 +227,12 @@ func (c *AppConfig) LogConfig() {
 	val := reflect.ValueOf(*c)
 	typeOfStruct := val.Type()
 
-	// logrus.Info("Current AppConfig values:")
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfStruct.Field(i)
 		value := val.Field(i).Interface()
 
-		// Example of skipping sensitive fields
-		if field.Name == "PrivateKeyFile" || field.Name == "Signature" {
+		// Skipping sensitive fields
+		if field.Name == "PrivateKey" || field.Name == "Signature" || field.Name == "PrivateKeyFile" {
 			continue
 		}
 		logrus.Infof("%s: %v", field.Name, value)
