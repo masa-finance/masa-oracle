@@ -8,8 +8,8 @@
  "securityVersion": 1,
  "mounts": [
     {
-        "source": "./.masa",
-        "target": "./.masa",
+        "source": ".masa",
+        "target": ".masa",
         "type": "hostfs",
         "readOnly": false
     },
@@ -22,15 +22,12 @@
         {
             "name": "LANG",
             "fromHost": true
-        },
-        {
-            "name": "HOMEDIR",
-            "fromHost": true
-        },
-        {
-            "name": "PWD",
-            "value": "/data"
         }
     ],
- "files": null
+ "files": [
+    {
+        "source": "/etc/ssl/certs/ca-certificates.crt",
+        "target": "/etc/ssl/certs/ca-certificates.crt"
+    }
+  ]
 }
