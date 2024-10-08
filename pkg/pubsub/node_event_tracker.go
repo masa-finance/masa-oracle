@@ -94,7 +94,7 @@ func SortNodesByTwitterReliability(nodes []NodeData) {
 // It initializes the node data map, node data channel, node data file path,
 // connect buffer map. It loads existing node data from file, starts a goroutine
 // to clear expired buffer entries, and returns the initialized instance.
-func NewNodeEventTracker(version, environment string, hostId string) *NodeEventTracker {
+func NewNodeEventTracker(version, environment, hostId string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
 		nodeVersion:   version,
