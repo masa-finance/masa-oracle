@@ -81,7 +81,6 @@ func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, act
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
-		MultiaddrsString:  addr.String(),
 		LastUpdatedUnix:   time.Now().Unix(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,

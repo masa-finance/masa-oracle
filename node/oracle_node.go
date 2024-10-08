@@ -179,7 +179,9 @@ func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, pu
 	// Returns nil if there is an error marshalling to JSON.
 	// Create and populate NodeData
 	nodeData := pubsub.NewNodeData(addr, host.ID(), publicEthAddress, pubsub.ActivityJoined)
-	nodeData.MultiaddrsString = addr.String()
+	if addr != nil {
+		nodeData.MultiaddrsString = addr.String()
+	}
 	nodeData.IsStaked = node.Options.IsStaked
 	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
 	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
@@ -197,7 +199,8 @@ func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, pu
 // goroutines to handle discovered peers, listen to the node tracker, and
 // discover peers. If this is a bootnode, it adds itself to the node tracker.
 func (node *OracleNode) Start() (err error) {
-	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
+	//XXX:
+	//logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
 	if node.Options.RemoteAttestationChallenge {
 		tee.RegisterRemoteAttestation(node.Host)
@@ -261,12 +264,22 @@ func (node *OracleNode) Start() (err error) {
 
 	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
-		return err
+		// XXX: Hitting https://github.com/libp2p/go-libp2p/blob/299f96444b24a7bca3f9e0f358260f01d63b8498/p2p/discovery/mdns/mdns.go#L107 in the enclave
+		if node.Options.RemoteAttestationChallenge {
+			fmt.Println("[-] Error starting DHT: ", err)
+		} else {
+			return err
+		}
 	}
 
 	err = myNetwork.WithMDNS(node.Host, config.Rendezvous, node.PeerChan)
 	if err != nil {
-		return err
+		// XXX: Hitting https://github.com/libp2p/go-libp2p/blob/299f96444b24a7bca3f9e0f358260f01d63b8498/p2p/discovery/mdns/mdns.go#L107 in the enclave
+		if node.Options.RemoteAttestationChallenge {
+			fmt.Println("[-] Error starting MDNS: ", err)
+		} else {
+			return err
+		}
 	}
 
 	for _, p := range node.Options.Services {

@@ -2,7 +2,7 @@
  "exe": "./../bin/masa-node",
  "key": "private.pem",
  "debug": true,
- "heapSize": 512,
+ "heapSize": 4092,
  "executableHeap": false,
  "productID": 1,
  "securityVersion": 1,
