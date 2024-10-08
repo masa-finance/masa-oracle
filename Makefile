@@ -69,17 +69,21 @@ docker-compose-up:
 ## EGO and TEE bits
 signed-build:
 	docker run --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "git config --global --add safe.directory /build && make ego-build"
+	$(MAKE) sign
 
 # musl build:
 # apt-get install -y --no-install-recommends musl-dev musl-tools
 # CGO_ENABLED=1 CC=musl-gcc go build --ldflags '-linkmode=external -extldflags=-static' -o binary_name ./
 
 ego-build: contracts/node_modules
-	@ego-go build -v -ldflags '-linkmode=external -extldflags=-static' -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node ./cmd/masa-node
-	@ego-go build -v -ldflags '-linkmode=external -extldflags=-static' -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node-cli ./cmd/masa-node-cli
+	@ego-go build -v -gcflags=all="-N -l" -ldflags '-linkmode=external -extldflags=-static' -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node ./cmd/masa-node
+	@ego-go build -v -gcflags=all="-N -l" -ldflags '-linkmode=external -extldflags=-static' -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node-cli ./cmd/masa-node-cli
 
 sign:
 	docker run --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "ego sign ./tee/masa-node.json"
 
 ego-run:
-	docker run --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "mkdir -p .masa && cp -rfv .env .masa && OE_SIMULATION=1 ego run ./bin/masa-node"
+	docker run --net host --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "mkdir -p .masa && cp -rfv .env .masa && OE_SIMULATION=1 ego run ./bin/masa-node"
+
+ego-dbg:
+	docker run --net host --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "mkdir -p .masa && cp -rfv .env .masa && OE_SIMULATION=1 ego-gdb --args ./bin/masa-node"
