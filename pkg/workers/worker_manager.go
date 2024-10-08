@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/node"
@@ -98,6 +99,10 @@ func (whm *WorkHandlerManager) getWorkHandler(wType data_types.WorkerType) (Work
 }
 
 func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
+	if node == nil {
+		return data_types.WorkResponse{Error: "invalid node"}
+	}
+
 	category := data_types.WorkerTypeToCategory(workRequest.WorkType)
 	var remoteWorkers []data_types.Worker
 	var localWorker *data_types.Worker
@@ -121,52 +126,39 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 
 	// Try remote workers first, up to MaxRemoteWorkers
 	for _, worker := range remoteWorkers {
+		if worker.AddrInfo == nil {
+			logrus.Warnf("Skipping worker with nil AddrInfo: %v", worker)
+			continue
+		}
+
 		if remoteWorkersAttempted >= workerConfig.MaxRemoteWorkers {
 			logrus.Infof("Reached maximum remote workers (%d), stopping remote worker attempts", workerConfig.MaxRemoteWorkers)
 			break
 		}
 		remoteWorkersAttempted++
 
-		// Attempt to connect to the worker
-		peerInfo, err := node.DHT.FindPeer(context.Background(), worker.NodeData.PeerId)
-		if err != nil {
-			logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
-			if category == pubsub.CategoryTwitter {
-				err := node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
-					LastNotFoundTime: time.Now(),
-					NotFoundCount:    1,
-				})
-				if err != nil {
-					logrus.Warnf("Failed to update node data for peer %s: %v", worker.NodeData.PeerId.String(), err)
+		logrus.Debugf("Attempting to connect to worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
+
+		connected, _ := tryConnectToWorker(node, worker)
+		if connected {
+			logrus.Infof("Successfully connected to remote worker %s", worker.NodeData.PeerId)
+			response = whm.sendWorkToWorker(node, worker, workRequest)
+			if response.Error != "" {
+				whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.NodeData.PeerId.String())
+				logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
+				logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
+
+				// Check if the error is related to Twitter authentication
+				if strings.Contains(response.Error, "unable to get twitter profile: there was an error authenticating with your Twitter credentials") {
+					logrus.Warnf("Worker %s failed due to Twitter authentication error. Skipping to the next worker.", worker.NodeData.PeerId)
+					continue
 				}
-			}
-			continue
-		}
-
-		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), workerConfig.ConnectionTimeout)
-		err = node.Host.Connect(ctxWithTimeout, peerInfo)
-		cancel()
-		if err != nil {
-			logrus.Warnf("Failed to connect to peer %s: %v", worker.NodeData.PeerId.String(), err)
-			continue
-		}
-
-		worker.AddrInfo = &peerInfo
-
-		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
-		response = whm.sendWorkToWorker(node, worker, workRequest)
-		if response.Error != "" {
-			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
-			logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
-			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
-
-			// Check if the error is related to Twitter authentication
-			if strings.Contains(response.Error, "unable to get twitter profile: there was an error authenticating with your Twitter credentials") {
-				logrus.Warnf("Worker %s failed due to Twitter authentication error. Skipping to the next worker.", worker.NodeData.PeerId)
-				continue
+			} else {
+				return response
 			}
 		} else {
-			return response
+			logrus.Warnf("Failed to connect to peer %s", worker.NodeData.PeerId.String())
+			updateNodeDataAfterFailure(node, worker, category)
 		}
 	}
 
@@ -199,13 +191,82 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 	return response
 }
 
+func tryConnectToWorker(node *node.OracleNode, worker data_types.Worker) (bool, *peer.AddrInfo) {
+	ctx, cancel := context.WithTimeout(context.Background(), workerConfig.ConnectionTimeout)
+	defer cancel()
+
+	// Try direct connection and DHT lookup concurrently
+	directChan := make(chan bool, 1)
+	dhtChan := make(chan *peer.AddrInfo, 1)
+
+	go func() {
+		if worker.AddrInfo != nil {
+			err := node.Host.Connect(ctx, *worker.AddrInfo)
+			directChan <- (err == nil)
+		} else {
+			directChan <- false
+		}
+	}()
+
+	go func() {
+		peerInfo, err := node.DHT.FindPeer(ctx, worker.NodeData.PeerId)
+		if err == nil {
+			dhtChan <- &peerInfo
+		} else {
+			dhtChan <- nil
+		}
+	}()
+
+	// Wait for results
+	select {
+	case success := <-directChan:
+		if success {
+			return true, worker.AddrInfo
+		}
+	case peerInfo := <-dhtChan:
+		if peerInfo != nil {
+			err := node.Host.Connect(ctx, *peerInfo)
+			return err == nil, peerInfo
+		}
+	case <-ctx.Done():
+		return false, nil
+	}
+
+	return false, nil
+}
+
+func updateNodeDataAfterFailure(node *node.OracleNode, worker data_types.Worker, category pubsub.WorkerCategory) {
+	if category == pubsub.CategoryTwitter {
+		err := node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
+			LastNotFoundTime: time.Now(),
+			NotFoundCount:    1,
+		})
+		if err != nil {
+			logrus.Warnf("Failed to update node data for peer %s: %v", worker.NodeData.PeerId.String(), err)
+		}
+	}
+}
+
 func (whm *WorkHandlerManager) sendWorkToWorker(node *node.OracleNode, worker data_types.Worker, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
+	if node == nil || node.Host == nil {
+		response.Error = "invalid node or node host"
+		logrus.Error("sendWorkToWorker: ", response.Error)
+		return
+	}
+
+	if worker.AddrInfo == nil {
+		response.Error = "invalid worker address info"
+		logrus.Error("sendWorkToWorker: ", response.Error)
+		return
+	}
+
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), workerConfig.WorkerResponseTimeout)
 	defer cancel() // Cancel the context when done to release resources
 
 	if err := node.Host.Connect(ctxWithTimeout, *worker.AddrInfo); err != nil {
 		response.Error = fmt.Sprintf("failed to connect to remote peer %s: %v", worker.AddrInfo.ID.String(), err)
 		whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
+		logrus.Error("sendWorkToWorker: ", response.Error)
 		return
 	} else {
 		//whm.eventTracker.TrackRemoteWorkerConnection(worker.AddrInfo.ID.String())
