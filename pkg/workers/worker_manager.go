@@ -131,6 +131,15 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 		peerInfo, err := node.DHT.FindPeer(context.Background(), worker.NodeData.PeerId)
 		if err != nil {
 			logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
+			if category == pubsub.CategoryTwitter {
+				err := node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
+					LastNotFoundTime: time.Now(),
+					NotFoundCount:    1,
+				})
+				if err != nil {
+					logrus.Warnf("Failed to update node data for peer %s: %v", worker.NodeData.PeerId.String(), err)
+				}
+			}
 			continue
 		}
 
@@ -256,6 +265,24 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *node.OracleNode, worker da
 		if err != nil {
 			response.Error = fmt.Sprintf("error unmarshaling response: %v", err)
 			return
+		}
+		// Update metrics only if the work category is Twitter
+		if data_types.WorkerTypeToCategory(workRequest.WorkType) == pubsub.CategoryTwitter {
+			if response.Error == "" {
+				err = node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
+					ReturnedTweets:    response.RecordCount,
+					LastReturnedTweet: time.Now(),
+				})
+			} else {
+				err = node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
+					TweetTimeout:     true,
+					TweetTimeouts:    1,
+					LastTweetTimeout: time.Now(),
+				})
+			}
+			if err != nil {
+				logrus.Warnf("Failed to update node data for peer %s: %v", worker.NodeData.PeerId.String(), err)
+			}
 		}
 	}
 	return response

@@ -63,13 +63,13 @@ type NodeData struct {
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
 	WorkerTimeout        time.Time       `json:"workerTimeout,omitempty"`
-	ReturnedTweets       int             `json:"returnedTweets"`
+	ReturnedTweets       int             `json:"returnedTweets"` // a running count of the number of tweets returned
 	LastReturnedTweet    time.Time       `json:"lastReturnedTweet"`
 	TweetTimeout         bool            `json:"tweetTimeout"`
-	TweetTimeouts        int             `json:"tweetTimeouts"`
+	TweetTimeouts        int             `json:"tweetTimeouts"` // a running countthe number of times a tweet request times out
 	LastTweetTimeout     time.Time       `json:"lastTweetTimeout"`
 	LastNotFoundTime     time.Time       `json:"lastNotFoundTime"`
-	NotFoundCount        int             `json:"notFoundCount"` // New field
+	NotFoundCount        int             `json:"notFoundCount"` // a running count of the number of times a node is not found
 }
 
 // NewNodeData creates a new NodeData struct initialized with the given
@@ -261,5 +261,23 @@ func (n *NodeData) MergeMultiaddresses(addr multiaddr.Multiaddr) {
 	}
 	if !addrExists {
 		n.Multiaddrs = append(n.Multiaddrs, JSONMultiaddr{Multiaddr: addr})
+	}
+}
+
+func (nd *NodeData) UpdateTwitterFields(fields NodeData) {
+	if fields.ReturnedTweets != 0 {
+		nd.ReturnedTweets += fields.ReturnedTweets
+	}
+	if !fields.LastReturnedTweet.IsZero() {
+		nd.LastReturnedTweet = fields.LastReturnedTweet
+	}
+	if fields.TweetTimeout {
+		nd.TweetTimeout = fields.TweetTimeout
+		nd.TweetTimeouts += fields.TweetTimeouts
+		nd.LastTweetTimeout = fields.LastTweetTimeout
+	}
+	if !fields.LastNotFoundTime.IsZero() {
+		nd.LastNotFoundTime = fields.LastNotFoundTime
+		nd.NotFoundCount += fields.NotFoundCount
 	}
 }

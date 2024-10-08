@@ -549,3 +549,20 @@ func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
 		}
 	}
 }
+
+func (net *NodeEventTracker) UpdateNodeDataTwitter(peerID string, updates NodeData) error {
+	nodeData, exists := net.nodeData.Get(peerID)
+	if !exists {
+		return fmt.Errorf("node data not found for peer ID: %s", peerID)
+	}
+
+	// Update fields based on non-zero values
+	nodeData.UpdateTwitterFields(updates)
+
+	// Save the updated node data
+	err := net.AddOrUpdateNodeData(nodeData, true)
+	if err != nil {
+		return fmt.Errorf("error updating node data: %v", err)
+	}
+	return nil
+}
