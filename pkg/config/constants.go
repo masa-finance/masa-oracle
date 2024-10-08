@@ -96,6 +96,7 @@ const (
 	CachePath         = "CACHE_PATH"
 	Faucet            = "FAUCET"
 	RemoteAttestation = "REMOTE_ATTESTATION"
+	TEESealer         = "TEE_SEALER"
 
 	OracleProtocol       = "oracle_protocol"
 	WorkerProtocol       = "worker_protocol"

@@ -25,6 +25,7 @@ import (
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
+	"github.com/masa-finance/masa-oracle/pkg/tee"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
@@ -223,6 +224,33 @@ func (api *API) SearchTweetsRecent() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		wg.Wait()
+	}
+}
+
+// UnsealData allows external applications using the API to decode data that was
+// encrypted inside the TEE Enclave.
+func (api *API) UnsealData() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			Data string `json:"data"`
+		}
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.Data == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "There should be data to unseal"})
+			return
+		}
+
+		decryptedData, err := tee.Unseal([]byte(reqBody.Data))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": string(decryptedData)})
 	}
 }
 

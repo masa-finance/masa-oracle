@@ -10,7 +10,6 @@ import (
 
 	"github.com/edgelesssys/ego/attestation"
 	"github.com/edgelesssys/ego/attestation/tcbstatus"
-	"github.com/edgelesssys/ego/eclient"
 	"github.com/edgelesssys/ego/enclave"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -125,7 +124,7 @@ func getCertForNode(node host.Host) ([]byte, error) {
 }
 
 func verifyReport(reportBytes, certBytes, signer []byte, production bool) error {
-	report, err := eclient.VerifyRemoteReport(reportBytes)
+	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err == attestation.ErrTCBLevelInvalid {
 		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
 		// XXX: We'll ignore this issue for now. For an app that should run in production, you must decide which of the different TCBStatus values are acceptable for you to continue.")

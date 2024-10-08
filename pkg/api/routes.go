@@ -13,6 +13,7 @@ import (
 
 	"github.com/masa-finance/masa-oracle/docs"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/tee"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 
 	"github.com/gin-contrib/cors"
@@ -33,7 +34,8 @@ var htmlTemplates embed.FS
 // Routes are added for peers, ads, subscriptions, node data, public keys,
 // topics, the DHT, node status, and serving HTML pages. Middleware is added
 // for CORS and templates.
-func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManager, pubkeySubscriptionHandler *pubsub.PublicKeySubscriptionHandler) *gin.Engine {
+func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManager, pubkeySubscriptionHandler *pubsub.PublicKeySubscriptionHandler, teeSealer bool) *gin.Engine {
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
@@ -454,6 +456,17 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Router /blocks/{blockHash} [get]
 		v1.GET("/blocks/:blockHash", API.GetBlockByHash())
 
+		// @Summary Unseal TEE content
+		// @Description Unseal content that is processed inside the Masa oracle enclave
+		// @Tags Security
+		// @Accept json
+		// @Produce json
+		// @Param body body object true "Data"
+		// @Success 200 {object} []byte "Unsealed data"
+		// @Failure 400 {object} ErrorResponse "Invalid query or error"
+		// @Router /unseal [post]
+		v1.POST("/unseal", API.UnsealData())
+
 		// @note a test route
 		v1.POST("/test", API.Test())
 
@@ -502,6 +515,10 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 			"success": true,
 		})
 	})
+
+	if teeSealer {
+		router.Use(tee.RegisterGIN)
+	}
 
 	return router
 }

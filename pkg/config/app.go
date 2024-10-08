@@ -67,6 +67,7 @@ type AppConfig struct {
 	DiscordScraper     bool   `mapstructure:"discordScraper"`
 	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
+	TEESealer          bool   `mapstructure:"teeSealer"`
 	LlmServer          bool   `mapstructure:"llmServer"`
 	LLMChatUrl         string `mapstructure:"llmChatUrl"`
 	LLMCfUrl           string `mapstructure:"llmCfUrl"`
@@ -218,7 +219,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool("api_enabled"), "Enable API server")
 	pflag.BoolVar(&c.RemoteAttestation, "remoteAttestation", viper.GetBool(RemoteAttestation), "Enable challenging with Remote attestation (requires signed binaries)")
-
+	pflag.BoolVar(&c.TEESealer, "teeSealer", viper.GetBool(TEESealer), "Enable sealing data with TEE")
 	pflag.Parse()
 
 	// Bind command line flags to Viper

@@ -104,7 +104,7 @@ func main() {
 	go handleSignals(cancel, masaNode, cfg)
 
 	if cfg.APIEnabled {
-		router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub)
+		router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub, cfg.TEESealer)
 		go func() {
 			if err := router.Run(); err != nil {
 				logrus.Fatal(err)
