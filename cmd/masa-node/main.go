@@ -100,34 +100,20 @@ func main() {
 	// Init cache resolver
 	db.InitResolverCache(masaNode, keyManager)
 
-	// Listen for SIGINT (CTRL+C)
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
 	// Cancel the context when SIGINT is received
-	go func() {
-		<-c
-		nodeData := masaNode.NodeTracker.GetNodeData(masaNode.Host.ID().String())
-		if nodeData != nil {
-			nodeData.Left()
-		}
-		cancel()
-		// Call the global StopFunc to stop the Telegram background connection
-		cfg := config.GetInstance()
-		if cfg.TelegramStop != nil {
-			if err := cfg.TelegramStop(); err != nil {
-				logrus.Errorf("Error stopping the background connection: %v", err)
-			}
-		}
-	}()
+	go handleSignals(cancel, masaNode, cfg)
 
-	router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub)
-	go func() {
-		err = router.Run()
-		if err != nil {
-			logrus.Fatal(err)
-		}
-	}()
+	if cfg.APIEnabled {
+		router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub)
+		go func() {
+			if err := router.Run(); err != nil {
+				logrus.Fatal(err)
+			}
+		}()
+		logrus.Info("API server started")
+	} else {
+		logrus.Info("API server is disabled")
+	}
 
 	// Get the multiaddress and IP address of the node
 	multiAddr := masaNode.GetMultiAddrs()                      // Get the multiaddress
@@ -136,4 +122,21 @@ func main() {
 	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 
 	<-ctx.Done()
+}
+
+func handleSignals(cancel context.CancelFunc, masaNode *node.OracleNode, cfg *config.AppConfig) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	<-c
+	nodeData := masaNode.NodeTracker.GetNodeData(masaNode.Host.ID().String())
+	if nodeData != nil {
+		nodeData.Left()
+	}
+	cancel()
+	if cfg.TelegramStop != nil {
+		if err := cfg.TelegramStop(); err != nil {
+			logrus.Errorf("Error stopping the background connection: %v", err)
+		}
+	}
 }
