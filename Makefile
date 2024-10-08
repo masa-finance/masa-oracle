@@ -32,6 +32,9 @@ install:
 run: build
 	@./bin/masa-node
 
+run-api-enabled: build
+	@./bin/masa-node --api-enabled=true
+
 faucet: build
 	./bin/masa-node --faucet
 
