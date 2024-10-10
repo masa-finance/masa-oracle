@@ -75,12 +75,12 @@ func main() {
 	// Create a new OracleNode
 	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Fatal("Creating new OracleNode failed: ", err)
 	}
 
 	err = masaNode.Start()
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Fatal("Starting OracleNode failed: ", err)
 	}
 
 	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {

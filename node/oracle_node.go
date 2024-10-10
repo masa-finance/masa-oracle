@@ -259,7 +259,7 @@ func (node *OracleNode) Start() (err error) {
 
 	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(node.Options.Bootnodes)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get bootnodes: %w", err)
 	}
 
 	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
@@ -268,7 +268,7 @@ func (node *OracleNode) Start() (err error) {
 		if node.Options.RemoteAttestationChallenge {
 			fmt.Println("[-] Error starting DHT: ", err)
 		} else {
-			return err
+			return fmt.Errorf("failed to start DHT: %w", err)
 		}
 	}
 
@@ -278,7 +278,7 @@ func (node *OracleNode) Start() (err error) {
 		if node.Options.RemoteAttestationChallenge {
 			fmt.Println("[-] Error starting MDNS: ", err)
 		} else {
-			return err
+			return fmt.Errorf("failed to start MDNS: %w", err)
 		}
 	}
 
@@ -298,7 +298,7 @@ func (node *OracleNode) Start() (err error) {
 
 	// call SubscribeToTopics on startup
 	if err := node.subscribeToTopics(); err != nil {
-		return err
+		return fmt.Errorf("failed to subscribe to topics: %w", err)
 	}
 
 	node.StartTime = time.Now()
