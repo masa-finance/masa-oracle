@@ -36,7 +36,6 @@ COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
 # Copy contracts directory including node_modules
-COPY --from=builder --chown=masa:masa /app/contracts /home/masa/contracts
 
 # Switch to user 'masa' for following commands
 USER masa
