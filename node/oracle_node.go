@@ -204,7 +204,9 @@ func (node *OracleNode) Start() (err error) {
 
 	if node.Options.RemoteAttestationChallenge {
 		tee.RegisterRemoteAttestation(node.Host)
-		node.raConnectionGater.SetNode(node.Host)
+		if node.raConnectionGater != nil {
+			node.raConnectionGater.SetNode(node.Host)
+		}
 	}
 
 	if node.Options.RemoteAttestationChallenge {
