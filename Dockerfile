@@ -16,7 +16,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-# Run the go:generate step and build the Go binary
 RUN make build
 
 # Use the official Ubuntu 22.04 image as a base for the final image
