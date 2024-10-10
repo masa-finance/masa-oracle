@@ -1,17 +1,15 @@
 # Build the Go binary in a separate stage utilizing Makefile
 FROM golang:1.22 AS builder
 
-WORKDIR /app
-
 # Install necessary packages for the final image
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    curl gpg git \
+    curl sudo gpg lsb-release software-properties-common \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-    && apt-get update && apt-get install -y yarn
+    && apt-get update && apt-get install -y git yarn apt-utils
 
-# Copy the entire project
+WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
