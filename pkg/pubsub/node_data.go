@@ -280,4 +280,5 @@ func (nd *NodeData) UpdateTwitterFields(fields NodeData) {
 		nd.LastNotFoundTime = fields.LastNotFoundTime
 		nd.NotFoundCount += fields.NotFoundCount
 	}
+	nd.LastUpdatedUnix = time.Now().Unix()
 }
