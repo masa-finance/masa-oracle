@@ -102,8 +102,8 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	}
 
 	if o.RemoteAttestationChallenge {
-		remoteConnectionGater = tee.NewRemoteAttestationConnectionGater(ctx, o.Signer, o.ProductionMode)
-		libp2pOptions = append(libp2pOptions, libp2p.ConnectionGater(remoteConnectionGater))
+		//remoteConnectionGater = tee.NewRemoteAttestationConnectionGater(ctx, o.Signer, o.ProductionMode)
+		//libp2pOptions = append(libp2pOptions, libp2p.ConnectionGater(remoteConnectionGater))
 	}
 
 	if o.RandomIdentity {
