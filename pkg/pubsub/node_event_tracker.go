@@ -29,11 +29,72 @@ type ConnectBufferEntry struct {
 	ConnectTime time.Time
 }
 
+// NodeSorter provides methods for sorting NodeData slices
+type NodeSorter struct {
+	nodes []NodeData
+	less  func(i, j NodeData) bool
+}
+
+// Len returns the length of the nodes slice
+func (s NodeSorter) Len() int { return len(s.nodes) }
+
+// Swap swaps the nodes at indices i and j
+func (s NodeSorter) Swap(i, j int) { s.nodes[i], s.nodes[j] = s.nodes[j], s.nodes[i] }
+
+// Less compares nodes at indices i and j using the provided less function
+func (s NodeSorter) Less(i, j int) bool { return s.less(s.nodes[i], s.nodes[j]) }
+
+// SortNodesByTwitterReliability sorts the given nodes based on their Twitter reliability.
+// It uses multiple criteria to determine the reliability and performance of nodes:
+//  1. Prioritizes nodes that have been found more often (lower NotFoundCount)
+//  2. Considers the last time a node was not found (earlier LastNotFoundTime is better)
+//  3. Sorts by higher number of returned tweets
+//  4. Then by more recent last returned tweet
+//  5. Then by lower number of timeouts
+//  6. Then by less recent last timeout
+//  7. Finally, sorts by PeerId for stability when no performance data is available
+//
+// The function modifies the input slice in-place, sorting the nodes from most to least reliable.
+func SortNodesByTwitterReliability(nodes []NodeData) {
+	sorter := NodeSorter{
+		nodes: nodes,
+		less: func(i, j NodeData) bool {
+			// First, prioritize nodes that have been found more often
+			if i.NotFoundCount != j.NotFoundCount {
+				return i.NotFoundCount < j.NotFoundCount
+			}
+			// Then, consider the last time they were not found
+			if !i.LastNotFoundTime.Equal(j.LastNotFoundTime) {
+				return i.LastNotFoundTime.Before(j.LastNotFoundTime)
+			}
+			// Primary sort: Higher number of returned tweets
+			if i.ReturnedTweets != j.ReturnedTweets {
+				return i.ReturnedTweets > j.ReturnedTweets
+			}
+			// Secondary sort: More recent last returned tweet
+			if !i.LastReturnedTweet.Equal(j.LastReturnedTweet) {
+				return i.LastReturnedTweet.After(j.LastReturnedTweet)
+			}
+			// Tertiary sort: Lower number of timeouts
+			if i.TweetTimeouts != j.TweetTimeouts {
+				return i.TweetTimeouts < j.TweetTimeouts
+			}
+			// Quaternary sort: Less recent last timeout
+			if !i.LastTweetTimeout.Equal(j.LastTweetTimeout) {
+				return i.LastTweetTimeout.Before(j.LastTweetTimeout)
+			}
+			// Default sort: By PeerId (ensures stable sorting when no performance data is available)
+			return i.PeerId.String() < j.PeerId.String()
+		},
+	}
+	sort.Sort(sorter)
+}
+
 // NewNodeEventTracker creates a new NodeEventTracker instance.
 // It initializes the node data map, node data channel, node data file path,
 // connect buffer map. It loads existing node data from file, starts a goroutine
 // to clear expired buffer entries, and returns the initialized instance.
-func NewNodeEventTracker(version, environment string, hostId string) *NodeEventTracker {
+func NewNodeEventTracker(version, environment, hostId string) *NodeEventTracker {
 	net := &NodeEventTracker{
 		nodeData:      NewSafeMap(),
 		nodeVersion:   version,
@@ -284,6 +345,17 @@ func (net *NodeEventTracker) GetEligibleWorkerNodes(category WorkerCategory) []N
 			result = append(result, nodeData)
 		}
 	}
+
+	// Sort the eligible nodes based on the worker category
+	switch category {
+	case CategoryTwitter:
+		SortNodesByTwitterReliability(result)
+		// Add cases for other categories as needed such as
+		// web
+		// discord
+		// telegram
+	}
+
 	return result
 }
 
@@ -476,4 +548,21 @@ func (net *NodeEventTracker) cleanupStalePeers(hostId string) {
 			// node.SomeMethod(nodeData.PeerId)
 		}
 	}
+}
+
+func (net *NodeEventTracker) UpdateNodeDataTwitter(peerID string, updates NodeData) error {
+	nodeData, exists := net.nodeData.Get(peerID)
+	if !exists {
+		return fmt.Errorf("node data not found for peer ID: %s", peerID)
+	}
+
+	// Update fields based on non-zero values
+	nodeData.UpdateTwitterFields(updates)
+
+	// Save the updated node data
+	err := net.AddOrUpdateNodeData(nodeData, true)
+	if err != nil {
+		return fmt.Errorf("error updating node data: %v", err)
+	}
+	return nil
 }
