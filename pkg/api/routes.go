@@ -142,6 +142,10 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 
 	v1 := router.Group("/api/v1")
 	{
+		// Seal API responses with TEE
+		if teeSealer {
+			v1.Use(tee.RegisterGIN)
+		}
 
 		// @Summary Get list of peers
 		// @Description Retrieves a list of peers connected to the node
@@ -456,17 +460,6 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Router /blocks/{blockHash} [get]
 		v1.GET("/blocks/:blockHash", API.GetBlockByHash())
 
-		// @Summary Unseal TEE content
-		// @Description Unseal content that is processed inside the Masa oracle enclave
-		// @Tags Security
-		// @Accept json
-		// @Produce json
-		// @Param body body object true "Data"
-		// @Success 200 {object} []byte "Unsealed data"
-		// @Failure 400 {object} ErrorResponse "Invalid query or error"
-		// @Router /unseal [post]
-		v1.POST("/unseal", API.UnsealData())
-
 		// @note a test route
 		v1.POST("/test", API.Test())
 
@@ -516,9 +509,17 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		})
 	})
 
-	if teeSealer {
-		router.Use(tee.RegisterGIN)
-	}
+	// NOTE: This have to go after
+	// @Summary Unseal TEE content
+	// @Description Unseal content that is processed inside the Masa oracle enclave
+	// @Tags Security
+	// @Accept json
+	// @Produce json
+	// @Param body body object true "Data"
+	// @Success 200 {object} []byte "Unsealed data"
+	// @Failure 400 {object} ErrorResponse "Invalid query or error"
+	// @Router /unseal [post]
+	v1.POST("/unseal", API.UnsealData())
 
 	return router
 }
