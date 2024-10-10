@@ -12,6 +12,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && apt-get update && apt-get install -y yarn
 
 # Copy the entire project
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
 
 # Run the go:generate step and build the Go binary
