@@ -156,6 +156,9 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
+			errorMsg := fmt.Sprintf("Worker %s: %s", worker.NodeData.PeerId, response.Error)
+			errorList = append(errorList, errorMsg)
+
 			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
 			logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
