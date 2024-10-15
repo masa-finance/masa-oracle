@@ -1,16 +1,30 @@
 package twitter
 
 import (
+	"math/rand"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
-	ShortSleepDuration = 20 * time.Millisecond
-	RateLimitDuration  = 15 * time.Minute
+	minSleepDuration  = 500 * time.Millisecond
+	maxSleepDuration  = 2 * time.Second
+	RateLimitDuration = 15 * time.Minute
 )
 
-func ShortSleep() {
-	time.Sleep(ShortSleepDuration)
+var (
+	rng *rand.Rand
+)
+
+func init() {
+	rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+}
+
+func RandomSleep() {
+	duration := minSleepDuration + time.Duration(rng.Int63n(int64(maxSleepDuration-minSleepDuration)))
+	logrus.Debugf("Sleeping for %v", duration)
+	time.Sleep(duration)
 }
 
 func GetRateLimitDuration() time.Duration {
