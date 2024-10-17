@@ -1,7 +1,9 @@
 VERSION := $(shell git describe --tags --abbrev=0)
 
 GORELEASER?=
-CGO_ENABLED?=0
+export CGO_ENABLED?=0
+PWD:=$(shell pwd)
+TEE_SIMULATE?=1
 
 # check if goreleaser exists
 ifeq (, $(shell which goreleaser))
@@ -64,3 +66,41 @@ docker-compose-up:
 	@docker compose up --build
 
 .PHONY: proto
+
+## TEE bits
+
+tee/private.pem:
+	@openssl genrsa -out tee/private.pem -3 3072
+
+docker-build-tee: tee/private.pem
+	@docker build --secret id=private_key,src=./tee/private.pem  -t masa-node-tee:latest -f Dockerfile.tee .
+
+tee-build: contracts/node_modules
+	@ego-go build -v -gcflags=all="-N -l" -ldflags '-linkmode=external -extldflags=-static' -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node ./cmd/masa-node
+	@ego-go build -v -gcflags=all="-N -l" -ldflags '-linkmode=external -extldflags=-static' -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node-cli ./cmd/masa-node-cli
+
+tee-sign:
+	@ego sign ./tee/masa-node.json
+
+tee-bundle:
+	@ego bundle ./bin/masa-node
+
+tee-run:
+	@docker run --net host -e OE_SIMULATION=$(TEE_SIMULATE) --rm -v $(PWD)/.masa:/home/masa -ti masa-node-tee:latest
+
+signed-build:
+	@docker run --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "git config --global --add safe.directory /build && make tee-build"
+	$(MAKE) sign
+
+# musl build:
+# apt-get install -y --no-install-recommends musl-dev musl-tools
+# CGO_ENABLED=1 CC=musl-gcc go build --ldflags '-linkmode=external -extldflags=-static' -o binary_name ./
+
+sign:
+	docker run --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "ego sign ./tee/masa-node.json"
+
+ego-run:
+	docker run --net host --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "mkdir -p .masa && cp -rfv .env .masa && OE_SIMULATION=1 ego run ./bin/masa-node"
+
+ego-dbg:
+	docker run --net host --rm -v $(PWD):/build -w /build -ti ghcr.io/edgelesssys/ego-dev /bin/bash -c "mkdir -p .masa && cp -rfv .env .masa && OE_SIMULATION=1 ego-gdb --args ./bin/masa-node"
