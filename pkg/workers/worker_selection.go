@@ -1,9 +1,6 @@
 package workers
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/rand"
@@ -35,10 +32,7 @@ func getTwitterWorkers(node *node.OracleNode, nodes []pubsub.NodeData, limit int
 	topPerformers := nodes[:poolSize]
 
 	// Shuffle the top performers
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(topPerformers), func(i, j int) {
-		topPerformers[i], topPerformers[j] = topPerformers[j], topPerformers[i]
-	})
+	topPerformers = ShuffleSlice(topPerformers)
 
 	return createWorkerList(node, topPerformers, limit)
 }
@@ -97,4 +91,13 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// Shuffle items in a slice
+func ShuffleSlice[T any](slice []T) []T {
+	for i := range slice {
+		j := rand.Intn(i + 1)
+		slice[i], slice[j] = slice[j], slice[i]
+	}
+	return slice
 }
