@@ -6,7 +6,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl sudo gpg lsb-release software-properties-common \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg \
-    && apt remove cmdtest \
     && echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
     && apt-get update && apt-get install -y git yarn apt-utils
 
@@ -20,11 +19,14 @@ RUN make build
 # Use the official Ubuntu 22.04 image as a base for the final image
 FROM ubuntu:22.04 AS base
 
+# Copy the built binary and set permissions
 COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
 # Create the 'masa' user and set up the home directory
-RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:masa /home/masa
+RUN useradd -m -s /bin/bash masa && \
+    mkdir -p /home/masa/.masa && \
+    chown -R masa:masa /home/masa
 
 # Switch to user 'masa' for following commands
 USER masa
@@ -37,5 +39,4 @@ COPY --chown=masa:masa .env .
 EXPOSE 4001 8080
 
 # Set default command to start the Go application
-
 CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --validator="$VALIDATOR" --cachePath="$CACHE_PATH"

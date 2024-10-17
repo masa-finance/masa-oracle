@@ -13,6 +13,8 @@ Before you begin the staking process, ensure you have:
 - Installed all the necessary dependencies as outlined in the project's README.
 - Successfully built the Masa Oracle Node executable.
 
+If you have not done these things, please read the [quickstart guide](./../oracle-node/quickstart.md).
+
 ## How to Stake
 
 Staking on the Masa Oracle Node involves specifying the amount of tokens you wish to stake and using the staking functionality built into the node. Here's how to do it:
@@ -22,13 +24,13 @@ Staking on the Masa Oracle Node involves specifying the amount of tokens you wis
 2. **Execute the Staking Command:** Use the following command to initiate staking:
 
    ```bash
-   ./masa-node --stake <amount>
+    docker-compose run --rm masa-node /usr/bin/masa-node --stake <amount>
    ```
 
    Replace `<amount>` with the number of tokens you want to stake. For example, to stake 1000 tokens:
   
    ```bash
-   ./masa-node --stake 1000
+    docker-compose run --rm masa-node /usr/bin/masa-node --stake 1000
    ```
 
 3. **Verify the Transaction:** After executing the staking command, the node will process the staking transaction. Ensure that the transaction is successfully completed by checking the transaction hash provided in the output.

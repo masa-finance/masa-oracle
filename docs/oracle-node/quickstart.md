@@ -5,6 +5,11 @@ title: Quickstart
 
 Follow these steps to get your Masa Oracle node up and running quickly:
 
+## Prerequisites
+
+- [Docker](https://docs.docker.com/), or use [OrbStack](https://orbstack.dev/) on MacOS
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
 ### 1. Clone the repository
 
 ```bash
@@ -12,23 +17,9 @@ git clone https://github.com/masa-finance/masa-oracle.git
 cd masa-oracle
 ```
 
-### 2. Build the node
+### 2. Set up environment variables
 
-```bash
-go build -v -o masa-node ./cmd/masa-node
-```
-
-### 3. Install contract dependencies
-
-```bash
-cd contracts/
-yarn install
-cd ../
-```
-
-### 4. Set up environment variables
-
-Create a `.env` file in the root directory with the following content:
+Create a `.env` file in the root directory with the following content, based on the `.env.example`:
 
 ```plaintext
 # Default .env configuration
@@ -63,13 +54,15 @@ DISCORD_SCRAPER=false
 WEB_SCRAPER=false
 ```
 
-### 5. Start the node
+### 3. Start the node
 
 ```bash
-./masa-node
+docker-compose up
 ```
 
-Your Masa Oracle node should now be running and attempting to connect to the network. Check the logs to ensure it's functioning correctly. You will need your Public Key from the node startup logs to stake the node. Grab some testnet MASA from [Discord](https://discord.gg/masafinance).
+This command builds the Docker image (if not already built) and starts the container.
+
+Your Masa Oracle node should now be running and attempting to connect to the network. Check the logs to ensure it's functioning correctly. You will need your Public Key from the node startup logs to stake the node.
 
 ```bash
 #######################################
@@ -91,19 +84,27 @@ INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofL
 INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.9-beta-dev
 ```
 
-### 6. Stake the node with 1000 Sepolia MASA minimum
+### 4. Stake the node with 1000 Sepolia MASA minimum
 
-Grab your Public Key and get some Sepolia MASA from Discord. Then use the following command to initiate staking. Make sure you restart your node once you have staked:
+Grab your Public Key and send it some ETH Sepolia via Discord, [Google Cloud Faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia), or [Infura Faucet](https://www.infura.io/faucet/sepolia).
 
-   ```bash
-   ./masa-node --stake <amount>
-   ```
+After your public key has been funded with ETH Sepolia, call your node's faucet to receive tMasa.
+
+```bash
+  docker-compose run --rm masa-node /usr/bin/masa-node --faucet
+```
+
+Then use the following command to initiate staking.:
+
+```bash
+   docker-compose run --rm masa-node /usr/bin/masa-node --stake <amount>
+```
 
    Replace `<amount>` with the number of tokens you want to stake. For example, to stake 1000 MASA tokens:
   
-   ```bash
-   ./masa-node --stake 1000
-   ```
+```bash
+   docker-compose run --rm masa-node /usr/bin/masa-node --stake 1000
+```
 
 Your tokens will approve and stake:
 
@@ -116,13 +117,19 @@ Staking tokens.....
 Stake transaction hash: 0xea3e9f779b56a6972ce393d44cbfb4a72e74f5ef00c9b5ddfa6b86bdecf4eecb
 ```
 
-### 7. Start the staked node
+### 5. Start or restart the staked node
 
 ```bash
-./masa-node
+docker-compose up
 ```
 
-The Is staked flag will change to `true`
+or
+
+```bash
+docker-compose restart masa-node
+```
+
+You should notice that the "Is Staked" flag has changed to `true`.
 
 ```bash
 #######################################
@@ -144,7 +151,9 @@ INFO[0001] Peer added to DHT: 16Uiu2HAmHpx13GPKZAP3WpgpYkZ39M5cwuvmXS5gGvrsa5ofL
 INFO[0005] Successfully advertised protocol /masa/oracle_protocol/v0.0.9-beta-dev
 ```
 
-### 7. View swagger API
+### 6. View swagger API
+
+To interact with the available API's, access the simple Swagger interface:
 
 ```bash
 http://localhost:8080/swagger/index.html
