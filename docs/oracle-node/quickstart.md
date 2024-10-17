@@ -32,7 +32,9 @@ Create a `.env` file in the root directory with the following content:
 
 ```plaintext
 # Default .env configuration
-BOOTNODES=/ip4/35.223.224.220/udp/4001/quic-v1/p2p/16Uiu2HAmPxXXjR1XJEwckh6q1UStheMmGaGe8fyXdeRs3SejadSa,/ip4/34.121.111.128/udp/4001/quic-v1/p2p/16Uiu2HAmKULCxKgiQn1EcfKnq1Qam6psYLDTM99XsZFhr57wLadF
+
+# Check bootnodes addresses in the Masa documentation https://developers.masa.ai/docs/welcome-to-masa
+BOOTNODES=
 
 API_KEY=
 RPC_URL=https://ethereum-sepolia.publicnode.com
