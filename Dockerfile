@@ -20,6 +20,9 @@ RUN make build
 # Use the official Ubuntu 22.04 image as a base for the final image
 FROM ubuntu:22.04 AS base
 
+# Install ca-certificates to ensure TLS verification works
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
 COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
