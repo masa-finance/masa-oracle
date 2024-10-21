@@ -16,6 +16,12 @@ type NodeOption struct {
 	IsValidator bool
 	PortNbr     int
 
+	// Remote Attestation options (start)
+	RemoteAttestationChallenge bool
+	Signer                     []byte
+	ProductionMode             bool
+	// Remote Attestation options (end)
+
 	IsTwitterScraper  bool
 	IsDiscordScraper  bool
 	IsTelegramScraper bool
@@ -54,6 +60,14 @@ var EnableTCP = func(o *NodeOption) {
 
 var EnableUDP = func(o *NodeOption) {
 	o.UDP = true
+}
+
+var EnableRemoteAttestationChallenge = func(o *NodeOption) {
+	o.RemoteAttestationChallenge = true
+}
+
+var EnableProductionMode = func(o *NodeOption) {
+	o.ProductionMode = true
 }
 
 var IsValidator = func(o *NodeOption) {
@@ -121,6 +135,12 @@ func WithProtocolHandler(pid protocol.ID, n network.StreamHandler) Option {
 func WithEnvironment(env string) Option {
 	return func(o *NodeOption) {
 		o.Environment = env
+	}
+}
+
+func WithSigner(signer []byte) Option {
+	return func(o *NodeOption) {
+		o.Signer = signer
 	}
 }
 

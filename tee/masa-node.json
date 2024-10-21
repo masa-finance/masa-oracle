@@ -1,0 +1,37 @@
+{
+ "exe": "./../bin/masa-node",
+ "key": "private.pem",
+ "debug": true,
+ "heapSize": 4092,
+ "executableHeap": false,
+ "productID": 1,
+ "securityVersion": 1,
+ "mounts": [
+    {
+        "source": ".masa",
+        "target": "/.masa",
+        "type": "hostfs",
+        "readOnly": false
+    },
+    {
+        "target": "/tmp",
+        "type": "memfs"
+    }
+  ],
+  "env": [
+        {
+            "name": "LANG",
+            "fromHost": true
+        },
+        {
+            "name": "PWD",
+            "value": "/.masa"
+        }
+    ],
+ "files": [
+    {
+        "source": "/etc/ssl/certs/ca-certificates.crt",
+        "target": "/etc/ssl/certs/ca-certificates.crt"
+    }
+  ]
+}

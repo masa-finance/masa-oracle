@@ -30,23 +30,25 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/tee"
 )
 
 type OracleNode struct {
-	Host          host.Host
-	Protocol      protocol.ID
-	priorityAddrs multiaddr.Multiaddr
-	multiAddrs    []multiaddr.Multiaddr
-	DHT           *dht.IpfsDHT
-	PeerChan      chan myNetwork.PeerEvent
-	NodeTracker   *pubsub.NodeEventTracker
-	PubSubManager *pubsub.Manager
-	Signature     string
-	StartTime     time.Time
-	WorkerTracker *pubsub.WorkerEventTracker
-	Blockchain    *chain.Chain
-	Options       NodeOption
-	Context       context.Context
+	Host              host.Host
+	Protocol          protocol.ID
+	priorityAddrs     multiaddr.Multiaddr
+	multiAddrs        []multiaddr.Multiaddr
+	DHT               *dht.IpfsDHT
+	PeerChan          chan myNetwork.PeerEvent
+	NodeTracker       *pubsub.NodeEventTracker
+	PubSubManager     *pubsub.Manager
+	Signature         string
+	StartTime         time.Time
+	WorkerTracker     *pubsub.WorkerEventTracker
+	Blockchain        *chain.Chain
+	Options           NodeOption
+	Context           context.Context
+	raConnectionGater *tee.RemoteAttestationConnectionGater
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -83,6 +85,7 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	scalingLimits := rcmgr.DefaultLimits
 	concreteLimits := scalingLimits.AutoScale()
 	limiter := rcmgr.NewFixedLimiter(concreteLimits)
+	var remoteConnectionGater *tee.RemoteAttestationConnectionGater
 
 	resourceManager, err := rcmgr.NewResourceManager(limiter)
 	if err != nil {
@@ -96,6 +99,11 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 		libp2p.EnableNATService(),
 		libp2p.NATPortMap(),
 		libp2p.EnableRelay(), // Enable Circuit Relay v2 with hop
+	}
+
+	if o.RemoteAttestationChallenge {
+		//remoteConnectionGater = tee.NewRemoteAttestationConnectionGater(ctx, o.Signer, o.ProductionMode)
+		//libp2pOptions = append(libp2pOptions, libp2p.ConnectionGater(remoteConnectionGater))
 	}
 
 	if o.RandomIdentity {
@@ -135,14 +143,15 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	}
 
 	n := &OracleNode{
-		Host:          hst,
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
-		PeerChan:      make(chan myNetwork.PeerEvent),
-		NodeTracker:   pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
-		Context:       ctx,
-		PubSubManager: subscriptionManager,
-		Blockchain:    &chain.Chain{},
-		Options:       *o,
+		Host:              hst,
+		multiAddrs:        myNetwork.GetMultiAddressesForHostQuiet(hst),
+		PeerChan:          make(chan myNetwork.PeerEvent),
+		NodeTracker:       pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
+		Context:           ctx,
+		PubSubManager:     subscriptionManager,
+		Blockchain:        &chain.Chain{},
+		Options:           *o,
+		raConnectionGater: remoteConnectionGater,
 	}
 
 	n.Protocol = n.protocolWithVersion(config.OracleProtocol)
@@ -170,7 +179,9 @@ func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, pu
 	// Returns nil if there is an error marshalling to JSON.
 	// Create and populate NodeData
 	nodeData := pubsub.NewNodeData(addr, host.ID(), publicEthAddress, pubsub.ActivityJoined)
-	nodeData.MultiaddrsString = addr.String()
+	if addr != nil {
+		nodeData.MultiaddrsString = addr.String()
+	}
 	nodeData.IsStaked = node.Options.IsStaked
 	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
 	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
@@ -188,21 +199,49 @@ func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, pu
 // goroutines to handle discovered peers, listen to the node tracker, and
 // discover peers. If this is a bootnode, it adds itself to the node tracker.
 func (node *OracleNode) Start() (err error) {
-	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
+	//XXX:
+	//logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
-	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	if node.Options.RemoteAttestationChallenge {
+		tee.RegisterRemoteAttestation(node.Host)
+		if node.raConnectionGater != nil {
+			node.raConnectionGater.SetNode(node.Host)
+		}
+	}
+
+	if node.Options.RemoteAttestationChallenge {
+		node.Host.SetStreamHandler(node.Protocol,
+			tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, node.handleStream),
+		)
+		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol),
+			tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, node.ReceiveNodeData))
+	} else {
+		node.Host.SetStreamHandler(node.Protocol, node.handleStream)
+		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	}
 
 	for pid, n := range node.Options.ProtocolHandlers {
-		node.Host.SetStreamHandler(pid, n)
+		if node.Options.RemoteAttestationChallenge {
+			node.Host.SetStreamHandler(pid, tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, n))
+		} else {
+			node.Host.SetStreamHandler(pid, n)
+		}
 	}
 
 	for protocol, n := range node.Options.MasaProtocolHandlers {
-		node.Host.SetStreamHandler(node.protocolWithVersion(protocol), n)
+		if node.Options.RemoteAttestationChallenge {
+			node.Host.SetStreamHandler(node.protocolWithVersion(protocol), tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, n))
+		} else {
+			node.Host.SetStreamHandler(node.protocolWithVersion(protocol), n)
+		}
 	}
 
 	if node.Options.IsStaked {
-		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+		if node.Options.RemoteAttestationChallenge {
+			node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), tee.VerifierWrapper(node.Context, node.Host, node.Options.Signer, node.Options.ProductionMode, node.GossipNodeData))
+		} else {
+			node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+		}
 	}
 
 	node.Host.Network().Notify(node.NodeTracker)
@@ -222,17 +261,27 @@ func (node *OracleNode) Start() (err error) {
 
 	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(node.Options.Bootnodes)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get bootnodes: %w", err)
 	}
 
 	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
-		return err
+		// XXX: Hitting https://github.com/libp2p/go-libp2p/blob/299f96444b24a7bca3f9e0f358260f01d63b8498/p2p/discovery/mdns/mdns.go#L107 in the enclave
+		if node.Options.RemoteAttestationChallenge {
+			fmt.Println("[-] Error starting DHT: ", err)
+		} else {
+			return fmt.Errorf("failed to start DHT: %w", err)
+		}
 	}
 
 	err = myNetwork.WithMDNS(node.Host, config.Rendezvous, node.PeerChan)
 	if err != nil {
-		return err
+		// XXX: Hitting https://github.com/libp2p/go-libp2p/blob/299f96444b24a7bca3f9e0f358260f01d63b8498/p2p/discovery/mdns/mdns.go#L107 in the enclave
+		if node.Options.RemoteAttestationChallenge {
+			fmt.Println("[-] Error starting MDNS: ", err)
+		} else {
+			return fmt.Errorf("failed to start MDNS: %w", err)
+		}
 	}
 
 	for _, p := range node.Options.Services {
@@ -251,7 +300,7 @@ func (node *OracleNode) Start() (err error) {
 
 	// call SubscribeToTopics on startup
 	if err := node.subscribeToTopics(); err != nil {
-		return err
+		return fmt.Errorf("failed to subscribe to topics: %w", err)
 	}
 
 	node.StartTime = time.Now()
