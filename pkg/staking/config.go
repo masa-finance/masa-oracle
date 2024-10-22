@@ -2,23 +2,28 @@ package staking
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
+
+	"github.com/masa-finance/masa-oracle/contracts"
 )
 
 // LoadContractAddresses loads the contract addresses from the addresses.json file.
 // It returns a ContractAddresses struct containing the loaded addresses.
 func LoadContractAddresses() (*ContractAddresses, error) {
-	masaOracleTokensPath := filepath.Join("contracts", "node_modules", "@masa-finance", "masa-contracts-oracle", "addresses.json")
-	masaTokenPath := filepath.Join("contracts", "node_modules", "@masa-finance", "masa-token", "addresses.json")
-	masaTokenData, err := os.ReadFile(masaTokenPath)
+	masaTokenPath := filepath.Join("node_modules", "@masa-finance", "masa-token", "addresses.json")
+
+	masaTokenData, err := contracts.EmbeddedContracts.ReadFile(masaTokenPath)
 	if err != nil {
 		return nil, err
 	}
-	masaOracleTokensData, err := os.ReadFile(masaOracleTokensPath)
+
+	masaOracleTokensPath := filepath.Join("node_modules", "@masa-finance", "masa-contracts-oracle", "addresses.json")
+
+	masaOracleTokensData, err := contracts.EmbeddedContracts.ReadFile(masaOracleTokensPath)
 	if err != nil {
 		return nil, err
 	}
+
 	var tokenAddresses map[string]map[string]string
 	var addresses ContractAddresses
 	err = json.Unmarshal(masaTokenData, &tokenAddresses)

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/event"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
@@ -97,11 +99,25 @@ func (whm *WorkHandlerManager) GetWorkHandler(wType data_types.WorkerType) (Work
 
 func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	category := data_types.WorkerTypeToCategory(workRequest.WorkType)
-	remoteWorkers, localWorker := GetEligibleWorkers(node, category)
+	var remoteWorkers []data_types.Worker
+	var localWorker *data_types.Worker
+
+	if category == pubsub.CategoryTwitter {
+		// Use priority-based selection for Twitter work
+		remoteWorkers, localWorker = GetEligibleWorkers(node, category, workerConfig.MaxRemoteWorkers)
+		logrus.Info("Starting priority-based worker selection for Twitter work")
+	} else {
+		// Use existing selection for other work types
+		remoteWorkers, localWorker = GetEligibleWorkers(node, category, 0)
+		// Shuffle the workers to maintain round-robin behavior
+		rand.Shuffle(len(remoteWorkers), func(i, j int) {
+			remoteWorkers[i], remoteWorkers[j] = remoteWorkers[j], remoteWorkers[i]
+		})
+		logrus.Info("Starting round-robin worker selection for non-Twitter work")
+	}
 
 	remoteWorkersAttempted := 0
 	var errorList []string
-	logrus.Info("Starting round-robin worker selection")
 
 	// Try remote workers first, up to MaxRemoteWorkers
 	for _, worker := range remoteWorkers {
@@ -115,6 +131,15 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 		peerInfo, err := node.DHT.FindPeer(context.Background(), worker.NodeData.PeerId)
 		if err != nil {
 			logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
+			if category == pubsub.CategoryTwitter {
+				err := node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
+					LastNotFoundTime: time.Now(),
+					NotFoundCount:    1,
+				})
+				if err != nil {
+					logrus.Warnf("Failed to update node data for peer %s: %v", worker.NodeData.PeerId.String(), err)
+				}
+			}
 			continue
 		}
 
@@ -131,6 +156,9 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 		logrus.Infof("Attempting remote worker %s (attempt %d/%d)", worker.NodeData.PeerId, remoteWorkersAttempted, workerConfig.MaxRemoteWorkers)
 		response = whm.sendWorkToWorker(node, worker, workRequest)
 		if response.Error != "" {
+			errorMsg := fmt.Sprintf("Worker %s: %s", worker.NodeData.PeerId, response.Error)
+			errorList = append(errorList, errorMsg)
+
 			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
 			logrus.Errorf("error sending work to worker: %s: %s", response.WorkerPeerId, response.Error)
 			logrus.Infof("Remote worker %s failed, moving to next worker", worker.NodeData.PeerId)
@@ -240,6 +268,24 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *node.OracleNode, worker da
 		if err != nil {
 			response.Error = fmt.Sprintf("error unmarshaling response: %v", err)
 			return
+		}
+		// Update metrics only if the work category is Twitter
+		if data_types.WorkerTypeToCategory(workRequest.WorkType) == pubsub.CategoryTwitter {
+			if response.Error == "" {
+				err = node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
+					ReturnedTweets:    response.RecordCount,
+					LastReturnedTweet: time.Now(),
+				})
+			} else {
+				err = node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
+					TweetTimeout:     true,
+					TweetTimeouts:    1,
+					LastTweetTimeout: time.Now(),
+				})
+			}
+			if err != nil {
+				logrus.Warnf("Failed to update node data for peer %s: %v", worker.NodeData.PeerId.String(), err)
+			}
 		}
 	}
 	return response

@@ -17,14 +17,14 @@ func NewScraper(account *TwitterAccount, cookieDir string) *Scraper {
 		}
 	}
 
-	ShortSleep()
+	RandomSleep()
 
 	if err := scraper.Login(account.Username, account.Password, account.TwoFACode); err != nil {
 		logrus.WithError(err).Warnf("Login failed for %s", account.Username)
 		return nil
 	}
 
-	ShortSleep()
+	RandomSleep()
 
 	if err := SaveCookies(scraper.Scraper, account, cookieDir); err != nil {
 		logrus.WithError(err).Errorf("Failed to save cookies for %s", account.Username)

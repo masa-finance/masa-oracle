@@ -5,5 +5,5 @@ var (
 
 	// XXX: Bump this value only when there are protocol changes that makes the oracle
 	// incompatible between version!
-	ProtocolVersion = `v0.8.0`
+	ProtocolVersion = `v0.8.4`
 )
