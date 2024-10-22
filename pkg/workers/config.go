@@ -17,13 +17,13 @@ type WorkerConfig struct {
 }
 
 var DefaultConfig = WorkerConfig{
-	WorkerTimeout:         45 * time.Second,
-	WorkerResponseTimeout: 35 * time.Second,
+	WorkerTimeout:         55 * time.Second,
+	WorkerResponseTimeout: 45 * time.Second,
 	ConnectionTimeout:     500 * time.Millisecond,
 	MaxRetries:            1,
 	MaxSpawnAttempts:      1,
 	WorkerBufferSize:      100,
-	MaxRemoteWorkers:      25,
+	MaxRemoteWorkers:      10,
 }
 
 var workerConfig *WorkerConfig
