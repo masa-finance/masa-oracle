@@ -49,8 +49,8 @@ func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
 
 // getPublicMultiAddress returns the best public IP address
 func getPublicMultiAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
-	ipBytes, err := Get("https://api.ipify.org?format=text", nil)
-	externalIP := net.ParseIP(string(ipBytes))
+	ipBytes, err := Get("https://checkip.amazonaws.com", nil)
+	externalIP := net.ParseIP(strings.TrimSpace(string(ipBytes)))
 	if err != nil {
 		logrus.Warnf("[-] Failed to get public IP: %v", err)
 		return nil
@@ -111,7 +111,8 @@ func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 		logrus.Warn("No address matches the priority criteria, returning the first entry")
 		baseAddr = addrs[0]
 	}
-	logrus.Infof("Best public address: %s", bestPublicAddr)
+	logrus.Infof(""+
+		"Best public address: %s", bestPublicAddr)
 	logrus.Debugf("Best private address: %s", bestPrivateAddr)
 	logrus.Debugf("Base address: %s", baseAddr)
 	gcpAddr := replaceGCPAddress(baseAddr)

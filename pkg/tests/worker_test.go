@@ -73,7 +73,7 @@ var _ = Describe("Worker Selection", func() {
 				return len(datas) == 2
 			}, "30s").Should(BeTrue())
 
-			remoteWorkers, localWorker := workers.GetEligibleWorkers(oracleNode1, category)
+			remoteWorkers, localWorker := workers.GetEligibleWorkers(oracleNode1, category, 1)
 
 			Expect(remoteWorkers).To(BeEmpty())
 			Expect(localWorker).ToNot(BeNil())
