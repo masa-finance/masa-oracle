@@ -6,9 +6,9 @@ import (
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	myTypes "github.com/masa-finance/bobtestchain/x/bobtestchain/types"
 )
 
@@ -23,17 +23,23 @@ func NewBlockchainClient(nodeURI string, chainID string) (*BlockchainClient, err
 		return nil, err
 	}
 
+	interfaceRegistry := cdctypes.NewInterfaceRegistry()
+	protoCodec := codec.NewProtoCodec(interfaceRegistry)
+
 	clientCtx := client.Context{}.
 		WithChainID(chainID).
 		WithClient(rpcClient).
-		WithCodec(codec.NewProtoCodec(myTypes.ModuleCdc))
+		WithCodec(protoCodec)
 
 	return &BlockchainClient{clientCtx: clientCtx}, nil
 }
 
 // SendTransaction sends a transaction to the blockchain.
-func (bc *BlockchainClient) SendTransaction(msg types.Msg) error {
-	txFactory := tx.NewFactoryCLI(bc.clientCtx, nil)
+func (bc *BlockchainClient) SendTransaction(msg sdk.Msg) error {
+	//txFactory, err := tx.NewFactoryCLI(bc.clientCtx, nil)
+	//if err != nil {
+	//	return err
+	//}
 	txBuilder := bc.clientCtx.TxConfig.NewTxBuilder()
 
 	if err := txBuilder.SetMsgs(msg); err != nil {
@@ -55,13 +61,13 @@ func (bc *BlockchainClient) SendTransaction(msg types.Msg) error {
 }
 
 // QueryNodeStatus queries the blockchain for a node's status.
-func (bc *BlockchainClient) QueryNodeStatus(peerId string) (myTypes.NodeData, error) {
-	queryClient := myTypes.NewQueryClient(bc.clientCtx)
-	req := &myTypes.QueryNodeDataRequest{PeerId: peerId}
+func (bc *BlockchainClient) QueryNodeStatus(peerId string) (*myTypes.NodeData, error) {
+	queryClient := myTypes.NewNodeStatusQueryClient(bc.clientCtx)
+	req := &myTypes.QueryNodeDataRequest{NodeId: peerId}
 
-	res, err := queryClient.NodeStatus(context.Background(), req)
+	res, err := queryClient.NodeData(context.Background(), req)
 	if err != nil {
-		return NodeData, err
+		return nil, err
 	}
 
 	return res.Status, nil

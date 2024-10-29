@@ -3,11 +3,13 @@ module github.com/masa-finance/masa-oracle
 go 1.23.1
 
 replace (
+	github.com/cosmos/cosmos-sdk => ../../misc/cosmos-sdk
 	github.com/masa-finance/bobtestchain => ../bobtestchain
-
 )
+
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cometbft/cometbft v0.38.12
 	github.com/cosmos/cosmos-sdk v0.50.10
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/dgraph-io/badger v1.6.2
@@ -29,6 +31,7 @@ require (
 	github.com/libp2p/go-libp2p v0.36.3
 	github.com/libp2p/go-libp2p-kad-dht v0.26.1
 	github.com/libp2p/go-libp2p-pubsub v0.12.0
+	github.com/masa-finance/bobtestchain v0.0.0-20241025233901-e9a8209055a8
 	github.com/masa-finance/masa-twitter-scraper v0.0.1
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/multiformats/go-multihash v0.2.3
@@ -47,7 +50,7 @@ require (
 )
 
 require (
-	cosmossdk.io/api v0.7.5 // indirect
+	cosmossdk.io/api v0.7.6 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/core v0.11.1 // indirect
 	cosmossdk.io/depinject v1.0.0 // indirect
@@ -88,7 +91,6 @@ require (
 	github.com/cockroachdb/pebble v1.1.2 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
-	github.com/cometbft/cometbft v0.38.12 // indirect
 	github.com/cometbft/cometbft-db v0.11.0 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
@@ -222,7 +224,6 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
-	github.com/masa-finance/bobtestchain v0.0.0-20241025233901-e9a8209055a8 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
