@@ -128,9 +128,15 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 		remoteWorkersAttempted++
 
 		// Attempt to connect to the worker
-		peerInfo, err := node.DHT.FindPeer(context.Background(), worker.NodeData.PeerId)
+		ctx, cancel := context.WithTimeout(context.Background(), workerConfig.FindPeerTimeout)
+		peerInfo, err := node.DHT.FindPeer(ctx, worker.NodeData.PeerId)
+		cancel()
 		if err != nil {
-			logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
+			if err == context.DeadlineExceeded {
+				logrus.Warnf("Timeout while finding peer %s in DHT", worker.NodeData.PeerId.String())
+			} else {
+				logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
+			}
 			if category == pubsub.CategoryTwitter {
 				err := node.NodeTracker.UpdateNodeDataTwitter(worker.NodeData.PeerId.String(), pubsub.NodeData{
 					LastNotFoundTime: time.Now(),
