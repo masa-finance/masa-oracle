@@ -9,6 +9,7 @@ on:
       - '**'
 jobs:
   test:
+
     runs-on: ubuntu-latest
 
     steps:
@@ -22,9 +23,19 @@ jobs:
 
     - name: Install dependencies
       run: go mod tidy
+
+    - name: Vet
+      run: make vet
+
+    - name: Install golangci-lint
+      run: sudo snap install golangci-lint --classic
+
+    - name: Lint
+      run: make lint
+
     - name: Run tests
-      run: |
-        make test
+      run: make test
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:

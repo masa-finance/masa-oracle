@@ -33,8 +33,9 @@ import (
 )
 
 type OracleNode struct {
-	Host          host.Host
-	Protocol      protocol.ID
+	Host     host.Host
+	Protocol protocol.ID
+	// TODO: Rm from here and from NodeData? Should not be necessary
 	priorityAddrs multiaddr.Multiaddr
 	multiAddrs    []multiaddr.Multiaddr
 	DHT           *dht.IpfsDHT
@@ -163,14 +164,22 @@ func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
 	return common.BytesToAddress(ethereumCrypto.Keccak256(rawKey[1:])[12:]).Hex(), nil
 }
 
-func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, publicEthAddress string) *pubsub.NodeData {
+func (node *OracleNode) getNodeData() *pubsub.NodeData {
 	// GetSelfNodeData converts the local node's data into a JSON byte array.
 	// It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 	// The NodeData struct is then marshalled into a JSON byte array.
 	// Returns nil if there is an error marshalling to JSON.
 	// Create and populate NodeData
-	nodeData := pubsub.NewNodeData(addr, host.ID(), publicEthAddress, pubsub.ActivityJoined)
-	nodeData.MultiaddrsString = addr.String()
+
+	var publicEthAddress string
+	if node.Options.RandomIdentity {
+		publicEthAddress, _ = node.generateEthHexKeyForRandomIdentity()
+	} else {
+		publicEthAddress = masacrypto.KeyManagerInstance().EthAddress
+	}
+
+	nodeData := pubsub.NewNodeData(node.priorityAddrs, node.Host.ID(), publicEthAddress, pubsub.ActivityJoined)
+	nodeData.MultiaddrsString = node.priorityAddrs.String()
 	nodeData.IsStaked = node.Options.IsStaked
 	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
 	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
@@ -211,26 +220,19 @@ func (node *OracleNode) Start() (err error) {
 	go node.handleDiscoveredPeers()
 	go node.NodeTracker.ClearExpiredWorkerTimeouts()
 
-	var publicKeyHex string
-	if node.Options.RandomIdentity {
-		publicKeyHex, _ = node.generateEthHexKeyForRandomIdentity()
-	} else {
-		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
-	}
-
-	myNodeData := node.getNodeData(node.Host, node.priorityAddrs, publicKeyHex)
+	myNodeData := node.getNodeData()
 
 	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(node.Options.Bootnodes)
 	if err != nil {
 		return err
 	}
 
-	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
+	node.DHT, err = myNetwork.EnableDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
 		return err
 	}
 
-	err = myNetwork.WithMDNS(node.Host, config.Rendezvous, node.PeerChan)
+	err = myNetwork.EnableMDNS(node.Host, config.Rendezvous, node.PeerChan)
 	if err != nil {
 		return err
 	}
@@ -338,21 +340,6 @@ func (node *OracleNode) IsWorker() bool {
 func (node *OracleNode) IsPublisher() bool {
 	// Node is a publisher if it has a non-empty signature
 	return node.Signature != ""
-}
-
-// FromUnixTime converts a Unix timestamp into a formatted string.
-// The Unix timestamp is expected to be in seconds.
-// The returned string is in the format "2006-01-02T15:04:05.000Z".
-func (node *OracleNode) FromUnixTime(unixTime int64) string {
-	return time.Unix(unixTime, 0).Format("2006-01-02T15:04:05.000Z")
-}
-
-// ToUnixTime converts a formatted string time into a Unix timestamp.
-// The input string is expected to be in the format "2006-01-02T15:04:05.000Z".
-// The returned Unix timestamp is in seconds.
-func (node *OracleNode) ToUnixTime(stringTime string) int64 {
-	t, _ := time.Parse("2006-01-02T15:04:05.000Z", stringTime)
-	return t.Unix()
 }
 
 // Version returns the current version string of the oracle node software.

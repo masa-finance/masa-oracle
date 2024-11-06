@@ -1,13 +1,9 @@
 package db
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
 	"time"
 
 	"github.com/masa-finance/masa-oracle/node"
@@ -22,6 +18,7 @@ type WorkEvent struct {
 	Timestamp int64           `json:"timestamp"`
 }
 
+// WTF: What database? This just stores data in the DHT and in a cache
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
 func WriteData(node *node.OracleNode, key string, value []byte) error {
@@ -39,6 +36,7 @@ func WriteData(node *node.OracleNode, key string, value []byte) error {
 
 	var err error
 	node.DHT.ForceRefresh()
+	// WTF: if and else are functionally equivalent
 	if key != node.Host.ID().String() {
 		err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
 
@@ -47,9 +45,9 @@ func WriteData(node *node.OracleNode, key string, value []byte) error {
 			logrus.Errorf("[-] Error putting cache: %v", er)
 		}
 	} else {
-		err = node.DHT.PutValue(ctx, "/db/"+node.Host.ID().String(), value) // nodes private data based on node id
+		err = node.DHT.PutValue(ctx, "/db/"+key, value) // nodes private data based on node id
 
-		_, er := PutCache(ctx, node.Host.ID().String(), value)
+		_, er := PutCache(ctx, key, value)
 		if er != nil {
 			logrus.Errorf("[-] Error putting cache: %v", er)
 		}
@@ -101,52 +99,4 @@ func ReadData(node *node.OracleNode, key string) ([]byte, error) {
 	}
 
 	return val, nil
-}
-
-// SendToS3 sends a payload to an S3-compatible API.
-//
-// Parameters:
-//   - uid: The unique identifier for the payload.
-//   - payload: The payload to be sent, represented as a map of key-value pairs.
-//
-// Returns:
-//   - error: Returns an error if the operation fails, otherwise returns nil.
-func SendToS3(uid string, payload map[string]string) error {
-
-	apiURL := os.Getenv("API_URL")
-	authToken := "your-secret-token"
-
-	// Creating the JSON payload
-	// payload := map[string]string{
-	// 	"key1": "value1",
-	// 	"key2": "value2",
-	// }
-
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("[-] Failed to marshal JSON payload: %v", err)
-	}
-
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return fmt.Errorf("[-] Failed to create HTTP request: %v", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", authToken)
-
-	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("[-] Failed to send HTTP request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("[-] Received non-OK response: %s, body: %s", resp.Status, string(bodyBytes))
-	}
-
-	return nil
 }

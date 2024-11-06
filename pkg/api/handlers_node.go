@@ -383,8 +383,8 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"IsDiscordScraper":  false,
 			"IsTelegramScraper": false,
 			"IsWebScraper":      false,
-			"FirstJoined":       api.Node.FromUnixTime(time.Now().Unix()),
-			"LastJoined":        api.Node.FromUnixTime(time.Now().Unix()),
+			"FirstJoined":       fromUnixTime(time.Now().Unix()),
+			"LastJoined":        fromUnixTime(time.Now().Unix()),
 			"CurrentUptime":     "0",
 			"TotalUptime":       "0",
 			"Rewards":           "Coming Soon!",
@@ -402,8 +402,8 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				templateData["IsDiscordScraper"] = nd.IsDiscordScraper
 				templateData["IsTelegramScraper"] = nd.IsTelegramScraper
 				templateData["IsWebScraper"] = nd.IsWebScraper
-				templateData["FirstJoined"] = api.Node.FromUnixTime(nd.FirstJoinedUnix)
-				templateData["LastJoined"] = api.Node.FromUnixTime(nd.LastJoinedUnix)
+				templateData["FirstJoined"] = fromUnixTime(nd.FirstJoinedUnix)
+				templateData["LastJoined"] = fromUnixTime(nd.LastJoinedUnix)
 				templateData["CurrentUptime"] = pubsub.PrettyDuration(nd.GetCurrentUptime())
 				templateData["TotalUptime"] = pubsub.PrettyDuration(nd.GetAccumulatedUptime())
 				templateData["BytesScraped"] = "0 MB"
@@ -433,4 +433,11 @@ func (api *API) GetNodeApiKey() gin.HandlerFunc {
 			"message": jwtToken,
 		})
 	}
+}
+
+// fromUnixTime converts a Unix timestamp into a formatted string.
+// The Unix timestamp is expected to be in seconds.
+// The returned string is in the format "2006-01-02T15:04:05.000Z".
+func fromUnixTime(unixTime int64) string {
+	return time.Unix(unixTime, 0).Format("2006-01-02T15:04:05.000Z")
 }

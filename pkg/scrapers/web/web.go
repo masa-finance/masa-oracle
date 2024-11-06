@@ -66,11 +66,14 @@ func ScrapeWebData(uri []string, depth int) ([]byte, error) {
 	)
 
 	// Adjust the parallelism and delay based on your needs and server capacity
-	c.Limit(&colly.LimitRule{
+	err := c.Limit(&colly.LimitRule{
 		DomainGlob:  "*",
 		Parallelism: 4,                      // Increased parallelism
 		Delay:       500 * time.Millisecond, // Reduced delay
 	})
+	if err != nil {
+		logrus.Errorf("[-] Unable to set scraper limit. Using default. Error: %v", err)
+	}
 
 	// Increase the timeout slightly if necessary
 	c.SetRequestTimeout(240 * time.Second) // Increased to 4 minutes

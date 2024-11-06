@@ -118,6 +118,9 @@ func main() {
 	// Get the multiaddress and IP address of the node
 	multiAddr := masaNode.GetMultiAddrs()                      // Get the multiaddress
 	ipAddr, err := multiAddr.ValueForProtocol(multiaddr.P_IP4) // Get the IP address
+	if err != nil {
+		logrus.Errorf("[-] Error while getting node IP address from %v: %v", multiAddr, err)
+	}
 	// Display the welcome message with the multiaddress and IP address
 	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 

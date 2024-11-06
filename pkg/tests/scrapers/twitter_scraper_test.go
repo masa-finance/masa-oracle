@@ -1,3 +1,4 @@
+// TODO: This is a WIP
 // Package scrapers_test contains integration tests for the Twitter scraper functionality.
 //
 // Dev Notes:
@@ -97,7 +98,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
-		firstScraper = nil
+		firstScraper = nil // nolint: ineffassign
 
 		// Second authentication (should use cookies)
 		secondScraper := authenticate()
@@ -124,7 +125,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
-		firstScraper = nil
+		firstScraper = nil // nolint: ineffassign
 
 		// Second authentication (should use cookies)
 		secondScraper := authenticate()

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/gotd/contrib/bg"
 	"github.com/gotd/td/session"
@@ -21,7 +20,6 @@ import (
 
 var (
 	client     *telegram.Client
-	once       sync.Once
 	appID      int    // Your actual app ID
 	appHash    string // Your actual app hash
 	sessionDir = filepath.Join(os.Getenv("HOME"), ".telegram-sessions")

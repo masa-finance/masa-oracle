@@ -28,7 +28,7 @@ build: contracts/node_modules
 
 install:
 	@sh ./node_install.sh
-	
+
 run: build
 	@./bin/masa-node
 
@@ -47,13 +47,19 @@ client: build
 test: contracts/node_modules
 	@go test -coverprofile=coverage.txt -covermode=atomic -v ./...
 
+vet:
+	@go vet --all ./...
+
+lint:
+	golangci-lint run
+
 clean:
 	@rm -rf bin
-	
+
 	@if [ -d ~/.masa/blocks ]; then rm -rf ~/.masa/blocks; fi
 	@if [ -d ~/.masa/cache ]; then rm -rf ~/.masa/cache; fi	
 	@if [ -f masa_node.log ]; then rm masa_node.log; fi
-	
+
 proto:
 	sh pkg/workers/messages/build.sh
 
