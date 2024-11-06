@@ -54,6 +54,9 @@ vet:
 lint:
 	golangci-lint run
 
+format:
+    gofmt -s -w . && git diff --exit-code
+
 clean:
 	@rm -rf bin
 

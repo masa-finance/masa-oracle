@@ -27,11 +27,11 @@ jobs:
     - name: Download dependencies
       run: go mod download
 
-    - name: Verify module
+    - name: Verify go.sum
       run: go mod verify
 
-    - name: Go Format
-      run: gofmt -s -w . && git diff --exit-code
+    - name: Verify code formatting
+      run: make format && git diff --exit-code
 
     - name: Go Vet
       run: make vet
