@@ -1,3 +1,4 @@
+// TODO Rename this to something else, this is NOT a database (it just stores data in the DHT and in a cache)
 package db
 
 import (
@@ -18,7 +19,6 @@ type WorkEvent struct {
 	Timestamp int64           `json:"timestamp"`
 }
 
-// WTF: What database? This just stores data in the DHT and in a cache
 // WriteData encapsulates the logic for writing data to the database,
 // including access control checks from access_control.go.
 func WriteData(node *node.OracleNode, key string, value []byte) error {
@@ -36,21 +36,11 @@ func WriteData(node *node.OracleNode, key string, value []byte) error {
 
 	var err error
 	node.DHT.ForceRefresh()
-	// WTF: if and else are functionally equivalent
-	if key != node.Host.ID().String() {
-		err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
+	err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
 
-		_, er := PutCache(ctx, key, value)
-		if er != nil {
-			logrus.Errorf("[-] Error putting cache: %v", er)
-		}
-	} else {
-		err = node.DHT.PutValue(ctx, "/db/"+key, value) // nodes private data based on node id
-
-		_, er := PutCache(ctx, key, value)
-		if er != nil {
-			logrus.Errorf("[-] Error putting cache: %v", er)
-		}
+	_, er := PutCache(ctx, key, value)
+	if er != nil {
+		logrus.Errorf("[-] Error putting cache: %v", er)
 	}
 
 	if err != nil {
