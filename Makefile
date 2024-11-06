@@ -48,14 +48,13 @@ client: build
 test: contracts/node_modules
 	@go test -coverprofile=coverage.txt -covermode=atomic -v -count=1 -shuffle=on ./...
 
-vet:
+ci-lint:
+	go mod tidy && git diff --exit-code
+	go mod download
+	go mod verify
+	gofmt -s -w . && git diff --exit-code
 	go vet ./...
-
-lint:
 	golangci-lint run
-
-format:
-    gofmt -s -w . && git diff --exit-code
 
 clean:
 	@rm -rf bin

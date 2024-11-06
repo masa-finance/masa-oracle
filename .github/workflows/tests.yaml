@@ -21,26 +21,11 @@ jobs:
       with:
         go-version: '^1.22'
 
-    - name: Verify dependencies
-      run: go mod tidy && git diff --exit-code
-
-    - name: Download dependencies
-      run: go mod download
-
-    - name: Verify go.sum
-      run: go mod verify
-
-    - name: Verify code formatting
-      run: make format && git diff --exit-code
-
-    - name: Go Vet
-      run: make vet
-
     - name: Install golangci-lint
       run: sudo snap install golangci-lint --classic
 
-    - name: Go Lint
-      run: make lint
+    - name: Code formatting and linting
+      run: make ci-lint
 
     - name: Run tests
       run: make test
