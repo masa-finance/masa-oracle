@@ -44,11 +44,12 @@ stake: build
 client: build	
 	@./bin/masa-node-cli
 
+# TODO Add -race and fix race conditions
 test: contracts/node_modules
-	@go test -coverprofile=coverage.txt -covermode=atomic -v ./...
+	@go test -coverprofile=coverage.txt -covermode=atomic -v -count=1 -shuffle=on ./...
 
 vet:
-	@go vet --all ./...
+	go vet ./...
 
 lint:
 	golangci-lint run
