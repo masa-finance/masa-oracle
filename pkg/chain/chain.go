@@ -137,8 +137,7 @@ func (c *Chain) getNextBlockNumber() uint64 {
 // Returns:
 //   - error: An error if any operation fails during iteration, nil otherwise.
 func (c *Chain) IterateLink(each func(b *Block), pre, post func()) error {
-	err := c.UpdateLastHash()
-	if err != nil {
+	if err := c.UpdateLastHash(); err != nil {
 		return err
 	}
 
@@ -170,8 +169,7 @@ func (c *Chain) IterateLink(each func(b *Block), pre, post func()) error {
 //   - *Block: A pointer to the last block in the chain.
 //   - error: An error if the retrieval fails, nil otherwise.
 func (c *Chain) GetLastBlock() (*Block, error) {
-	err := c.UpdateLastHash()
-	if err != nil {
+	if err := c.UpdateLastHash(); err != nil {
 		return nil, err
 	}
 

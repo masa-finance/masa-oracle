@@ -38,8 +38,7 @@ func WriteData(node *node.OracleNode, key string, value []byte) error {
 	node.DHT.ForceRefresh()
 	err = node.DHT.PutValue(ctx, "/db/"+key, value) // any key value so the data is public
 
-	_, er := PutCache(ctx, key, value)
-	if er != nil {
+	if _, er := PutCache(ctx, key, value); er != nil {
 		logrus.Errorf("[-] Error putting cache: %v", er)
 	}
 
