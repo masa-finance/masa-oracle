@@ -9,7 +9,7 @@ type APIConfig struct {
 }
 
 var DefaultConfig = APIConfig{
-	WorkerResponseTimeout: 60 * time.Second,
+	WorkerResponseTimeout: 120 * time.Second,
 	// Set default values for other fields here
 }
 

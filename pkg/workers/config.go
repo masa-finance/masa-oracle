@@ -10,6 +10,7 @@ type WorkerConfig struct {
 	WorkerTimeout         time.Duration
 	WorkerResponseTimeout time.Duration
 	ConnectionTimeout     time.Duration
+	FindPeerTimeout       time.Duration
 	MaxRetries            int
 	MaxSpawnAttempts      int
 	WorkerBufferSize      int
@@ -17,9 +18,10 @@ type WorkerConfig struct {
 }
 
 var DefaultConfig = WorkerConfig{
-	WorkerTimeout:         45 * time.Second,
-	WorkerResponseTimeout: 35 * time.Second,
-	ConnectionTimeout:     500 * time.Millisecond,
+	WorkerTimeout:         55 * time.Second,
+	WorkerResponseTimeout: 45 * time.Second,
+	ConnectionTimeout:     75 * time.Millisecond,
+	FindPeerTimeout:       50 * time.Millisecond,
 	MaxRetries:            1,
 	MaxSpawnAttempts:      1,
 	WorkerBufferSize:      100,
