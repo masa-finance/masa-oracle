@@ -59,7 +59,9 @@ func createWorkerList(node *node.OracleNode, nodes []pubsub.NodeData, limit int)
 				Addrs: node.Host.Addrs(),
 			}
 			localWorker = &data_types.Worker{IsLocal: true, NodeData: eligible, AddrInfo: &localAddrInfo}
-			continue
+			if !node.Options.UseLocalWorkerAsRemote {
+				continue
+			}
 		}
 		workers = append(workers, data_types.Worker{IsLocal: false, NodeData: eligible})
 

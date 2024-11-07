@@ -7,8 +7,9 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 var (
@@ -24,7 +25,7 @@ func initializeAccountManager() {
 func loadAccountsFromConfig() []*TwitterAccount {
 	err := godotenv.Load()
 	if err != nil {
-		logrus.Fatalf("error loading .env file: %v", err)
+		logrus.Errorf("error loading .env file: %v", err)
 	}
 
 	accountsEnv := os.Getenv("TWITTER_ACCOUNTS")

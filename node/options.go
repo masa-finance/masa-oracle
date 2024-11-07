@@ -22,14 +22,15 @@ type NodeOption struct {
 	IsWebScraper      bool
 	IsLlmServer       bool
 
-	Bootnodes            []string
-	RandomIdentity       bool
-	Services             []func(ctx context.Context, node *OracleNode)
-	PubSubHandles        []PubSubHandlers
-	ProtocolHandlers     map[protocol.ID]network.StreamHandler
-	MasaProtocolHandlers map[string]network.StreamHandler
-	Environment          string
-	Version              string
+	Bootnodes              []string
+	RandomIdentity         bool
+	UseLocalWorkerAsRemote bool
+	Services               []func(ctx context.Context, node *OracleNode)
+	PubSubHandles          []PubSubHandlers
+	ProtocolHandlers       map[protocol.ID]network.StreamHandler
+	MasaProtocolHandlers   map[string]network.StreamHandler
+	Environment            string
+	Version                string
 }
 
 type PubSubHandlers struct {
@@ -78,6 +79,10 @@ var IsWebScraper = func(o *NodeOption) {
 
 var IsLlmServer = func(o *NodeOption) {
 	o.IsLlmServer = true
+}
+
+var UseLocalWorkerAsRemote = func(o *NodeOption) {
+	o.UseLocalWorkerAsRemote = true
 }
 
 func (a *NodeOption) Apply(opts ...Option) {
