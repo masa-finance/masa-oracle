@@ -382,11 +382,10 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		net.NodeDataChan <- nodeData
 		net.nodeData.Set(nodeData.PeerId.String(), nodeData)
 	} else {
+		dataChanged = true
 		if !nd.SelfIdentified {
-			dataChanged = true
 			nd.SelfIdentified = true
 		}
-		dataChanged = true
 		nd.IsStaked = nodeData.IsStaked
 		nd.IsDiscordScraper = nodeData.IsDiscordScraper
 		nd.IsTelegramScraper = nodeData.IsTelegramScraper
@@ -396,7 +395,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 		nd.Multiaddrs = nodeData.Multiaddrs
 		nd.EthAddress = nodeData.EthAddress
 		if nd.EthAddress == "" && nodeData.EthAddress != "" {
-			dataChanged = true
 			nd.EthAddress = nodeData.EthAddress
 		}
 

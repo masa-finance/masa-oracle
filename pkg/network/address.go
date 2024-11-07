@@ -38,16 +38,8 @@ func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	return addresses, nil
 }
 
-// GetMultiAddressesForHostQuiet returns the multiaddresses for the host without logging
-func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
-	ma, err := GetMultiAddressesForHost(host)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return ma
-}
-
-// getPublicMultiAddress returns the best public IP address
+// getPublicMultiAddress returns the best public IP address (for some definition of "best")
+// TODO: This is not guaranteed to work, and should not be necessary since we're using AutoNAT
 func getPublicMultiAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	ipBytes, err := Get("https://api.ipify.org?format=text", nil)
 	externalIP := net.ParseIP(string(ipBytes))
@@ -60,9 +52,8 @@ func getPublicMultiAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	}
 
 	var addrToCopy multiaddr.Multiaddr
-	for _, addr := range addrs {
-		addrToCopy = addr
-		break
+	if len(addrs) > 0 {
+		addrToCopy = addrs[0]
 	}
 	publicMultiaddr, err := replaceIPComponent(addrToCopy, externalIP.String())
 	if err != nil {
@@ -73,6 +64,7 @@ func getPublicMultiAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 }
 
 // GetPriorityAddress returns the best public or private IP address
+// TODO rm?
 func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	var bestPrivateAddr multiaddr.Multiaddr
 	bestPublicAddr := getPublicMultiAddress(addrs)
@@ -154,15 +146,6 @@ func replaceIPComponent(maddr multiaddr.Multiaddr, newIP string) (multiaddr.Mult
 	}
 	return multiaddr.Join(components...), nil
 }
-
-//func contains(slice []multiaddr.Multiaddr, item multiaddr.Multiaddr) bool {
-//	for _, a := range slice {
-//		if a.Equal(item) {
-//			return true
-//		}
-//	}
-//	return false
-//}
 
 func getGCPExternalIP() (bool, string) {
 

@@ -2,7 +2,6 @@ package workers
 
 import (
 	"math/rand"
-	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
@@ -34,7 +33,6 @@ func getTwitterWorkers(node *node.OracleNode, nodes []pubsub.NodeData, limit int
 	topPerformers := nodes[:poolSize]
 
 	// Shuffle the top performers
-	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(topPerformers), func(i, j int) {
 		topPerformers[i], topPerformers[j] = topPerformers[j], topPerformers[i]
 	})

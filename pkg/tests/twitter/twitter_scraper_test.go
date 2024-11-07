@@ -90,7 +90,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
-		firstScraper = nil
+		firstScraper = nil // nolint: ineffassign
 
 		// Second authentication (should use cookies)
 		secondScraper := authenticate()
@@ -117,7 +117,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
-		firstScraper = nil
+		firstScraper = nil // nolint: ineffassign
 
 		// Second authentication (should use cookies)
 		secondScraper := authenticate()

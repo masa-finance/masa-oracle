@@ -45,7 +45,7 @@ func (c *EventClient) SendEvent(event Event) error {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-
+			c.Logger.WithError(err).Error("Failed to close body")
 		}
 	}(resp.Body)
 

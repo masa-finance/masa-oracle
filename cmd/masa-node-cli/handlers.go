@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -43,21 +42,6 @@ func handleIPAddress(multiAddr string) string {
 	return ""
 }
 
-// handleOpenFile reads the content of a file specified by the filename 'f' and returns it as a string.
-// If the file cannot be read, the function logs a fatal error and exits the program.
-// Parameters:
-// - f: The name of the file to read.
-// Returns:
-// - A string containing the content of the file.
-// func handleOpenFile(f string) string {
-// 	dat, err := os.ReadFile(f)
-// 	if err != nil {
-// 		log.Print(err)
-// 		return ""
-// 	}
-// 	return string(dat)
-// }
-
 // handleSaveFile writes the provided content to a file specified by the filename 'f'.
 // It appends the content to the file if it already exists, or creates a new file with the content if it does not.
 // The file is created with permissions set to 0755.
@@ -66,9 +50,14 @@ func handleIPAddress(multiAddr string) string {
 // - content: The content to write to the file.
 func handleSaveFile(f string, content string) {
 	file, err := os.OpenFile(f, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-	file.WriteString(content + "\n")
 	if err != nil {
-		log.Println(err)
+		logrus.Errorf("[-] Error while opening file %s for writing: %v", f, err)
+		return
+	}
+
+	_, err = file.WriteString(content + "\n")
+	if err != nil {
+		logrus.Errorf("[-] Error while writing to file %s: %v", f, err)
 		return
 	}
 }
@@ -84,7 +73,7 @@ func handleSaveFile(f string, content string) {
 func handleGPT(prompt string, userMessage string) (string, error) {
 	key := os.Getenv("OPENAI_API_KEY")
 	if key == "" {
-		log.Println("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
+		logrus.Println("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
 		return "", errors.New("OPENAI_API_KEY is not set")
 	}
 	client := openai.NewClient(key)
@@ -105,7 +94,7 @@ func handleGPT(prompt string, userMessage string) (string, error) {
 		},
 	)
 	if err != nil {
-		log.Print(err)
+		logrus.Errorf("[-] Error while getting ChatGPT completion: %v", err)
 		return "", err
 	}
 	return resp.Choices[0].Message.Content, nil
@@ -131,7 +120,7 @@ func handleSpeak(response string) {
 
 	req, err := http.NewRequest(http.MethodPost, os.Getenv("ELAB_URL"), bytes.NewBuffer(buf))
 	if err != nil {
-		log.Print(err)
+		logrus.Errorf("[-] Error while creating HTTP request to %s: %v", os.Getenv("ELAB_URL"), err)
 		return
 	}
 	req.Header.Set("accept", "*/*")
@@ -140,7 +129,7 @@ func handleSpeak(response string) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Print(err)
+		logrus.Errorf("[-] Error while sending HTTP POST to %s: %v", os.Getenv("ELAB_URL"), err)
 		return
 	}
 	defer resp.Body.Close()
@@ -148,19 +137,39 @@ func handleSpeak(response string) {
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Print(err)
+			logrus.Errorf("[-] Error while reading HTTP reply from ElevenLabs API: %v", err)
 			return
 		}
+
+		// TODO: Configure filename
 		file, err := os.Create("output.mp3")
-		file.Write(bodyBytes)
 		if err != nil {
-			log.Print(err)
+			logrus.Errorf("[-] Error while opening output.mp3 for writing: %v", err)
 			return
-		} else {
-			cmd := exec.Command("afplay", "output.mp3")
-			go cmd.Run()
-			go handleTranscribe("output.mp3", "transcription.txt")
 		}
+
+		_, err = file.Write(bodyBytes)
+		if err != nil {
+			logrus.Errorf("[-] Error while writing voice data to output.mp3: %v", err)
+			return
+		}
+
+		// TODO: Is afplay available in all platforms? Perhaps configure?
+		cmd := exec.Command("afplay", "output.mp3")
+		go func() {
+			err := cmd.Run()
+			if err != nil {
+				logrus.Errorf("[-] Error while playing output using %s: %v", cmd, err)
+			}
+		}()
+		go func() {
+			err := handleTranscribe("output.mp3", "transcription.txt")
+			if err != nil {
+				logrus.Errorf("[-] Error while transcribing audio: %v", err)
+			}
+		}()
+
+		// TODO: perhaps rm output.mp3?
 	}
 }
 
@@ -169,8 +178,7 @@ func handleSpeak(response string) {
 func handleTranscribe(audioFile string, txtFile string) error {
 	key := os.Getenv("OPENAI_API_KEY")
 	if key == "" {
-		log.Println("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
-		return errors.New("OPENAI_API_KEY is not set")
+		return errors.New("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
 	}
 	client := openai.NewClient(key)
 	ctx := context.Background()
@@ -178,13 +186,13 @@ func handleTranscribe(audioFile string, txtFile string) error {
 		Model:    openai.Whisper1,
 		FilePath: audioFile,
 	}
+
 	resp, err := client.CreateTranscription(ctx, req)
 	if err != nil {
-		fmt.Printf("Transcription error: %v\n", err)
 		return err
-	} else {
-		handleSaveFile(txtFile, resp.Text)
 	}
+
+	handleSaveFile(txtFile, resp.Text)
 	return nil
 }
 

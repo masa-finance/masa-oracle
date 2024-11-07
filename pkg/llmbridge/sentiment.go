@@ -370,31 +370,31 @@ func AnalyzeSentimentTelegram(messages []*tg.Message, model string, prompt strin
 
 		requestJSON, err := json.Marshal(genReq)
 		if err != nil {
-			logrus.Errorf("Error marshaling request JSON: %v", err)
+			logrus.Errorf("[-] Error marshaling request JSON: %v", err)
 			return "", "", err
 		}
 		uri := config.GetInstance().LLMChatUrl
 		if uri == "" {
-			errMsg := "ollama api url not set"
-			logrus.Errorf(errMsg)
-			return "", "", errors.New(errMsg)
+			err := errors.New("[-] ollama api url not set")
+			logrus.Errorf("%v", err)
+			return "", "", err
 		}
 		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))
 		if err != nil {
-			logrus.Errorf("Error sending request to API: %v", err)
+			logrus.Errorf("[-] Error sending request to API: %v", err)
 			return "", "", err
 		}
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			logrus.Errorf("Error reading response body: %v", err)
+			logrus.Errorf("[-] Error reading response body: %v", err)
 			return "", "", err
 		}
 
 		var payload api.ChatResponse
 		err = json.Unmarshal(body, &payload)
 		if err != nil {
-			logrus.Errorf("Error unmarshaling response JSON: %v", err)
+			logrus.Errorf("[-] Error unmarshaling response JSON: %v", err)
 			return "", "", err
 		}
 

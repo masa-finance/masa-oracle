@@ -15,11 +15,13 @@ func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Leg
 
 	followingResponse, errString, _ := scraper.FetchFollowers(username, count, "")
 	if errString != "" {
-		if handleRateLimit(fmt.Errorf(errString), account) {
-			return nil, fmt.Errorf("rate limited")
+		err := fmt.Errorf("rate limited: %s", errString)
+		if handleRateLimit(err, account) {
+			return nil, err
 		}
-		logrus.Errorf("Error fetching followers: %v", errString)
-		return nil, fmt.Errorf("%v", errString)
+
+		logrus.Errorf("[-] Error fetching followers: %s", errString)
+		return nil, fmt.Errorf("error fetching followers: %s", errString)
 	}
 
 	return followingResponse, nil
