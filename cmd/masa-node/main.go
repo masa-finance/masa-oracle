@@ -70,8 +70,6 @@ func main() {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	isValidator := cfg.Validator
-
 	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg)
 	// Create a new OracleNode
 	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
@@ -80,8 +78,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	err = masaNode.Start()
-	if err != nil {
+	if err = masaNode.Start(); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -122,7 +119,7 @@ func main() {
 		logrus.Errorf("[-] Error while getting node IP address from %v: %v", multiAddr, err)
 	}
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
+	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 
 	<-ctx.Done()
 }

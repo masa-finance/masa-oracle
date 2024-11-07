@@ -38,16 +38,6 @@ func GetMultiAddressesForHost(host host.Host) ([]multiaddr.Multiaddr, error) {
 	return addresses, nil
 }
 
-// GetMultiAddressesForHostQuiet returns the multiaddresses for the host without logging
-// TODO rm
-func GetMultiAddressesForHostQuiet(host host.Host) []multiaddr.Multiaddr {
-	ma, err := GetMultiAddressesForHost(host)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return ma
-}
-
 // getPublicMultiAddress returns the best public IP address (for some definition of "best")
 // TODO: This is not guaranteed to work, and should not be necessary since we're using AutoNAT
 func getPublicMultiAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {

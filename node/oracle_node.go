@@ -135,9 +135,13 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 		return nil, err
 	}
 
+	ma, err := myNetwork.GetMultiAddressesForHost(hst)
+	if err != nil {
+		return nil, err
+	}
 	n := &OracleNode{
 		Host:          hst,
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
+		multiAddrs:    ma,
 		PeerChan:      make(chan myNetwork.PeerEvent),
 		NodeTracker:   pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
 		Context:       ctx,

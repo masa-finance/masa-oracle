@@ -68,16 +68,9 @@ func ReadData(node *node.OracleNode, key string) ([]byte, error) {
 	var err error
 	var val []byte
 
-	if key != node.Host.ID().String() {
-		val, err = GetCache(ctx, key)
-		if val == nil || err != nil {
-			val, err = node.DHT.GetValue(ctx, "/db/"+key)
-		}
-	} else {
-		val, err = GetCache(ctx, node.Host.ID().String())
-		if val == nil || err != nil {
-			val, err = node.DHT.GetValue(ctx, "/db/"+node.Host.ID().String())
-		}
+	val, err = GetCache(ctx, key)
+	if val == nil || err != nil {
+		val, err = node.DHT.GetValue(ctx, "/db/"+key)
 	}
 
 	if err != nil {
