@@ -9,20 +9,19 @@ import (
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
-func handleStaking(privateKey *ecdsa.PrivateKey, cfg *config.AppConfig) error {
+func handleStaking(rpcUrl string, privateKey *ecdsa.PrivateKey, stakeAmount string) error {
 	// Staking logic
 	// Convert the stake amount to the smallest unit, assuming 18 decimal places
-	amountBigInt, ok := new(big.Int).SetString(cfg.StakeAmount, 10)
+	amountBigInt, ok := new(big.Int).SetString(stakeAmount, 10)
 	if !ok {
 		logrus.Fatal("Invalid stake amount")
 	}
 	amountInSmallestUnit := new(big.Int).Mul(amountBigInt, big.NewInt(1e18))
 
-	stakingClient, err := staking.NewClient(privateKey)
+	stakingClient, err := staking.NewClient(rpcUrl, privateKey)
 	if err != nil {
 		return err
 	}
@@ -86,8 +85,8 @@ func handleStaking(privateKey *ecdsa.PrivateKey, cfg *config.AppConfig) error {
 	return nil
 }
 
-func handleFaucet(privateKey *ecdsa.PrivateKey) error {
-	faucetClient, err := staking.NewClient(privateKey)
+func handleFaucet(rpcUrl string, privateKey *ecdsa.PrivateKey) error {
+	faucetClient, err := staking.NewClient(rpcUrl, privateKey)
 	if err != nil {
 		logrus.Error("[-] Failed to create staking client:", err)
 		return err

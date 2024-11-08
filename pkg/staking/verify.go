@@ -9,21 +9,14 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 // VerifyStakingEvent checks if the given user address has staked tokens by
 // calling the stakes() view function on the ProtocolStaking contract.
 // It connects to an Ethereum node, encodes the stakes call, calls the contract,
 // unpacks the result, and returns true if the stakes amount is > 0.
-func VerifyStakingEvent(userAddress string) (bool, error) {
-	rpcURL := config.GetInstance().RpcUrl
-	if rpcURL == "" {
-		return false, fmt.Errorf("%s is not set", config.RpcUrl)
-	}
-
-	client, err := ethclient.Dial(rpcURL)
+func VerifyStakingEvent(rpcUrl string, userAddress string) (bool, error) {
+	client, err := ethclient.Dial(rpcUrl)
 	if err != nil {
 		return false, fmt.Errorf("[-] Failed to connect to the Ethereum client: %v", err)
 	}

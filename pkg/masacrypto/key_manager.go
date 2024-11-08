@@ -59,6 +59,7 @@ type KeyManager struct {
 
 // KeyManagerInstance returns the singleton instance of KeyManager, initializing it if necessary.
 func KeyManagerInstance() *KeyManager {
+	// TODO When removing this singleton, also remove the config.GetInstance() from loadPrivateKey()
 	once.Do(func() {
 		keyManagerInstance = &KeyManager{}
 		if err := keyManagerInstance.loadPrivateKey(); err != nil {
@@ -85,7 +86,7 @@ func (km *KeyManager) loadPrivateKey() (err error) {
 			return err
 		}
 	} else {
-		keyFile = config.GetInstance().PrivateKeyFile
+		keyFile = cfg.PrivateKeyFile
 		// Check if the private key file exists
 		km.Libp2pPrivKey, err = getPrivateKeyFromFile(keyFile)
 		if err != nil {

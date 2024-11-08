@@ -24,15 +24,13 @@ type GPTClient struct {
 }
 
 // NewClaudeClient creates a new ClaudeClient instance with default configuration.
-func NewClaudeClient() *ClaudeClient {
-	cnf := NewClaudeAPIConfig()
-	return &ClaudeClient{config: cnf}
+func NewClaudeClient(config *ClaudeAPIConfig) *ClaudeClient {
+	return &ClaudeClient{config: config}
 }
 
 // NewGPTClient creates a new GPTClient instance with default configuration.
-func NewGPTClient() *GPTClient {
-	cnf := NewGPTConfig()
-	return &GPTClient{config: cnf}
+func NewGPTClient(config *GPTAPIConfig) *GPTClient {
+	return &GPTClient{config: config}
 }
 
 // SendRequest sends an HTTP request to the Claude API with the given payload.

@@ -40,7 +40,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if cfg.Faucet {
-		err := handleFaucet(keyManager.EcdsaPrivKey)
+		err := handleFaucet(cfg.RpcUrl, keyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Errorf("[-] %v", err)
 			os.Exit(1)
@@ -51,7 +51,7 @@ func main() {
 	}
 
 	if cfg.StakeAmount != "" {
-		err := handleStaking(keyManager.EcdsaPrivKey, cfg)
+		err := handleStaking(cfg.RpcUrl, keyManager.EcdsaPrivKey, cfg.StakeAmount)
 		if err != nil {
 			logrus.Warningf("%v", err)
 		} else {
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	// Verify the staking event
-	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
+	isStaked, err := staking.VerifyStakingEvent(cfg.RpcUrl, keyManager.EthAddress)
 	if err != nil {
 		logrus.Error(err)
 	}
