@@ -50,8 +50,7 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 	blockChainEventTracker := node.NewBlockChain()
 	pubKeySub := &pubsub.PublicKeySubscriptionHandler{}
 
-	// TODO: Where the config is involved, move to the config the generation of
-	// Node options
+	// TODO: Where the config is involved, move to the config the generation of Node options
 	masaNodeOptions = append(masaNodeOptions, []node.Option{
 		// Register the worker manager
 		node.WithMasaProtocolHandler(
@@ -68,7 +67,7 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 		// and other peers can do work we only need to check this here
 		// if this peer can or cannot scrape or write that is checked in other places
 		masaNodeOptions = append(masaNodeOptions,
-			node.WithService(blockChainEventTracker.Start(config.GetInstance().MasaDir)),
+			node.WithService(blockChainEventTracker.Start(cfg.MasaDir)),
 		)
 	}
 

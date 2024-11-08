@@ -13,10 +13,10 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
-func handleStaking(privateKey *ecdsa.PrivateKey) error {
+func handleStaking(privateKey *ecdsa.PrivateKey, cfg *config.AppConfig) error {
 	// Staking logic
 	// Convert the stake amount to the smallest unit, assuming 18 decimal places
-	amountBigInt, ok := new(big.Int).SetString(config.GetInstance().StakeAmount, 10)
+	amountBigInt, ok := new(big.Int).SetString(cfg.StakeAmount, 10)
 	if !ok {
 		logrus.Fatal("Invalid stake amount")
 	}

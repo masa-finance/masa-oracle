@@ -51,7 +51,7 @@ func main() {
 	}
 
 	if cfg.StakeAmount != "" {
-		err := handleStaking(keyManager.EcdsaPrivKey)
+		err := handleStaking(keyManager.EcdsaPrivKey, cfg)
 		if err != nil {
 			logrus.Warningf("%v", err)
 		} else {
