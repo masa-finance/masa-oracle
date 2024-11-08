@@ -1,4 +1,4 @@
-// TODO Rename this to something else, this is NOT a database (it just stores data in the DHT and in a cache)
+// TODO: Rename this to something else, this is NOT a database (it just stores data in the DHT and in a cache)
 package db
 
 import (

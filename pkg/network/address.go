@@ -64,7 +64,7 @@ func getPublicMultiAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 }
 
 // GetPriorityAddress returns the best public or private IP address
-// TODO rm?
+// TODO: rm?
 func GetPriorityAddress(addrs []multiaddr.Multiaddr) multiaddr.Multiaddr {
 	var bestPrivateAddr multiaddr.Multiaddr
 	bestPublicAddr := getPublicMultiAddress(addrs)
