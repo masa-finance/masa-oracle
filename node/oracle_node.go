@@ -246,7 +246,7 @@ func (node *OracleNode) Start() (err error) {
 		go p(node.Context, node)
 	}
 
-	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
+	go myNetwork.Discover(node.Context, node.Options.Bootnodes, node.Host, node.DHT, node.Protocol)
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {

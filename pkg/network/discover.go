@@ -10,8 +10,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
-
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -24,7 +22,7 @@ import (
 // It initializes discovery via the DHT and advertises this node.
 // It runs discovery in a loop with a ticker, re-advertising and finding new peers.
 // For each discovered peer, it checks if already connected, and if not, dials them.
-func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol protocol.ID) {
+func Discover(ctx context.Context, bootNodes []string, host host.Host, dht *dht.IpfsDHT, protocol protocol.ID) {
 	var routingDiscovery *routing.RoutingDiscovery
 	protocolString := string(protocol)
 	logrus.Infof("[+] Discovering peers for protocol: %s", protocolString)
@@ -97,16 +95,12 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 					ID:    availPeer.ID,
 					Addrs: availPeer.Addrs,
 				}
-				hostAddrInfo := peer.AddrInfo{
-					ID:    host.ID(),
-					Addrs: host.Addrs(),
-				}
-				if availPeerAddrInfo.ID.String() == hostAddrInfo.ID.String() {
+				if availPeerAddrInfo.ID == host.ID() {
 					logrus.Debugf("Skipping connect to self: %s", availPeerAddrInfo.ID.String())
 					continue
 				}
 				if len(availPeerAddrInfo.Addrs) == 0 {
-					for _, bn := range config.GetInstance().Bootnodes {
+					for _, bn := range bootNodes {
 						bootNode := strings.Split(bn, "/")[len(strings.Split(bn, "/"))-1]
 						if availPeerAddrInfo.ID.String() != bootNode {
 							logrus.Warningf("Skipping connect to non bootnode peer with no multiaddress: %s", availPeerAddrInfo.ID.String())
@@ -117,7 +111,7 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 				logrus.Infof("[+] Available Peer: %s", availPeer.String())
 
 				if host.Network().Connectedness(availPeer.ID) != network.Connected {
-					if isConnectedToBootnode(host, config.GetInstance().Bootnodes) {
+					if isConnectedToBootnode(host, bootNodes) {
 						_, err := host.Network().DialPeer(ctx, availPeer.ID)
 						if err != nil {
 							logrus.Warningf("[-] Failed to connect to peer %s, will retry...", availPeer.ID.String())
@@ -126,10 +120,10 @@ func Discover(ctx context.Context, host host.Host, dht *dht.IpfsDHT, protocol pr
 							logrus.Infof("[+] Connected to peer %s", availPeer.ID.String())
 						}
 					} else {
-						for _, bn := range config.GetInstance().Bootnodes {
+						for _, bn := range bootNodes {
 							if len(bn) > 0 {
 								logrus.Info("[-] Not connected to any bootnode. Attempting to reconnect...")
-								reconnectToBootnodes(ctx, host, config.GetInstance().Bootnodes)
+								reconnectToBootnodes(ctx, host, bootNodes)
 							}
 						}
 					}

@@ -45,11 +45,8 @@ type Record struct {
 // Note: The specific implementation details of the `InitResolverCache` function are not provided in the given code snippet. The function signature suggests that it initializes the resolver cache, but the actual initialization logic would be present in the function body.
 func InitResolverCache(node *node.OracleNode, keyManager *masacrypto.KeyManager) {
 	var err error
-	cachePath := config.GetInstance().CachePath
-	if cachePath == "" {
-		cachePath = config.GetInstance().MasaDir + "/cache"
-	}
-	cache, err = leveldb.NewDatastore(cachePath, nil)
+
+	cache, err = leveldb.NewDatastore(node.Options.CachePath, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

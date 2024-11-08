@@ -43,7 +43,7 @@ func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
 	}
 
 	if options.isLLMServerWorker {
-		whm.addWorkHandler(data_types.LLMChat, &handlers.LLMChatHandler{})
+		whm.addWorkHandler(data_types.LLMChat, handlers.NewLLMChatHandler(options.llmChatUrl))
 	}
 
 	if options.isDiscordScraperWorker {

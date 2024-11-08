@@ -9,8 +9,15 @@ import (
 
 func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerManager, *pubsub.PublicKeySubscriptionHandler) {
 	// WorkerManager configuration
-	// XXX: this needs to be moved under config, but now it's here as there are import cycles given singletons
-	workerManagerOptions := []workers.WorkerOptionFunc{}
+	// TODO: this needs to be moved under config, but now it's here as there are import cycles given singletons
+	workerManagerOptions := []workers.WorkerOptionFunc{
+		workers.WithLlmChatUrl(cfg.LLMChatUrl),
+	}
+
+	cachePath := cfg.CachePath
+	if cachePath == "" {
+		cachePath = cfg.MasaDir + "/cache"
+	}
 
 	masaNodeOptions := []node.Option{
 		node.EnableStaked,
@@ -19,6 +26,8 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 		node.WithVersion(cfg.Version),
 		node.WithPort(cfg.PortNbr),
 		node.WithBootNodes(cfg.Bootnodes...),
+		node.WithMasaDir(cfg.MasaDir),
+		node.WithCachePath(cachePath),
 	}
 
 	if cfg.TwitterScraper {
