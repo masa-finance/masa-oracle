@@ -43,7 +43,7 @@ type Record struct {
 // The purpose of this function is to initialize the resolver cache and perform any necessary setup or configuration. It associates the resolver cache with the provided Masa Oracle node and key manager.
 //
 // Note: The specific implementation details of the `InitResolverCache` function are not provided in the given code snippet. The function signature suggests that it initializes the resolver cache, but the actual initialization logic would be present in the function body.
-func InitResolverCache(node *node.OracleNode, keyManager *masacrypto.KeyManager) {
+func InitResolverCache(node *node.OracleNode, keyManager *masacrypto.KeyManager, allowedPeerID string, allowedPeerPubKeyString string, isValidator bool) {
 	var err error
 
 	cache, err = leveldb.NewDatastore(node.Options.CachePath, nil)
@@ -57,7 +57,7 @@ func InitResolverCache(node *node.OracleNode, keyManager *masacrypto.KeyManager)
 	if err != nil {
 		logrus.Errorf("[-] Error signing data: %v", err)
 	}
-	_ = Verifier(node.Host, data, signature)
+	_ = Verifier(node.Host, data, signature, allowedPeerID, allowedPeerPubKeyString, isValidator)
 
 	go monitorNodeData(context.Background(), node)
 

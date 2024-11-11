@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -62,8 +61,7 @@ func (c *GPTClient) SendRequest(payload string, model string, prompt string) (st
 		break
 	}
 
-	cfg := config.GetInstance()
-	key := cfg.GPTApiKey
+	key := c.config.APIKey
 	if key == "" {
 		return "", errors.New("OPENAI_API_KEY is not set")
 	}

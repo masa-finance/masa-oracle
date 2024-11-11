@@ -95,7 +95,7 @@ func main() {
 	}
 
 	// Init cache resolver
-	db.InitResolverCache(masaNode, keyManager)
+	db.InitResolverCache(masaNode, keyManager, cfg.AllowedPeerId, cfg.AllowedPeerPublicKey, cfg.Validator)
 
 	// Cancel the context when SIGINT is received
 	go handleSignals(cancel, masaNode, cfg)

@@ -59,10 +59,10 @@ type KeyManager struct {
 
 // KeyManagerInstance returns the singleton instance of KeyManager, initializing it if necessary.
 func KeyManagerInstance() *KeyManager {
-	// TODO When removing this singleton, also remove the config.GetInstance() from loadPrivateKey()
 	once.Do(func() {
+		cfg := config.GetInstance()
 		keyManagerInstance = &KeyManager{}
-		if err := keyManagerInstance.loadPrivateKey(); err != nil {
+		if err := keyManagerInstance.loadPrivateKey(cfg.PrivateKey, cfg.PrivateKeyFile); err != nil {
 			logrus.Fatal("[-] Failed to initialize keys:", err)
 		}
 	})
@@ -77,16 +77,15 @@ func KeyManagerInstance() *KeyManager {
 // The private key is loaded into both Libp2p and ECDSA formats for use by
 // different parts of the system. The public key and hex-encoded key representations
 // are also derived.
-func (km *KeyManager) loadPrivateKey() (err error) {
+func (km *KeyManager) loadPrivateKey(privateKey string, privateKeyFile string) (err error) {
 	var keyFile string
-	cfg := config.GetInstance()
-	if len(cfg.PrivateKey) > 0 {
-		km.Libp2pPrivKey, err = getPrivateKeyFromEnv(cfg.PrivateKey)
+	if len(privateKey) > 0 {
+		km.Libp2pPrivKey, err = getPrivateKeyFromEnv(privateKey)
 		if err != nil {
 			return err
 		}
 	} else {
-		keyFile = cfg.PrivateKeyFile
+		keyFile = privateKeyFile
 		// Check if the private key file exists
 		km.Libp2pPrivKey, err = getPrivateKeyFromFile(keyFile)
 		if err != nil {
