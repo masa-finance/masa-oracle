@@ -10,26 +10,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
-type TelegramSentimentHandler struct{}
 type TelegramChannelHandler struct{}
-
-// HandleWork implements the WorkHandler interface for TelegramSentimentHandler.
-func (h *TelegramSentimentHandler) HandleWork(data []byte) data_types.WorkResponse {
-	logrus.Infof("[+] TelegramSentimentHandler %s", data)
-	dataMap, err := JsonBytesToMap(data)
-	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse telegram json data: %v", err)}
-	}
-	userName := dataMap["username"].(string)
-	model := dataMap["model"].(string)
-	prompt := dataMap["prompt"].(string)
-	_, resp, err := telegram.ScrapeTelegramMessagesForSentiment(context.Background(), userName, model, prompt)
-	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get telegram sentiment: %v", err)}
-	}
-	logrus.Infof("[+] TelegramSentimentHandler Work response for %s: %d records returned", data_types.TelegramSentiment, 1)
-	return data_types.WorkResponse{Data: resp, RecordCount: 1}
-}
 
 // HandleWork implements the WorkHandler interface for TelegramChannelHandler.
 func (h *TelegramChannelHandler) HandleWork(data []byte) data_types.WorkResponse {
