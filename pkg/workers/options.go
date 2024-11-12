@@ -5,6 +5,8 @@ type WorkerOption struct {
 	isWebScraperWorker     bool
 	isLLMServerWorker      bool
 	isDiscordScraperWorker bool
+	llmChatUrl             string
+	masaDir                string
 }
 
 type WorkerOptionFunc func(*WorkerOption)
@@ -23,6 +25,18 @@ var EnableLLMServerWorker = func(o *WorkerOption) {
 
 var EnableDiscordScraperWorker = func(o *WorkerOption) {
 	o.isDiscordScraperWorker = true
+}
+
+func WithLlmChatUrl(url string) WorkerOptionFunc {
+	return func(o *WorkerOption) {
+		o.llmChatUrl = url
+	}
+}
+
+func WithMasaDir(dir string) WorkerOptionFunc {
+	return func(o *WorkerOption) {
+		o.masaDir = dir
+	}
 }
 
 func (a *WorkerOption) Apply(opts ...WorkerOptionFunc) {

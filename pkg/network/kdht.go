@@ -30,7 +30,7 @@ type dbValidator struct{}
 func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
 func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 
-func WithDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr, protocolId, prefix protocol.ID, peerChan chan PeerEvent, nodeData *pubsub.NodeData) (*dht.IpfsDHT, error) {
+func EnableDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr, protocolId, prefix protocol.ID, peerChan chan PeerEvent, nodeData *pubsub.NodeData) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
 	options = append(options, dht.Concurrency(100))                         // Increase concurrency

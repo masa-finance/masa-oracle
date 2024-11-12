@@ -34,11 +34,12 @@ func (c *Chain) Init(path string) error {
 	}
 	logrus.WithFields(logrus.Fields{"block": Difficulty}).Info("[+] Initializing blockchain...")
 	c.storage = &Persistance{}
-	c.storage.Init(dataDir, func() (Serializable, []byte) {
+	_, err := c.storage.Init(dataDir, func() (Serializable, []byte) {
 		genesisBlock := makeGenesisBlock()
 		return genesisBlock, genesisBlock.Hash
 	})
-	return nil
+
+	return err
 }
 
 // makeGenesisBlock creates and returns the genesis block for the blockchain.
@@ -136,7 +137,10 @@ func (c *Chain) getNextBlockNumber() uint64 {
 // Returns:
 //   - error: An error if any operation fails during iteration, nil otherwise.
 func (c *Chain) IterateLink(each func(b *Block), pre, post func()) error {
-	c.UpdateLastHash()
+	if err := c.UpdateLastHash(); err != nil {
+		return err
+	}
+
 	currentHash := c.LastHash
 	pre()
 	for len(currentHash) > 0 {
@@ -165,7 +169,10 @@ func (c *Chain) IterateLink(each func(b *Block), pre, post func()) error {
 //   - *Block: A pointer to the last block in the chain.
 //   - error: An error if the retrieval fails, nil otherwise.
 func (c *Chain) GetLastBlock() (*Block, error) {
-	c.UpdateLastHash()
+	if err := c.UpdateLastHash(); err != nil {
+		return nil, err
+	}
+
 	return c.GetBlock(c.LastHash)
 }
 

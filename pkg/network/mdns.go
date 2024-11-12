@@ -24,7 +24,7 @@ func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 	n.PeerChan <- pe
 }
 
-func WithMDNS(host host.Host, rendezvous string, peerChan chan PeerEvent) error {
+func EnableMDNS(host host.Host, rendezvous string, peerChan chan PeerEvent) error {
 	notifee := &discoveryNotifee{
 		PeerChan:   peerChan,
 		Rendezvous: rendezvous,

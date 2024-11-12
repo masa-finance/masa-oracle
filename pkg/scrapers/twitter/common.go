@@ -50,9 +50,8 @@ func parseAccounts(accountPairs []string) []*TwitterAccount {
 	})
 }
 
-func getAuthenticatedScraper() (*Scraper, *TwitterAccount, error) {
+func getAuthenticatedScraper(baseDir string) (*Scraper, *TwitterAccount, error) {
 	once.Do(initializeAccountManager)
-	baseDir := config.GetInstance().MasaDir
 
 	account := accountManager.GetNextAccount()
 	if account == nil {

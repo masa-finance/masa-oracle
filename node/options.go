@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/masa-finance/masa-oracle/node/types"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -22,15 +23,18 @@ type NodeOption struct {
 	IsWebScraper      bool
 	IsLlmServer       bool
 
-	Bootnodes              []string
-	RandomIdentity         bool
-	UseLocalWorkerAsRemote bool
-	Services               []func(ctx context.Context, node *OracleNode)
-	PubSubHandles          []PubSubHandlers
-	ProtocolHandlers       map[protocol.ID]network.StreamHandler
-	MasaProtocolHandlers   map[string]network.StreamHandler
-	Environment            string
-	Version                string
+	Bootnodes            []string
+	RandomIdentity       bool
+	Services             []func(ctx context.Context, node *OracleNode)
+	PubSubHandles        []PubSubHandlers
+	ProtocolHandlers     map[protocol.ID]network.StreamHandler
+	MasaProtocolHandlers map[string]network.StreamHandler
+	Environment          string
+	Version              string
+	MasaDir              string
+	CachePath            string
+	LLMCloudflareUrl     string
+	KeyManager           *masacrypto.KeyManager
 }
 
 type PubSubHandlers struct {
@@ -153,5 +157,29 @@ func WithPubSubHandler(protocolName string, handler types.SubscriptionHandler, i
 func WithPort(port int) Option {
 	return func(o *NodeOption) {
 		o.PortNbr = port
+	}
+}
+
+func WithMasaDir(directory string) Option {
+	return func(o *NodeOption) {
+		o.MasaDir = directory
+	}
+}
+
+func WithCachePath(path string) Option {
+	return func(o *NodeOption) {
+		o.CachePath = path
+	}
+}
+
+func WithLLMCloudFlareURL(url string) Option {
+	return func(o *NodeOption) {
+		o.LLMCloudflareUrl = url
+	}
+}
+
+func WithKeyManager(km *masacrypto.KeyManager) Option {
+	return func(o *NodeOption) {
+		o.KeyManager = km
 	}
 }

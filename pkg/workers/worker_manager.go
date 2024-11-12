@@ -33,9 +33,9 @@ func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
 	}
 
 	if options.isTwitterWorker {
-		whm.addWorkHandler(data_types.Twitter, &handlers.TwitterQueryHandler{})
-		whm.addWorkHandler(data_types.TwitterFollowers, &handlers.TwitterFollowersHandler{})
-		whm.addWorkHandler(data_types.TwitterProfile, &handlers.TwitterProfileHandler{})
+		whm.addWorkHandler(data_types.Twitter, &handlers.TwitterQueryHandler{MasaDir: options.masaDir})
+		whm.addWorkHandler(data_types.TwitterFollowers, &handlers.TwitterFollowersHandler{MasaDir: options.masaDir})
+		whm.addWorkHandler(data_types.TwitterProfile, &handlers.TwitterProfileHandler{MasaDir: options.masaDir})
 	}
 
 	if options.isWebScraperWorker {
@@ -43,7 +43,7 @@ func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
 	}
 
 	if options.isLLMServerWorker {
-		whm.addWorkHandler(data_types.LLMChat, &handlers.LLMChatHandler{})
+		whm.addWorkHandler(data_types.LLMChat, handlers.NewLLMChatHandler(options.llmChatUrl))
 	}
 
 	if options.isDiscordScraperWorker {

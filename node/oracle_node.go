@@ -27,14 +27,14 @@ import (
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
 type OracleNode struct {
-	Host          host.Host
-	Protocol      protocol.ID
+	Host     host.Host
+	Protocol protocol.ID
+	// TODO: Rm from here and from NodeData? Should not be necessary
 	priorityAddrs multiaddr.Multiaddr
 	multiAddrs    []multiaddr.Multiaddr
 	DHT           *dht.IpfsDHT
@@ -47,6 +47,7 @@ type OracleNode struct {
 	Blockchain    *chain.Chain
 	Options       NodeOption
 	Context       context.Context
+	Config        *config.AppConfig
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -101,7 +102,7 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	if o.RandomIdentity {
 		libp2pOptions = append(libp2pOptions, libp2p.RandomIdentity)
 	} else {
-		libp2pOptions = append(libp2pOptions, libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey))
+		libp2pOptions = append(libp2pOptions, libp2p.Identity(o.KeyManager.Libp2pPrivKey))
 	}
 
 	securityOptions := []libp2p.Option{
@@ -134,9 +135,13 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 		return nil, err
 	}
 
+	ma, err := myNetwork.GetMultiAddressesForHost(hst)
+	if err != nil {
+		return nil, err
+	}
 	n := &OracleNode{
 		Host:          hst,
-		multiAddrs:    myNetwork.GetMultiAddressesForHostQuiet(hst),
+		multiAddrs:    ma,
 		PeerChan:      make(chan myNetwork.PeerEvent),
 		NodeTracker:   pubsub.NewNodeEventTracker(versioning.ProtocolVersion, o.Environment, hst.ID().String()),
 		Context:       ctx,
@@ -163,14 +168,22 @@ func (node *OracleNode) generateEthHexKeyForRandomIdentity() (string, error) {
 	return common.BytesToAddress(ethereumCrypto.Keccak256(rawKey[1:])[12:]).Hex(), nil
 }
 
-func (node *OracleNode) getNodeData(host host.Host, addr multiaddr.Multiaddr, publicEthAddress string) *pubsub.NodeData {
+func (node *OracleNode) getNodeData() *pubsub.NodeData {
 	// GetSelfNodeData converts the local node's data into a JSON byte array.
 	// It populates a NodeData struct with the node's ID, staking status, and Ethereum address.
 	// The NodeData struct is then marshalled into a JSON byte array.
 	// Returns nil if there is an error marshalling to JSON.
 	// Create and populate NodeData
-	nodeData := pubsub.NewNodeData(addr, host.ID(), publicEthAddress, pubsub.ActivityJoined)
-	nodeData.MultiaddrsString = addr.String()
+
+	var publicEthAddress string
+	if node.Options.RandomIdentity {
+		publicEthAddress, _ = node.generateEthHexKeyForRandomIdentity()
+	} else {
+		publicEthAddress = node.Options.KeyManager.EthAddress
+	}
+
+	nodeData := pubsub.NewNodeData(node.priorityAddrs, node.Host.ID(), publicEthAddress, pubsub.ActivityJoined)
+	nodeData.MultiaddrsString = node.priorityAddrs.String()
 	nodeData.IsStaked = node.Options.IsStaked
 	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
 	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
@@ -211,26 +224,19 @@ func (node *OracleNode) Start() (err error) {
 	go node.handleDiscoveredPeers()
 	go node.NodeTracker.ClearExpiredWorkerTimeouts()
 
-	var publicKeyHex string
-	if node.Options.RandomIdentity {
-		publicKeyHex, _ = node.generateEthHexKeyForRandomIdentity()
-	} else {
-		publicKeyHex = masacrypto.KeyManagerInstance().EthAddress
-	}
-
-	myNodeData := node.getNodeData(node.Host, node.priorityAddrs, publicKeyHex)
+	myNodeData := node.getNodeData()
 
 	bootstrapNodes, err := myNetwork.GetBootNodesMultiAddress(node.Options.Bootnodes)
 	if err != nil {
 		return err
 	}
 
-	node.DHT, err = myNetwork.WithDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
+	node.DHT, err = myNetwork.EnableDHT(node.Context, node.Host, bootstrapNodes, node.Protocol, masaPrefix, node.PeerChan, myNodeData)
 	if err != nil {
 		return err
 	}
 
-	err = myNetwork.WithMDNS(node.Host, config.Rendezvous, node.PeerChan)
+	err = myNetwork.EnableMDNS(node.Host, config.Rendezvous, node.PeerChan)
 	if err != nil {
 		return err
 	}
@@ -239,7 +245,7 @@ func (node *OracleNode) Start() (err error) {
 		go p(node.Context, node)
 	}
 
-	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
+	go myNetwork.Discover(node.Context, node.Options.Bootnodes, node.Host, node.DHT, node.Protocol)
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
@@ -322,15 +328,14 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 // IsWorker determines if the OracleNode is configured to act as an actor.
 // An actor node is one that has at least one of the following scrapers enabled:
-// TwitterScraper, DiscordScraper, or WebScraper.
+// TwitterScraper, DiscordScraper, TelegramScraper or WebScraper.
 // It returns true if any of these scrapers are enabled, otherwise false.
 func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data
-	cfg := config.GetInstance()
-	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TelegramScraper || cfg.WebScraper {
-		return true
-	}
-	return false
+	return node.Options.IsTwitterScraper ||
+		node.Options.IsDiscordScraper ||
+		node.Options.IsTelegramScraper ||
+		node.Options.IsWebScraper
 }
 
 // IsPublisher returns true if this node is a publisher node.
@@ -340,24 +345,9 @@ func (node *OracleNode) IsPublisher() bool {
 	return node.Signature != ""
 }
 
-// FromUnixTime converts a Unix timestamp into a formatted string.
-// The Unix timestamp is expected to be in seconds.
-// The returned string is in the format "2006-01-02T15:04:05.000Z".
-func (node *OracleNode) FromUnixTime(unixTime int64) string {
-	return time.Unix(unixTime, 0).Format("2006-01-02T15:04:05.000Z")
-}
-
-// ToUnixTime converts a formatted string time into a Unix timestamp.
-// The input string is expected to be in the format "2006-01-02T15:04:05.000Z".
-// The returned Unix timestamp is in seconds.
-func (node *OracleNode) ToUnixTime(stringTime string) int64 {
-	t, _ := time.Parse("2006-01-02T15:04:05.000Z", stringTime)
-	return t.Unix()
-}
-
 // Version returns the current version string of the oracle node software.
 func (node *OracleNode) Version() string {
-	return config.GetInstance().Version
+	return node.Options.Version
 }
 
 // LogActiveTopics logs the currently active topic names to the

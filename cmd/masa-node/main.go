@@ -34,13 +34,16 @@ func main() {
 	cfg.LogConfig()
 	cfg.SetupLogging()
 
-	keyManager := masacrypto.KeyManagerInstance()
+	keyManager, err := masacrypto.NewKeyManager(cfg.PrivateKey, cfg.PrivateKeyFile)
+	if err != nil {
+		logrus.Fatal("[-] Failed to initialize keys:", err)
+	}
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if cfg.Faucet {
-		err := handleFaucet(keyManager.EcdsaPrivKey)
+		err := handleFaucet(cfg.RpcUrl, keyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Errorf("[-] %v", err)
 			os.Exit(1)
@@ -51,7 +54,7 @@ func main() {
 	}
 
 	if cfg.StakeAmount != "" {
-		err := handleStaking(keyManager.EcdsaPrivKey)
+		err := handleStaking(cfg.RpcUrl, keyManager.EcdsaPrivKey, cfg.StakeAmount)
 		if err != nil {
 			logrus.Warningf("%v", err)
 		} else {
@@ -61,7 +64,7 @@ func main() {
 	}
 
 	// Verify the staking event
-	isStaked, err := staking.VerifyStakingEvent(keyManager.EthAddress)
+	isStaked, err := staking.VerifyStakingEvent(cfg.RpcUrl, keyManager.EthAddress)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -70,9 +73,7 @@ func main() {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	isValidator := cfg.Validator
-
-	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg)
+	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg, keyManager)
 	// Create a new OracleNode
 	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
 
@@ -80,8 +81,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	err = masaNode.Start()
-	if err != nil {
+	if err = masaNode.Start(); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -98,7 +98,7 @@ func main() {
 	}
 
 	// Init cache resolver
-	db.InitResolverCache(masaNode, keyManager)
+	db.InitResolverCache(masaNode, keyManager, cfg.AllowedPeerId, cfg.AllowedPeerPublicKey, cfg.Validator)
 
 	// Cancel the context when SIGINT is received
 	go handleSignals(cancel, masaNode, cfg)
@@ -118,8 +118,11 @@ func main() {
 	// Get the multiaddress and IP address of the node
 	multiAddr := masaNode.GetMultiAddrs()                      // Get the multiaddress
 	ipAddr, err := multiAddr.ValueForProtocol(multiaddr.P_IP4) // Get the IP address
+	if err != nil {
+		logrus.Errorf("[-] Error while getting node IP address from %v: %v", multiAddr, err)
+	}
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, isValidator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
+	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 
 	<-ctx.Done()
 }

@@ -1,3 +1,4 @@
+// TODO: This is a WIP
 // Package scrapers_test contains integration tests for the Twitter scraper functionality.
 //
 // Dev Notes:
@@ -13,7 +14,6 @@ import (
 	"runtime"
 
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	. "github.com/onsi/ginkgo/v2"
@@ -26,6 +26,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		twitterUsername string
 		twitterPassword string
 		twoFACode       string
+		masaDir         string
 	)
 
 	loadEnv := func() {
@@ -44,8 +45,7 @@ var _ = Describe("Twitter Auth Function", func() {
 	BeforeEach(func() {
 		loadEnv()
 
-		tempDir := GinkgoT().TempDir()
-		config.GetInstance().MasaDir = tempDir
+		masaDir = GinkgoT().TempDir()
 
 		twitterUsername = os.Getenv("TWITTER_USERNAME")
 		twitterPassword = os.Getenv("TWITTER_PASSWORD")
@@ -53,20 +53,18 @@ var _ = Describe("Twitter Auth Function", func() {
 
 		Expect(twitterUsername).NotTo(BeEmpty(), "TWITTER_USERNAME environment variable is not set")
 		Expect(twitterPassword).NotTo(BeEmpty(), "TWITTER_PASSWORD environment variable is not set")
-
-		config.GetInstance().TwitterUsername = twitterUsername
-		config.GetInstance().TwitterPassword = twitterPassword
-		config.GetInstance().Twitter2FaCode = twoFACode
+		Expect(twoFACode).NotTo(BeEmpty(), "TWITTER_PASSWORD environment variable is not set")
 	})
 
 	authenticate := func() *twitterscraper.Scraper {
+		// TODO Actually authenticate
 		return nil
 		//return twitter.Auth()
 	}
 
 	PIt("authenticates and logs in successfully", func() {
 		// Ensure cookie file doesn't exist before authentication
-		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		cookieFile := filepath.Join(masaDir, "twitter_cookies.json")
 		Expect(cookieFile).NotTo(BeAnExistingFile())
 
 		// Authenticate
@@ -80,7 +78,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(scraper.IsLoggedIn()).To(BeTrue())
 
 		// Attempt a simple operation to verify the session is valid
-		profile, err := twitter.ScrapeTweetsProfile("twitter")
+		profile, err := twitter.ScrapeTweetsProfile(masaDir, "twitter")
 		Expect(err).To(BeNil())
 		Expect(profile.Username).To(Equal("twitter"))
 
@@ -93,11 +91,11 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(firstScraper).NotTo(BeNil())
 
 		// Verify cookie file is created
-		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		cookieFile := filepath.Join(masaDir, "twitter_cookies.json")
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
-		firstScraper = nil
+		firstScraper = nil // nolint: ineffassign
 
 		// Second authentication (should use cookies)
 		secondScraper := authenticate()
@@ -107,7 +105,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(secondScraper.IsLoggedIn()).To(BeTrue())
 
 		// Attempt a simple operation to verify the session is valid
-		profile, err := twitter.ScrapeTweetsProfile("twitter")
+		profile, err := twitter.ScrapeTweetsProfile(masaDir, "twitter")
 		Expect(err).To(BeNil())
 		Expect(profile.Username).To(Equal("twitter"))
 
@@ -120,11 +118,11 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(firstScraper).NotTo(BeNil())
 
 		// Verify cookie file is created
-		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		cookieFile := filepath.Join(masaDir, "twitter_cookies.json")
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
-		firstScraper = nil
+		firstScraper = nil // nolint: ineffassign
 
 		// Second authentication (should use cookies)
 		secondScraper := authenticate()
@@ -134,12 +132,12 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(secondScraper.IsLoggedIn()).To(BeTrue())
 
 		// Attempt to scrape profile
-		profile, err := twitter.ScrapeTweetsProfile("god")
+		profile, err := twitter.ScrapeTweetsProfile(masaDir, "god")
 		Expect(err).To(BeNil())
 		logrus.Infof("Profile of 'god': %+v", profile)
 
 		// Scrape recent #Bitcoin tweets
-		tweets, err := twitter.ScrapeTweetsByQuery("#Bitcoin", 3)
+		tweets, err := twitter.ScrapeTweetsByQuery(masaDir, "#Bitcoin", 3)
 		Expect(err).To(BeNil())
 		Expect(tweets).To(HaveLen(3))
 
@@ -150,6 +148,6 @@ var _ = Describe("Twitter Auth Function", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(config.GetInstance().MasaDir)
+		os.RemoveAll(masaDir)
 	})
 })

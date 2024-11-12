@@ -91,6 +91,7 @@ func GetInstance() *AppConfig {
 		instance = &AppConfig{}
 
 		instance.setDefaultConfig()
+		// TODO Shouldn't the env vars override the file config, instead of the other way around?
 		instance.setEnvVariableConfig()
 
 		instance.setFileConfig(viper.GetString("FILE_PATH"))

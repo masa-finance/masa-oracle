@@ -28,7 +28,7 @@ build: contracts/node_modules
 
 install:
 	@sh ./node_install.sh
-	
+
 run: build
 	@./bin/masa-node
 
@@ -44,16 +44,25 @@ stake: build
 client: build	
 	@./bin/masa-node-cli
 
+# TODO: Add -race and fix race conditions
 test: contracts/node_modules
-	@go test -coverprofile=coverage.txt -covermode=atomic -v ./...
+	@go test -coverprofile=coverage.txt -covermode=atomic -v -count=1 -shuffle=on ./...
+
+ci-lint:
+	go mod tidy && git diff --exit-code
+	go mod download
+	go mod verify
+	gofmt -s -w . && git diff --exit-code
+	go vet ./...
+	golangci-lint run
 
 clean:
 	@rm -rf bin
-	
+
 	@if [ -d ~/.masa/blocks ]; then rm -rf ~/.masa/blocks; fi
 	@if [ -d ~/.masa/cache ]; then rm -rf ~/.masa/cache; fi	
 	@if [ -f masa_node.log ]; then rm masa_node.log; fi
-	
+
 proto:
 	sh pkg/workers/messages/build.sh
 

@@ -21,9 +21,17 @@ import (
 // It concatenates the tweets, creates a payload, sends a request to Claude, parses the response,
 // and returns the concatenated tweets content, a sentiment summary, and any error.
 func AnalyzeSentimentTweets(tweets []*twitterscraper.TweetResult, model string, prompt string) (string, string, error) {
+	appConfig := config.GetInstance()
+
 	// check if we are using claude or gpt, can add others easily
 	if strings.Contains(model, "claude-") {
-		client := NewClaudeClient() // Adjusted to call without arguments
+		client := NewClaudeClient(
+			&ClaudeAPIConfig{
+				URL:     appConfig.ClaudeApiURL,
+				APIKey:  appConfig.ClaudeApiKey,
+				Version: appConfig.ClaudeApiVersion,
+			},
+		)
 
 		var validTweets []*twitterscraper.TweetResult
 		for _, tweet := range tweets {
@@ -54,7 +62,11 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.TweetResult, model string, 
 		return tweetsContent, sentimentSummary, nil
 
 	} else if strings.Contains(model, "gpt-") {
-		client := NewGPTClient()
+		client := NewGPTClient(
+			&GPTAPIConfig{
+				APIKey: appConfig.GPTApiKey,
+			},
+		)
 		tweetsContent := ConcatenateTweets(tweets)
 		sentimentSummary, err := client.SendRequest(tweetsContent, model, prompt)
 		if err != nil {
@@ -84,7 +96,7 @@ func AnalyzeSentimentTweets(tweets []*twitterscraper.TweetResult, model string, 
 		if err != nil {
 			return "", "", err
 		}
-		uri := config.GetInstance().LLMChatUrl
+		uri := appConfig.LLMChatUrl
 		if uri == "" {
 			return "", "", errors.New("ollama api url not set")
 		}
@@ -124,9 +136,17 @@ func ConcatenateTweets(tweets []*twitterscraper.TweetResult) string {
 // It concatenates the text, creates a payload, sends a request to Claude, parses the response,
 // and returns the concatenated content, a sentiment summary, and any error.
 func AnalyzeSentimentWeb(data string, model string, prompt string) (string, string, error) {
+	appConfig := config.GetInstance()
+
 	// check if we are using claude or gpt, can add others easily
 	if strings.Contains(model, "claude-") {
-		client := NewClaudeClient() // Adjusted to call without arguments
+		client := NewClaudeClient(
+			&ClaudeAPIConfig{
+				URL:     appConfig.ClaudeApiURL,
+				APIKey:  appConfig.ClaudeApiKey,
+				Version: appConfig.ClaudeApiVersion,
+			},
+		)
 		payloadBytes, err := CreatePayload(data, model, prompt)
 		if err != nil {
 			logrus.Errorf("[-] Error creating payload: %v", err)
@@ -146,7 +166,11 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		return data, sentimentSummary, nil
 
 	} else if strings.Contains(model, "gpt-") {
-		client := NewGPTClient()
+		client := NewGPTClient(
+			&GPTAPIConfig{
+				APIKey: appConfig.GPTApiKey,
+			},
+		)
 		sentimentSummary, err := client.SendRequest(data, model, prompt)
 		if err != nil {
 			logrus.Errorf("[-] Error sending request to GPT: %v", err)
@@ -166,7 +190,7 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		if err != nil {
 			return "", "", err
 		}
-		cfUrl := config.GetInstance().LLMCfUrl
+		cfUrl := appConfig.LLMCfUrl
 		if cfUrl == "" {
 			return "", "", errors.New("cloudflare workers url not set")
 		}
@@ -210,7 +234,7 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 		if err != nil {
 			return "", "", err
 		}
-		uri := config.GetInstance().LLMChatUrl
+		uri := appConfig.LLMChatUrl
 		if uri == "" {
 			return "", "", errors.New("ollama api url not set")
 		}
@@ -241,6 +265,8 @@ func AnalyzeSentimentWeb(data string, model string, prompt string) (string, stri
 // It concatenates the messages, creates a payload, sends a request to the sentiment analysis service, parses the response,
 // and returns the concatenated messages content, a sentiment summary, and any error.
 func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (string, string, error) {
+	appConfig := config.GetInstance()
+
 	// Concatenate messages with a newline character
 	messagesContent := strings.Join(messages, "\n")
 
@@ -248,7 +274,14 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 	// Replace with the actual logic you have for sending requests to your sentiment analysis service
 	// For example, if you're using the Claude API:
 	if strings.Contains(model, "claude-") {
-		client := NewClaudeClient() // Adjusted to call without arguments
+		client := NewClaudeClient(
+			&ClaudeAPIConfig{
+				URL:     appConfig.ClaudeApiURL,
+				APIKey:  appConfig.ClaudeApiKey,
+				Version: appConfig.ClaudeApiVersion,
+			},
+		)
+
 		payloadBytes, err := CreatePayload(messagesContent, model, prompt)
 		if err != nil {
 			logrus.Errorf("[-] Error creating payload: %v", err)
@@ -289,7 +322,7 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 			logrus.Errorf("[-] Error marshaling request JSON: %v", err)
 			return "", "", err
 		}
-		uri := config.GetInstance().LLMChatUrl
+		uri := appConfig.LLMChatUrl
 		if uri == "" {
 			errMsg := "ollama api url not set"
 			logrus.Errorf("[-] %v", errMsg)
@@ -321,6 +354,8 @@ func AnalyzeSentimentDiscord(messages []string, model string, prompt string) (st
 
 // AnalyzeSentimentTelegram analyzes the sentiment of the provided Telegram messages by sending them to the sentiment analysis API.
 func AnalyzeSentimentTelegram(messages []*tg.Message, model string, prompt string) (string, string, error) {
+	appConfig := config.GetInstance()
+
 	// Concatenate messages with a newline character
 	var messageTexts []string
 	for _, msg := range messages {
@@ -332,7 +367,13 @@ func AnalyzeSentimentTelegram(messages []*tg.Message, model string, prompt strin
 
 	// The rest of the code follows the same pattern as AnalyzeSentimentDiscord
 	if strings.Contains(model, "claude-") {
-		client := NewClaudeClient() // Adjusted to call without arguments
+		client := NewClaudeClient(
+			&ClaudeAPIConfig{
+				URL:     appConfig.ClaudeApiURL,
+				APIKey:  appConfig.ClaudeApiKey,
+				Version: appConfig.ClaudeApiVersion,
+			},
+		)
 		payloadBytes, err := CreatePayload(messagesContent, model, prompt)
 		if err != nil {
 			logrus.Errorf("Error creating payload: %v", err)
@@ -370,31 +411,31 @@ func AnalyzeSentimentTelegram(messages []*tg.Message, model string, prompt strin
 
 		requestJSON, err := json.Marshal(genReq)
 		if err != nil {
-			logrus.Errorf("Error marshaling request JSON: %v", err)
+			logrus.Errorf("[-] Error marshaling request JSON: %v", err)
 			return "", "", err
 		}
-		uri := config.GetInstance().LLMChatUrl
+		uri := appConfig.LLMChatUrl
 		if uri == "" {
-			errMsg := "ollama api url not set"
-			logrus.Errorf(errMsg)
-			return "", "", errors.New(errMsg)
+			err := errors.New("[-] ollama api url not set")
+			logrus.Errorf("%v", err)
+			return "", "", err
 		}
 		resp, err := http.Post(uri, "application/json", bytes.NewReader(requestJSON))
 		if err != nil {
-			logrus.Errorf("Error sending request to API: %v", err)
+			logrus.Errorf("[-] Error sending request to API: %v", err)
 			return "", "", err
 		}
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			logrus.Errorf("Error reading response body: %v", err)
+			logrus.Errorf("[-] Error reading response body: %v", err)
 			return "", "", err
 		}
 
 		var payload api.ChatResponse
 		err = json.Unmarshal(body, &payload)
 		if err != nil {
-			logrus.Errorf("Error unmarshaling response JSON: %v", err)
+			logrus.Errorf("[-] Error unmarshaling response JSON: %v", err)
 			return "", "", err
 		}
 
