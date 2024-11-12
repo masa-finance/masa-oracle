@@ -6,9 +6,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/network"
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 // TODO: LLMChatBody isn't used anywhere in the codebase. Remove after testing
@@ -22,13 +21,20 @@ type LLMChatBody struct {
 	Stream bool `json:"stream"`
 }
 
-type LLMChatHandler struct{}
+type LLMChatHandler struct {
+	llmChatUrl string
+}
+
+func NewLLMChatHandler(llmChatUrl string) *LLMChatHandler {
+	return &LLMChatHandler{
+		llmChatUrl: llmChatUrl,
+	}
+}
 
 // HandleWork implements the WorkHandler interface for LLMChatHandler.
 func (h *LLMChatHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] LLM Chat %s", data)
-	uri := config.GetInstance().LLMChatUrl
-	if uri == "" {
+	if h.llmChatUrl == "" {
 		return data_types.WorkResponse{Error: "missing env variable LLM_CHAT_URL"}
 	}
 
@@ -41,7 +47,7 @@ func (h *LLMChatHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to marshal LLM chat data: %v", err)}
 	}
-	resp, err := network.Post(uri, jsnBytes, nil)
+	resp, err := network.Post(h.llmChatUrl, jsnBytes, nil)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to post LLM chat data: %v", err)}
 	}

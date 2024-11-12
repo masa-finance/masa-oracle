@@ -14,9 +14,7 @@ type GPTAPIConfig struct {
 
 // NewClaudeAPIConfig creates a new ClaudeAPIConfig instance with values loaded
 // from the application config.
-func NewClaudeAPIConfig() *ClaudeAPIConfig {
-	appConfig := config.GetInstance()
-
+func NewClaudeAPIConfig(appConfig *config.AppConfig) *ClaudeAPIConfig {
 	// need to add these to the config package
 	return &ClaudeAPIConfig{
 		URL:     appConfig.ClaudeApiURL,
@@ -27,9 +25,7 @@ func NewClaudeAPIConfig() *ClaudeAPIConfig {
 
 // NewGPTConfig creates a new GPTConfig instance with values loaded
 // from the application config.
-func NewGPTConfig() *GPTAPIConfig {
-	appConfig := config.GetInstance()
-
+func NewGPTConfig(appConfig *config.AppConfig) *GPTAPIConfig {
 	// need to add these to the config package
 	return &GPTAPIConfig{
 		APIKey: appConfig.GPTApiKey,

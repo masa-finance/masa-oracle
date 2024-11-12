@@ -3,14 +3,23 @@ package main
 import (
 	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	pubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
 
-func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerManager, *pubsub.PublicKeySubscriptionHandler) {
+func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]node.Option, *workers.WorkHandlerManager, *pubsub.PublicKeySubscriptionHandler) {
 	// WorkerManager configuration
-	// XXX: this needs to be moved under config, but now it's here as there are import cycles given singletons
-	workerManagerOptions := []workers.WorkerOptionFunc{}
+	// TODO: this needs to be moved under config, but now it's here as there are import cycles given singletons
+	workerManagerOptions := []workers.WorkerOptionFunc{
+		workers.WithLlmChatUrl(cfg.LLMChatUrl),
+		workers.WithMasaDir(cfg.MasaDir),
+	}
+
+	cachePath := cfg.CachePath
+	if cachePath == "" {
+		cachePath = cfg.MasaDir + "/cache"
+	}
 
 	masaNodeOptions := []node.Option{
 		node.EnableStaked,
@@ -19,6 +28,10 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 		node.WithVersion(cfg.Version),
 		node.WithPort(cfg.PortNbr),
 		node.WithBootNodes(cfg.Bootnodes...),
+		node.WithMasaDir(cfg.MasaDir),
+		node.WithCachePath(cachePath),
+		node.WithLLMCloudFlareURL(cfg.LLMCfUrl),
+		node.WithKeyManager(keyManager),
 	}
 
 	if cfg.TwitterScraper {
@@ -50,8 +63,7 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 	blockChainEventTracker := node.NewBlockChain()
 	pubKeySub := &pubsub.PublicKeySubscriptionHandler{}
 
-	// TODO: Where the config is involved, move to the config the generation of
-	// Node options
+	// TODO: Where the config is involved, move to the config the generation of Node options
 	masaNodeOptions = append(masaNodeOptions, []node.Option{
 		// Register the worker manager
 		node.WithMasaProtocolHandler(
@@ -68,7 +80,7 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 		// and other peers can do work we only need to check this here
 		// if this peer can or cannot scrape or write that is checked in other places
 		masaNodeOptions = append(masaNodeOptions,
-			node.WithService(blockChainEventTracker.Start(config.GetInstance().MasaDir)),
+			node.WithService(blockChainEventTracker.Start(cfg.MasaDir)),
 		)
 	}
 

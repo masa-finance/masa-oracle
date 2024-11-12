@@ -7,8 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Legacy, error) {
-	scraper, account, err := getAuthenticatedScraper()
+func ScrapeFollowersForProfile(baseDir string, username string, count int) ([]twitterscraper.Legacy, error) {
+	scraper, account, err := getAuthenticatedScraper(baseDir)
 	if err != nil {
 		return nil, err
 	}

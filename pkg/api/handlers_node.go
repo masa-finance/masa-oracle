@@ -11,7 +11,6 @@ import (
 
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -181,7 +180,7 @@ func (api *API) PublishPublicKeyHandler() gin.HandlerFunc {
 			return
 		}
 
-		keyManager := masacrypto.KeyManagerInstance()
+		keyManager := api.Node.Options.KeyManager
 
 		// Set the data to be signed as the signer's Peer ID
 		data := []byte(api.Node.Host.ID().String())

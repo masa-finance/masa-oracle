@@ -6,8 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 var MasaTokenAddress common.Address
@@ -18,10 +16,10 @@ type Client struct {
 	PrivateKey *ecdsa.PrivateKey
 }
 
-// NewClient initializes a new Client instance with the provided private key.
+// NewClient initializes a new ethClient.Client instance with the provided private key.
 // It loads the contract addresses, initializes an Ethereum client, and returns
 // a Client instance.
-func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
+func NewClient(rpcUrl string, privateKey *ecdsa.PrivateKey) (*Client, error) {
 	addresses, err := LoadContractAddresses()
 	if err != nil {
 		return nil, fmt.Errorf("[-] Failed to load contract addresses: %v", err)
@@ -30,7 +28,7 @@ func NewClient(privateKey *ecdsa.PrivateKey) (*Client, error) {
 	MasaTokenAddress = common.HexToAddress(addresses.Sepolia.MasaToken)
 	ProtocolStakingContractAddress = common.HexToAddress(addresses.Sepolia.ProtocolStaking)
 
-	client, err := ethclient.Dial(config.GetInstance().RpcUrl)
+	client, err := ethclient.Dial(rpcUrl)
 	if err != nil {
 		return nil, err
 	}

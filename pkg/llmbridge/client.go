@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -24,15 +23,13 @@ type GPTClient struct {
 }
 
 // NewClaudeClient creates a new ClaudeClient instance with default configuration.
-func NewClaudeClient() *ClaudeClient {
-	cnf := NewClaudeAPIConfig()
-	return &ClaudeClient{config: cnf}
+func NewClaudeClient(config *ClaudeAPIConfig) *ClaudeClient {
+	return &ClaudeClient{config: config}
 }
 
 // NewGPTClient creates a new GPTClient instance with default configuration.
-func NewGPTClient() *GPTClient {
-	cnf := NewGPTConfig()
-	return &GPTClient{config: cnf}
+func NewGPTClient(config *GPTAPIConfig) *GPTClient {
+	return &GPTClient{config: config}
 }
 
 // SendRequest sends an HTTP request to the Claude API with the given payload.
@@ -64,8 +61,7 @@ func (c *GPTClient) SendRequest(payload string, model string, prompt string) (st
 		break
 	}
 
-	cfg := config.GetInstance()
-	key := cfg.GPTApiKey
+	key := c.config.APIKey
 	if key == "" {
 		return "", errors.New("OPENAI_API_KEY is not set")
 	}

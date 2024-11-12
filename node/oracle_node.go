@@ -27,7 +27,6 @@ import (
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -48,6 +47,7 @@ type OracleNode struct {
 	Blockchain    *chain.Chain
 	Options       NodeOption
 	Context       context.Context
+	Config        *config.AppConfig
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -102,7 +102,7 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	if o.RandomIdentity {
 		libp2pOptions = append(libp2pOptions, libp2p.RandomIdentity)
 	} else {
-		libp2pOptions = append(libp2pOptions, libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey))
+		libp2pOptions = append(libp2pOptions, libp2p.Identity(o.KeyManager.Libp2pPrivKey))
 	}
 
 	securityOptions := []libp2p.Option{
@@ -179,7 +179,7 @@ func (node *OracleNode) getNodeData() *pubsub.NodeData {
 	if node.Options.RandomIdentity {
 		publicEthAddress, _ = node.generateEthHexKeyForRandomIdentity()
 	} else {
-		publicEthAddress = masacrypto.KeyManagerInstance().EthAddress
+		publicEthAddress = node.Options.KeyManager.EthAddress
 	}
 
 	nodeData := pubsub.NewNodeData(node.priorityAddrs, node.Host.ID(), publicEthAddress, pubsub.ActivityJoined)
@@ -245,7 +245,7 @@ func (node *OracleNode) Start() (err error) {
 		go p(node.Context, node)
 	}
 
-	go myNetwork.Discover(node.Context, node.Host, node.DHT, node.Protocol)
+	go myNetwork.Discover(node.Context, node.Options.Bootnodes, node.Host, node.DHT, node.Protocol)
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
@@ -328,15 +328,14 @@ func (node *OracleNode) handleStream(stream network.Stream) {
 
 // IsWorker determines if the OracleNode is configured to act as an actor.
 // An actor node is one that has at least one of the following scrapers enabled:
-// TwitterScraper, DiscordScraper, or WebScraper.
+// TwitterScraper, DiscordScraper, TelegramScraper or WebScraper.
 // It returns true if any of these scrapers are enabled, otherwise false.
 func (node *OracleNode) IsWorker() bool {
 	// need to get this by node data
-	cfg := config.GetInstance()
-	if cfg.TwitterScraper || cfg.DiscordScraper || cfg.TelegramScraper || cfg.WebScraper {
-		return true
-	}
-	return false
+	return node.Options.IsTwitterScraper ||
+		node.Options.IsDiscordScraper ||
+		node.Options.IsTelegramScraper ||
+		node.Options.IsWebScraper
 }
 
 // IsPublisher returns true if this node is a publisher node.
@@ -348,7 +347,7 @@ func (node *OracleNode) IsPublisher() bool {
 
 // Version returns the current version string of the oracle node software.
 func (node *OracleNode) Version() string {
-	return config.GetInstance().Version
+	return node.Options.Version
 }
 
 // LogActiveTopics logs the currently active topic names to the

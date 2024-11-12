@@ -8,11 +8,11 @@ package db
 
 import (
 	"encoding/hex"
+
 	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 )
 
@@ -34,14 +34,7 @@ func isAuthorized(nodeID string) bool {
 }
 
 // Verifier checks if the given host is allowed to access to the database and verifies the signature
-func Verifier(h host.Host, data []byte, signature []byte) bool {
-	// Load configuration instance
-	cfg := config.GetInstance()
-
-	// Get allowed peer ID and public key from the configuration
-	allowedPeerID := cfg.AllowedPeerId
-	allowedPeerPubKeyString := cfg.AllowedPeerPublicKey
-
+func Verifier(h host.Host, data []byte, signature []byte, allowedPeerID string, allowedPeerPubKeyString string, isValidator bool) bool {
 	if allowedPeerID == "" || allowedPeerPubKeyString == "" {
 		logrus.Warn("[-] Allowed peer ID or public key not found in configuration")
 		return false
@@ -81,7 +74,7 @@ func Verifier(h host.Host, data []byte, signature []byte) bool {
 		return false
 	}
 
-	if cfg.Validator {
+	if isValidator {
 
 		logrus.WithFields(logrus.Fields{
 			"hostID":        h.ID().String(),
