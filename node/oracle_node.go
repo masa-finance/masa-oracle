@@ -27,7 +27,6 @@ import (
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -103,7 +102,7 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 	if o.RandomIdentity {
 		libp2pOptions = append(libp2pOptions, libp2p.RandomIdentity)
 	} else {
-		libp2pOptions = append(libp2pOptions, libp2p.Identity(masacrypto.KeyManagerInstance().Libp2pPrivKey))
+		libp2pOptions = append(libp2pOptions, libp2p.Identity(o.KeyManager.Libp2pPrivKey))
 	}
 
 	securityOptions := []libp2p.Option{
@@ -180,7 +179,7 @@ func (node *OracleNode) getNodeData() *pubsub.NodeData {
 	if node.Options.RandomIdentity {
 		publicEthAddress, _ = node.generateEthHexKeyForRandomIdentity()
 	} else {
-		publicEthAddress = masacrypto.KeyManagerInstance().EthAddress
+		publicEthAddress = node.Options.KeyManager.EthAddress
 	}
 
 	nodeData := pubsub.NewNodeData(node.priorityAddrs, node.Host.ID(), publicEthAddress, pubsub.ActivityJoined)

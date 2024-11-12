@@ -3,11 +3,12 @@ package main
 import (
 	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	pubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
 
-func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerManager, *pubsub.PublicKeySubscriptionHandler) {
+func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]node.Option, *workers.WorkHandlerManager, *pubsub.PublicKeySubscriptionHandler) {
 	// WorkerManager configuration
 	// TODO: this needs to be moved under config, but now it's here as there are import cycles given singletons
 	workerManagerOptions := []workers.WorkerOptionFunc{
@@ -29,6 +30,7 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 		node.WithMasaDir(cfg.MasaDir),
 		node.WithCachePath(cachePath),
 		node.WithLlmCfUrl(cfg.LLMCfUrl),
+		node.WithKeyManager(keyManager),
 	}
 
 	if cfg.TwitterScraper {

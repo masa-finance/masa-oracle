@@ -7,9 +7,6 @@ import (
 
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 // KeyManager is meant to simplify the management of cryptographic keys used in the application.
@@ -57,64 +54,58 @@ type KeyManager struct {
 	EthAddress    string            // Ethereum format address
 }
 
-// KeyManagerInstance returns the singleton instance of KeyManager, initializing it if necessary.
-func KeyManagerInstance() *KeyManager {
-	once.Do(func() {
-		cfg := config.GetInstance()
-		keyManagerInstance = &KeyManager{}
-		if err := keyManagerInstance.loadPrivateKey(cfg.PrivateKey, cfg.PrivateKeyFile); err != nil {
-			logrus.Fatal("[-] Failed to initialize keys:", err)
-		}
-	})
-	return keyManagerInstance
-}
-
-// loadPrivateKey loads the node's private key from the environment or a file.
-// It first checks for a private key set via the PrivateKey config. If not found,
-// it tries to load the key from the PrivateKeyFile. As a last resort, it
-// generates a new key and saves it to the private key file.
-
+// NewKeyManager returns an initialized KeyManager. It first checks for a
+// private key set via the PrivateKey config. If not found, it tries to
+// load the key from the PrivateKeyFile. As a last resort, it generates
+// a new key and saves it to the private key file.
 // The private key is loaded into both Libp2p and ECDSA formats for use by
 // different parts of the system. The public key and hex-encoded key representations
 // are also derived.
-func (km *KeyManager) loadPrivateKey(privateKey string, privateKeyFile string) (err error) {
-	var keyFile string
+func NewKeyManager(privateKey string, privateKeyFile string) (*KeyManager, error) {
+	km := &KeyManager{}
+
+	var err error
+
 	if len(privateKey) > 0 {
 		km.Libp2pPrivKey, err = getPrivateKeyFromEnv(privateKey)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	} else {
-		keyFile = privateKeyFile
 		// Check if the private key file exists
-		km.Libp2pPrivKey, err = getPrivateKeyFromFile(keyFile)
+		km.Libp2pPrivKey, err = getPrivateKeyFromFile(privateKeyFile)
 		if err != nil {
-			km.Libp2pPrivKey, err = generateNewPrivateKey(keyFile)
+			km.Libp2pPrivKey, err = generateNewPrivateKey(privateKeyFile)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
+
 	km.Libp2pPubKey = km.Libp2pPrivKey.GetPublic()
+
 	// After obtaining the libp2p privKey, convert it to an ECDSA private key
 	km.EcdsaPrivKey, err = libp2pPrivateKeyToEcdsa(km.Libp2pPrivKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = saveEcdesaPrivateKeyToFile(km.EcdsaPrivKey, fmt.Sprintf("%s.ecdsa", keyFile))
+	err = saveEcdesaPrivateKeyToFile(km.EcdsaPrivKey, fmt.Sprintf("%s.ecdsa", privateKeyFile))
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	km.HexPrivKey, err = getHexEncodedPrivateKey(km.Libp2pPrivKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	km.EcdsaPubKey = &km.EcdsaPrivKey.PublicKey
 	km.HexPubKey, err = getHexEncodedPublicKey(km.Libp2pPubKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	km.EthAddress = ethCrypto.PubkeyToAddress(km.EcdsaPrivKey.PublicKey).Hex()
-	return nil
+	return km, nil
 }

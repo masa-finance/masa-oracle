@@ -34,7 +34,10 @@ func main() {
 	cfg.LogConfig()
 	cfg.SetupLogging()
 
-	keyManager := masacrypto.KeyManagerInstance()
+	keyManager, err := masacrypto.NewKeyManager(cfg.PrivateKey, cfg.PrivateKeyFile)
+	if err != nil {
+		logrus.Fatal("[-] Failed to initialize keys:", err)
+	}
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -70,7 +73,7 @@ func main() {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg)
+	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg, keyManager)
 	// Create a new OracleNode
 	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
 
