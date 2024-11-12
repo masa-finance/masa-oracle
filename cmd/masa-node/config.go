@@ -30,7 +30,7 @@ func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]no
 		node.WithBootNodes(cfg.Bootnodes...),
 		node.WithMasaDir(cfg.MasaDir),
 		node.WithCachePath(cachePath),
-		node.WithLlmCfUrl(cfg.LLMCfUrl),
+		node.WithLLMCloudFlareURL(cfg.LLMCfUrl),
 		node.WithKeyManager(keyManager),
 	}
 
