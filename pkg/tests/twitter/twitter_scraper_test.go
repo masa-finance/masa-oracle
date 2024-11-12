@@ -19,6 +19,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		twitterUsername string
 		twitterPassword string
 		twoFACode       string
+		masaDir         string
 	)
 
 	loadEnv := func() {
@@ -37,8 +38,7 @@ var _ = Describe("Twitter Auth Function", func() {
 	BeforeEach(func() {
 		loadEnv()
 
-		tempDir := GinkgoT().TempDir()
-		config.GetInstance().MasaDir = tempDir
+		masaDir = GinkgoT().TempDir()
 
 		twitterUsername = os.Getenv("TWITTER_USERNAME")
 		twitterPassword = os.Getenv("TWITTER_PASSWORD")
@@ -46,20 +46,18 @@ var _ = Describe("Twitter Auth Function", func() {
 
 		Expect(twitterUsername).NotTo(BeEmpty(), "TWITTER_USERNAME environment variable is not set")
 		Expect(twitterPassword).NotTo(BeEmpty(), "TWITTER_PASSWORD environment variable is not set")
-
-		config.GetInstance().TwitterUsername = twitterUsername
-		config.GetInstance().TwitterPassword = twitterPassword
-		config.GetInstance().Twitter2FaCode = twoFACode
+		Expect(twoFACode).NotTo(BeEmpty(), "TWITTER_PASSWORD environment variable is not set")
 	})
 
 	authenticate := func() *twitterscraper.Scraper {
+		// TODO Actually authenticate
 		return nil
 		//return twitter.Auth()
 	}
 
 	PIt("authenticates and logs in successfully", func() {
 		// Ensure cookie file doesn't exist before authentication
-		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		cookieFile := filepath.Join(masaDir, "twitter_cookies.json")
 		Expect(cookieFile).NotTo(BeAnExistingFile())
 
 		// Authenticate
