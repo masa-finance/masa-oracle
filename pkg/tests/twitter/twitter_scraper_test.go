@@ -6,7 +6,6 @@ import (
 	"runtime"
 
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 	. "github.com/onsi/ginkgo/v2"
@@ -84,7 +83,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(firstScraper).NotTo(BeNil())
 
 		// Verify cookie file is created
-		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		cookieFile := filepath.Join(masaDir, "twitter_cookies.json")
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
@@ -111,7 +110,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(firstScraper).NotTo(BeNil())
 
 		// Verify cookie file is created
-		cookieFile := filepath.Join(config.GetInstance().MasaDir, "twitter_cookies.json")
+		cookieFile := filepath.Join(masaDir, "twitter_cookies.json")
 		Expect(cookieFile).To(BeAnExistingFile())
 
 		// Clear the scraper to force cookie reuse
@@ -141,6 +140,6 @@ var _ = Describe("Twitter Auth Function", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(config.GetInstance().MasaDir)
+		os.RemoveAll(masaDir)
 	})
 })
