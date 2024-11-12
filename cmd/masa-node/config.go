@@ -28,6 +28,7 @@ func initOptions(cfg *config.AppConfig) ([]node.Option, *workers.WorkHandlerMana
 		node.WithBootNodes(cfg.Bootnodes...),
 		node.WithMasaDir(cfg.MasaDir),
 		node.WithCachePath(cachePath),
+		node.WithLlmCfUrl(cfg.LLMCfUrl),
 	}
 
 	if cfg.TwitterScraper {

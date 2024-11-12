@@ -781,7 +781,7 @@ func (api *API) CfLlmChat() gin.HandlerFunc {
 		}
 		api.sendTrackingEvent(data_types.LLMChat, bodyBytes)
 
-		cfUrl := config.GetInstance().LLMCfUrl
+		cfUrl := api.Node.Options.LLMCloudflareUrl
 		if cfUrl == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CF_URL")})
 			return

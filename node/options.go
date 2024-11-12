@@ -32,6 +32,7 @@ type NodeOption struct {
 	Version              string
 	MasaDir              string
 	CachePath            string
+	LLMCloudflareUrl     string
 }
 
 type PubSubHandlers struct {
@@ -162,5 +163,11 @@ func WithMasaDir(directory string) Option {
 func WithCachePath(path string) Option {
 	return func(o *NodeOption) {
 		o.CachePath = path
+	}
+}
+
+func WithLlmCfUrl(url string) Option {
+	return func(o *NodeOption) {
+		o.LLMCloudflareUrl = url
 	}
 }
