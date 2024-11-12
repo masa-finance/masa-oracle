@@ -6,6 +6,7 @@ type WorkerOption struct {
 	isLLMServerWorker      bool
 	isDiscordScraperWorker bool
 	llmChatUrl             string
+	masaDir                string
 }
 
 type WorkerOptionFunc func(*WorkerOption)
@@ -29,6 +30,12 @@ var EnableDiscordScraperWorker = func(o *WorkerOption) {
 func WithLlmChatUrl(url string) WorkerOptionFunc {
 	return func(o *WorkerOption) {
 		o.llmChatUrl = url
+	}
+}
+
+func WithMasaDir(dir string) WorkerOptionFunc {
+	return func(o *WorkerOption) {
+		o.masaDir = dir
 	}
 }
 

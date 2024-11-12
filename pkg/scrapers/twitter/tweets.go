@@ -11,8 +11,8 @@ type TweetResult struct {
 	Error error
 }
 
-func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
-	scraper, account, err := getAuthenticatedScraper()
+func ScrapeTweetsByQuery(baseDir string, query string, count int) ([]*TweetResult, error) {
+	scraper, account, err := getAuthenticatedScraper(baseDir)
 	if err != nil {
 		return nil, err
 	}

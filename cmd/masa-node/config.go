@@ -13,6 +13,7 @@ func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]no
 	// TODO: this needs to be moved under config, but now it's here as there are import cycles given singletons
 	workerManagerOptions := []workers.WorkerOptionFunc{
 		workers.WithLlmChatUrl(cfg.LLMChatUrl),
+		workers.WithMasaDir(cfg.MasaDir),
 	}
 
 	cachePath := cfg.CachePath

@@ -33,9 +33,9 @@ func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
 	}
 
 	if options.isTwitterWorker {
-		whm.addWorkHandler(data_types.Twitter, &handlers.TwitterQueryHandler{})
-		whm.addWorkHandler(data_types.TwitterFollowers, &handlers.TwitterFollowersHandler{})
-		whm.addWorkHandler(data_types.TwitterProfile, &handlers.TwitterProfileHandler{})
+		whm.addWorkHandler(data_types.Twitter, &handlers.TwitterQueryHandler{MasaDir: options.masaDir})
+		whm.addWorkHandler(data_types.TwitterFollowers, &handlers.TwitterFollowersHandler{MasaDir: options.masaDir})
+		whm.addWorkHandler(data_types.TwitterProfile, &handlers.TwitterProfileHandler{MasaDir: options.masaDir})
 	}
 
 	if options.isWebScraperWorker {

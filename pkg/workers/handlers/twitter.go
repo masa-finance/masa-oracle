@@ -9,9 +9,9 @@ import (
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
-type TwitterQueryHandler struct{}
-type TwitterFollowersHandler struct{}
-type TwitterProfileHandler struct{}
+type TwitterQueryHandler struct{ MasaDir string }
+type TwitterFollowersHandler struct{ MasaDir string }
+type TwitterProfileHandler struct{ MasaDir string }
 
 func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterQueryHandler input: %s", data)
@@ -25,7 +25,7 @@ func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 
 	logrus.Infof("[+] Scraping tweets for query: %s, count: %d", query, count)
 
-	resp, err := twitter.ScrapeTweetsByQuery(query, count)
+	resp, err := twitter.ScrapeTweetsByQuery(h.MasaDir, query, count)
 	if err != nil {
 		logrus.Errorf("[+] TwitterQueryHandler error scraping tweets: %v", err)
 		return data_types.WorkResponse{Error: err.Error()}
@@ -48,7 +48,7 @@ func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkRespons
 	}
 	username := dataMap["username"].(string)
 	count := int(dataMap["count"].(float64))
-	resp, err := twitter.ScrapeFollowersForProfile(username, count)
+	resp, err := twitter.ScrapeFollowersForProfile(h.MasaDir, username, count)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter followers: %v", err)}
 	}
@@ -64,7 +64,7 @@ func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse 
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter profile data: %v", err)}
 	}
 	username := dataMap["username"].(string)
-	resp, err := twitter.ScrapeTweetsProfile(username)
+	resp, err := twitter.ScrapeTweetsProfile(h.MasaDir, username)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter profile: %v", err)}
 	}

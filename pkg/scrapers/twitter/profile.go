@@ -4,8 +4,8 @@ import (
 	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
 )
 
-func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
-	scraper, account, err := getAuthenticatedScraper()
+func ScrapeTweetsProfile(baseDir string, username string) (twitterscraper.Profile, error) {
+	scraper, account, err := getAuthenticatedScraper(baseDir)
 	if err != nil {
 		return twitterscraper.Profile{}, err
 	}
