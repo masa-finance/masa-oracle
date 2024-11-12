@@ -168,7 +168,7 @@ func WithCachePath(path string) Option {
 	}
 }
 
-func WithLlmCfUrl(url string) Option {
+func WithLLMCloudFlareURL(url string) Option {
 	return func(o *NodeOption) {
 		o.LLMCloudflareUrl = url
 	}
