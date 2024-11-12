@@ -3,7 +3,6 @@ package masacrypto
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"sync"
 
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -29,19 +28,6 @@ import (
 //   to Ethereum address format.
 // - Ensures thread-safe initialization and access to the cryptographic keys through the
 //   use of the sync.Once mechanism.
-//
-// Usage:
-// To access the KeyManager and its functionalities, use the KeyManagerInstance() function
-// which returns the singleton instance of KeyManager. This instance can then be used to
-// perform various key management tasks, such as retrieving the application's cryptographic
-// keys, converting key formats, and more.
-// Example:
-//     keyManager := crypto.KeyManagerInstance()
-
-var (
-	keyManagerInstance *KeyManager
-	once               sync.Once
-)
 
 // KeyManager holds all the cryptographic entities used in the application.
 type KeyManager struct {
