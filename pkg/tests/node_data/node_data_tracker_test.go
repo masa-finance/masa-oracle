@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/masa-finance/masa-oracle/node"
+	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -16,8 +17,10 @@ var _ = Describe("NodeDataTracker", func() {
 		It("should correctly update NodeData Twitter fields", func() {
 			testNode, err := NewOracleNode(
 				context.Background(),
-				EnableStaked,
-				EnableRandomIdentity,
+				config.WithConstantOptions(
+					EnableStaked,
+					EnableRandomIdentity,
+				)...,
 			)
 			Expect(err).NotTo(HaveOccurred())
 

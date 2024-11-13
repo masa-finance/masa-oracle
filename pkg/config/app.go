@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/masa-finance/masa-oracle/internal/versioning"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 
 	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
@@ -58,6 +59,7 @@ type AppConfig struct {
 	WebScraper         bool   `mapstructure:"webScraper"`
 	APIEnabled         bool   `mapstructure:"api_enabled"`
 
+	KeyManager   *masacrypto.KeyManager
 	TelegramStop bg.StopFunc
 }
 
@@ -72,21 +74,26 @@ type AppConfig struct {
 // In case of any errors it returns nill with an error object
 func GetConfig() (*AppConfig, error) {
 	instance := &AppConfig{}
-
 	instance.setDefaultConfig()
 	// TODO Shouldn't the env vars override the file config, instead of the other way around?
 	instance.setEnvVariableConfig()
 	instance.setFileConfig(viper.GetString("FILE_PATH"))
 
 	if err := instance.setCommandLineConfig(); err != nil {
-		return nil, fmt.Errorf("Error while setting command line options: %v", err)
+		return nil, err
 	}
 
 	if err := viper.Unmarshal(instance); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config into struct: %v", err)
+		return nil, fmt.Errorf("Unable to unmarshal config into struct, %v", err)
 	}
 
 	instance.APIEnabled = viper.GetBool("api_enabled")
+
+	keyManager, err := masacrypto.NewKeyManager(instance.PrivateKey, instance.PrivateKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to initialize keys: %v", err)
+	}
+	instance.KeyManager = keyManager
 
 	return instance, nil
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -42,7 +41,7 @@ func (node *OracleNode) ListenToNodeTracker() {
 				continue
 			}
 			// Publish the JSON data on the node.topic
-			err = node.PublishTopic(config.NodeGossipTopic, jsonData)
+			err = node.PublishTopic(node.Options.NodeGossipTopic, jsonData)
 			if err != nil {
 				logrus.Errorf("[-] Error publishing node data: %v", err)
 			}
@@ -88,10 +87,10 @@ type NodeDataPage struct {
 func (node *OracleNode) SendNodeDataPage(allNodeData []pubsub2.NodeData, stream network.Stream, pageNumber int) {
 	logrus.Debugf("[+] SendNodeDataPage --> %s: Page: %d", stream.Conn().RemotePeer(), pageNumber)
 	totalRecords := len(allNodeData)
-	totalPages := int(math.Ceil(float64(totalRecords) / config.PageSize))
+	totalPages := int(math.Ceil(float64(totalRecords) / float64(node.Options.PageSize)))
 
-	startIndex := pageNumber * config.PageSize
-	endIndex := startIndex + config.PageSize
+	startIndex := pageNumber * node.Options.PageSize
+	endIndex := startIndex + node.Options.PageSize
 	if endIndex > totalRecords {
 		endIndex = totalRecords
 	}
@@ -133,9 +132,9 @@ func (node *OracleNode) SendNodeData(peerID peer.ID) {
 		nodeData = node.NodeTracker.GetUpdatedNodes(sinceTime)
 	}
 	totalRecords := len(nodeData)
-	totalPages := int(math.Ceil(float64(totalRecords) / float64(config.PageSize)))
+	totalPages := int(math.Ceil(float64(totalRecords) / float64(node.Options.PageSize)))
 
-	stream, err := node.Host.NewStream(node.Context, peerID, node.protocolWithVersion(config.NodeDataSyncProtocol))
+	stream, err := node.Host.NewStream(node.Context, peerID, node.protocolWithVersion(node.Options.NodeDataSyncProtocol))
 	if err != nil {
 		// node.NodeTracker.RemoveNodeData(peerID.String())
 		return

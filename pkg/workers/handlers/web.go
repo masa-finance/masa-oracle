@@ -11,7 +11,6 @@ import (
 
 // WebHandler - All the web handlers implement the WorkHandler interface.
 type WebHandler struct{}
-type WebSentimentHandler struct{}
 
 func (h *WebHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] WebHandler %s", data)

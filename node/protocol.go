@@ -9,7 +9,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 const (
@@ -50,7 +49,7 @@ func (node *OracleNode) subscribeToTopics() error {
 	}
 
 	// Subscribe to NodeGossipTopic to participate in the network's gossip protocol.
-	if err := node.SubscribeTopic(config.NodeGossipTopic, node.NodeTracker, false); err != nil {
+	if err := node.SubscribeTopic(node.Options.NodeGossipTopic, node.NodeTracker, false); err != nil {
 		return err
 	}
 

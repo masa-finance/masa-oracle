@@ -83,7 +83,7 @@ func (sm *Manager) AddSubscription(topicName string, handler types.SubscriptionH
 		for {
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
-				logrus.Errorf("[-] Error reading from topic: %v", err)
+				logrus.Errorf("[-] AddSubscription: Error reading from topic: %v", err)
 				if errors.Is(err, context.Canceled) {
 					return
 				}
@@ -221,7 +221,7 @@ func (sm *Manager) Subscribe(topicName string, handler types.SubscriptionHandler
 		for {
 			msg, err := sub.Next(sm.ctx)
 			if err != nil {
-				logrus.Errorf("[-] Error reading from topic: %v", err)
+				logrus.Errorf("[-] Subscribe: Error reading from topic: %v", err)
 				if errors.Is(err, context.Canceled) {
 					return
 				}
