@@ -30,7 +30,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	cfg := config.GetInstance()
+	cfg, err := config.GetConfig()
+	if err != nil {
+		logrus.Fatalf("[-] %v", err)
+	}
 	cfg.LogConfig()
 	cfg.SetupLogging()
 

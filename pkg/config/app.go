@@ -1,12 +1,12 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os/user"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 
@@ -15,11 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-)
-
-var (
-	instance *AppConfig
-	once     sync.Once
 )
 
 // AppConfig represents the configuration settings for the application.
@@ -66,41 +61,34 @@ type AppConfig struct {
 	TelegramStop bg.StopFunc
 }
 
-// GetInstance returns the singleton instance of AppConfig.
+// GetConfig parses and fills in the AppConfig. The configuration values are generated
+// by the following steps in order:
 //
-// If the instance has not been initialized yet, GetInstance will initialize it by:
-// 1. Creating a new AppConfig instance.
-// 2. Setting default configuration values.
-// 3. Overriding defaults with values from environment variables.
-// 4. Overriding defaults and environment variables with values from the configuration file.
-// 5. Overriding all previous values with command-line flags.
-// 6. Unmarshalling the configuration into the AppConfig instance.
+// 1. Set default configuration values.
+// 2. Override with values from environment variables.
+// 3. Override with values from the configuration file.
+// 4. Override with command-line flags.
 //
-// If the unmarshalling fails, the instance is set to nil.
-//
-// Subsequent calls to GetInstance will return the same initialized instance.
-func GetInstance() *AppConfig {
-	once.Do(func() {
-		instance = &AppConfig{}
+// In case of any errors it returns nill with an error object
+func GetConfig() (*AppConfig, error) {
+	instance := &AppConfig{}
 
-		instance.setDefaultConfig()
-		// TODO Shouldn't the env vars override the file config, instead of the other way around?
-		instance.setEnvVariableConfig()
+	instance.setDefaultConfig()
+	// TODO Shouldn't the env vars override the file config, instead of the other way around?
+	instance.setEnvVariableConfig()
+	instance.setFileConfig(viper.GetString("FILE_PATH"))
 
-		instance.setFileConfig(viper.GetString("FILE_PATH"))
+	if err := instance.setCommandLineConfig(); err != nil {
+		return nil, fmt.Errorf("Error while setting command line options: %v", err)
+	}
 
-		if err := instance.setCommandLineConfig(); err != nil {
-			logrus.Fatal(err)
-		}
+	if err := viper.Unmarshal(instance); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal config into struct: %v", err)
+	}
 
-		if err := viper.Unmarshal(instance); err != nil {
-			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
-			instance = nil
-		}
+	instance.APIEnabled = viper.GetBool("api_enabled")
 
-		instance.APIEnabled = viper.GetBool("api_enabled")
-	})
-	return instance
+	return instance, nil
 }
 
 // setDefaultConfig sets the default configuration values for the AppConfig instance.
