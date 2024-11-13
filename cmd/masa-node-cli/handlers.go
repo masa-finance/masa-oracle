@@ -61,44 +61,6 @@ func handleSaveFile(f string, content string) {
 	}
 }
 
-// handleGPT takes a prompt and a user message, sends them to the OpenAI API, and returns the generated response.
-// It utilizes the OPENAI_API_KEY environment variable for authentication.
-// Parameters:
-// - prompt: A string containing the initial prompt for the AI.
-// - user_message: A string containing the user's message to the AI.
-// Returns:
-// - A string containing the AI's response.
-// - An error if the request to the OpenAI API fails.
-func handleGPT(prompt string, userMessage string) (string, error) {
-	key := os.Getenv("OPENAI_API_KEY")
-	if key == "" {
-		logrus.Println("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
-		return "", errors.New("OPENAI_API_KEY is not set")
-	}
-	client := openai.NewClient(key)
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT4,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: prompt,
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: userMessage,
-				},
-			},
-		},
-	)
-	if err != nil {
-		logrus.Errorf("[-] Error while getting ChatGPT completion: %v", err)
-		return "", err
-	}
-	return resp.Choices[0].Message.Content, nil
-}
-
 // handleSpeak sends a given text response to the ElevenLabs API for text-to-speech conversion,
 // then plays the resulting audio. It uses the ELAB_KEY environment variable for API authentication.
 func handleSpeak(response string) {
