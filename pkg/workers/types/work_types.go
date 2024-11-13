@@ -12,17 +12,14 @@ const (
 	Discord                 WorkerType = "discord"
 	DiscordProfile          WorkerType = "discord-profile"
 	DiscordChannelMessages  WorkerType = "discord-channel-messages"
-	DiscordSentiment        WorkerType = "discord-sentiment"
 	TelegramSentiment       WorkerType = "telegram-sentiment"
 	TelegramChannelMessages WorkerType = "telegram-channel-messages"
 	DiscordGuildChannels    WorkerType = "discord-guild-channels"
 	DiscordUserGuilds       WorkerType = "discord-user-guilds"
-	LLMChat                 WorkerType = "llm-chat"
 	Twitter                 WorkerType = "twitter"
 	TwitterFollowers        WorkerType = "twitter-followers"
 	TwitterProfile          WorkerType = "twitter-profile"
 	Web                     WorkerType = "web"
-	WebSentiment            WorkerType = "web-sentiment"
 	Test                    WorkerType = "test"
 
 	DataSourceTwitter  = "twitter"
@@ -35,7 +32,7 @@ const (
 func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
 	logrus.Infof("Mapping WorkerType %s to WorkerCategory", wt)
 	switch wt {
-	case Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds:
+	case Discord, DiscordProfile, DiscordChannelMessages, DiscordGuildChannels, DiscordUserGuilds:
 		logrus.Info("WorkerType is related to Discord")
 		return pubsub.CategoryDiscord
 	case TelegramSentiment, TelegramChannelMessages:
@@ -44,7 +41,7 @@ func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
 	case Twitter, TwitterFollowers, TwitterProfile:
 		logrus.Info("WorkerType is related to Twitter")
 		return pubsub.CategoryTwitter
-	case Web, WebSentiment:
+	case Web:
 		logrus.Info("WorkerType is related to Web")
 		return pubsub.CategoryWeb
 	default:
@@ -57,7 +54,7 @@ func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
 func WorkerTypeToDataSource(wt WorkerType) string {
 	logrus.Infof("Mapping WorkerType %s to WorkerCategory", wt)
 	switch wt {
-	case Discord, DiscordProfile, DiscordChannelMessages, DiscordSentiment, DiscordGuildChannels, DiscordUserGuilds:
+	case Discord, DiscordProfile, DiscordChannelMessages, DiscordGuildChannels, DiscordUserGuilds:
 		logrus.Info("WorkerType is related to Discord")
 		return DataSourceDiscord
 	case TelegramSentiment, TelegramChannelMessages:
@@ -66,7 +63,7 @@ func WorkerTypeToDataSource(wt WorkerType) string {
 	case Twitter, TwitterFollowers, TwitterProfile:
 		logrus.Info("WorkerType is related to Twitter")
 		return DataSourceTwitter
-	case Web, WebSentiment:
+	case Web:
 		logrus.Info("WorkerType is related to Web")
 		return DataSourceWeb
 	default:

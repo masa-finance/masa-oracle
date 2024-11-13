@@ -21,7 +21,6 @@ type NodeOption struct {
 	IsDiscordScraper  bool
 	IsTelegramScraper bool
 	IsWebScraper      bool
-	IsLlmServer       bool
 
 	Bootnodes            []string
 	RandomIdentity       bool
@@ -33,7 +32,6 @@ type NodeOption struct {
 	Version              string
 	MasaDir              string
 	CachePath            string
-	LLMCloudflareUrl     string
 	KeyManager           *masacrypto.KeyManager
 }
 
@@ -79,10 +77,6 @@ var IsTelegramScraper = func(o *NodeOption) {
 
 var IsWebScraper = func(o *NodeOption) {
 	o.IsWebScraper = true
-}
-
-var IsLlmServer = func(o *NodeOption) {
-	o.IsLlmServer = true
 }
 
 func (a *NodeOption) Apply(opts ...Option) {
@@ -165,12 +159,6 @@ func WithMasaDir(directory string) Option {
 func WithCachePath(path string) Option {
 	return func(o *NodeOption) {
 		o.CachePath = path
-	}
-}
-
-func WithLLMCloudFlareURL(url string) Option {
-	return func(o *NodeOption) {
-		o.LLMCloudflareUrl = url
 	}
 }
 

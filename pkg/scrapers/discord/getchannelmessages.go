@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 // ChannelMessage represents a Discord channel message structure
@@ -75,28 +73,4 @@ func GetChannelMessages(channelID string, limit string, before string) ([]Channe
 	}
 
 	return messages, nil
-}
-
-// ScrapeDiscordMessagesForSentiment scrapes messages from a Discord channel and analyzes their sentiment.
-func ScrapeDiscordMessagesForSentiment(channelID string, model string, prompt string) (string, string, error) {
-	// Fetch messages from the Discord channel
-	messages, err := GetChannelMessages(channelID, "100", "")
-	if err != nil {
-		return "", "", fmt.Errorf("error fetching messages from Discord channel: %v", err)
-	}
-
-	// Extract the content of the messages
-	var messageContents []string
-	for _, message := range messages {
-		messageContents = append(messageContents, message.Content)
-	}
-
-	// Analyze the sentiment of the fetched messages
-	// Note: Ensure that llmbridge.AnalyzeSentimentDiscord is implemented and can handle the analysis
-	analysisPrompt, sentiment, err := llmbridge.AnalyzeSentimentDiscord(messageContents, model, prompt)
-	if err != nil {
-		return "", "", fmt.Errorf("error analyzing sentiment of Discord messages: %v", err)
-	}
-	return analysisPrompt, sentiment, nil
-
 }

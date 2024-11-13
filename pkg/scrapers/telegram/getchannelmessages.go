@@ -6,8 +6,6 @@ import (
 	"log"
 
 	"github.com/gotd/td/tg"
-
-	"github.com/masa-finance/masa-oracle/pkg/llmbridge"
 )
 
 // FetchChannelMessages Fetch messages from a group
@@ -66,21 +64,4 @@ func FetchChannelMessages(ctx context.Context, username string) ([]*tg.Message, 
 	})
 
 	return messagesSlice, err // Return the slice of messages and any error
-}
-
-// ScrapeTelegramMessagesForSentiment scrapes messages from a Telegram channel and analyzes their sentiment.
-func ScrapeTelegramMessagesForSentiment(ctx context.Context, username string, model string, prompt string) (string, string, error) {
-	// Fetch messages from the Telegram channel
-	messages, err := FetchChannelMessages(ctx, username)
-	if err != nil {
-		return "", "", fmt.Errorf("error fetching messages from Telegram channel: %v", err)
-	}
-
-	// Analyze the sentiment of the fetched messages
-	// Note: Ensure that llmbridge.AnalyzeSentimentTelegram is implemented and can handle the analysis
-	analysisPrompt, sentiment, err := llmbridge.AnalyzeSentimentTelegram(messages, model, prompt)
-	if err != nil {
-		return "", "", fmt.Errorf("error analyzing sentiment of Telegram messages: %v", err)
-	}
-	return analysisPrompt, sentiment, nil
 }

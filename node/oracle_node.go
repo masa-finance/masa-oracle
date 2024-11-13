@@ -187,7 +187,7 @@ func (node *OracleNode) getNodeData() *pubsub.NodeData {
 	nodeData.IsStaked = node.Options.IsStaked
 	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
 	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
-	nodeData.IsTelegramScraper = node.Options.IsLlmServer
+	nodeData.IsTelegramScraper = node.Options.IsTelegramScraper
 	nodeData.IsWebScraper = node.Options.IsWebScraper
 	nodeData.IsValidator = node.Options.IsValidator
 	nodeData.IsActive = true
