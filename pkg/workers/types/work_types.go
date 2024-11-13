@@ -16,7 +16,6 @@ const (
 	TelegramChannelMessages WorkerType = "telegram-channel-messages"
 	DiscordGuildChannels    WorkerType = "discord-guild-channels"
 	DiscordUserGuilds       WorkerType = "discord-user-guilds"
-	LLMChat                 WorkerType = "llm-chat"
 	Twitter                 WorkerType = "twitter"
 	TwitterFollowers        WorkerType = "twitter-followers"
 	TwitterProfile          WorkerType = "twitter-profile"

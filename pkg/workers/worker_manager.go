@@ -42,10 +42,6 @@ func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
 		whm.addWorkHandler(data_types.Web, &handlers.WebHandler{})
 	}
 
-	if options.isLLMServerWorker {
-		whm.addWorkHandler(data_types.LLMChat, handlers.NewLLMChatHandler(options.llmChatUrl))
-	}
-
 	if options.isDiscordScraperWorker {
 		whm.addWorkHandler(data_types.Discord, &handlers.DiscordProfileHandler{})
 		whm.addWorkHandler(data_types.DiscordChannelMessages, &handlers.DiscordChannelHandler{})

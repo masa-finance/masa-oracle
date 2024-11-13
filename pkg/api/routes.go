@@ -410,28 +410,6 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Router /topic/post [post]
 		v1.POST("/topic/post", API.PostToTopicHandler())
 
-		// @Summary Chat with Local Ollama AI
-		// @Description Initiates a chat session with an AI model that accepts common ollama formatted requests
-		// @Tags Chat
-		// @Accept  json
-		// @Produce  json
-		// @Param   reqBody  body      LLMChat  true  "Chat Request"
-		// @Success 200 {object} ChatResponse "Successfully received response from AI"
-		// @Failure 400 {object} ErrorResponse "Error communicating with AI"
-		// @Router /chat [post]
-		v1.POST("/chat", API.LocalLlmChat())
-
-		// @Summary Chat using Cloudflare AI Workers
-		// @Description Initiates a chat session with a Cloudflare AI model
-		// @Tags Chat
-		// @Accept  json
-		// @Produce  json
-		// @Param   message   body    string  true  "Message to send to Cloudflare AI"
-		// @Success 200 {object} ChatResponse "Successfully received response from Cloudflare AI"
-		// @Failure 400 {object} ErrorResponse "Error communicating with Cloudflare AI"
-		// @Router /chat/cf [post]
-		v1.POST("/chat/cf", API.CfLlmChat())
-
 		// @Summary Get Blocks
 		// @Description Retrieves the list of blocks from the blockchain
 		// @Tags Blocks

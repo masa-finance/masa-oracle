@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/hex"
@@ -28,15 +27,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
-
-type LLMChat struct {
-	Model    string `json:"model,omitempty"`
-	Messages []struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	} `json:"messages,omitempty"`
-	Stream bool `json:"stream"`
-}
 
 // sendWorkRequest sends a work request to a worker for processing.
 // It marshals the request details into JSON and sends it over a libp2p stream.
@@ -664,162 +654,6 @@ func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		wg.Wait()
-	}
-}
-
-// LocalLlmChat handles requests for chatting with AI models hosted by ollama.
-// It expects a JSON request body with a structure formatted for the model. For example for Ollama:
-//
-//	{
-//	    "model": "llama3",
-//	    "messages": [
-//	        {
-//	            "role": "user",
-//	            "content": "why is the sky blue?"
-//	        }
-//	    ],
-//	    "stream": false
-//	}
-//
-// This function acts as a proxy, forwarding the request to hosted models and returning the proprietary structured response.
-// This is intended to be compatible with code that is looking to leverage a common payload for LLMs that is based on
-// the model name/type
-// So if it is an Ollama request it is the responsibility of the caller to properly format their payload to conform
-// to the required structure similar to above.
-//
-// See:
-// https://platform.openai.com/docs/api-reference/authentication
-// https://docs.anthropic.com/claude/reference/complete_post
-// https://github.com/ollama/ollama/blob/main/docs/api.md
-// note: Ollama recently added support for the OpenAI structure which can simplify integrating it.
-func (api *API) LocalLlmChat() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		body := c.Request.Body
-		var reqBody LLMChat
-		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		reqBody.Model = strings.TrimPrefix(reqBody.Model, "ollama/")
-		reqBody.Stream = false
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-
-		api.sendTrackingEvent(data_types.LLMChat, bodyBytes)
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = api.sendWorkRequest(requestID, data_types.LLMChat, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// TODO: review if we are still planning on doing the DfLlmChat and if so, make it conform to how we are doing other work
-
-// CfLlmChat handles the Cloudflare LLM chat requests.
-// It reads the request body, appends a system message, and forwards the request to the configured LLM endpoint.
-// The response from the LLM endpoint is then returned to the client.
-//
-//	{
-//	    "model": "@cf/meta/llama-3-8b-instruct",
-//	    "messages": [
-//	        {
-//	            "role": "user",
-//	            "content": "why is the sky blue?"
-//	        }
-//	    ]
-//	}
-//
-// Models
-//
-//	@cf/qwen/qwen1.5-0.5b-chat
-//	@cf/meta/llama-2-7b-chat-fp16
-//	@cf/meta/llama-3-8b-instruct
-//	@cf/mistral/mistral-7b-instruct
-//	@cf/mistral/mistral-7b-instruct-v0.1
-//	@hf/google/gemma-7b-it
-//	@hf/nousresearch/hermes-2-pro-mistral-7b
-//	@hf/thebloke/llama-2-13b-chat-awq
-//	@hf/thebloke/neural-chat-7b-v3-1-awq
-//	@cf/openchat/openchat-3.5-0106
-//	@cf/microsoft/phi-2
-//
-// @return gin.HandlerFunc - the handler function for the LLM chat requests.
-func (api *API) CfLlmChat() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		body := c.Request.Body
-		var reqBody LLMChat
-		if err := json.NewDecoder(body).Decode(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		reqBody.Messages = append(reqBody.Messages, struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		}{
-			Role: "system",
-			// use this for sentiment analysis
-			// Content: "Please perform a sentiment analysis on the following tweets, using an unbiased approach. Sentiment analysis involves identifying and categorizing opinions expressed in text, particularly to determine whether the writer`s attitude towards a particular topic, product, etc., is positive, negative, or neutral. After analyzing, please provide a summary of the overall sentiment expressed in these tweets, including the proportion of positive, negative, and neutral sentiments if applicable.",
-			// use this for standard chat
-			Content: os.Getenv("PROMPT"),
-		})
-
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		api.sendTrackingEvent(data_types.LLMChat, bodyBytes)
-
-		cfUrl := api.Node.Options.LLMCloudflareUrl
-		if cfUrl == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("missing env LLM_CF_URL")})
-			return
-		}
-		uri := fmt.Sprintf("%s%s", cfUrl, reqBody.Model)
-		req, err := http.NewRequest("POST", uri, bytes.NewReader(bodyBytes))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		bearer := fmt.Sprintf("Bearer %s", os.Getenv("LLM_CF_TOKEN"))
-		req.Header.Set("Authorization", bearer)
-		req.Header.Set("Content-Type", "application/json")
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				logrus.Error("[-] Error closing response body: ", err)
-			}
-		}(resp.Body)
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			logrus.Error("[-] Error reading response body: ", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		var payload map[string]interface{}
-		err = json.Unmarshal(respBody, &payload)
-		if err != nil {
-			logrus.Error("[-] Error unmarshalling response body: ", err)
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-		}
-		c.JSON(http.StatusOK, payload)
 	}
 }
 
