@@ -1,16 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/libp2p/go-libp2p"
@@ -19,143 +12,8 @@ import (
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/rivo/tview"
-	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 )
-
-// handleIPAddress takes a multi-address string as input and extracts the IP address from it.
-// The function supports both "/ip4/" and "/dns/" multi-address formats.
-// If the multi-address contains an IP address, it is returned directly.
-// If the multi-address contains a DNS name, it is also returned as is.
-// In case the multi-address does not follow the expected format or the IP address/DNS name is not found, an empty string is returned.
-func handleIPAddress(multiAddr string) string {
-	parts := strings.Split(multiAddr, "/")
-	// Assuming the IP address is always after "/ip4/"
-	for i, part := range parts {
-		if part == "ip4" {
-			return parts[i+1]
-		} else if part == "dns" {
-			return parts[i+1]
-		}
-	}
-	return ""
-}
-
-// handleSaveFile writes the provided content to a file specified by the filename 'f'.
-// It appends the content to the file if it already exists, or creates a new file with the content if it does not.
-// The file is created with permissions set to 0755.
-// Parameters:
-// - f: The name of the file to which the content will be written.
-// - content: The content to write to the file.
-func handleSaveFile(f string, content string) {
-	file, err := os.OpenFile(f, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-	if err != nil {
-		logrus.Errorf("[-] Error while opening file %s for writing: %v", f, err)
-		return
-	}
-
-	_, err = file.WriteString(content + "\n")
-	if err != nil {
-		logrus.Errorf("[-] Error while writing to file %s: %v", f, err)
-		return
-	}
-}
-
-// handleSpeak sends a given text response to the ElevenLabs API for text-to-speech conversion,
-// then plays the resulting audio. It uses the ELAB_KEY environment variable for API authentication.
-func handleSpeak(response string) {
-	key := os.Getenv("ELAB_KEY")
-
-	data := SpeakRequest{
-		Text: response,
-		VoiceSettings: struct {
-			Stability       float64 "json:\"stability\""
-			SimilarityBoost float64 "json:\"similarity_boost\""
-		}{
-			Stability:       0.6,
-			SimilarityBoost: 0.85,
-		},
-	}
-
-	buf, _ := json.Marshal(data)
-
-	req, err := http.NewRequest(http.MethodPost, os.Getenv("ELAB_URL"), bytes.NewBuffer(buf))
-	if err != nil {
-		logrus.Errorf("[-] Error while creating HTTP request to %s: %v", os.Getenv("ELAB_URL"), err)
-		return
-	}
-	req.Header.Set("accept", "*/*")
-	req.Header.Set("xi-api-key", key)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		logrus.Errorf("[-] Error while sending HTTP POST to %s: %v", os.Getenv("ELAB_URL"), err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			logrus.Errorf("[-] Error while reading HTTP reply from ElevenLabs API: %v", err)
-			return
-		}
-
-		// TODO: Configure filename
-		file, err := os.Create("output.mp3")
-		if err != nil {
-			logrus.Errorf("[-] Error while opening output.mp3 for writing: %v", err)
-			return
-		}
-
-		_, err = file.Write(bodyBytes)
-		if err != nil {
-			logrus.Errorf("[-] Error while writing voice data to output.mp3: %v", err)
-			return
-		}
-
-		// TODO: Is afplay available in all platforms? Perhaps configure?
-		cmd := exec.Command("afplay", "output.mp3")
-		go func() {
-			err := cmd.Run()
-			if err != nil {
-				logrus.Errorf("[-] Error while playing output using %s: %v", cmd, err)
-			}
-		}()
-		go func() {
-			err := handleTranscribe("output.mp3", "transcription.txt")
-			if err != nil {
-				logrus.Errorf("[-] Error while transcribing audio: %v", err)
-			}
-		}()
-
-		// TODO: perhaps rm output.mp3?
-	}
-}
-
-// handleTranscribe takes an audio file and a target text file as input.
-// It uses the OpenAI API to handleTranscribe the audio to text, then saves the text to the specified text file.
-func handleTranscribe(audioFile string, txtFile string) error {
-	key := os.Getenv("OPENAI_API_KEY")
-	if key == "" {
-		return errors.New("OPENAI_API_KEY is not set. Please set the environment variable and try again.")
-	}
-	client := openai.NewClient(key)
-	ctx := context.Background()
-	req := openai.AudioRequest{
-		Model:    openai.Whisper1,
-		FilePath: audioFile,
-	}
-
-	resp, err := client.CreateTranscription(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	handleSaveFile(txtFile, resp.Text)
-	return nil
-}
 
 // HandleMessage implement subscription handler here
 func (handler *SubscriptionHandler) HandleMessage(message *pubsub.Message) {
