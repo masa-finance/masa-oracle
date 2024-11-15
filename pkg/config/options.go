@@ -1,16 +1,27 @@
-package main
+package config
 
 import (
 	"github.com/masa-finance/masa-oracle/node"
-	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	pubsub "github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 )
 
-func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]node.Option, *workers.WorkHandlerManager, *pubsub.PublicKeySubscriptionHandler) {
+var constantOptions = []node.Option{
+	node.WithOracleProtocol(OracleProtocol),
+	node.WithNodeDataSyncProtocol(NodeDataSyncProtocol),
+	node.WithNodeGossipTopic(NodeGossipTopic),
+	node.WithRendezvous(Rendezvous),
+	node.WithPageSize(PageSize),
+}
+
+// WithConstantOptions adds options that are set to constant values. We need to add them to
+// the node to avoid a dependency loop.
+func WithConstantOptions(nodes ...node.Option) []node.Option {
+	return append(nodes, constantOptions...)
+}
+
+func InitOptions(cfg *AppConfig) ([]node.Option, *workers.WorkHandlerManager, *pubsub.PublicKeySubscriptionHandler) {
 	// WorkerManager configuration
-	// TODO: this needs to be moved under config, but now it's here as there are import cycles given singletons
 	workerManagerOptions := []workers.WorkerOptionFunc{
 		workers.WithMasaDir(cfg.MasaDir),
 	}
@@ -20,17 +31,18 @@ func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]no
 		cachePath = cfg.MasaDir + "/cache"
 	}
 
-	masaNodeOptions := []node.Option{
+	masaNodeOptions := WithConstantOptions(
 		node.EnableStaked,
-		//	config.WithService(),
+		//	WithService(),
 		node.WithEnvironment(cfg.Environment),
 		node.WithVersion(cfg.Version),
 		node.WithPort(cfg.PortNbr),
 		node.WithBootNodes(cfg.Bootnodes...),
 		node.WithMasaDir(cfg.MasaDir),
 		node.WithCachePath(cachePath),
-		node.WithKeyManager(keyManager),
-	}
+		node.WithKeyManager(cfg.KeyManager),
+		node.WithWorkerProtocol(WorkerProtocol),
+	)
 
 	if cfg.TwitterScraper {
 		workerManagerOptions = append(workerManagerOptions, workers.EnableTwitterWorker)
@@ -38,7 +50,7 @@ func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]no
 	}
 
 	if cfg.TelegramScraper {
-		// XXX: Telegram scraper is not implemented yet in the worker (?)
+		// TODO: Telegram scraper is not implemented yet in the worker (?)
 		masaNodeOptions = append(masaNodeOptions, node.IsTelegramScraper)
 	}
 
@@ -56,15 +68,14 @@ func initOptions(cfg *config.AppConfig, keyManager *masacrypto.KeyManager) ([]no
 	blockChainEventTracker := node.NewBlockChain()
 	pubKeySub := &pubsub.PublicKeySubscriptionHandler{}
 
-	// TODO: Where the config is involved, move to the config the generation of Node options
 	masaNodeOptions = append(masaNodeOptions, []node.Option{
 		// Register the worker manager
 		node.WithMasaProtocolHandler(
-			config.WorkerProtocol,
+			WorkerProtocol,
 			workHandlerManager.HandleWorkerStream,
 		),
-		node.WithPubSubHandler(config.PublicKeyTopic, pubKeySub, false),
-		node.WithPubSubHandler(config.BlockTopic, blockChainEventTracker, true),
+		node.WithPubSubHandler(PublicKeyTopic, pubKeySub, false),
+		node.WithPubSubHandler(BlockTopic, blockChainEventTracker, true),
 	}...)
 
 	if cfg.Validator {

@@ -32,7 +32,15 @@ type NodeOption struct {
 	Version              string
 	MasaDir              string
 	CachePath            string
-	KeyManager           *masacrypto.KeyManager
+
+	OracleProtocol       string
+	NodeDataSyncProtocol string
+	NodeGossipTopic      string
+	Rendezvous           string
+	WorkerProtocol       string
+	PageSize             int
+
+	KeyManager *masacrypto.KeyManager
 }
 
 type PubSubHandlers struct {
@@ -165,5 +173,41 @@ func WithCachePath(path string) Option {
 func WithKeyManager(km *masacrypto.KeyManager) Option {
 	return func(o *NodeOption) {
 		o.KeyManager = km
+	}
+}
+
+func WithOracleProtocol(s string) Option {
+	return func(o *NodeOption) {
+		o.OracleProtocol = s
+	}
+}
+
+func WithNodeDataSyncProtocol(s string) Option {
+	return func(o *NodeOption) {
+		o.NodeDataSyncProtocol = s
+	}
+}
+
+func WithNodeGossipTopic(s string) Option {
+	return func(o *NodeOption) {
+		o.NodeGossipTopic = s
+	}
+}
+
+func WithRendezvous(s string) Option {
+	return func(o *NodeOption) {
+		o.Rendezvous = s
+	}
+}
+
+func WithWorkerProtocol(s string) Option {
+	return func(o *NodeOption) {
+		o.WorkerProtocol = s
+	}
+}
+
+func WithPageSize(size int) Option {
+	return func(o *NodeOption) {
+		o.PageSize = size
 	}
 }

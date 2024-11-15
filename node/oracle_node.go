@@ -26,7 +26,6 @@ import (
 
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 	"github.com/masa-finance/masa-oracle/pkg/chain"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	myNetwork "github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
@@ -47,7 +46,6 @@ type OracleNode struct {
 	Blockchain    *chain.Chain
 	Options       NodeOption
 	Context       context.Context
-	Config        *config.AppConfig
 }
 
 // GetMultiAddrs returns the priority multiaddr for this node.
@@ -150,7 +148,7 @@ func NewOracleNode(ctx context.Context, opts ...Option) (*OracleNode, error) {
 		Options:       *o,
 	}
 
-	n.Protocol = n.protocolWithVersion(config.OracleProtocol)
+	n.Protocol = n.protocolWithVersion(n.Options.OracleProtocol)
 	return n, nil
 }
 
@@ -204,7 +202,7 @@ func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
-	node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeDataSyncProtocol), node.ReceiveNodeData)
+	node.Host.SetStreamHandler(node.protocolWithVersion(node.Options.NodeDataSyncProtocol), node.ReceiveNodeData)
 
 	for pid, n := range node.Options.ProtocolHandlers {
 		node.Host.SetStreamHandler(pid, n)
@@ -215,7 +213,7 @@ func (node *OracleNode) Start() (err error) {
 	}
 
 	if node.Options.IsStaked {
-		node.Host.SetStreamHandler(node.protocolWithVersion(config.NodeGossipTopic), node.GossipNodeData)
+		node.Host.SetStreamHandler(node.protocolWithVersion(node.Options.NodeGossipTopic), node.GossipNodeData)
 	}
 
 	node.Host.Network().Notify(node.NodeTracker)
@@ -236,7 +234,7 @@ func (node *OracleNode) Start() (err error) {
 		return err
 	}
 
-	err = myNetwork.EnableMDNS(node.Host, config.Rendezvous, node.PeerChan)
+	err = myNetwork.EnableMDNS(node.Host, node.Options.Rendezvous, node.PeerChan)
 	if err != nil {
 		return err
 	}

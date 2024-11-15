@@ -16,7 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/node"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/event"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 	"github.com/masa-finance/masa-oracle/pkg/workers/handlers"
@@ -214,7 +213,7 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *node.OracleNode, worker da
 	} else {
 		//whm.eventTracker.TrackRemoteWorkerConnection(worker.AddrInfo.ID.String())
 		logrus.Debugf("[+] Connection established with node: %s", worker.AddrInfo.ID.String())
-		stream, err := node.ProtocolStream(ctxWithTimeout, worker.AddrInfo.ID, config.WorkerProtocol)
+		stream, err := node.ProtocolStream(ctxWithTimeout, worker.AddrInfo.ID, node.Options.WorkerProtocol)
 		if err != nil {
 			response.Error = fmt.Sprintf("error opening stream: %v", err)
 			whm.eventTracker.TrackWorkerFailure(workRequest.WorkType, response.Error, worker.AddrInfo.ID.String())
