@@ -43,15 +43,6 @@ FILE_PATH=.
 VALIDATOR=false
 PORT=8080
 
-# AI LLM
-CLAUDE_API_KEY=
-CLAUDE_API_URL=https://api.anthropic.com/v1/messages
-CLAUDE_API_VERSION=2023-06-01
-ELAB_URL=https://api.elevenlabs.io/v1/text-to-speech/ErXwobaYiN019PkySvjV/stream
-ELAB_KEY=
-OPENAI_API_KEY=
-PROMPT="You are a helpful assistant."
-
 # X
 TWITTER_USERNAME="yourusername"
 TWITTER_PASSWORD="yourpassword"

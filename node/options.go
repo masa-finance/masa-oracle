@@ -21,20 +21,27 @@ type NodeOption struct {
 	IsDiscordScraper  bool
 	IsTelegramScraper bool
 	IsWebScraper      bool
-	IsLlmServer       bool
 
-	Bootnodes            []string
-	RandomIdentity       bool
-	Services             []func(ctx context.Context, node *OracleNode)
-	PubSubHandles        []PubSubHandlers
-	ProtocolHandlers     map[protocol.ID]network.StreamHandler
-	MasaProtocolHandlers map[string]network.StreamHandler
-	Environment          string
-	Version              string
-	MasaDir              string
-	CachePath            string
-	LLMCloudflareUrl     string
-	KeyManager           *masacrypto.KeyManager
+	Bootnodes              []string
+	RandomIdentity         bool
+	Services               []func(ctx context.Context, node *OracleNode)
+	PubSubHandles          []PubSubHandlers
+	ProtocolHandlers       map[protocol.ID]network.StreamHandler
+	MasaProtocolHandlers   map[string]network.StreamHandler
+	UseLocalWorkerAsRemote bool
+	Environment            string
+	Version                string
+	MasaDir                string
+	CachePath              string
+
+	OracleProtocol       string
+	NodeDataSyncProtocol string
+	NodeGossipTopic      string
+	Rendezvous           string
+	WorkerProtocol       string
+	PageSize             int
+
+	KeyManager *masacrypto.KeyManager
 }
 
 type PubSubHandlers struct {
@@ -79,10 +86,6 @@ var IsTelegramScraper = func(o *NodeOption) {
 
 var IsWebScraper = func(o *NodeOption) {
 	o.IsWebScraper = true
-}
-
-var IsLlmServer = func(o *NodeOption) {
-	o.IsLlmServer = true
 }
 
 var UseLocalWorkerAsRemote = func(o *NodeOption) {
@@ -172,14 +175,44 @@ func WithCachePath(path string) Option {
 	}
 }
 
-func WithLLMCloudFlareURL(url string) Option {
-	return func(o *NodeOption) {
-		o.LLMCloudflareUrl = url
-	}
-}
-
 func WithKeyManager(km *masacrypto.KeyManager) Option {
 	return func(o *NodeOption) {
 		o.KeyManager = km
+	}
+}
+
+func WithOracleProtocol(s string) Option {
+	return func(o *NodeOption) {
+		o.OracleProtocol = s
+	}
+}
+
+func WithNodeDataSyncProtocol(s string) Option {
+	return func(o *NodeOption) {
+		o.NodeDataSyncProtocol = s
+	}
+}
+
+func WithNodeGossipTopic(s string) Option {
+	return func(o *NodeOption) {
+		o.NodeGossipTopic = s
+	}
+}
+
+func WithRendezvous(s string) Option {
+	return func(o *NodeOption) {
+		o.Rendezvous = s
+	}
+}
+
+func WithWorkerProtocol(s string) Option {
+	return func(o *NodeOption) {
+		o.WorkerProtocol = s
+	}
+}
+
+func WithPageSize(size int) Option {
+	return func(o *NodeOption) {
+		o.PageSize = size
 	}
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
-	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
@@ -30,20 +29,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	cfg := config.GetInstance()
-	cfg.LogConfig()
-	cfg.SetupLogging()
-
-	keyManager, err := masacrypto.NewKeyManager(cfg.PrivateKey, cfg.PrivateKeyFile)
+	cfg, err := config.GetConfig()
 	if err != nil {
-		logrus.Fatal("[-] Failed to initialize keys:", err)
+		logrus.Fatalf("[-] %v", err)
 	}
+
+	cfg.SetupLogging()
+	cfg.LogConfig()
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if cfg.Faucet {
-		err := handleFaucet(cfg.RpcUrl, keyManager.EcdsaPrivKey)
+		err := handleFaucet(cfg.RpcUrl, cfg.KeyManager.EcdsaPrivKey)
 		if err != nil {
 			logrus.Errorf("[-] %v", err)
 			os.Exit(1)
@@ -54,7 +52,7 @@ func main() {
 	}
 
 	if cfg.StakeAmount != "" {
-		err := handleStaking(cfg.RpcUrl, keyManager.EcdsaPrivKey, cfg.StakeAmount)
+		err := handleStaking(cfg.RpcUrl, cfg.KeyManager.EcdsaPrivKey, cfg.StakeAmount)
 		if err != nil {
 			logrus.Warningf("%v", err)
 		} else {
@@ -64,7 +62,7 @@ func main() {
 	}
 
 	// Verify the staking event
-	isStaked, err := staking.VerifyStakingEvent(cfg.RpcUrl, keyManager.EthAddress)
+	isStaked, err := staking.VerifyStakingEvent(cfg.RpcUrl, cfg.KeyManager.EthAddress)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -73,7 +71,7 @@ func main() {
 		logrus.Warn("No staking event found for this address")
 	}
 
-	masaNodeOptions, workHandlerManager, pubKeySub := initOptions(cfg, keyManager)
+	masaNodeOptions, workHandlerManager, pubKeySub := config.InitOptions(cfg)
 	// Create a new OracleNode
 	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
 
@@ -91,14 +89,14 @@ func main() {
 
 	if cfg.AllowedPeer {
 		cfg.AllowedPeerId = masaNode.Host.ID().String()
-		cfg.AllowedPeerPublicKey = keyManager.HexPubKey
+		cfg.AllowedPeerPublicKey = cfg.KeyManager.HexPubKey
 		logrus.Infof("[+] Allowed peer with ID: %s and PubKey: %s", cfg.AllowedPeerId, cfg.AllowedPeerPublicKey)
 	} else {
 		logrus.Warn("[-] This node is not set as the allowed peer")
 	}
 
 	// Init cache resolver
-	db.InitResolverCache(masaNode, keyManager, cfg.AllowedPeerId, cfg.AllowedPeerPublicKey, cfg.Validator)
+	db.InitResolverCache(masaNode, cfg.KeyManager, cfg.AllowedPeerId, cfg.AllowedPeerPublicKey, cfg.Validator)
 
 	// Cancel the context when SIGINT is received
 	go handleSignals(cancel, masaNode, cfg)
@@ -122,7 +120,7 @@ func main() {
 		logrus.Errorf("[-] Error while getting node IP address from %v: %v", multiAddr, err)
 	}
 	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, keyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
+	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, cfg.KeyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 
 	<-ctx.Done()
 }

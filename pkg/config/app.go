@@ -1,25 +1,21 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os/user"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/masa-finance/masa-oracle/internal/versioning"
+	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
 
 	"github.com/gotd/contrib/bg"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-)
-
-var (
-	instance *AppConfig
-	once     sync.Once
 )
 
 // AppConfig represents the configuration settings for the application.
@@ -57,57 +53,49 @@ type AppConfig struct {
 	TwitterPassword    string `mapstructure:"twitterPassword"`
 	Twitter2FaCode     string `mapstructure:"twitter2FaCode"`
 	DiscordBotToken    string `mapstructure:"discordBotToken"`
-	ClaudeApiKey       string `mapstructure:"claudeApiKey"`
-	ClaudeApiURL       string `mapstructure:"claudeApiURL"`
-	ClaudeApiVersion   string `mapstructure:"claudeApiVersion"`
-	GPTApiKey          string `mapstructure:"gptApiKey"`
 	TwitterScraper     bool   `mapstructure:"twitterScraper"`
 	DiscordScraper     bool   `mapstructure:"discordScraper"`
 	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
-	LlmServer          bool   `mapstructure:"llmServer"`
-	LLMChatUrl         string `mapstructure:"llmChatUrl"`
-	LLMCfUrl           string `mapstructure:"llmCfUrl"`
 	APIEnabled         bool   `mapstructure:"api_enabled"`
 
+	KeyManager   *masacrypto.KeyManager
 	TelegramStop bg.StopFunc
 }
 
-// GetInstance returns the singleton instance of AppConfig.
+// GetConfig parses and fills in the AppConfig. The configuration values are generated
+// by the following steps in order:
 //
-// If the instance has not been initialized yet, GetInstance will initialize it by:
-// 1. Creating a new AppConfig instance.
-// 2. Setting default configuration values.
-// 3. Overriding defaults with values from environment variables.
-// 4. Overriding defaults and environment variables with values from the configuration file.
-// 5. Overriding all previous values with command-line flags.
-// 6. Unmarshalling the configuration into the AppConfig instance.
+// 1. Set default configuration values.
+// 2. Override with values from environment variables.
+// 3. Override with values from the configuration file.
+// 4. Override with command-line flags.
 //
-// If the unmarshalling fails, the instance is set to nil.
-//
-// Subsequent calls to GetInstance will return the same initialized instance.
-func GetInstance() *AppConfig {
-	once.Do(func() {
-		instance = &AppConfig{}
+// In case of any errors it returns nill with an error object
+func GetConfig() (*AppConfig, error) {
+	instance := &AppConfig{}
+	instance.setDefaultConfig()
+	// TODO Shouldn't the env vars override the file config, instead of the other way around?
+	instance.setEnvVariableConfig()
+	instance.setFileConfig(viper.GetString("FILE_PATH"))
 
-		instance.setDefaultConfig()
-		// TODO Shouldn't the env vars override the file config, instead of the other way around?
-		instance.setEnvVariableConfig()
+	if err := instance.setCommandLineConfig(); err != nil {
+		return nil, err
+	}
 
-		instance.setFileConfig(viper.GetString("FILE_PATH"))
+	if err := viper.Unmarshal(instance); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal config into struct, %v", err)
+	}
 
-		if err := instance.setCommandLineConfig(); err != nil {
-			logrus.Fatal(err)
-		}
+	instance.APIEnabled = viper.GetBool("api_enabled")
 
-		if err := viper.Unmarshal(instance); err != nil {
-			logrus.Errorf("[-] Unable to unmarshal config into struct, %v", err)
-			instance = nil
-		}
+	keyManager, err := masacrypto.NewKeyManager(instance.PrivateKey, instance.PrivateKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to initialize keys: %v", err)
+	}
+	instance.KeyManager = keyManager
 
-		instance.APIEnabled = viper.GetBool("api_enabled")
-	})
-	return instance
+	return instance, nil
 }
 
 // setDefaultConfig sets the default configuration values for the AppConfig instance.
@@ -192,17 +180,10 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")
 	pflag.StringVar(&c.Twitter2FaCode, "twitter2FaCode", viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
 	pflag.StringVar(&c.DiscordBotToken, "discordBotToken", viper.GetString(DiscordBotToken), "Discord Bot Token")
-	pflag.StringVar(&c.ClaudeApiKey, "claudeApiKey", viper.GetString(ClaudeApiKey), "Claude API Key")
-	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API URL")
-	pflag.StringVar(&c.ClaudeApiVersion, "claudeApiVersion", viper.GetString(ClaudeApiVersion), "Claude API Version")
-	pflag.StringVar(&c.GPTApiKey, "gptApiKey", viper.GetString(GPTApiKey), "OpenAI API Key")
-	pflag.StringVar(&c.LLMChatUrl, "llmChatUrl", viper.GetString(LlmChatUrl), "URL for support LLM Chat calls")
-	pflag.StringVar(&c.LLMCfUrl, "llmCfUrl", viper.GetString(LlmCfUrl), "URL for support LLM Cloudflare calls")
 	pflag.BoolVar(&c.TwitterScraper, "twitterScraper", viper.GetBool(TwitterScraper), "Twitter Scraper")
 	pflag.BoolVar(&c.DiscordScraper, "discordScraper", viper.GetBool(DiscordScraper), "Discord Scraper")
 	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "Telegram Scraper")
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "Web Scraper")
-	pflag.BoolVar(&c.LlmServer, "llmServer", viper.GetBool(LlmServer), "Can service LLM requests")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool("api_enabled"), "Enable API server")
 

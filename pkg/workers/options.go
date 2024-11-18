@@ -3,9 +3,7 @@ package workers
 type WorkerOption struct {
 	isTwitterWorker        bool
 	isWebScraperWorker     bool
-	isLLMServerWorker      bool
 	isDiscordScraperWorker bool
-	llmChatUrl             string
 	masaDir                string
 }
 
@@ -19,18 +17,8 @@ var EnableWebScraperWorker = func(o *WorkerOption) {
 	o.isWebScraperWorker = true
 }
 
-var EnableLLMServerWorker = func(o *WorkerOption) {
-	o.isLLMServerWorker = true
-}
-
 var EnableDiscordScraperWorker = func(o *WorkerOption) {
 	o.isDiscordScraperWorker = true
-}
-
-func WithLlmChatUrl(url string) WorkerOptionFunc {
-	return func(o *WorkerOption) {
-		o.llmChatUrl = url
-	}
 }
 
 func WithMasaDir(dir string) WorkerOptionFunc {

@@ -17,8 +17,10 @@ import (
 )
 
 type NodeEventTracker struct {
-	NodeDataChan  chan *NodeData
-	nodeData      *SafeMap
+	NodeDataChan chan *NodeData
+	// WTF: Do we really need this? Can't we store it in the libp2p PeerStore metadata?
+	nodeData *SafeMap
+	// WTF: Unused?
 	nodeDataFile  string
 	ConnectBuffer map[string]ConnectBufferEntry
 	nodeVersion   string
@@ -138,6 +140,7 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 
 	nodeData, exists := net.nodeData.Get(peerID)
 	if !exists {
+		// WTF: Shouldn't we add it? We don't yet have the NodeData but we can at least add it.
 		return
 	} else {
 		if nodeData.IsActive {
@@ -172,6 +175,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	nodeData, exists := net.nodeData.Get(peerID)
 	if !exists {
 		// this should never happen
+		// WTF: Since we're never adding it on `Connected`....
 		logrus.Debugf("Node data does not exist for disconnected node: %s", peerID)
 		return
 	}
