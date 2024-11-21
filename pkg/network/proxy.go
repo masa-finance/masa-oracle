@@ -50,9 +50,9 @@ func NewProxy(host host.Host, listenAddr string, listenPort uint16, targetPort u
 	return &Proxy{host, addr, listenPort, targetPort}, nil
 }
 
-// streamHandler handles the incoming libp2p streams. The stream will contain an HTTP request.
-// We need to parse it, make the request on behalf of the original node, write the response to
-// the stream, and close it.
+// streamHandler handles the incoming libp2p streams. We know that the stream will contain an
+// HTTP request, but strictly speaking we don't care (since CONNECT should act as a transparent
+// tunnel).
 func (p *Proxy) streamHandler(stream network.Stream) {
 	target := fmt.Sprintf("localhost:%d", p.targetPort)
 	conn, err := net.Dial("tcp", target)
