@@ -33,12 +33,9 @@ RUN useradd -m -s /bin/bash masa && mkdir -p /home/masa/.masa && chown -R masa:m
 USER masa
 WORKDIR /home/masa
 
-# Copy the .env file into the container
-COPY --chown=masa:masa .env .
-
 # Expose necessary ports
 EXPOSE 4001 8080
 
 # Set default command to start the Go application
 
-CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --validator="$VALIDATOR" --cachePath="$CACHE_PATH"
+CMD /usr/bin/masa-node --bootnodes="$BOOTNODES" --env="$ENV" --cachePath="$CACHE_PATH" --validator
