@@ -57,7 +57,7 @@ func (p *Proxy) streamHandler(stream network.Stream) {
 	target := fmt.Sprintf("localhost:%d", p.targetPort)
 	conn, err := net.Dial("tcp", target)
 	if err != nil {
-		stream.Reset()
+		_ = stream.Reset()
 		logrus.Errorf("Error connecting to target host %s: %v", target, err)
 	}
 
