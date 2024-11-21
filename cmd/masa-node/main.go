@@ -14,6 +14,7 @@ import (
 	"github.com/masa-finance/masa-oracle/pkg/api"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/db"
+	"github.com/masa-finance/masa-oracle/pkg/network"
 	"github.com/masa-finance/masa-oracle/pkg/staking"
 )
 
@@ -109,6 +110,17 @@ func main() {
 		logrus.Info("API server started")
 	} else {
 		logrus.Info("API server is disabled")
+	}
+
+	if cfg.ProxyEnabled {
+		proxy, err := network.NewProxy(masaNode.Host, cfg.ProxyListenAddr, cfg.ProxyListenPort, cfg.ProxyTargetPort)
+		if err != nil {
+			logrus.Fatalf("[-] Error creating HTTP CONNECT proxy: %v", err)
+		}
+
+		go func(ctx context.Context) {
+			proxy.Start(ctx)
+		}(ctx)
 	}
 
 	// Get the multiaddress and IP address of the node
