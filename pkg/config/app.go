@@ -59,6 +59,10 @@ type AppConfig struct {
 	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	APIEnabled         bool   `mapstructure:"api_enabled"`
+	ProxyEnabled       bool   `mapstructure:"proxy_enabled"`
+	ProxyListenAddr    string `mapstructure:"proxyListenAddr"`
+	ProxyListenPort    uint16 `mapstructure:"proxyListenPort"`
+	ProxyTargetPort    uint16 `mapstructure:"proxyTargetPort"`
 
 	KeyManager   *masacrypto.KeyManager
 	TelegramStop bg.StopFunc

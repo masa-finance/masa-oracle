@@ -16,7 +16,8 @@ type discoveryNotifee struct {
 // HandlePeerFound interface to be called when new  peer is found
 func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 	pe := PeerEvent{
-		AddrInfo:   pi,
+		AddrInfo: pi,
+		// WTF: Use const
 		Action:     "PeerFound",
 		Source:     "mdns",
 		Rendezvous: n.Rendezvous,
