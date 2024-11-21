@@ -21,6 +21,7 @@ services:
     volumes:
       - .:/app
       - .masa-keys:/home/masa/.masa
+      - ./.env:/home/masa/.env
     restart: always
 
 volumes:
