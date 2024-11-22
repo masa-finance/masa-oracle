@@ -29,11 +29,9 @@ require (
 	github.com/masa-finance/masa-twitter-scraper v0.0.1
 	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/multiformats/go-multihash v0.2.3
-	github.com/ollama/ollama v0.3.12
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
 	github.com/rivo/tview v0.0.0-20241103174730-c76f7879f592
-	github.com/sashabaranov/go-openai v1.32.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
