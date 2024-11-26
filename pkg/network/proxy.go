@@ -44,7 +44,7 @@ const proxyProtocol = "/connect-proxy/1.0.0"
 func NewProxy(host host.Host, listenAddr string, listenPort uint16, targetPort uint16) (*Proxy, error) {
 	addr := net.ParseIP(listenAddr)
 	if addr == nil {
-		return nil, fmt.Errorf("Invalid Listen Address: %s", listenAddr)
+		return nil, fmt.Errorf("invalid Listen Address: %s", listenAddr)
 	}
 
 	return &Proxy{host, addr, listenPort, targetPort}, nil
@@ -74,17 +74,17 @@ func (p *Proxy) handleTunnel(ctx context.Context, w http.ResponseWriter, req *ht
 	}
 
 	parts := strings.Split(req.URL.Host, ":")
-	peerId, err := peer.IDFromBytes([]byte(parts[0]))
+	peerID, err := peer.IDFromBytes([]byte(parts[0]))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid peerID '%s'", parts[0]), http.StatusBadRequest)
 		logrus.Errorf("Invalid PeerID '%s' in host '%s'", parts[0], req.Host)
 		return
 	}
 
-	dest_stream, err := p.host.NewStream(ctx, peerId, proxyProtocol)
+	destStream, err := p.host.NewStream(ctx, peerID, proxyProtocol)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		logrus.Errorf("Error while creating stream to peer %s: %v", peerId, err)
+		logrus.Errorf("Error while creating stream to peer %s: %v", peerID, err)
 		return
 	}
 
@@ -95,7 +95,7 @@ func (p *Proxy) handleTunnel(ctx context.Context, w http.ResponseWriter, req *ht
 		return
 	}
 
-	client_conn, _, err := hijacker.Hijack()
+	clientConn, _, err := hijacker.Hijack()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		logrus.Errorf("Error while hijacking: %v", err)
@@ -104,16 +104,23 @@ func (p *Proxy) handleTunnel(ctx context.Context, w http.ResponseWriter, req *ht
 
 	w.WriteHeader(http.StatusOK)
 
-	go transfer(dest_stream, client_conn)
-	go transfer(client_conn, dest_stream)
+	go transfer(destStream, clientConn)
+	go transfer(clientConn, destStream)
 }
 
 func transfer(destination io.WriteCloser, source io.ReadCloser) {
-	defer destination.Close()
-	defer source.Close()
+	defer closeStream(source)
+	defer closeStream(destination)
 
 	if _, err := io.Copy(destination, source); err != nil {
 		logrus.Errorf("Error during transfer: %v", err)
+	}
+}
+
+func closeStream(s io.Closer) {
+	err := s.Close()
+	if err != nil {
+		logrus.Errorf("Error closing stream: %v", err)
 	}
 }
 
@@ -127,7 +134,7 @@ func (p *Proxy) Start(ctx context.Context) {
 				go p.handleTunnel(ctx, w, req)
 			}),
 		// Disable HTTP/2.
-		// TODO Is this even necessary, since we're not even doing HTTPS?
+		// TODO Is this necessary, since we're not doing HTTPS?
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
 
