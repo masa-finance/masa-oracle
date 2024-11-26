@@ -73,7 +73,7 @@ func (p *Proxy) handleTunnel(ctx context.Context, w http.ResponseWriter, req *ht
 		return
 	}
 
-	parts := strings.Split(req.Host, ":")
+	parts := strings.Split(req.URL.Host, ":")
 	peerId, err := peer.IDFromBytes([]byte(parts[0]))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid peerID '%s'", parts[0]), http.StatusBadRequest)
