@@ -22,16 +22,17 @@ type NodeOption struct {
 	IsTelegramScraper bool
 	IsWebScraper      bool
 
-	Bootnodes            []string
-	RandomIdentity       bool
-	Services             []func(ctx context.Context, node *OracleNode)
-	PubSubHandles        []PubSubHandlers
-	ProtocolHandlers     map[protocol.ID]network.StreamHandler
-	MasaProtocolHandlers map[string]network.StreamHandler
-	Environment          string
-	Version              string
-	MasaDir              string
-	CachePath            string
+	Bootnodes              []string
+	RandomIdentity         bool
+	Services               []func(ctx context.Context, node *OracleNode)
+	PubSubHandles          []PubSubHandlers
+	ProtocolHandlers       map[protocol.ID]network.StreamHandler
+	MasaProtocolHandlers   map[string]network.StreamHandler
+	UseLocalWorkerAsRemote bool
+	Environment            string
+	Version                string
+	MasaDir                string
+	CachePath              string
 
 	OracleProtocol       string
 	NodeDataSyncProtocol string
@@ -85,6 +86,10 @@ var IsTelegramScraper = func(o *NodeOption) {
 
 var IsWebScraper = func(o *NodeOption) {
 	o.IsWebScraper = true
+}
+
+var UseLocalWorkerAsRemote = func(o *NodeOption) {
+	o.UseLocalWorkerAsRemote = true
 }
 
 func (a *NodeOption) Apply(opts ...Option) {

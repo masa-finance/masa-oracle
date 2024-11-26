@@ -29,7 +29,7 @@ const (
 
 // WorkerTypeToCategory maps WorkerType to WorkerCategory
 func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
-	logrus.Infof("Mapping WorkerType %s to WorkerCategory", wt)
+	logrus.Debugf("Mapping WorkerType %s to WorkerCategory", wt)
 	switch wt {
 	case Discord, DiscordProfile, DiscordChannelMessages, DiscordGuildChannels, DiscordUserGuilds:
 		logrus.Info("WorkerType is related to Discord")
@@ -51,7 +51,7 @@ func WorkerTypeToCategory(wt WorkerType) pubsub.WorkerCategory {
 
 // WorkerTypeToDataSource maps WorkerType to WorkerCategory
 func WorkerTypeToDataSource(wt WorkerType) string {
-	logrus.Infof("Mapping WorkerType %s to WorkerCategory", wt)
+	logrus.Debugf("Mapping WorkerType %s to DataSource", wt)
 	switch wt {
 	case Discord, DiscordProfile, DiscordChannelMessages, DiscordGuildChannels, DiscordUserGuilds:
 		logrus.Info("WorkerType is related to Discord")

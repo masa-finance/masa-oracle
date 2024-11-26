@@ -80,8 +80,8 @@ func (whm *WorkHandlerManager) addWorkHandler(wType data_types.WorkerType, handl
 	whm.handlers[wType] = &WorkHandlerInfo{Handler: handler}
 }
 
-// getWorkHandler retrieves a registered work handler by name.
-func (whm *WorkHandlerManager) getWorkHandler(wType data_types.WorkerType) (WorkHandler, bool) {
+// GetWorkHandler retrieves a registered work handler by name.
+func (whm *WorkHandlerManager) GetWorkHandler(wType data_types.WorkerType) (WorkHandler, bool) {
 	whm.mu.RLock()
 	defer whm.mu.RUnlock()
 	info, exists := whm.handlers[wType]
@@ -126,7 +126,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 		peerInfo, err := node.DHT.FindPeer(ctx, worker.NodeData.PeerId)
 		cancel()
 		if err != nil {
-			if err == context.DeadlineExceeded {
+			if errors.Is(err, context.DeadlineExceeded) {
 				logrus.Warnf("Timeout while finding peer %s in DHT", worker.NodeData.PeerId.String())
 			} else {
 				logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)
@@ -294,7 +294,7 @@ func (whm *WorkHandlerManager) sendWorkToWorker(node *node.OracleNode, worker da
 // ExecuteWork finds and executes the work handler associated with the given name.
 // It tracks the call count and execution duration for the handler.
 func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
-	handler, exists := whm.getWorkHandler(workRequest.WorkType)
+	handler, exists := whm.GetWorkHandler(workRequest.WorkType)
 	if !exists {
 		return data_types.WorkResponse{Error: ErrHandlerNotFound.Error()}
 	}

@@ -23,7 +23,7 @@ func initializeAccountManager() {
 func loadAccountsFromConfig() []*TwitterAccount {
 	err := godotenv.Load()
 	if err != nil {
-		logrus.Fatalf("error loading .env file: %v", err)
+		logrus.Errorf("error loading .env file: %v", err)
 	}
 
 	accountsEnv := os.Getenv("TWITTER_ACCOUNTS")
