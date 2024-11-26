@@ -3,11 +3,12 @@ package twitter
 import (
 	"fmt"
 
-	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	twitterscraper "github.com/imperatrona/twitter-scraper"
+
 	"github.com/sirupsen/logrus"
 )
 
-func ScrapeFollowersForProfile(username string, count int) ([]twitterscraper.Legacy, error) {
+func ScrapeFollowersForProfile(username string, count int) ([]*twitterscraper.Profile, error) {
 	scraper, account, err := getAuthenticatedScraper()
 	if err != nil {
 		return nil, err
