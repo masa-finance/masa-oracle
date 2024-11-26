@@ -41,5 +41,6 @@ const (
 	WebScraper         = "WEB_SCRAPER"
 	APIEnabled         = "API_ENABLED"
 	APIListenAddress   = "API_LISTEN_ADDRESS"
+	ProxyEnabled       = "PROXY_ENABLED"
 	DefaultPrivKeyFile = "masa_oracle_key"
 )
