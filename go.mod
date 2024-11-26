@@ -18,6 +18,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gotd/contrib v0.20.0
 	github.com/gotd/td v0.110.1
+	github.com/imperatrona/twitter-scraper v0.0.15
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ds-leveldb v0.5.0
@@ -26,7 +27,7 @@ require (
 	github.com/libp2p/go-libp2p v0.36.3
 	github.com/libp2p/go-libp2p-kad-dht v0.26.1
 	github.com/libp2p/go-libp2p-pubsub v0.12.0
-	github.com/masa-finance/masa-twitter-scraper v0.0.1
+	github.com/masa-finance/masa-twitter-scraper v0.0.0-20241126070507-4938b90b44f4
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/onsi/ginkgo/v2 v2.20.2
@@ -42,6 +43,7 @@ require (
 )
 
 require (
+	github.com/AlexEidt/Vidio v1.5.1 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect

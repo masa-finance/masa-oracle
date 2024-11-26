@@ -1,7 +1,7 @@
 package twitter
 
 import (
-	twitterscraper "github.com/masa-finance/masa-twitter-scraper"
+	twitterscraper "github.com/imperatrona/twitter-scraper"
 )
 
 type Scraper struct {
