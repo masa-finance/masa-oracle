@@ -126,7 +126,7 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 		peerInfo, err := node.DHT.FindPeer(ctx, worker.NodeData.PeerId)
 		cancel()
 		if err != nil {
-			if err == context.DeadlineExceeded {
+			if errors.Is(err, context.DeadlineExceeded) {
 				logrus.Warnf("Timeout while finding peer %s in DHT", worker.NodeData.PeerId.String())
 			} else {
 				logrus.Warnf("Failed to find peer %s in DHT: %v", worker.NodeData.PeerId.String(), err)

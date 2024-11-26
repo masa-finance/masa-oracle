@@ -203,7 +203,7 @@ func (node *OracleNode) ReceiveNodeData(stream network.Stream) {
 // with the data if it is about another node, and closes the
 // stream when finished.
 func (node *OracleNode) GossipNodeData(stream network.Stream) {
-	logrus.Info("[+] GossipNodeData")
+	logrus.Debug("[+] GossipNodeData")
 	defer func(stream network.Stream) {
 		err := stream.Close()
 		if err != nil {

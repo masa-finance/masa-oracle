@@ -8,8 +8,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 var (
