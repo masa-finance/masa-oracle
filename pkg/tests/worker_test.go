@@ -17,6 +17,11 @@ import (
 	datatypes "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
+func init() {
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.Debug("Log level set to Debug")
+}
+
 func TestWorkers(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Workers Suite")
@@ -38,7 +43,15 @@ var _ = Describe("Worker Selection", func() {
 		}
 
 		// Start the first node with a random identity
-		n1, err := node.NewOracleNode(ctx, node.EnableStaked, node.EnableRandomIdentity, node.IsTwitterScraper, node.UseLocalWorkerAsRemote)
+		n1, err := node.NewOracleNode(ctx,
+			node.EnableStaked,
+			node.EnableRandomIdentity,
+			node.IsTwitterScraper,
+			node.IsValidator,
+			node.UseLocalWorkerAsRemote,
+			node.WithPageSize(config.PageSize),
+			node.WithOracleProtocol(config.OracleProtocol),
+		)
 		Expect(err).ToNot(HaveOccurred())
 		err = n1.Start()
 		Expect(err).ToNot(HaveOccurred())
@@ -53,7 +66,15 @@ var _ = Describe("Worker Selection", func() {
 		}
 
 		// Start the second node with a random identity and bootstrap to the first node
-		n2, err := node.NewOracleNode(ctx, node.EnableStaked, node.EnableRandomIdentity, node.IsTelegramScraper, node.WithBootNodes(bootNodes...))
+		n2, err := node.NewOracleNode(ctx,
+			node.EnableStaked,
+			node.EnableRandomIdentity,
+			node.IsTelegramScraper,
+			node.IsValidator,
+			node.WithBootNodes(bootNodes...),
+			node.WithPageSize(config.PageSize),
+			node.WithOracleProtocol(config.OracleProtocol),
+		)
 		Expect(err).ToNot(HaveOccurred())
 		err = n2.Start()
 		Expect(err).ToNot(HaveOccurred())
@@ -65,7 +86,7 @@ var _ = Describe("Worker Selection", func() {
 	})
 
 	Describe("GetEligibleWorkers", func() {
-		It("should return empty remote workers and a local worker", func() {
+		It("should return remote workers and a local worker", func() {
 			// Wait for the nodes to see each other
 			Eventually(func() bool {
 				datas := oracleNode1.NodeTracker.GetAllNodeData()
@@ -101,7 +122,7 @@ var _ = Describe("WorkHandlerManager - Local", func() {
 		manager = workers.NewWorkHandlerManager(workers.EnableTwitterWorker)
 		ctx := context.Background()
 		// Start the first node with a random identity
-		oracleNode, err = node.NewOracleNode(ctx, node.EnableStaked, node.EnableRandomIdentity, node.IsTwitterScraper)
+		oracleNode, err = node.NewOracleNode(ctx, node.EnableStaked, node.EnableRandomIdentity, node.IsTwitterScraper, node.WithOracleProtocol(config.OracleProtocol))
 		Expect(err).ToNot(HaveOccurred())
 		err = oracleNode.Start()
 		Expect(err).ToNot(HaveOccurred())
@@ -171,7 +192,16 @@ var _ = Describe("WorkHandlerManager - Remote", func() {
 			workHandlerManager.HandleWorkerStream,
 		)
 
-		remoteNode, err = node.NewOracleNode(ctx, protocolOptions, node.EnableStaked, node.EnableRandomIdentity, node.IsTwitterScraper, node.UseLocalWorkerAsRemote)
+		remoteNode, err = node.NewOracleNode(ctx,
+			protocolOptions,
+			node.EnableStaked,
+			node.EnableRandomIdentity,
+			node.IsTwitterScraper,
+			node.IsValidator,
+			node.UseLocalWorkerAsRemote,
+			node.WithPageSize(config.PageSize),
+			node.WithOracleProtocol(config.OracleProtocol),
+		)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteNode.Start()
 		Expect(err).ToNot(HaveOccurred())
@@ -186,7 +216,16 @@ var _ = Describe("WorkHandlerManager - Remote", func() {
 		}
 
 		// Start the second node with a random identity and bootstrap to the first node
-		localNode, err = node.NewOracleNode(ctx, protocolOptions, node.EnableStaked, node.EnableRandomIdentity, node.IsTwitterScraper, node.WithBootNodes(bootNodes...))
+		localNode, err = node.NewOracleNode(ctx,
+			protocolOptions,
+			node.EnableStaked,
+			node.EnableRandomIdentity,
+			node.IsTwitterScraper,
+			node.IsValidator,
+			node.WithBootNodes(bootNodes...),
+			node.WithPageSize(config.PageSize),
+			node.WithOracleProtocol(config.OracleProtocol),
+		)
 		Expect(err).ToNot(HaveOccurred())
 		err = localNode.Start()
 		Expect(err).ToNot(HaveOccurred())
