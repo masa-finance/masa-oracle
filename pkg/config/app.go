@@ -189,7 +189,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.TelegramScraper, "telegramScraper", viper.GetBool(TelegramScraper), "Telegram Scraper")
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "Web Scraper")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
-	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool("api_enabled"), "Enable API server")
+	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool(APIEnabled), "Enable API server")
 
 	pflag.Parse()
 
