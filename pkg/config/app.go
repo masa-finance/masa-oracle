@@ -134,6 +134,12 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(PrivKeyFile, DefaultPrivKeyFile)
 
 	viper.SetDefault(APIEnabled, false)
+
+	viper.SetDefault(ProxyEnabled, true)
+	viper.SetDefault(ProxyListenAddr, "127.0.0.1")
+	viper.SetDefault(ProxyListenPort, "8888")
+	// TODO What is the default Cosmos port?
+	viper.SetDefault(ProxyTargetPort, "8080")
 }
 
 // setFileConfig loads configuration from a YAML file.
