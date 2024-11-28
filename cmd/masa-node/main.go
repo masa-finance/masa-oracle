@@ -6,8 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/multiformats/go-multiaddr"
-
 	"github.com/masa-finance/masa-oracle/internal/versioning"
 
 	"github.com/sirupsen/logrus"
@@ -114,13 +112,12 @@ func main() {
 	}
 
 	// Get the multiaddress and IP address of the node
-	multiAddr := masaNode.GetMultiAddrs()                      // Get the multiaddress
-	ipAddr, err := multiAddr.ValueForProtocol(multiaddr.P_IP4) // Get the IP address
+	multiAddrs, err := masaNode.GetP2PMultiAddrs()
 	if err != nil {
-		logrus.Errorf("[-] Error while getting node IP address from %v: %v", multiAddr, err)
+		logrus.Errorf("[-] Error while getting node multiaddrs: %v", err)
+	} else {
+		config.DisplayWelcomeMessage(multiAddrs, cfg.KeyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 	}
-	// Display the welcome message with the multiaddress and IP address
-	config.DisplayWelcomeMessage(multiAddr.String(), ipAddr, cfg.KeyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, versioning.ApplicationVersion, versioning.ProtocolVersion)
 
 	<-ctx.Done()
 }
