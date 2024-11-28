@@ -71,11 +71,10 @@ type AppConfig struct {
 // 3. Override with values from the configuration file.
 // 4. Override with command-line flags.
 //
-// In case of any errors it returns nill with an error object
+// In case of any errors it returns nil with an error object
 func GetConfig() (*AppConfig, error) {
 	instance := &AppConfig{}
 	instance.setDefaultConfig()
-	// TODO Shouldn't the env vars override the file config, instead of the other way around?
 	instance.setEnvVariableConfig()
 	instance.setFileConfig(viper.GetString("FILE_PATH"))
 
@@ -87,6 +86,9 @@ func GetConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("Unable to unmarshal config into struct, %v", err)
 	}
 
+	if instance.PrivateKeyFile == DefaultPrivKeyFile {
+		instance.PrivateKeyFile = filepath.Join(instance.MasaDir, DefaultPrivKeyFile)
+	}
 	instance.APIEnabled = viper.GetBool("api_enabled")
 
 	keyManager, err := masacrypto.NewKeyManager(instance.PrivateKey, instance.PrivateKeyFile)
@@ -121,9 +123,11 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(AllowedPeer, true)
 	viper.SetDefault(LogLevel, "info")
 	viper.SetDefault(LogFilePath, "masa_node.log")
-	viper.SetDefault(PrivKeyFile, filepath.Join(viper.GetString(MasaDir), "masa_oracle_key"))
+	// It should be ${MASA_DIR}/masa_oracle_key. However, we really don't know the value of MASA_DIR at this point.
+	// We set it up with a marker value which we will have to fix once we load the full config.
+	viper.SetDefault(PrivKeyFile, DefaultPrivKeyFile)
 
-	viper.SetDefault("api_enabled", false)
+	viper.SetDefault(APIEnabled, false)
 }
 
 // setFileConfig loads configuration from a YAML file.

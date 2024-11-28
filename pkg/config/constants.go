@@ -40,4 +40,5 @@ const (
 	TelegramScraper = "TELEGRAM_SCRAPER"
 	WebScraper      = "WEB_SCRAPER"
 	APIEnabled      = "API_ENABLED"
+	DefaultPrivKeyFile = "masa_oracle_key"
 )
