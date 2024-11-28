@@ -64,6 +64,10 @@ func InitOptions(cfg *AppConfig) ([]node.Option, *workers.WorkHandlerManager, *p
 		masaNodeOptions = append(masaNodeOptions, node.IsWebScraper)
 	}
 
+	if cfg.ProxyEnabled {
+		masaNodeOptions = append(masaNodeOptions, node.IsProxy)
+	}
+
 	workHandlerManager := workers.NewWorkHandlerManager(workerManagerOptions...)
 	blockChainEventTracker := node.NewBlockChain()
 	pubKeySub := &pubsub.PublicKeySubscriptionHandler{}

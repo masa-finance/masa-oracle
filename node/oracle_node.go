@@ -226,7 +226,11 @@ func (node *OracleNode) Start() (err error) {
 		go p(node.Context, node)
 	}
 
-	go myNetwork.Discover(node.Context, node.Options.Bootnodes, node.Host, node.DHT, node.Protocol)
+	protocols := []protocol.ID{node.Protocol}
+	if node.Options.IsProxy {
+		protocols = append(protocols, myNetwork.ProxyProtocol)
+	}
+	go myNetwork.Discover(node.Context, node.Options.Bootnodes, node.Host, node.DHT, protocols)
 
 	nodeData := node.NodeTracker.GetNodeData(node.Host.ID().String())
 	if nodeData == nil {
