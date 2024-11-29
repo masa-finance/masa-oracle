@@ -31,13 +31,14 @@ const (
 	Rendezvous           = "masa-mdns"
 	PageSize             = 25
 
-	TwitterUsername = "TWITTER_USERNAME"
-	TwitterPassword = "TWITTER_PASSWORD"
-	Twitter2FaCode  = "TWITTER_2FA_CODE"
-	DiscordBotToken = "DISCORD_BOT_TOKEN"
-	TwitterScraper  = "TWITTER_SCRAPER"
-	DiscordScraper  = "DISCORD_SCRAPER"
-	TelegramScraper = "TELEGRAM_SCRAPER"
-	WebScraper      = "WEB_SCRAPER"
-	APIEnabled      = "API_ENABLED"
+	TwitterUsername    = "TWITTER_USERNAME"
+	TwitterPassword    = "TWITTER_PASSWORD"
+	Twitter2FaCode     = "TWITTER_2FA_CODE"
+	DiscordBotToken    = "DISCORD_BOT_TOKEN"
+	TwitterScraper     = "TWITTER_SCRAPER"
+	DiscordScraper     = "DISCORD_SCRAPER"
+	TelegramScraper    = "TELEGRAM_SCRAPER"
+	WebScraper         = "WEB_SCRAPER"
+	APIEnabled         = "API_ENABLED"
+	DefaultPrivKeyFile = "masa_oracle_key"
 )
