@@ -31,10 +31,8 @@ import (
 )
 
 type OracleNode struct {
-	Host     host.Host
-	Protocol protocol.ID
-	// TODO: Rm from here and from NodeData? Should not be necessary
-	priorityAddrs multiaddr.Multiaddr
+	Host          host.Host
+	Protocol      protocol.ID
 	multiAddrs    []multiaddr.Multiaddr
 	DHT           *dht.IpfsDHT
 	PeerChan      chan myNetwork.PeerEvent
@@ -46,18 +44,6 @@ type OracleNode struct {
 	Blockchain    *chain.Chain
 	Options       NodeOption
 	Context       context.Context
-}
-
-// GetMultiAddrs returns the priority multiaddr for this node.
-// It first checks if the priority address is already set, and returns it if so.
-// If not, it determines the priority address from the available multiaddrs using
-// the GetPriorityAddress utility function, sets it, and returns it.
-func (node *OracleNode) GetMultiAddrs() multiaddr.Multiaddr {
-	if node.priorityAddrs == nil {
-		pAddr := myNetwork.GetPriorityAddress(node.multiAddrs)
-		node.priorityAddrs = pAddr
-	}
-	return node.priorityAddrs
 }
 
 // GetP2PMultiAddrs returns the multiaddresses for the host in P2P format.
@@ -180,8 +166,7 @@ func (node *OracleNode) getNodeData() *pubsub.NodeData {
 		publicEthAddress = node.Options.KeyManager.EthAddress
 	}
 
-	nodeData := pubsub.NewNodeData(node.priorityAddrs, node.Host.ID(), publicEthAddress, pubsub.ActivityJoined)
-	nodeData.MultiaddrsString = node.priorityAddrs.String()
+	nodeData := pubsub.NewNodeData(node.Host.Addrs(), node.Host.ID(), publicEthAddress, pubsub.ActivityJoined)
 	nodeData.IsStaked = node.Options.IsStaked
 	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
 	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
@@ -199,7 +184,7 @@ func (node *OracleNode) getNodeData() *pubsub.NodeData {
 // goroutines to handle discovered peers, listen to the node tracker, and
 // discover peers. If this is a bootnode, it adds itself to the node tracker.
 func (node *OracleNode) Start() (err error) {
-	logrus.Infof("[+] Starting node with ID: %s", node.GetMultiAddrs().String())
+	logrus.Infof("[+] Starting node with ID: %s", node.Host.ID().String())
 
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(node.protocolWithVersion(node.Options.NodeDataSyncProtocol), node.ReceiveNodeData)
