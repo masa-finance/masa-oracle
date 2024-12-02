@@ -204,9 +204,9 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool(APIEnabled), "Enable API server")
 	pflag.StringVar(&c.APIListenAddress, "api-port", viper.GetString(APIListenAddress), "API Listening address")
 	pflag.BoolVar(&c.ProxyEnabled, "proxy-enabled", viper.GetBool(ProxyEnabled), "Enable CONNECT proxy")
-	pflag.StringVar(&c.ProxyListenAddr, "proxyListenAddr", viper.GetString("proxyListenAddr"), "Proxy listen address")
-	pflag.Uint16Var(&c.ProxyListenPort, "proxyListenPort", viper.GetUint16("proxyListenPort"), "Proxy listen port")
-	pflag.Uint16Var(&c.ProxyTargetPort, "proxyTargetPort", viper.GetUint16("proxyTargetPort"), "Proxy target port")
+	pflag.StringVar(&c.ProxyListenAddr, "proxyListenAddr", viper.GetString(ProxyListenAddr), "Proxy listen address")
+	pflag.Uint16Var(&c.ProxyListenPort, "proxyListenPort", viper.GetUint16(ProxyListenPort), "Proxy listen port")
+	pflag.Uint16Var(&c.ProxyTargetPort, "proxyTargetPort", viper.GetUint16(ProxyTargetPort), "Proxy target port")
 
 	pflag.Parse()
 
