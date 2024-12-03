@@ -19,17 +19,25 @@ import (
 // number is ignored), it then establishes a Libp2p connection to the target host, which
 // then connects to its localhost:TargetPort.
 //
+// TODO: Move this to docs or someplace else
+//
 // To use it:
 // * You must run the Cosmos node and the Masa node side by side
+// * In the OS:
+//   * Add the Masa node PeerID as a localhost alias in /etc/hosts (Linux/MacOS) or XXXXX (Windows) (Cosmos checks that its own name resolves)
 // * In the Cosmos node:
 //   * Set the environment variable `HTTP_PROXY=127.0.0.1:<proxyListenPort>
-//   * Add to the config: `external_address = <Masa node PeerID>:0` (the port number is ignored)
+//   * Set the following in the `[p2p]` section of config.toml with Ignite, it's at `$HOME/.bobtestchain/config`:
+//     * `external_address = <Masa node PeerID>:0` (the port number is ignored)
+//     * `seeds = <Masa node PeerID of the bootstrappers:0>`
+//     * You might also want to set some `persistent_peers`
 // * In the Masa node:
 //   * Set the following configuration parameters:
 //       proxy_enabled = true
 //       proxyListenAddr = <IP address for the proxy to listen on>
 //       proxyListenPort = <Port number for the proxy to listen on>
 //       proxyTargetPort = <Port number that the Cosmos node is listening on>
+// * You will need to start up the Masa nodes BEFORE the Cosmos nodes, and the bootstrappers before the other nodes
 
 type Proxy struct {
 	host       host.Host
@@ -75,6 +83,22 @@ func (px *Proxy) handleTunnel(ctx context.Context, w http.ResponseWriter, req *h
 	}
 
 	logrus.Debugf("Received CONNECT request %#v", req)
+
+	logrus.Debug("Hijacking the connection")
+	hijacker, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
+		logrus.Error("Hijacking not supported")
+		return
+	}
+
+	clientConn, _, err := hijacker.Hijack()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		logrus.Errorf("Error while hijacking: %v", err)
+		return
+	}
+
 	parts := strings.Split(req.RequestURI, ":")
 	peerID, err := peer.Decode(parts[0])
 	if err != nil {
@@ -95,21 +119,6 @@ func (px *Proxy) handleTunnel(ctx context.Context, w http.ResponseWriter, req *h
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		logrus.Errorf("Error while creating stream to peer %s: %v", peerID, err)
-		return
-	}
-
-	logrus.Debug("Stream established, hijacking")
-	hijacker, ok := w.(http.Hijacker)
-	if !ok {
-		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
-		logrus.Error("Hijacking not supported")
-		return
-	}
-
-	clientConn, _, err := hijacker.Hijack()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		logrus.Errorf("Error while hijacking: %v", err)
 		return
 	}
 
