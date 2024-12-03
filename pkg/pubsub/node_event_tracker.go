@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -18,10 +19,9 @@ import (
 
 type NodeEventTracker struct {
 	NodeDataChan chan *NodeData
-	// WTF: Do we really need this? Can't we store it in the libp2p PeerStore metadata?
-	nodeData *SafeMap
-	// WTF: Unused?
-	nodeDataFile  string
+	// TODO: Do we really need this? Can't we store it in the libp2p PeerStore metadata?
+	nodeData      *SafeMap
+	NodeDataMutex sync.Mutex
 	ConnectBuffer map[string]ConnectBufferEntry
 	nodeVersion   string
 }
@@ -99,7 +99,6 @@ func NewNodeEventTracker(version, environment, hostId string) *NodeEventTracker 
 		nodeData:      NewSafeMap(),
 		nodeVersion:   version,
 		NodeDataChan:  make(chan *NodeData),
-		nodeDataFile:  fmt.Sprintf("%s_%s_node_data.json", version, environment),
 		ConnectBuffer: make(map[string]ConnectBufferEntry),
 	}
 	go net.ClearExpiredBufferEntries()
@@ -377,6 +376,8 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 // It also sends the updated node data to the NodeDataChan if the data changed or forceGossip is true.
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
 	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
+	net.NodeDataMutex.Lock()
+	defer net.NodeDataMutex.Unlock()
 	dataChanged := false
 
 	nd, ok := net.nodeData.Get(nodeData.PeerId.String())

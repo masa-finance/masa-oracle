@@ -30,6 +30,8 @@ type dbValidator struct{}
 func (dbValidator) Validate(_ string, _ []byte) error        { return nil }
 func (dbValidator) Select(_ string, _ [][]byte) (int, error) { return 0, nil }
 
+var peerCountMutex sync.Mutex
+
 func EnableDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.Multiaddr, protocolId, prefix protocol.ID, peerChan chan PeerEvent, nodeData *pubsub.NodeData) (*dht.IpfsDHT, error) {
 	options := make([]dht.Option, 0)
 	options = append(options, dht.BucketSize(100))                          // Adjust bucket size
@@ -37,7 +39,7 @@ func EnableDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.M
 	options = append(options, dht.RoutingTableRefreshPeriod(time.Minute*5)) // Set refresh interval
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
-	// WTF: Why?
+	// TODO: If we are no longer using this it should be cleaned up, but carefully. the Node Listener assumes this is there
 	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
 
 	kademliaDHT, err := dht.New(ctx, host, options...)
@@ -115,7 +117,9 @@ func EnableDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.M
 					}
 					return
 				}
+				peerCountMutex.Lock()
 				peerConnectionCount++
+				peerCountMutex.Unlock()
 				defer func(stream network.Stream) {
 					err := stream.Close()
 					if err != nil {
