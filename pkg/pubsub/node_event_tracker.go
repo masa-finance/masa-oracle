@@ -375,7 +375,7 @@ func (net *NodeEventTracker) IsStaked(peerID string) bool {
 // If the node data exists, it updates the staked status, Ethereum address, and multiaddress if needed.
 // It also sends the updated node data to the NodeDataChan if the data changed or forceGossip is true.
 func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip bool) error {
-	logrus.Debugf("Handling node data for: %s", nodeData.PeerId)
+	logrus.Debugf("AddOrUpdateNodeData: %s", nodeData.PeerId)
 	net.NodeDataMutex.Lock()
 	defer net.NodeDataMutex.Unlock()
 	dataChanged := false
