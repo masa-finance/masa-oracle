@@ -58,6 +58,10 @@ type AppConfig struct {
 	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	APIEnabled         bool   `mapstructure:"api_enabled"`
+	ProxyEnabled       bool   `mapstructure:"proxy_enabled"`
+	ProxyListenAddr    string `mapstructure:"proxyListenAddr"`
+	ProxyListenPort    uint16 `mapstructure:"proxyListenPort"`
+	ProxyTargetPort    uint16 `mapstructure:"proxyTargetPort"`
 
 	KeyManager   *masacrypto.KeyManager
 	TelegramStop bg.StopFunc
@@ -128,6 +132,12 @@ func (c *AppConfig) setDefaultConfig() {
 	viper.SetDefault(PrivKeyFile, DefaultPrivKeyFile)
 
 	viper.SetDefault(APIEnabled, false)
+
+	viper.SetDefault(ProxyEnabled, true)
+	viper.SetDefault(ProxyListenAddr, "127.0.0.1")
+	viper.SetDefault(ProxyListenPort, "8888")
+	// TODO What is the default Cosmos port?
+	viper.SetDefault(ProxyTargetPort, "8080")
 }
 
 // setFileConfig loads configuration from a YAML file.
@@ -190,6 +200,10 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "Web Scraper")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool(APIEnabled), "Enable API server")
+	pflag.BoolVar(&c.ProxyEnabled, "proxy-enabled", viper.GetBool(ProxyEnabled), "Enable CONNECT proxy")
+	pflag.StringVar(&c.ProxyListenAddr, "proxyListenAddr", viper.GetString(ProxyListenAddr), "Proxy listen address")
+	pflag.Uint16Var(&c.ProxyListenPort, "proxyListenPort", viper.GetUint16(ProxyListenPort), "Proxy listen port")
+	pflag.Uint16Var(&c.ProxyTargetPort, "proxyTargetPort", viper.GetUint16(ProxyTargetPort), "Proxy target port")
 
 	pflag.Parse()
 

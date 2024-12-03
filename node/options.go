@@ -22,6 +22,8 @@ type NodeOption struct {
 	IsTelegramScraper bool
 	IsWebScraper      bool
 
+	IsProxy bool
+
 	Bootnodes            []string
 	RandomIdentity       bool
 	Services             []func(ctx context.Context, node *OracleNode)
@@ -85,6 +87,10 @@ var IsTelegramScraper = func(o *NodeOption) {
 
 var IsWebScraper = func(o *NodeOption) {
 	o.IsWebScraper = true
+}
+
+var IsProxy = func(o *NodeOption) {
+	o.IsProxy = true
 }
 
 func (a *NodeOption) Apply(opts ...Option) {

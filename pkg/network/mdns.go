@@ -17,7 +17,7 @@ type discoveryNotifee struct {
 func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 	pe := PeerEvent{
 		AddrInfo:   pi,
-		Action:     "PeerFound",
+		Action:     PeerFound,
 		Source:     "mdns",
 		Rendezvous: n.Rendezvous,
 	}
