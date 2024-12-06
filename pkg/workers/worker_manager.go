@@ -41,13 +41,6 @@ func NewWorkHandlerManager(opts ...WorkerOptionFunc) *WorkHandlerManager {
 		whm.addWorkHandler(data_types.Web, &handlers.WebHandler{})
 	}
 
-	if options.isDiscordScraperWorker {
-		whm.addWorkHandler(data_types.Discord, &handlers.DiscordProfileHandler{})
-		whm.addWorkHandler(data_types.DiscordChannelMessages, &handlers.DiscordChannelHandler{})
-		whm.addWorkHandler(data_types.DiscordGuildChannels, &handlers.DiscordGuildHandler{})
-		whm.addWorkHandler(data_types.DiscordUserGuilds, &handlers.DiscoreUserGuildsHandler{})
-	}
-
 	return whm
 }
 
