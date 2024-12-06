@@ -50,8 +50,7 @@ type WorkRequest struct {
 
 type WorkResponse struct {
 	WorkRequest  *WorkRequest `json:"workRequest,omitempty"`
-	Data         interface{}  `json:"data,omitempty"`
+	Data         []byte       `json:"data,omitempty"`
 	Error        string       `json:"error,omitempty"`
 	WorkerPeerId string       `json:"workerPeerId,omitempty"`
-	RecordCount  int          `json:"recordCount,omitempty"`
 }

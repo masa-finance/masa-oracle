@@ -32,7 +32,6 @@ type Event struct {
 	WorkType     data_types.WorkerType `json:"work_type"`
 	RemoteWorker bool                  `json:"remote_worker"`
 	Success      bool                  `json:"success"`
-	RecordCount  int                   `json:"record_count"`
 	Error        string                `json:"error"`
 }
 
