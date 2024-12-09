@@ -458,6 +458,8 @@ github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd h1:br0buuQ854V8
 github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd/go.mod h1:QuCEs1Nt24+FYQEqAAncTDPJIuGs+LxK1MCiFL25pMU=
 github.com/masa-finance/masa-twitter-scraper v0.0.0-20241126070507-4938b90b44f4 h1:8E8Zp1raj1xIyT+zw4bp5kQJeofcmoJqo6f+4B88DCk=
 github.com/masa-finance/masa-twitter-scraper v0.0.0-20241126070507-4938b90b44f4/go.mod h1:Q6UBbAZsaBNDZ4hZQr8lvUUDmkJgQAhHiYWJcj0E+BM=
+github.com/masa-finance/tee-worker v0.0.0-20241205180015-72a24df6a325 h1:JeEDf19cnIEaejq5gA0hlXOH/sDi1LiTJ9BGPhTyOt8=
+github.com/masa-finance/tee-worker v0.0.0-20241205180015-72a24df6a325/go.mod h1:Vzb6DqGCyYMsvd3r+1VIdSbbowIPmdkvsX7NtDgyj/E=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
 github.com/mattn/go-colorable v0.1.13/go.mod h1:7S9/ev0klgBDR4GtXTXX8a3vIGJpMovkB8vQcUbaXHg=
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
