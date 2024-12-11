@@ -83,7 +83,7 @@ func GetConfig() (*AppConfig, error) {
 	}
 
 	if err := viper.Unmarshal(instance); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config into struct, %v", err)
+		return nil, fmt.Errorf("unable to unmarshal config into struct, %v", err)
 	}
 
 	if instance.PrivateKeyFile == DefaultPrivKeyFile {
@@ -93,7 +93,7 @@ func GetConfig() (*AppConfig, error) {
 
 	keyManager, err := masacrypto.NewKeyManager(instance.PrivateKey, instance.PrivateKeyFile)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize keys: %v", err)
+		return nil, fmt.Errorf("failed to initialize keys: %v", err)
 	}
 	instance.KeyManager = keyManager
 
