@@ -25,6 +25,7 @@ import (
 type AppConfig struct {
 	Version              string   `mapstructure:"version"`
 	PortNbr              int      `mapstructure:"portNbr"`
+	APIListenAddress     string   `mapstructure:"api_listen_address"`
 	UDP                  bool     `mapstructure:"udp"`
 	TCP                  bool     `mapstructure:"tcp"`
 	PrivateKey           string   `mapstructure:"privateKey"`
@@ -116,6 +117,7 @@ func (c *AppConfig) setDefaultConfig() {
 	// Set defaults
 	viper.SetDefault("version", versioning.ProtocolVersion)
 	viper.SetDefault(PortNbr, "4001")
+	viper.SetDefault(APIListenAddress, "127.0.0.1:8080")
 	viper.SetDefault(UDP, true)
 	viper.SetDefault(TCP, false)
 	viper.SetDefault(StakeAmount, "")
@@ -190,6 +192,7 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.WebScraper, "webScraper", viper.GetBool(WebScraper), "Web Scraper")
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool(APIEnabled), "Enable API server")
+	pflag.StringVar(&c.APIListenAddress, "api-port", viper.GetString(APIListenAddress), "API Listening address")
 
 	pflag.Parse()
 

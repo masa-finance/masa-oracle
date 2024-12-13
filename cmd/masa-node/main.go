@@ -98,7 +98,7 @@ func main() {
 	if cfg.APIEnabled {
 		router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub)
 		go func() {
-			if err := router.Run(); err != nil {
+			if err := router.Run(cfg.APIListenAddress); err != nil {
 				logrus.Fatal(err)
 			}
 		}()
