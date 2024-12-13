@@ -2,6 +2,7 @@ package twitter
 
 import (
 	"fmt"
+	"time"
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
 
@@ -22,6 +23,6 @@ func ScrapeFollowersForProfile(username string, count int) ([]*twitterscraper.Pr
 		logrus.Errorf("Error fetching followers: %v", errString)
 		return nil, fmt.Errorf("%v", errString)
 	}
-
+	account.LastScraped = time.Now()
 	return followingResponse, nil
 }

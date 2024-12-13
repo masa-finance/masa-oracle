@@ -5,10 +5,12 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 var (
@@ -19,6 +21,14 @@ var (
 func initializeAccountManager() {
 	accounts := loadAccountsFromConfig()
 	accountManager = NewTwitterAccountManager(accounts)
+}
+
+func GetAccountManager() *TwitterAccountManager {
+	_, _, err := getAuthenticatedScraper()
+	if err != nil {
+		logrus.Errorf("error initializing account manager: %v", err)
+	}
+	return accountManager
 }
 
 func loadAccountsFromConfig() []*TwitterAccount {
@@ -62,6 +72,7 @@ func getAuthenticatedScraper() (*Scraper, *TwitterAccount, error) {
 		logrus.Errorf("Authentication failed for %s", account.Username)
 		return nil, account, fmt.Errorf("Twitter authentication failed for %s", account.Username)
 	}
+	account.LastScraped = time.Now()
 	return scraper, account, nil
 }
 

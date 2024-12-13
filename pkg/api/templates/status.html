@@ -1,158 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Masa Node Status</title>
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-    />
-  </head>
-  <body>
-    <div class="container mt-5">
-      <div class="row">
-        <div class="col-12">
-          <h1 class="text-center mb-4">Masa Oracle Node Status</h1>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Masa Node Status</title>
+  <link
+          rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+</head>
+<body>
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="text-center mb-4">Masa Oracle Node Status</h1>
 
-          <!-- Login with Discord button
-          <div class="text-center mb-4">
-          <a
-            href="https://discord.com/oauth2/authorize?client_id=1247616920807669884&permissions=66560&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fstatus&scope=guilds+messages.read+connections+guilds.members.read+email+bot"
-            >
-            <button class="btn btn-primary">Login with Discord</button>
-          </a>
-          </div>
-          Login with Discord button //-->
-
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Node Information</h5>
-              <table class="table">
-                <tbody>
-                  <tr>
-                    <th scope="row">Peer ID</th>
-                    <td><span id="nodeId">{{.PeerID}}</span></td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Status</th>
-                    <td><span class="badge badge-success">Online</span></td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Twitter Scraper</th>
-                    {{if .IsTwitterScraper}}
-                    <td>
-                      <span class="badge badge-success"
-                        >{{.IsTwitterScraper}}</span
-                      >
-                    </td>
-                    {{else}}
-                    <td>
-                      <span class="badge badge-danger"
-                        >{{.IsTwitterScraper}}</span
-                      >
-                    </td>
-                    {{end}}
-                  </tr>
-                  <tr>
-                    <th scope="row">Discord Scraper</th>
-                    {{if .IsDiscordScraper}}
-                    <td>
-                      <span class="badge badge-success"
-                        >{{.IsDiscordScraper}}</span
-                      >
-                    </td>
-                    {{else}}
-                    <td>
-                      <span class="badge badge-danger"
-                        >{{.IsDiscordScraper}}</span
-                      >
-                    </td>
-                    {{end}}
-                  </tr>
-                  <tr>
-                    <th scope="row">Telegram Scraper</th>
-                    {{if .IsTelegramScraper}}
-                    <td>
-                      <span class="badge badge-success"
-                        >{{.IsTelegramScraper}}</span
-                      >
-                    </td>
-                    {{else}}
-                    <td>
-                      <span class="badge badge-danger"
-                        >{{.IsTelegramScraper}}</span
-                      >
-                    </td>
-                    {{end}}
-                  </tr>
-                  <tr>
-                    <th scope="row">Web Scraper</th>
-                    {{if .IsWebScraper}}
-                    <td>
-                      <span class="badge badge-success">{{.IsWebScraper}}</span>
-                    </td>
-                    {{else}}
-                    <td>
-                      <span class="badge badge-danger">{{.IsWebScraper}}</span>
-                    </td>
-                    {{end}}
-                  </tr>
-                  <tr>
-                    <th scope="row">Bytes Scraped</th>
-                    <td><span id="bytesScraped">{{.BytesScraped}}</span></td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Total Peers</th>
-                    <td><span id="totalPeers">{{.TotalPeers}}</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+      <!-- Login with Discord button
+      <div class="text-center mb-4">
+      <a
+        href="https://discord.com/oauth2/authorize?client_id=1247616920807669884&permissions=66560&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fstatus&scope=guilds+messages.read+connections+guilds.members.read+email+bot"
+        >
+        <button class="btn btn-primary">Login with Discord</button>
+      </a>
       </div>
+      Login with Discord button //-->
 
-      <div class="row mt-4">
-        <div class="col-12">
-          <h5>Session Details</h5>
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Node Information</h5>
           <table class="table">
-            <thead class="thead-light">
-              <tr>
-                <th scope="col" hidden>Peer ID</th>
-                <th scope="col" class="text-center">Staked</th>
-                <th scope="col" class="text-center">First Joined</th>
-                <th scope="col" class="text-center">Last Joined</th>
-                <th scope="col" class="text-center">Session Time</th>
-                <th scope="col" class="text-center">Total Time</th>
-              </tr>
-            </thead>
             <tbody>
-              <tr>
-                <td hidden>{{.PeerID}}</td>
-                {{if .IsStaked}}
-                <td class="text-center">
-                  <span class="badge badge-success">{{.IsStaked}}</span>
-                </td>
-                {{else}}
-                <td class="text-center">
-                  <span class="badge badge-danger">{{.IsStaked}}</span>
-                </td>
-                {{end}}
-                <td class="text-center">{{.FirstJoined}}</td>
-                <td class="text-center">{{.LastJoined}}</td>
-                <td class="text-center">{{.CurrentUptime}}</td>
-                <td class="text-center">{{.TotalUptime}}</td>
-              </tr>
-              <!-- Add more rows here based on your data -->
+            <tr>
+              <th scope="row">Peer ID</th>
+              <td><span id="nodeId">{{.PeerID}}</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Public Key</th>
+              <td><span id="publicKey">{{.PublicKey}}</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Status</th>
+              <td><span class="badge badge-success">Online</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Twitter Scraper</th>
+              {{if .IsTwitterScraper}}
+              <td>
+                      <span class="badge badge-success"
+                      >{{.IsTwitterScraper}}</span
+                      >
+              </td>
+              {{else}}
+              <td>
+                      <span class="badge badge-danger"
+                      >{{.IsTwitterScraper}}</span
+                      >
+              </td>
+              {{end}}
+            </tr>
+            <tr>
+              <th scope="row">Discord Scraper</th>
+              {{if .IsDiscordScraper}}
+              <td>
+                      <span class="badge badge-success"
+                      >{{.IsDiscordScraper}}</span
+                      >
+              </td>
+              {{else}}
+              <td>
+                      <span class="badge badge-danger"
+                      >{{.IsDiscordScraper}}</span
+                      >
+              </td>
+              {{end}}
+            </tr>
+            <tr>
+              <th scope="row">Telegram Scraper</th>
+              {{if .IsTelegramScraper}}
+              <td>
+                      <span class="badge badge-success"
+                      >{{.IsTelegramScraper}}</span
+                      >
+              </td>
+              {{else}}
+              <td>
+                      <span class="badge badge-danger"
+                      >{{.IsTelegramScraper}}</span
+                      >
+              </td>
+              {{end}}
+            </tr>
+            <tr>
+              <th scope="row">Web Scraper</th>
+              {{if .IsWebScraper}}
+              <td>
+                <span class="badge badge-success">{{.IsWebScraper}}</span>
+              </td>
+              {{else}}
+              <td>
+                <span class="badge badge-danger">{{.IsWebScraper}}</span>
+              </td>
+              {{end}}
+            </tr>
+            <tr>
+              <th scope="row">Bytes Scraped</th>
+              <td><span id="bytesScraped">{{.BytesScraped}}</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Total Peers</th>
+              <td><span id="totalPeers">{{.TotalPeers}}</span></td>
+            </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
+  </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  </body>
-</html>
+  <div class="row mt-4">
+    <div class="col-12">
+      <h5>Session Details</h5>
+      <table class="table">
+        <thead class="thead-light">
+        <tr>
+          <th scope="col" hidden>Peer ID</th>
+          <th scope="col" class="text-center">Staked</th>
+          <th scope="col" class="text-center">First Joined</th>
+          <th scope="col" class="text-center">Last Joined</th>
+          <th scope="col" class="text-center">Session Time</th>
+          <th scope="col" class="text-center">Total Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td hidden>{{.PeerID}}</td>
+          {{if .IsStaked}}
+          <td class="text-center">
+            <span class="badge badge-success">{{.IsStaked}}</span>
+          </td>
+          {{else}}
+          <td class="text-center">
+            <span class="badge badge-danger">{{.IsStaked}}</span>
+          </td>
+          {{end}}
+          <td class="text-center">{{.FirstJoined}}</td>
+          <td class="text-center">{{.LastJoined}}</td>
+          <td class="text-center">{{.CurrentUptime}}</td>
+          <td class="text-center">{{.TotalUptime}}</td>
+        </tr>
+        <!-- Add more rows here based on your data -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- New Twitter Accounts Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <h5>Twitter Accounts</h5>
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Twitter accounts</th>
+          <th>Last scraped</th>
+          <th>X/Twitter login status</th>
+          <th>X/Twitter login</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range .TwitterAccounts}}
+        <tr>
+          <td>{{.Username}}</td>
+          <td>{{.LastScraped}}</td>
+          <td>
+            {{if eq .LoginStatus "Successful"}}
+            <span class="badge badge-success">{{.LoginStatus}}</span>
+            {{else if eq .LoginStatus "Please verify"}}
+            <span class="badge badge-warning">{{.LoginStatus}}</span>
+            {{else}}
+            <span class="badge badge-danger">{{.LoginStatus}}</span>
+            {{end}}
+          </td>
+          <td><button class="btn btn-primary">Verify login</button></td>
+        </tr>
+        {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>x
