@@ -73,3 +73,23 @@ docker-compose-up:
 	@docker compose up --build
 
 .PHONY: proto
+
+## Test e2e stack
+e2e-start:
+	bash tests/e2e/start.sh
+
+e2e-prepare:
+	bash tests/e2e/prepare.sh
+
+e2e-clean:
+	bash tests/e2e/clean.sh
+
+e2e-logs:
+	cd tests/e2e/work && docker-compose logs -f
+
+e2e-run:
+	E2E=true go test -v ./tests/e2e
+
+e2e-restart: e2e-clean e2e-prepare e2e-start e2e-run
+
+e2e-reprepare: e2e-clean e2e-prepare e2e-start e2e-run
