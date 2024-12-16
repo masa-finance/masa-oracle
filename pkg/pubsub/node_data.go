@@ -57,8 +57,6 @@ type NodeData struct {
 	SelfIdentified       bool            `json:"-"`
 	IsValidator          bool            `json:"isValidator"`
 	IsTwitterScraper     bool            `json:"isTwitterScraper"`
-	IsDiscordScraper     bool            `json:"isDiscordScraper"`
-	IsTelegramScraper    bool            `json:"isTelegramScraper"`
 	IsWebScraper         bool            `json:"isWebScraper"`
 	Records              any             `json:"records,omitempty"`
 	Version              string          `json:"version"`
@@ -131,10 +129,6 @@ func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
 	switch workerType {
 	case CategoryTwitter:
 		return n.IsTwitterScraper
-	case CategoryDiscord:
-		return n.IsDiscordScraper
-	case CategoryTelegram:
-		return n.IsTelegramScraper
 	case CategoryWeb:
 		return n.IsWebScraper
 	default:
@@ -146,18 +140,6 @@ func (n *NodeData) CanDoWork(workerType WorkerCategory) bool {
 // It retrieves the configuration instance and returns the value of the TwitterScraper field.
 func (n *NodeData) TwitterScraper() bool {
 	return n.IsTwitterScraper
-}
-
-// DiscordScraper checks if the current node is configured as a Discord scraper.
-// It retrieves the configuration instance and returns the value of the DiscordScraper field.
-func (n *NodeData) DiscordScraper() bool {
-	return n.IsDiscordScraper
-}
-
-// TelegramScraper checks if the current node is configured as a Discord scraper.
-// It retrieves the configuration instance and returns the value of the TelegramScraper field.
-func (n *NodeData) TelegramScraper() bool {
-	return n.IsTelegramScraper
 }
 
 // WebScraper checks if the current node is configured as a Web scraper.
