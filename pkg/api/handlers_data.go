@@ -40,6 +40,12 @@ func (api *API) sendWorkRequest(requestID string, workType data_types.WorkerType
 		Data:      bodyBytes,
 	}
 	response := api.WorkManager.DistributeWork(api.Node, request)
+
+	err := response.UnsealDataIfNeeded()
+	if err != nil {
+		return fmt.Errorf("failed to get response data: %v", err)
+	}
+
 	responseChannel, exists := workers.GetResponseChannelMap().Get(requestID)
 	if !exists {
 		return fmt.Errorf("response channel not found")
@@ -88,7 +94,7 @@ func handleResponse(c *gin.Context, response data_types.WorkResponse, wg *sync.W
 		return
 	}
 
-	if response.Data == nil {
+	if response.Data == "" {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":        "No data returned",
 			"workerPeerId": response.WorkerPeerId,
