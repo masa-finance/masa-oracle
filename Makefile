@@ -77,6 +77,7 @@ docker-compose-up:
 ## Test e2e stack
 e2e-start:
 	bash tests/e2e/start.sh
+	sleep 10
 
 e2e-prepare:
 	bash tests/e2e/prepare.sh
