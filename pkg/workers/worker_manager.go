@@ -311,9 +311,10 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 
 		if workResponse.Error != "" {
 			logrus.Errorf("[-] Work error for %s: %s", workRequest.WorkType, workResponse.Error)
-		} else if workResponse.Data == nil {
+		} else if workResponse.Data == "" {
 			logrus.Warnf("[-] Work response for %s: No data returned", workRequest.WorkType)
 		}
+
 		responseChan <- workResponse
 	}()
 

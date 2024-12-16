@@ -3,10 +3,13 @@ package masa_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/masa-finance/tee-worker/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -104,6 +107,27 @@ var _ = Describe("E2E tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(response).ToNot(BeNil())
 			Expect(string(response)).To(ContainSubstring("google"))
+		})
+
+		It("scrapes the web, return encrypted data", func() {
+			response, err := postData("http://localhost:9091/api/v1/data/web", []byte(`{ "depth": 1, "url": "https://www.google.com"}`))
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response).ToNot(BeNil())
+			Expect(string(response)).ToNot(ContainSubstring("google"))
+
+			dataResult := struct {
+				Data string `json:"data"`
+			}{}
+
+			err = json.Unmarshal(response, &dataResult)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Decrypt the response
+			cli := client.NewClient("http://localhost:8081")
+			decrypted, err := cli.Decrypt(dataResult.Data)
+			Expect(err).ToNot(HaveOccurred(), string(response))
+			Expect(decrypted).To(ContainSubstring("google"))
 		})
 	})
 })

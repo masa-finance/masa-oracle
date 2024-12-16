@@ -2,16 +2,14 @@ package handlers
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/masa-finance/masa-oracle/pkg/tee"
+	"github.com/masa-finance/masa-oracle/pkg/utils"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 	types "github.com/masa-finance/tee-worker/api/types"
-	worker "github.com/masa-finance/tee-worker/pkg/client"
 )
-
-var teeWorkerURL = os.Getenv("TEE_WORKER_URL")
 
 type TwitterQueryHandler struct{ MasaDir string }
 type TwitterFollowersHandler struct{ MasaDir string }
@@ -19,7 +17,7 @@ type TwitterProfileHandler struct{ MasaDir string }
 
 func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterQueryHandler input: %s", data)
-	dataMap, err := JsonBytesToMap(data)
+	dataMap, err := utils.BytesToMap(data)
 	if err != nil {
 		logrus.Errorf("[+] TwitterQueryHandler error parsing data: %v", err)
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
@@ -29,7 +27,7 @@ func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 
 	logrus.Infof("[+] Scraping tweets for query: %s, count: %d", query, count)
 
-	client := worker.NewClient(teeWorkerURL)
+	client := tee.NewClient()
 	res, err := client.SubmitJob(types.Job{
 		Type: "twitter-scraper",
 		Arguments: map[string]interface{}{
@@ -41,22 +39,26 @@ func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
 	}
-	resData := getSealedData(res)
 
-	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, string(resData))
-	return data_types.WorkResponse{Data: resData}
+	result, err := res.Get()
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
+	}
+
+	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, result)
+	return data_types.WorkResponse{Data: result}
 }
 
 func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterFollowersHandler %s", data)
-	dataMap, err := JsonBytesToMap(data)
+	dataMap, err := utils.BytesToMap(data)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter followers data: %v", err)}
 	}
 	username := dataMap["username"].(string)
 	count := int(dataMap["count"].(float64))
 
-	client := worker.NewClient(teeWorkerURL)
+	client := tee.NewClient()
 	res, err := client.SubmitJob(types.Job{
 		Type: "twitter-scraper",
 		Arguments: map[string]interface{}{
@@ -69,21 +71,24 @@ func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkRespons
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter followers data: %v", err)}
 	}
 
-	resData := getSealedData(res)
+	result, err := res.Get()
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
+	}
 
-	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, string(resData))
-	return data_types.WorkResponse{Data: resData}
+	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, result)
+	return data_types.WorkResponse{Data: result}
 }
 
 func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterProfileHandler %s", data)
-	dataMap, err := JsonBytesToMap(data)
+	dataMap, err := utils.BytesToMap(data)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter profile data: %v", err)}
 	}
 	username := dataMap["username"].(string)
 
-	client := worker.NewClient(teeWorkerURL)
+	client := tee.NewClient()
 	res, err := client.SubmitJob(types.Job{
 		Type: "twitter-scraper",
 		Arguments: map[string]interface{}{
@@ -95,8 +100,11 @@ func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse 
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
 	}
 
-	resData := getSealedData(res)
+	result, err := res.Get()
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
+	}
 
-	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, string(resData))
-	return data_types.WorkResponse{Data: resData}
+	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, result)
+	return data_types.WorkResponse{Data: result}
 }
