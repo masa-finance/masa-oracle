@@ -391,8 +391,6 @@ func (net *NodeEventTracker) AddOrUpdateNodeData(nodeData *NodeData, forceGossip
 			nd.SelfIdentified = true
 		}
 		nd.IsStaked = nodeData.IsStaked
-		nd.IsDiscordScraper = nodeData.IsDiscordScraper
-		nd.IsTelegramScraper = nodeData.IsTelegramScraper
 		nd.IsTwitterScraper = nodeData.IsTwitterScraper
 		nd.IsWebScraper = nodeData.IsWebScraper
 		nd.Records = nodeData.Records

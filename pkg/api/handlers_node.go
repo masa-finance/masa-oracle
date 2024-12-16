@@ -398,8 +398,6 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				nd := *nodeData
 				templateData["IsStaked"] = nd.IsStaked
 				templateData["IsTwitterScraper"] = nd.IsTwitterScraper
-				templateData["IsDiscordScraper"] = nd.IsDiscordScraper
-				templateData["IsTelegramScraper"] = nd.IsTelegramScraper
 				templateData["IsWebScraper"] = nd.IsWebScraper
 				templateData["FirstJoined"] = fromUnixTime(nd.FirstJoinedUnix)
 				templateData["LastJoined"] = fromUnixTime(nd.LastJoinedUnix)

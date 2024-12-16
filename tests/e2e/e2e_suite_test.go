@@ -1,4 +1,4 @@
-package scrapers_test
+package masa_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestWeb(t *testing.T) {
+func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Web Suite")
+	RunSpecs(t, "Oracle e2e test suite")
 }

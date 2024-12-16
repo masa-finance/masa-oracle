@@ -56,14 +56,13 @@ func (a *EventTracker) TrackWorkDistribution(workType data_types.WorkerType, rem
 // Parameters:
 // - success: Boolean indicating if the work was completed successfully
 // - peerId: String containing the peer ID
-func (a *EventTracker) TrackWorkCompletion(workType data_types.WorkerType, success bool, recordCount int, peerId string) {
+func (a *EventTracker) TrackWorkCompletion(workType data_types.WorkerType, success bool, peerId string) {
 	event := Event{
-		Name:        WorkCompletion,
-		PeerID:      peerId,
-		WorkType:    workType,
-		Success:     success,
-		RecordCount: recordCount,
-		DataSource:  data_types.WorkerTypeToDataSource(workType),
+		Name:       WorkCompletion,
+		PeerID:     peerId,
+		WorkType:   workType,
+		Success:    success,
+		DataSource: data_types.WorkerTypeToDataSource(workType),
 	}
 	err := a.TrackAndSendEvent(event, nil)
 	if err != nil {
