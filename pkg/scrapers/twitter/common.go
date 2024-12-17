@@ -69,8 +69,9 @@ func getAuthenticatedScraper() (*Scraper, *TwitterAccount, error) {
 	}
 	scraper := NewScraper(account, baseDir)
 	if scraper == nil {
-		logrus.Errorf("Authentication failed for %s", account.Username)
-		return nil, account, fmt.Errorf("Twitter authentication failed for %s", account.Username)
+		err := fmt.Errorf("twitter authentication failed for %s", account.Username)
+		logrus.Error(err)
+		return nil, account, err
 	}
 	account.LastScraped = time.Now()
 	return scraper, account, nil

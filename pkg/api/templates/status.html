@@ -181,7 +181,9 @@
             <span class="badge badge-danger">{{.LoginStatus}}</span>
             {{end}}
           </td>
-          <td><button class="btn btn-primary">Verify login</button></td>
+          <td>
+            <button class="btn btn-primary" onclick="verifyLogin('{{.Username}}')">Verify login</button>
+          </td>
         </tr>
         {{end}}
         </tbody>
@@ -193,5 +195,18 @@
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+  function verifyLogin(username) {
+    fetch(`/verify-login?username=${username}`, {
+      method: 'POST',
+    })
+    .then(response => response.json())
+    .then(data => {
+      alert(data.message);
+      // Optionally update the UI with the new login status
+    })
+    .catch(error => console.error('Error:', error));
+  }
+</script>
 </body>
 </html>x

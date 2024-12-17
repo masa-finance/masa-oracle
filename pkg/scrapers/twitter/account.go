@@ -1,8 +1,13 @@
 package twitter
 
 import (
+	"fmt"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
 )
 
 type TwitterAccount struct {
@@ -71,4 +76,30 @@ func (manager *TwitterAccountManager) GetAccountStates() []AccountState {
 		}
 	}
 	return states
+}
+
+func (manager *TwitterAccountManager) GetAccountByUsername(username string) *TwitterAccount {
+	manager.mutex.Lock()
+	defer manager.mutex.Unlock()
+	for _, account := range manager.accounts {
+		if account.Username == username {
+			return account
+		}
+	}
+	return nil
+}
+
+func AttemptLoginForUsername(username string) error {
+	account := accountManager.GetAccountByUsername(username)
+	if account == nil {
+		return fmt.Errorf("account with username %s not found", username)
+	}
+
+	scraper := NewScraper(account, config.GetInstance().MasaDir)
+	if scraper == nil {
+		err := fmt.Errorf("twitter authentication failed for %s", account.Username)
+		return err
+	}
+	logrus.Infof("Login successful for %s", username)
+	return nil
 }

@@ -421,6 +421,24 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	}
 }
 
+// verifyLoginHandler handles the /verify-login endpoint.
+func verifyLoginHandler(c *gin.Context) {
+	username := c.Query("username")
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username is required"})
+		return
+	}
+	logrus.Infof("Login verification request for username: %s", username)
+
+	err := twitter.AttemptLoginForUsername(username)
+	if err != nil {
+		c.JSON(http.StatusFailedDependency, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Login verified successfully for " + username})
+}
+
 // GetNodeApiKey returns a gin.HandlerFunc that generates and returns a JWT token for the node.
 // The JWT token is signed using the node's host ID as the secret key.
 // On success, it returns the generated JWT token in a JSON response.
