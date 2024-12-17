@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -17,12 +19,10 @@ import (
 
 	"github.com/gin-contrib/cors"
 
-	"path/filepath"
-	"runtime"
-
-	"github.com/masa-finance/masa-oracle/node"
 	swaggerFiles "github.com/swaggo/files"     // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
+
+	"github.com/masa-finance/masa-oracle/node"
 )
 
 //go:embed templates/*.html
@@ -468,6 +468,17 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 	// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
 	// @Router /status [get]
 	router.GET("/status", API.NodeStatusPageHandler())
+
+	// @Summary Verify Login
+	// @Description Verifies the login status of a Twitter account by username.
+	// @Tags Authentication
+	// @Accept  json
+	// @Produce  json
+	// @Param   username   query    string  true  "Twitter Username"
+	// @Success 200 {object} map[string]string "Login verified successfully"
+	// @Failure 400 {object} map[string]string "Username is required"
+	// @Router /verify-login [post]
+	router.POST("/verify-login", verifyLoginHandler)
 
 	// @Summary Chat Page
 	// @Description Renders the chat page for user interaction with the AI

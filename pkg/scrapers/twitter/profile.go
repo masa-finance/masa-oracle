@@ -1,6 +1,8 @@
 package twitter
 
 import (
+	"time"
+
 	twitterscraper "github.com/imperatrona/twitter-scraper"
 )
 
@@ -17,5 +19,6 @@ func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
 		}
 		return twitterscraper.Profile{}, err
 	}
+	account.LastScraped = time.Now()
 	return profile, nil
 }
