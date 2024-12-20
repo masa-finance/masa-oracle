@@ -1,12 +1,16 @@
 package data_types
 
 import (
+	"os"
+
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
+	"github.com/masa-finance/masa-oracle/pkg/tee"
+	"github.com/masa-finance/masa-oracle/pkg/utils"
 )
 
 type Worker struct {
@@ -53,5 +57,23 @@ type WorkResponse struct {
 	Data         interface{}  `json:"data,omitempty"`
 	Error        string       `json:"error,omitempty"`
 	WorkerPeerId string       `json:"workerPeerId,omitempty"`
-	RecordCount  int          `json:"recordCount,omitempty"`
+}
+
+func (wr *WorkResponse) UnsealDataIfNeeded() (err error) {
+	unsealData := os.Getenv("KEEP_SEALED_DATA") != "true"
+	if !unsealData {
+		return
+	}
+
+	switch v := wr.Data.(type) {
+	case string:
+		client := tee.NewClient()
+		var resData string
+		resData, err = client.Decrypt(v)
+		if err == nil {
+			wr.Data, err = utils.BytesToMap([]byte(resData))
+		}
+	}
+
+	return
 }

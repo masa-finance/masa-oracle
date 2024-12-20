@@ -169,8 +169,6 @@ func (node *OracleNode) getNodeData() *pubsub.NodeData {
 	nodeData := pubsub.NewNodeData(node.Host.Addrs(), node.Host.ID(), publicEthAddress, pubsub.ActivityJoined)
 	nodeData.IsStaked = node.Options.IsStaked
 	nodeData.IsTwitterScraper = node.Options.IsTwitterScraper
-	nodeData.IsDiscordScraper = node.Options.IsDiscordScraper
-	nodeData.IsTelegramScraper = node.Options.IsTelegramScraper
 	nodeData.IsWebScraper = node.Options.IsWebScraper
 	nodeData.IsValidator = node.Options.IsValidator
 	nodeData.IsActive = true

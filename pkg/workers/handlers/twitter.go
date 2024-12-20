@@ -5,8 +5,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
+	"github.com/masa-finance/masa-oracle/pkg/tee"
+	"github.com/masa-finance/masa-oracle/pkg/utils"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
+	types "github.com/masa-finance/tee-worker/api/types"
 )
 
 type TwitterQueryHandler struct{ MasaDir string }
@@ -15,7 +17,7 @@ type TwitterProfileHandler struct{ MasaDir string }
 
 func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterQueryHandler input: %s", data)
-	dataMap, err := JsonBytesToMap(data)
+	dataMap, err := utils.BytesToMap(data)
 	if err != nil {
 		logrus.Errorf("[+] TwitterQueryHandler error parsing data: %v", err)
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
@@ -25,49 +27,84 @@ func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 
 	logrus.Infof("[+] Scraping tweets for query: %s, count: %d", query, count)
 
-	resp, err := twitter.ScrapeTweetsByQuery(h.MasaDir, query, count)
+	client := tee.NewClient()
+	res, err := client.SubmitJob(types.Job{
+		Type: "twitter-scraper",
+		Arguments: map[string]interface{}{
+			"type":  "searchbyquery",
+			"query": query,
+			"count": count,
+		},
+	})
 	if err != nil {
-		logrus.Errorf("[+] TwitterQueryHandler error scraping tweets: %v", err)
-		return data_types.WorkResponse{Error: err.Error()}
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
 	}
 
-	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %d tweets returned", data_types.Twitter, len(resp))
-	if len(resp) > 0 && resp[0].Tweet != nil {
-		tweet := resp[0].Tweet
-		logrus.Infof("[+] First tweet: ID: %s, Text: %s, Author: %s, CreatedAt: %s",
-			tweet.ID, tweet.Text, tweet.Username, tweet.TimeParsed)
+	result, err := res.Get()
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
 	}
-	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
+
+	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, result)
+	return data_types.WorkResponse{Data: result}
 }
 
 func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterFollowersHandler %s", data)
-	dataMap, err := JsonBytesToMap(data)
+	dataMap, err := utils.BytesToMap(data)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter followers data: %v", err)}
 	}
 	username := dataMap["username"].(string)
 	count := int(dataMap["count"].(float64))
-	resp, err := twitter.ScrapeFollowersForProfile(h.MasaDir, username, count)
+
+	client := tee.NewClient()
+	res, err := client.SubmitJob(types.Job{
+		Type: "twitter-scraper",
+		Arguments: map[string]interface{}{
+			"type":  "searchfollowers",
+			"query": username,
+			"count": count,
+		},
+	})
 	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter followers: %v", err)}
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter followers data: %v", err)}
 	}
 
-	logrus.Infof("[+] TwitterFollowersHandler Work response for %s: %d records returned", data_types.TwitterFollowers, len(resp))
-	return data_types.WorkResponse{Data: resp, RecordCount: len(resp)}
+	result, err := res.Get()
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
+	}
+
+	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, result)
+	return data_types.WorkResponse{Data: result}
 }
 
 func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterProfileHandler %s", data)
-	dataMap, err := JsonBytesToMap(data)
+	dataMap, err := utils.BytesToMap(data)
 	if err != nil {
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter profile data: %v", err)}
 	}
 	username := dataMap["username"].(string)
-	resp, err := twitter.ScrapeTweetsProfile(h.MasaDir, username)
+
+	client := tee.NewClient()
+	res, err := client.SubmitJob(types.Job{
+		Type: "twitter-scraper",
+		Arguments: map[string]interface{}{
+			"type":  "searchbyprofile",
+			"query": username,
+		},
+	})
 	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter profile: %v", err)}
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
 	}
-	logrus.Infof("[+] TwitterProfileHandler Work response for %s: %d records returned", data_types.TwitterProfile, 1)
-	return data_types.WorkResponse{Data: resp, RecordCount: 1}
+
+	result, err := res.Get()
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter query data: %v", err)}
+	}
+
+	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, result)
+	return data_types.WorkResponse{Data: result}
 }

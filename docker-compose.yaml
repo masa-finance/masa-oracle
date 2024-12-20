@@ -1,31 +1,40 @@
 services:
-  masa-node:
+  masa-tee-worker:
     #    network_mode: "host"
-    build: .
-    # optional if network_mode: "host" mode is not used
+    image: masaengineering/tee-worker:main
+    # Uncomment to build from source
+    # build: .
     ports:
-       - "4001:4001/tcp"
-       - "4001:4001/udp"
-       - "8080:8080"
+       - "8081:8080"
     environment:
-      BOOTNODES: "${BOOTNODES}"
-      ENV: "${ENV}"
-      RPC_URL: "${RPC_URL}"
-      FILE_PATH: "${FILE_PATH}"
-      VALIDATOR: "${VALIDATOR}"
-      CACHE_PATH: "${CACHE_PATH}"
-      TWITTER_PASS: "${TWITTER_PASS}"
-      TWITTER_USER: "${TWITTER_USER}"
-      TWITTER_2FA_CODE: "${TWITTER_2FA_CODE}"
-      TWITTER_SCRAPER: "${TWITTER_SCRAPER}"
+      LISTEN_ADDRESS: ":8080"
+      # uncomment if not running with Intel SGX HW
+      OE_SIMULATION: "1"
+    # uncomment if running with Intel SGX
+    # devices:
+    # - /dev/sgx_enclave 
+    # - /dev/sgx_provision
     volumes:
-      - .:/app
-      - .masa-keys:/home/masa/.masa
+      - masa:/home/masa/
+      - ./.env:/home/masa/.env
+    restart: always
+  masa-node:
+    network_mode: "host"
+    #image: masaengineering/oracle:v0.8.8
+    build: .
+    # ports:
+    #    - "4001:4001/tcp"
+    #    - "4001:4001/udp"
+    #    - "8080:8080"
+    environment:
+      TEE_WORKER_URL: "http://masa-tee-worker:8080"
+    volumes:
+      - masa:/home/masa/
       - ./.env:/home/masa/.env
     restart: always
 
 volumes:
-  masa-keys:
+  masa:
     # This is a named volume. You can specify additional options here if needed,
     # such as setting a specific driver, driver options, or even labeling.
     # For most users, the simple declaration is sufficient.

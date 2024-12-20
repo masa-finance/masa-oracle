@@ -1,29 +1,21 @@
 package api
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/chain"
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	pubsub2 "github.com/masa-finance/masa-oracle/pkg/pubsub"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/discord"
-	"github.com/masa-finance/masa-oracle/pkg/scrapers/telegram"
 	"github.com/masa-finance/masa-oracle/pkg/workers"
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
@@ -48,6 +40,12 @@ func (api *API) sendWorkRequest(requestID string, workType data_types.WorkerType
 		Data:      bodyBytes,
 	}
 	response := api.WorkManager.DistributeWork(api.Node, request)
+
+	err := response.UnsealDataIfNeeded()
+	if err != nil {
+		return fmt.Errorf("failed to get response data: %v", err)
+	}
+
 	responseChannel, exists := workers.GetResponseChannelMap().Get(requestID)
 	if !exists {
 		return fmt.Errorf("response channel not found")
@@ -96,7 +94,7 @@ func handleResponse(c *gin.Context, response data_types.WorkResponse, wg *sync.W
 		return
 	}
 
-	if response.Data == nil {
+	if response.Data == "" {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":        "No data returned",
 			"workerPeerId": response.WorkerPeerId,
@@ -259,266 +257,6 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 	}
 }
 
-// SearchDiscordProfile returns a gin.HandlerFunc that processes a request to search for a Discord user profile.
-// It expects a URL parameter "userID" representing the Discord user ID to search for.
-// The handler validates the userID, ensuring it is provided.
-// If the request is valid, it attempts to fetch the user's profile.
-// On success, it returns the fetched profile information in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
-func (api *API) SearchDiscordProfile() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			UserID string `json:"userID"`
-		}
-
-		reqBody.UserID = c.Param("userID")
-
-		if reqBody.UserID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
-			return
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-
-		api.sendTrackingEvent(data_types.DiscordProfile, bodyBytes)
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = api.sendWorkRequest(requestID, data_types.DiscordProfile, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// SearchChannelMessages returns a gin.HandlerFunc that processes a request to search for messages in a Discord channel.
-func (api *API) SearchChannelMessages() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqParams struct {
-			ChannelID string `json:"channelID"`
-			Limit     string `json:"limit"`
-			Before    string `json:"before"`
-		}
-
-		reqParams.ChannelID = c.Param("channelID")
-		if reqParams.ChannelID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "ChannelID must be provided and valid"})
-			return
-		}
-
-		reqParams.Limit = c.Query("limit")
-		reqParams.Before = c.Query("before")
-
-		if reqParams.Limit != "" {
-			if _, err := strconv.Atoi(reqParams.Limit); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit parameter"})
-				return
-			}
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqParams)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		api.sendTrackingEvent(data_types.DiscordChannelMessages, bodyBytes)
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = api.sendWorkRequest(requestID, data_types.DiscordChannelMessages, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		wg.Wait()
-	}
-}
-
-// SearchGuildChannels returns a gin.HandlerFunc that processes a request to search for channels in a Discord guild.
-func (api *API) SearchGuildChannels() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			GuildID string `json:"guildID"`
-		}
-
-		reqBody.GuildID = c.Param("guildID")
-
-		if reqBody.GuildID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "UserID must be provided and valid"})
-			return
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-
-		api.sendTrackingEvent(data_types.DiscordGuildChannels, bodyBytes)
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = api.sendWorkRequest(requestID, data_types.DiscordGuildChannels, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// SearchUserGuilds returns a gin.HandlerFunc that processes a request to search for guilds associated with a Discord user.
-func (api *API) SearchUserGuilds() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct{}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-
-		api.sendTrackingEvent(data_types.DiscordUserGuilds, bodyBytes)
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = api.sendWorkRequest(requestID, data_types.DiscordUserGuilds, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// SearchAllGuilds returns a gin.HandlerFunc that queries each node for the Discord guilds they are part of.
-func (api *API) SearchAllGuilds() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Get all nodes from the tracker
-		peers := api.Node.NodeTracker.GetAllNodeData()
-
-		// Prepare a wait group to wait for all go routines to finish
-		var wg sync.WaitGroup
-		wg.Add(len(peers))
-
-		// This will store the combined list of guilds from all nodes
-		allGuilds := make([]discord.Guild, 0)
-
-		// Mutex to synchronize access to allGuilds slice
-		var mutex sync.Mutex
-
-		// Channel to collect errors
-		errCh := make(chan error, len(peers))
-
-		for _, p := range peers {
-			go func(peer pubsub2.NodeData) {
-				defer wg.Done()
-
-				// Construct the URL for the GetUserGuilds endpoint
-				var ipAddr string
-				var err error
-				for _, addr := range peer.Multiaddrs {
-					ipAddr, err = addr.ValueForProtocol(multiaddr.P_IP4)
-					if err == nil {
-						break
-					}
-				}
-				if ipAddr == "" {
-					errCh <- fmt.Errorf("no IP4 address found for peer %s", peer.PeerId)
-					return
-				}
-
-				url := fmt.Sprintf("http://%s:%s/api/v1/data/discord/user/guilds", ipAddr, os.Getenv("PORT"))
-
-				// Make the HTTP request
-				resp, err := http.Get(url)
-				if err != nil {
-					errCh <- fmt.Errorf("[-] Failed to make HTTP request: %v", err)
-					return
-				}
-
-				defer func(Body io.ReadCloser) {
-					err := Body.Close()
-					if err != nil {
-						logrus.Error("[-] Error closing response body: ", err)
-					}
-				}(resp.Body)
-				respBody, err := io.ReadAll(resp.Body)
-				if err != nil {
-					errCh <- fmt.Errorf("[-] Failed to read response body: %v", err)
-					return
-				}
-
-				// Read and decode the response
-				var result map[string]interface{}
-				if err := json.Unmarshal(respBody, &result); err != nil {
-					errCh <- fmt.Errorf("[-] Failed to unmarshal response body: %v", err)
-					return
-				}
-
-				// Extract guilds from the result
-				guildsData, ok := result["data"]
-				if !ok {
-					errCh <- fmt.Errorf("[-] Data field not found in response")
-					return
-				}
-
-				guildsBytes, err := json.Marshal(guildsData)
-				if err != nil {
-					errCh <- fmt.Errorf("failed to marshal guilds data: %v", err)
-					return
-				}
-
-				var guilds []discord.Guild
-				if err := json.Unmarshal(guildsBytes, &guilds); err != nil {
-					errCh <- fmt.Errorf("[-] Failed to unmarshal guilds: %v", err)
-					return
-				}
-
-				// Safely append the guilds to the allGuilds slice
-				mutex.Lock()
-				allGuilds = append(allGuilds, guilds...)
-				mutex.Unlock()
-			}(p)
-		}
-
-		// Wait for all requests to finish
-		wg.Wait()
-		close(errCh)
-
-		if len(allGuilds) > 0 {
-			// Return the combined list of guilds
-			c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
-			return
-		} else if len(errCh) > 0 {
-			// Check if there were any errors
-			for err := range errCh {
-				logrus.Error("[-] Error fetching guilds: ", err)
-			}
-			c.JSON(http.StatusTooManyRequests, gin.H{"error": "429 too many requests"})
-			return
-		} else {
-			c.JSON(http.StatusOK, gin.H{"guilds": allGuilds})
-		}
-	}
-}
-
 // WebData returns a gin.HandlerFunc that processes web scraping requests.
 // It expects a JSON body with fields "url" (string) and "depth" (int), representing the URL to scrape and the depth of the scrape, respectively.
 // The handler validates the request body, ensuring the URL is not empty and the depth is positive.
@@ -562,94 +300,6 @@ func (api *API) WebData() gin.HandlerFunc {
 		go handleWorkResponse(c, responseCh, wg)
 
 		err = api.sendWorkRequest(requestID, data_types.Web, bodyBytes, wg)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		wg.Wait()
-	}
-}
-
-// StartAuth starts the authentication process with Telegram.
-func (api *API) StartAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			PhoneNumber string `json:"phone_number"`
-		}
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		phoneCodeHash, err := telegram.StartAuthentication(context.Background(), reqBody.PhoneNumber)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start authentication"})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "Code sent to Telegram app", "phone_code_hash": phoneCodeHash})
-	}
-}
-
-// CompleteAuth completes the authentication process with Telegram.
-func (api *API) CompleteAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			PhoneNumber   string `json:"phone_number"`
-			Code          string `json:"code"`
-			PhoneCodeHash string `json:"phone_code_hash"`
-			Password      string `json:"password"`
-		}
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		auth, err := telegram.CompleteAuthentication(context.Background(), reqBody.PhoneNumber, reqBody.Code, reqBody.PhoneCodeHash, reqBody.Password)
-		if err != nil {
-			// Check if 2FA is required
-			if err.Error() == "2FA required" {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Two-factor authentication is required"})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to complete authentication", "details": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"message": "Authentication successful", "auth": auth})
-	}
-}
-
-func (api *API) GetChannelMessagesHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody struct {
-			Username string `json:"username"` // Telegram usernames are used instead of channel IDs
-		}
-
-		// Bind the JSON body to the struct
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.Username == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Username parameter is missing"})
-			return
-		}
-
-		// worker handler implementation
-		bodyBytes, err := json.Marshal(reqBody)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-
-		api.sendTrackingEvent(data_types.TelegramChannelMessages, bodyBytes)
-		requestID := uuid.New().String()
-		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
-		wg := &sync.WaitGroup{}
-		defer workers.GetResponseChannelMap().Delete(requestID)
-		go handleWorkResponse(c, responseCh, wg)
-
-		err = api.sendWorkRequest(requestID, data_types.TelegramChannelMessages, bodyBytes, wg)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
