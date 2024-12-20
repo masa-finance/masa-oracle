@@ -1,0 +1,56 @@
+services:
+  masa-tee-worker:
+    image: %%TEEIMAGE%%
+    ports:
+       - "8081:8080"
+    environment:
+      LISTEN_ADDRESS: ":8080"
+      OE_SIMULATION: "1"
+    volumes:
+      - masa:/home/masa/
+      - ./.env:/home/masa/.env
+    restart: always
+  masa-node:
+    network_mode: "host"
+    image: %%IMAGE%%
+    environment:
+      BOOTNODES: "/ip4/127.0.0.1/udp/4002/quic-v1/p2p/%%NODE1PUB%%"
+      API_LISTEN_ADDRESS: ":9091"
+      KEEP_SEALED_DATA: "true"
+      API_ENABLED: "true"
+      PORT_NBR: "4001"
+      TEE_WORKER_URL: "http://127.0.0.1:8081"
+    volumes:
+      - masa:/home/masa/
+      - ./.env:/home/masa/.env
+    restart: always
+
+  #### Second node
+  masa-tee-worker2:
+    image: %%TEEIMAGE%%
+    ports:
+       - "8082:8080"
+    environment:
+      LISTEN_ADDRESS: ":8080"
+      OE_SIMULATION: "1"
+    volumes:
+      - masa2:/home/masa/
+      - ./.env:/home/masa/.env
+    restart: always
+  masa-node2:
+    network_mode: "host"
+    image: %%IMAGE%%
+    environment:
+      PORT_NBR: "4002"
+      API_LISTEN_ADDRESS: ":9092"
+      API_ENABLED: "true"
+      BOOTNODES: "/ip4/127.0.0.1/udp/4001/quic-v1/p2p/%%NODE2PUB%%"
+      TEE_WORKER_URL: "http://127.0.0.1:8082"
+    volumes:
+      - masa2:/home/masa/
+      - ./.env:/home/masa/.env
+    restart: always
+volumes:
+  masa2:
+  masa:
+

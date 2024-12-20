@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,8 +20,14 @@ import (
 
 func main() {
 
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.Debug("Log level set to Debug")
+	onlyPrintPubKey := os.Getenv("PRINT_PUBKEY") == "true"
+
+	if !onlyPrintPubKey {
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.Debug("Log level set to Debug")
+	} else {
+		logrus.SetLevel(logrus.FatalLevel)
+	}
 
 	if len(os.Args) > 1 && os.Args[1] == "--version" {
 		logrus.Infof("Masa Oracle Node Version: %s\nMasa Oracle Protocol verison: %s", versioning.ApplicationVersion, versioning.ProtocolVersion)
@@ -32,8 +39,10 @@ func main() {
 		logrus.Fatalf("[-] %v", err)
 	}
 
-	cfg.SetupLogging()
-	cfg.LogConfig()
+	if !onlyPrintPubKey {
+		cfg.SetupLogging()
+		cfg.LogConfig()
+	}
 
 	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -72,17 +81,17 @@ func main() {
 	masaNodeOptions, workHandlerManager, pubKeySub := config.InitOptions(cfg)
 	// Create a new OracleNode
 	masaNode, err := node.NewOracleNode(ctx, masaNodeOptions...)
-
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	if err = masaNode.Start(); err != nil {
-		logrus.Fatal(err)
+	if onlyPrintPubKey {
+		fmt.Print(masaNode.Host.ID())
+		os.Exit(0)
 	}
 
-	if cfg.TwitterScraper && cfg.DiscordScraper && cfg.WebScraper {
-		logrus.Warn("[+] Node is set as all types of scrapers. This may not be intended behavior.")
+	if err = masaNode.Start(); err != nil {
+		logrus.Fatal(err)
 	}
 
 	if cfg.AllowedPeer {
@@ -102,7 +111,7 @@ func main() {
 	if cfg.APIEnabled {
 		router := api.SetupRoutes(masaNode, workHandlerManager, pubKeySub)
 		go func() {
-			if err := router.Run(); err != nil {
+			if err := router.Run(cfg.APIListenAddress); err != nil {
 				logrus.Fatal(err)
 			}
 		}()
