@@ -9,14 +9,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/masa-finance/masa-oracle/pkg/consensus"
-	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/consensus"
+	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/pubsub"
 )
 
@@ -374,20 +374,19 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Initialize default values for the template data
 		templateData := gin.H{
-			"TotalPeers":        0,
-			"Name":              "Masa Status Page",
-			"PeerID":            api.Node.Host.ID().String(),
-			"IsStaked":          false,
-			"IsTwitterScraper":  false,
-			"IsDiscordScraper":  false,
-			"IsTelegramScraper": false,
-			"IsWebScraper":      false,
-			"FirstJoined":       fromUnixTime(time.Now().Unix()),
-			"LastJoined":        fromUnixTime(time.Now().Unix()),
-			"CurrentUptime":     "0",
-			"TotalUptime":       "0",
-			"Rewards":           "Coming Soon!",
-			"BytesScraped":      "0 MB",
+			"TotalPeers":       0,
+			"Name":             "Masa Status Page",
+			"PeerID":           api.Node.Host.ID().String(),
+			"PublicKey":        "",
+			"IsStaked":         false,
+			"IsTwitterScraper": false,
+			"IsWebScraper":     false,
+			"FirstJoined":      fromUnixTime(time.Now().Unix()),
+			"LastJoined":       fromUnixTime(time.Now().Unix()),
+			"CurrentUptime":    "0",
+			"TotalUptime":      "0",
+			"Rewards":          "Coming Soon!",
+			"BytesScraped":     "0 MB",
 		}
 
 		if api.Node != nil && api.Node.Host != nil {
@@ -396,6 +395,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 
 			if nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String()); nodeData != nil {
 				nd := *nodeData
+				templateData["PublicKey"] = nd.EthAddress
 				templateData["IsStaked"] = nd.IsStaked
 				templateData["IsTwitterScraper"] = nd.IsTwitterScraper
 				templateData["IsWebScraper"] = nd.IsWebScraper
@@ -405,8 +405,19 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				templateData["TotalUptime"] = pubsub.PrettyDuration(nd.GetAccumulatedUptime())
 				templateData["BytesScraped"] = "0 MB"
 			}
-		}
+			//client := tee.NewClient()
+			var resData string
 
+			//resData, err := client.GetStatus("twitter")
+			//if err == nil {
+			//	logrus.Errorf("[+] Error getting status: %v", err)
+			//}
+			accountStates, err := GetAccountStates(resData)
+			if err != nil {
+				c.HTML(http.StatusInternalServerError, "status.html", gin.H{"error": err.Error()})
+			}
+			templateData["TwitterAccounts"] = accountStates
+		}
 		c.HTML(http.StatusOK, "status.html", templateData)
 	}
 }
