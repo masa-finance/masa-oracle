@@ -97,7 +97,7 @@ func EnableDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.M
 
 			defer wg.Done()
 			if err := host.Connect(ctxWithTimeout, *peerInfo); err != nil {
-				logrus.Errorf("[-] Failed to connect to bootstrap peer %s: %v", peerInfo.ID, err)
+				logrus.Errorf("[-] Failed to connect to bootstrap peer %s (%d/%d): %v", peerInfo.ID, counter+1, maxRetries, err)
 				counter++
 				if counter >= maxRetries {
 					return

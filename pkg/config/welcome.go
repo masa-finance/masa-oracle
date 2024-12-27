@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func DisplayWelcomeMessage(multiAddrs []multiaddr.Multiaddr, publicKeyHex string, isStaked bool, isValidator bool, isTwitterScraper bool, isTelegramScraper bool, isDiscordScraper bool, isWebScraper bool, version, protocolVersion string) {
+func DisplayWelcomeMessage(multiAddrs []multiaddr.Multiaddr, publicKeyHex string, isStaked bool, isValidator bool, isTwitterScraper bool, isTelegramScraper bool, isDiscordScraper bool, isWebScraper bool, isProxy bool, version, protocolVersion string) {
 	// ANSI escape code for yellow text
 	yellow := "\033[33m"
 	blue := "\033[34m"
@@ -50,5 +50,6 @@ func DisplayWelcomeMessage(multiAddrs []multiaddr.Multiaddr, publicKeyHex string
 	fmt.Printf(blue+"%-20s %t\n"+reset, "Is DiscordScraper:", isDiscordScraper)
 	fmt.Printf(blue+"%-20s %t\n"+reset, "Is TelegramScraper:", isTelegramScraper)
 	fmt.Printf(blue+"%-20s %t\n"+reset, "Is WebScraper:", isWebScraper)
+	fmt.Printf(blue+"%-20s %t\n"+reset, "Is Proxy:", isProxy)
 	fmt.Println("")
 }
