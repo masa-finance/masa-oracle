@@ -44,7 +44,7 @@ func (api *API) GetNodeDataHandler() gin.HandlerFunc {
 		}
 		allNodeData := api.Node.NodeTracker.GetAllNodeData()
 		totalRecords := len(allNodeData)
-		totalPages := int(math.Ceil(float64(totalRecords) / config.PageSize))
+		totalPages := int(math.Ceil(float64(totalRecords) / pageSize))
 
 		startIndex := pageNbr * pageSize
 		endIndex := startIndex + pageSize
