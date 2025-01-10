@@ -135,7 +135,16 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 // saves the updated nodeData.
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
+	logrus.Debug("Connected")
+
+	// check if the connection is nil
+	if c == nil {
+		logrus.Error("[-] Connection is nil")
+		return
+	}
 	remotePeer := c.RemotePeer()
+
+	// get the peer ID of the remote peer
 	peerID := remotePeer.String()
 
 	nodeData, exists := net.nodeData.Get(peerID)
@@ -155,8 +164,9 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			}
 		}
 	}
+
 	logrus.WithFields(logrus.Fields{
-		"Peer":    c.RemotePeer().String(),
+		"Peer":    peerID,
 		"network": n,
 		"conn":    c,
 	}).Info("[+] Connected")
@@ -179,8 +189,8 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		logrus.Debugf("Node data does not exist for disconnected node: %s", peerID)
 		return
 	}
-	buffered := net.ConnectBuffer[peerID]
-	if buffered.NodeData != nil {
+	buffered, exists := net.ConnectBuffer[peerID]
+	if exists && buffered.NodeData != nil {
 		buffered.NodeData.Left()
 		delete(net.ConnectBuffer, peerID)
 		buffered.NodeData.Joined(net.nodeVersion)
@@ -190,7 +200,7 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		net.NodeDataChan <- nodeData
 	}
 	logrus.WithFields(logrus.Fields{
-		"Peer":    c.RemotePeer().String(),
+		"Peer":    peerID,
 		"network": n,
 		"conn":    c,
 	}).Info("[+] Disconnected")
