@@ -2,6 +2,9 @@ package network
 
 import (
 	"context"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	"testing"
 	"time"
 
@@ -105,4 +108,48 @@ func isConnectedToAnyBootnode(h host.Host, bootnodes []string) bool {
 		}
 	}
 	return false
+}
+
+func TestDiscover(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Create bootnode
+	bootnode, err := libp2p.New(
+		libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/0"),
+	)
+	require.NoError(t, err)
+	defer bootnode.Close()
+
+	// Get bootnode address
+	bootNodeAddr := bootnode.Addrs()[0].String() + "/p2p/" + bootnode.ID().String()
+
+	// Create test node
+	testNode, err := libp2p.New()
+	require.NoError(t, err)
+	defer testNode.Close()
+
+	// Create DHT for test node
+	testDHT, err := dht.New(ctx, testNode)
+	require.NoError(t, err)
+
+	// Set up routing discovery
+	routing.NewRoutingDiscovery(testDHT)
+
+	// Initialize DHT
+	err = testDHT.Bootstrap(ctx)
+	require.NoError(t, err)
+
+	// Set test protocol
+	testProtocol := protocol.ID("/test/1.0.0")
+
+	// Start discovery
+	go Discover(ctx, []string{bootNodeAddr}, testNode, testDHT, testProtocol)
+
+	// Wait a bit for discovery
+	time.Sleep(time.Second)
+
+	// Verify the connection was established
+	connected := testNode.Network().Connectedness(bootnode.ID())
+	assert.NotEqual(t, 0, connected, "Nodes should be connected")
 }
