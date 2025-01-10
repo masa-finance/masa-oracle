@@ -146,15 +146,32 @@ func isConnectedToBootnode(host host.Host, bootnodes []string) bool {
 }
 
 // Function to attempt reconnection to bootnodes
+// We can improve error handling and retry logic
 func reconnectToBootnodes(ctx context.Context, host host.Host, bootnodes []string) {
 	for _, bn := range bootnodes {
-		ma, _ := multiaddr.NewMultiaddr(bn)
-		peerInfo, _ := peer.AddrInfoFromP2pAddr(ma)
-		if err := host.Connect(ctx, *peerInfo); err != nil {
-			logrus.Errorf("[-] Failed to reconnect to bootnode %s: %v", bn, err)
-		} else {
-			logrus.Infof("[+] Reconnected to bootnode %s", bn)
-			break // Exit after successful reconnection to one bootnode
+		ma, err := multiaddr.NewMultiaddr(bn)
+		if err != nil {
+			logrus.Errorf("[-] Failed to parse bootnode address %s: %v", bn, err)
+			continue
+		}
+
+		// Add timeout and backoff retry
+		expBackOff := backoff.NewExponentialBackOff()
+		expBackOff.MaxElapsedTime = time.Second * 30
+
+		err = backoff.Retry(func() error {
+			connectCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+			defer cancel()
+			peerInfo, err := peer.AddrInfoFromP2pAddr(ma)
+			if err != nil {
+				return err
+			}
+			return host.Connect(connectCtx, *peerInfo)
+		}, expBackOff)
+
+		if err == nil {
+			logrus.Infof("[+] Connected to bootnode %s", bn)
+			break // Successfully connected to a bootnode
 		}
 	}
 }
