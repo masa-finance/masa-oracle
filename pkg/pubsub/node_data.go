@@ -176,6 +176,7 @@ func (n *NodeData) Joined(nodeVersion string) {
 func (n *NodeData) Left() {
 
 	if n != nil {
+		address := n.Address()
 		if n.Activity == ActivityLeft {
 			return
 		}
@@ -186,9 +187,9 @@ func (n *NodeData) Left() {
 		n.IsActive = false
 
 		n.UpdateAccumulatedUptime()
-		logMessage := fmt.Sprintf("Node left: %s", n.Address())
+		logMessage := fmt.Sprintf("Node left: %s", address)
 		if n.IsStaked {
-			logrus.Info(logMessage)
+			logrus.Debug(logMessage)
 		} else {
 			logrus.Debug(logMessage)
 		}
