@@ -176,9 +176,6 @@ func (n *NodeData) Joined(nodeVersion string) {
 func (n *NodeData) Left() {
 
 	if n != nil {
-
-		fmt.Sprintf("NodeData: %v", n)
-
 		if n.Activity == ActivityLeft {
 			return
 		}
