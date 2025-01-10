@@ -86,6 +86,9 @@ func (whm *WorkHandlerManager) getWorkHandler(wType data_types.WorkerType) (Work
 
 func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest data_types.WorkRequest) (response data_types.WorkResponse) {
 	category := data_types.WorkerTypeToCategory(workRequest.WorkType)
+
+	// TODO: health check for workers
+
 	var remoteWorkers []data_types.Worker
 	var localWorker *data_types.Worker
 
