@@ -164,7 +164,7 @@ func (n *NodeData) Joined(nodeVersion string) {
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.MultiaddrsString)
 	if n.IsStaked {
-		logrus.Info(logMessage)
+		logrus.Debug(logMessage)
 	} else {
 		logrus.Debug(logMessage)
 	}

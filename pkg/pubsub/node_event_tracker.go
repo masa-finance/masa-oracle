@@ -136,6 +136,10 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	// A node has joined the network
 	logrus.Debug("Connected")
+	if net == nil {
+		logrus.Error("[-] Network is nil")
+		return
+	}
 
 	// check if the connection is nil
 	if c == nil {
@@ -175,9 +179,9 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 	}()
 
 	logrus.WithFields(logrus.Fields{
-		"Peer":    peerID,
-		"network": n,
-		"conn":    c,
+		"peer_id": fmt.Sprintf("%v", peerID),
+		"network": fmt.Sprintf("%v", n),
+		"conn":    fmt.Sprintf("%v", c),
 	}).Info("[+] Connected")
 }
 
@@ -188,6 +192,12 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 // events, and sending updated node data through the channel.
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	logrus.Debug("Disconnect")
+
+	// check if net is nil
+	if net == nil {
+		logrus.Error("[-] Network is nil")
+		return
+	}
 
 	peerID := c.RemotePeer().String()
 
@@ -217,10 +227,10 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	}()
 
 	logrus.WithFields(logrus.Fields{
-		"Peer":    peerID,
-		"network": n,
-		"conn":    c,
-	}).Info("[+] Disconnected")
+		"peer_id": fmt.Sprintf("%v", peerID),
+		"network": fmt.Sprintf("%v", n),
+		"conn":    fmt.Sprintf("%v", c),
+	}).Info("[+] Connected")
 }
 
 // HandleMessage unmarshals the received pubsub message into a NodeData struct,
