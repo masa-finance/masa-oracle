@@ -164,7 +164,7 @@ func (n *NodeData) Joined(nodeVersion string) {
 
 	logMessage := fmt.Sprintf("[+] %s node joined: %s", map[bool]string{true: "Staked", false: "Unstaked"}[n.IsStaked], n.MultiaddrsString)
 	if n.IsStaked {
-		logrus.Debug(logMessage)
+		logrus.Info(logMessage)
 	} else {
 		logrus.Debug(logMessage)
 	}
@@ -189,7 +189,7 @@ func (n *NodeData) Left() {
 		n.UpdateAccumulatedUptime()
 		logMessage := fmt.Sprintf("Node left: %s", address)
 		if n.IsStaked {
-			logrus.Debug(logMessage)
+			logrus.Info(logMessage)
 		} else {
 			logrus.Debug(logMessage)
 		}
