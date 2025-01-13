@@ -156,17 +156,15 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 		// WTF: Shouldn't we add it? We don't yet have the NodeData but we can at least add it.
 		return
 	} else {
-		if nodeData != nil {
-			if nodeData.IsActive {
-				// Node appears already connected, buffer this connect event
-				net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
-			} else {
-				nodeData.Joined(net.nodeVersion)
-				err := net.AddOrUpdateNodeData(nodeData, true)
-				if err != nil {
-					logrus.Error("[-] Error adding or updating node data: ", err)
-					return
-				}
+		if nodeData.IsActive {
+			// Node appears already connected, buffer this connect event
+			net.ConnectBuffer[peerID] = ConnectBufferEntry{NodeData: nodeData, ConnectTime: time.Now()}
+		} else {
+			nodeData.Joined(net.nodeVersion)
+			err := net.AddOrUpdateNodeData(nodeData, true)
+			if err != nil {
+				logrus.Error("[-] Error adding or updating node data: ", err)
+				return
 			}
 		}
 	}
