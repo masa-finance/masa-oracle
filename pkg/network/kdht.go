@@ -37,7 +37,6 @@ func EnableDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.M
 	options = append(options, dht.RoutingTableRefreshPeriod(time.Minute*5)) // Set refresh interval
 	options = append(options, dht.Mode(dht.ModeAutoServer))
 	options = append(options, dht.ProtocolPrefix(prefix))
-	// WTF: Why?
 	options = append(options, dht.NamespacedValidator("db", dbValidator{}))
 
 	kademliaDHT, err := dht.New(ctx, host, options...)
@@ -87,7 +86,7 @@ func EnableDHT(ctx context.Context, host host.Host, bootstrapNodes []multiaddr.M
 		} else if !added {
 			logrus.Warningf("[-] Bootstrap peer %s was not added to DHT", peerInfo.ID)
 		} else {
-			logrus.Infof("[+] Successfully added bootstrap peer %s to DHT", peerInfo.ID)
+			logrus.Infof("[+] Successfully added bootstrap peer %s to DHT: %v", peerInfo.ID, peerInfo)
 		}
 
 		wg.Add(1)

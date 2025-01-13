@@ -74,14 +74,19 @@ type NodeData struct {
 
 // NewNodeData creates a new NodeData struct initialized with the given
 // parameters. It is used to represent data about a node in the network.
-func NewNodeData(addr multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
+func NewNodeData(addrs []multiaddr.Multiaddr, peerId peer.ID, publicKey string, activity int) *NodeData {
 	multiaddrs := make([]JSONMultiaddr, 0)
-	multiaddrs = append(multiaddrs, JSONMultiaddr{addr})
+	var mas string
+
+	for _, ma := range addrs {
+		multiaddrs = append(multiaddrs, JSONMultiaddr{ma})
+		mas = fmt.Sprintf("%s %s", mas, ma.String())
+	}
 
 	return &NodeData{
 		PeerId:            peerId,
 		Multiaddrs:        multiaddrs,
-		MultiaddrsString:  addr.String(),
+		MultiaddrsString:  mas,
 		LastUpdatedUnix:   time.Now().Unix(),
 		CurrentUptime:     0,
 		AccumulatedUptime: 0,
