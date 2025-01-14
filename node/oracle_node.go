@@ -184,6 +184,11 @@ func (node *OracleNode) getNodeData() *pubsub.NodeData {
 func (node *OracleNode) Start() (err error) {
 	logrus.Infof("[+] Starting node with ID: %s", node.Host.ID().String())
 
+	// simple check to ensure the node is initialized
+	if node.Host == nil {
+		return fmt.Errorf("node host not initialized")
+	}
+
 	node.Host.SetStreamHandler(node.Protocol, node.handleStream)
 	node.Host.SetStreamHandler(node.protocolWithVersion(node.Options.NodeDataSyncProtocol), node.ReceiveNodeData)
 
