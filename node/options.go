@@ -22,7 +22,7 @@ type NodeOption struct {
 	IsTelegramScraper bool
 	IsWebScraper      bool
 
-	IsProxy bool
+	EnalbeTunnel bool
 
 	Bootnodes            []string
 	RandomIdentity       bool
@@ -89,8 +89,8 @@ var IsWebScraper = func(o *NodeOption) {
 	o.IsWebScraper = true
 }
 
-var IsProxy = func(o *NodeOption) {
-	o.IsProxy = true
+var EnableTunnel = func(o *NodeOption) {
+	o.EnalbeTunnel = true
 }
 
 func (a *NodeOption) Apply(opts ...Option) {

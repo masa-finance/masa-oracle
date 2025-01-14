@@ -2,18 +2,16 @@
 package masa_test
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"net"
-	"net/http"
-	"net/url"
 
 	. "github.com/masa-finance/masa-oracle/node"
 	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/masa-finance/masa-oracle/pkg/network"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/sirupsen/logrus"
 )
 
 // setupNodes sets up two Masa nodes and connects them together
@@ -87,15 +85,16 @@ var _ = Describe("Oracle integration tests", func() {
 		})
 	})
 
-	Context("CONNECT proxy", func() {
+	Context("tunnel", func() {
 		It("tunnels the connection", func() {
 			ctx := context.Background()
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
-			data := []byte("Time is an illusion. Lunchtime, doubly so.\n")
+			inData := []byte("Time is an illusion.\n")
+			outData := []byte("Lunchtime, doubly so.\n")
 
-			// Simple echo server
+			// Simple server
 			lis, err := net.Listen("tcp", "127.0.0.1:14242")
 			Expect(err).ToNot(HaveOccurred())
 
@@ -103,43 +102,42 @@ var _ = Describe("Oracle integration tests", func() {
 				conn, err := l.Accept()
 				Expect(err).ToNot(HaveOccurred())
 
-				buf := make([]byte, len(data))
+				buf := make([]byte, len(inData))
 				_, err = conn.Read(buf)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(buf).To(Equal(data))
+				Expect(buf).To(Equal(inData))
 
-				_, err = conn.Write(buf)
+				_, err = conn.Write(outData)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = conn.Close()
 				Expect(err).ToNot(HaveOccurred())
 			}(lis)
 
-			n, n2 := setupNodes(ctx, IsProxy)
+			n, n2 := setupNodes(ctx, EnableTunnel)
 
-			// Create and start the proxies
-			p, err := network.NewProxy(n.Host, "127.0.0.1", 24242, 14242)
-			Expect(err).ToNot(HaveOccurred())
-			go func(ctx context.Context) {
-				p.Start(ctx)
-			}(ctx)
-
-			p2, err := network.NewProxy(n2.Host, "127.0.0.1", 34242, 14242)
-			Expect(err).ToNot(HaveOccurred())
-			go func(ctx context.Context) {
-				p2.Start(ctx)
-			}(ctx)
-
-			// Establish the proxy connection
-			target := fmt.Sprintf("%s:0", n2.Host.ID())
-			// This is ridiculous but it seems that Go's http.Request makes assumptions that don't work with CONNECT
-			// BUT we need the req to properly read the response ¯\_(ツ)_/¯
-			rawReq := fmt.Sprintf("CONNECT %s HTTP/1.1\n\n", target)
-			req := &http.Request{
-				Method: "CONNECT",
-				URL:    &url.URL{Host: target},
-				Header: make(http.Header),
+			tunnelMap := map[string]string{
+				"24242": n.Host.ID().String(),
+				"34242": n2.Host.ID().String(),
 			}
+			// Create and start the tunnels
+			p, err := network.NewTunnel(n.Host, "127.0.0.1", tunnelMap, 14242)
+			Expect(err).ToNot(HaveOccurred())
+			go func(ctx context.Context) {
+				err := p.Start(ctx)
+				if err != nil {
+					logrus.Errorf("Error when starting tunnel: %#v", err)
+				}
+			}(ctx)
+
+			p2, err := network.NewTunnel(n2.Host, "127.0.0.1", tunnelMap, 14242)
+			Expect(err).ToNot(HaveOccurred())
+			go func(ctx context.Context) {
+				err := p2.Start(ctx)
+				if err != nil {
+					logrus.Errorf("Error when starting tunnel: %#v", err)
+				}
+			}(ctx)
 
 			// Wait until the proxy is listening
 			var conn net.Conn
@@ -152,24 +150,16 @@ var _ = Describe("Oracle integration tests", func() {
 				}
 			}
 
-			// Send the CONNECT request, wait for the 200 to indicate that the tunnel is established
-			_, err = conn.Write([]byte(rawReq))
+			// Send the data and wait for it to come back
+			_, err = conn.Write(inData)
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := http.ReadResponse(bufio.NewReader(conn), req)
+			buf := make([]byte, len(outData))
+			_, err = conn.Read(buf)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(buf).To(Equal(outData))
 
-			// Now send the data and wait for it to come back
-			_, err = conn.Write(data)
-			Expect(err).ToNot(HaveOccurred())
-
-			buf := make([]byte, len(data))
-			_, err = resp.Body.Read(buf)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(buf).To(Equal(data))
-
-			resp.Body.Close()
+			conn.Close()
 		})
 	})
 })

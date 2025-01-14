@@ -64,8 +64,8 @@ func InitOptions(cfg *AppConfig) ([]node.Option, *workers.WorkHandlerManager, *p
 		masaNodeOptions = append(masaNodeOptions, node.IsWebScraper)
 	}
 
-	if cfg.ProxyEnabled {
-		masaNodeOptions = append(masaNodeOptions, node.IsProxy)
+	if cfg.TunnelEnabled {
+		masaNodeOptions = append(masaNodeOptions, node.EnableTunnel)
 	}
 
 	workHandlerManager := workers.NewWorkHandlerManager(workerManagerOptions...)

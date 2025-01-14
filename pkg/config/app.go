@@ -20,8 +20,8 @@ import (
 
 // AppConfig represents the configuration settings for the application.
 // It holds various parameters and settings that control the behavior and runtime environment of the application.
-// The fields in this struct are tagged with `mapstructure` to facilitate configuration loading from various sources
-// such as configuration files, environment variables, and command-line flags using the `viper` library.
+// Most of the fields in this struct are tagged with `mapstructure` to facilitate configuration loading from various
+// sources such as configuration files, environment variables, and command-line flags using the `viper` library.
 type AppConfig struct {
 	Version              string   `mapstructure:"version"`
 	PortNbr              int      `mapstructure:"portNbr"`
@@ -59,10 +59,13 @@ type AppConfig struct {
 	TelegramScraper    bool   `mapstructure:"telegramScraper"`
 	WebScraper         bool   `mapstructure:"webScraper"`
 	APIEnabled         bool   `mapstructure:"api_enabled"`
-	ProxyEnabled       bool   `mapstructure:"proxy_enabled"`
-	ProxyListenAddr    string `mapstructure:"proxyListenAddr"`
-	ProxyListenPort    uint16 `mapstructure:"proxyListenPort"`
-	ProxyTargetPort    uint16 `mapstructure:"proxyTargetPort"`
+	TunnelEnabled      bool   `mapstructure:"tunnel_enabled"`
+	TunnelListenAddr   string `mapstructure:"tunnelListenAddr"`
+	TunnelTargetPort   uint16 `mapstructure:"tunnelTargetPort"`
+
+	// Key: port number, value: peerId
+	// Note that the TUNNEL_PORTS env var has to be JSON (thanks, Viper)
+	TunnelPorts map[string]string `mapstructure:"tunnelPorts"`
 
 	KeyManager   *masacrypto.KeyManager
 	TelegramStop bg.StopFunc
@@ -135,11 +138,11 @@ func (c *AppConfig) setDefaultConfig() {
 
 	viper.SetDefault(APIEnabled, false)
 
-	viper.SetDefault(ProxyEnabled, true)
-	viper.SetDefault(ProxyListenAddr, "127.0.0.1")
-	viper.SetDefault(ProxyListenPort, "8888")
-	// TODO What is the default Cosmos port?
-	viper.SetDefault(ProxyTargetPort, "8080")
+	viper.SetDefault(TunnelEnabled, true)
+	viper.SetDefault(TunnelListenAddr, "127.0.0.1")
+	viper.SetDefault(TunnelTargetPort, "26656")
+
+	viper.SetDefault(TunnelPorts, "")
 }
 
 // setFileConfig loads configuration from a YAML file.
@@ -203,10 +206,10 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.BoolVar(&c.Faucet, "faucet", viper.GetBool(Faucet), "Faucet")
 	pflag.BoolVar(&c.APIEnabled, "api-enabled", viper.GetBool(APIEnabled), "Enable API server")
 	pflag.StringVar(&c.APIListenAddress, "api-port", viper.GetString(APIListenAddress), "API Listening address")
-	pflag.BoolVar(&c.ProxyEnabled, "proxy-enabled", viper.GetBool(ProxyEnabled), "Enable CONNECT proxy")
-	pflag.StringVar(&c.ProxyListenAddr, "proxyListenAddr", viper.GetString(ProxyListenAddr), "Proxy listen address")
-	pflag.Uint16Var(&c.ProxyListenPort, "proxyListenPort", viper.GetUint16(ProxyListenPort), "Proxy listen port")
-	pflag.Uint16Var(&c.ProxyTargetPort, "proxyTargetPort", viper.GetUint16(ProxyTargetPort), "Proxy target port")
+	pflag.BoolVar(&c.TunnelEnabled, "tunnel-enabled", viper.GetBool(TunnelEnabled), "Enable tunnel")
+	pflag.StringVar(&c.TunnelListenAddr, "tunnelListenAddr", viper.GetString(TunnelListenAddr), "Tunnel listen address")
+	pflag.Uint16Var(&c.TunnelTargetPort, "tunnelTargetPort", viper.GetUint16(TunnelTargetPort), "Tunnel target port")
+	pflag.StringToStringVarP(&c.TunnelPorts, "tunnelPorts", "t", viper.GetStringMapString(TunnelPorts), "Tunnel ports, use `port=peerId`, can specify multiple times")
 
 	pflag.Parse()
 

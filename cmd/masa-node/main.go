@@ -121,15 +121,18 @@ func main() {
 		logrus.Info("API server is disabled")
 	}
 
-	if cfg.ProxyEnabled {
-		logrus.Infof("[+] Enabling HTTP CONNECT proxy on %s:%d", cfg.ProxyListenAddr, cfg.ProxyListenPort)
-		proxy, err := network.NewProxy(masaNode.Host, cfg.ProxyListenAddr, cfg.ProxyListenPort, cfg.ProxyTargetPort)
+	if cfg.TunnelEnabled {
+		logrus.Infof("[+] Enabling network tunnel on address %s ports %#v", cfg.TunnelListenAddr, cfg.TunnelPorts)
+		tunnel, err := network.NewTunnel(masaNode.Host, cfg.TunnelListenAddr, cfg.TunnelPorts, cfg.TunnelTargetPort)
 		if err != nil {
 			logrus.Fatalf("[-] Error creating HTTP CONNECT proxy: %v", err)
 		}
 
 		go func(ctx context.Context) {
-			proxy.Start(ctx)
+			err := tunnel.Start(ctx)
+			if err != nil {
+				logrus.Errorf("Error while starting tunnel: %#v", err)
+			}
 		}(ctx)
 	}
 
@@ -138,7 +141,7 @@ func main() {
 	if err != nil {
 		logrus.Errorf("[-] Error while getting node multiaddrs: %v", err)
 	} else {
-		config.DisplayWelcomeMessage(multiAddrs, cfg.KeyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, cfg.ProxyEnabled, versioning.ApplicationVersion, versioning.ProtocolVersion)
+		config.DisplayWelcomeMessage(multiAddrs, cfg.KeyManager.EthAddress, isStaked, cfg.Validator, cfg.TwitterScraper, cfg.TelegramScraper, cfg.DiscordScraper, cfg.WebScraper, cfg.TunnelEnabled, versioning.ApplicationVersion, versioning.ProtocolVersion)
 	}
 
 	<-ctx.Done()

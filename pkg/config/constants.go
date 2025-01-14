@@ -43,8 +43,8 @@ const (
 	APIEnabled       = "API_ENABLED"
 	APIListenAddress = "API_LISTEN_ADDRESS"
 
-	ProxyEnabled    = "PROXY_ENABLED"
-	ProxyListenAddr = "PROXY_LISTEN_ADDR"
-	ProxyListenPort = "PROXY_LISTEN_PORT"
-	ProxyTargetPort = "PROXY_TARGET_PORT"
+	TunnelEnabled    = "TUNNEL_ENABLED"
+	TunnelListenAddr = "TUNNEL_LISTEN_ADDR"
+	TunnelTargetPort = "TUNNEL_TARGET_PORT"
+	TunnelPorts      = "TUNNEL_PORTS"
 )

@@ -227,8 +227,8 @@ func (node *OracleNode) Start() (err error) {
 	}
 
 	protocols := []protocol.ID{node.Protocol}
-	if node.Options.IsProxy {
-		protocols = append(protocols, myNetwork.ProxyProtocol)
+	if node.Options.EnalbeTunnel {
+		protocols = append(protocols, myNetwork.TunnelProtocol)
 	}
 	go myNetwork.Discover(node.Context, node.Options.Bootnodes, node.Host, node.DHT, protocols)
 
