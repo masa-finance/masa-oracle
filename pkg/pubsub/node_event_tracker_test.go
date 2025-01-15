@@ -23,7 +23,6 @@ func TestNodeEventTracker(t *testing.T) {
 	// Connected with nil NodeEventTracker
 	t.Run("Connected with nil NodeEventTracker", func(t *testing.T) {
 		tracker := NewNodeEventTracker("1.0.0", "test", "host1")
-		tracker = nil
 		tracker.Connected(nil, nil)
 		// Should not panic and return early
 	})
