@@ -191,7 +191,15 @@ func (whm *WorkHandlerManager) DistributeWork(node *node.OracleNode, workRequest
 
 		response = whm.ExecuteWork(workRequest)
 		whm.eventTracker.TrackWorkCompletion(workRequest.WorkType, response.Error == "", response.RecordCount, localWorker.AddrInfo.ID.String())
-
+		if response.LoginEvent != nil {
+			// this is here is because the login event is sent by the worker and needs the PeerID of the worker
+			response.LoginEvent.PeerID = localWorker.NodeData.PeerId.String()
+			err := whm.eventTracker.TrackLoginEvent(response.LoginEvent)
+			if err != nil {
+				logrus.Errorf("error tracking login event: %v", err)
+				return
+			}
+		}
 		if response.Error != "" {
 			errorList = append(errorList, fmt.Sprintf("Local worker: %s", response.Error))
 		} else {
@@ -337,6 +345,9 @@ func (whm *WorkHandlerManager) ExecuteWork(workRequest data_types.WorkRequest) (
 		return data_types.WorkResponse{Error: "work execution timed out"}
 	case response = <-responseChan:
 		// Work completed within the timeout
+		if response.LoginEvent != nil {
+
+		}
 		return response
 	}
 }
@@ -373,9 +384,19 @@ func (whm *WorkHandlerManager) HandleWorkerStream(stream network.Stream) {
 		return
 	}
 	peerId := stream.Conn().LocalPeer().String()
+	workRequest.WorkerPeerId = peerId
 	workResponse := whm.ExecuteWork(workRequest)
 	if workResponse.Error != "" {
 		logrus.Errorf("error from remote worker %s: executing work: %s", peerId, workResponse.Error)
+	}
+	if workResponse.LoginEvent != nil {
+		// this is here is because the login event is sent by the worker and needs the PeerID of the worker
+		workResponse.LoginEvent.PeerID = peerId
+		err := whm.eventTracker.TrackLoginEvent(workResponse.LoginEvent)
+		if err != nil {
+			logrus.Errorf("error tracking login event: %v", err)
+			return
+		}
 	}
 	workResponse.WorkerPeerId = peerId
 	whm.eventTracker.TrackWorkCompletion(workRequest.WorkType, workResponse.Error == "", workResponse.RecordCount, peerId)

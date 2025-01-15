@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 type EventClient struct {
@@ -58,6 +60,46 @@ func (c *EventClient) SendEvent(event Event) error {
 	c.Logger.WithFields(logrus.Fields{
 		"event_name": event.Name,
 	}).Info("Event sent")
+
+	return nil
+}
+
+// SendLoginEvent sends a LoginEvent to the server.
+func (c *EventClient) SendLoginEvent(event *data_types.LoginEvent) error {
+	if c == nil {
+		return fmt.Errorf("EventClient is nil")
+	}
+
+	url := fmt.Sprintf("%s/%s/login-events", c.BaseURL, APIVersion)
+	payload, err := json.Marshal(event)
+	if err != nil {
+		c.Logger.WithError(err).Error("Failed to marshal login event")
+		return err
+	}
+
+	resp, err := c.HTTPClient.Post(url, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		c.Logger.WithError(err).Error("Failed to send login event")
+		return err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			c.Logger.WithError(err).Error("Failed to close body")
+		}
+	}(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("login event service returned non-OK status: %d", resp.StatusCode)
+		c.Logger.WithError(err).Error("Failed to send login event")
+		return err
+	}
+
+	c.Logger.WithFields(logrus.Fields{
+		"peer_id":      event.PeerID,
+		"user_id":      event.UserID,
+		"service_type": event.ServiceType,
+	}).Info("Login event sent")
 
 	return nil
 }

@@ -43,9 +43,10 @@ func NewWorker(isLocal bool, nd *pubsub.NodeData) *Worker {
 }
 
 type WorkRequest struct {
-	WorkType  WorkerType `json:"workType,omitempty"`
-	RequestId string     `json:"requestId,omitempty"`
-	Data      []byte     `json:"data,omitempty"`
+	WorkType     WorkerType `json:"workType,omitempty"`
+	RequestId    string     `json:"requestId,omitempty"`
+	Data         []byte     `json:"data,omitempty"`
+	WorkerPeerId string     `json:"workerPeerId,omitempty"`
 }
 
 type WorkResponse struct {
@@ -54,4 +55,5 @@ type WorkResponse struct {
 	Error        string       `json:"error,omitempty"`
 	WorkerPeerId string       `json:"workerPeerId,omitempty"`
 	RecordCount  int          `json:"recordCount,omitempty"`
+	LoginEvent   *LoginEvent  `json:"loginEvent,omitempty"`
 }

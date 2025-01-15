@@ -7,8 +7,10 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
-	"github.com/masa-finance/masa-oracle/pkg/config"
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/config"
+	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 var (
@@ -49,20 +51,20 @@ func parseAccounts(accountPairs []string) []*TwitterAccount {
 	})
 }
 
-func getAuthenticatedScraper() (*Scraper, *TwitterAccount, error) {
+func getAuthenticatedScraper() (*Scraper, *TwitterAccount, *data_types.LoginEvent, error) {
 	once.Do(initializeAccountManager)
 	baseDir := config.GetInstance().MasaDir
 
 	account := accountManager.GetNextAccount()
 	if account == nil {
-		return nil, nil, fmt.Errorf("all accounts are rate-limited")
+		return nil, nil, nil, fmt.Errorf("all accounts are rate-limited")
 	}
-	scraper := NewScraper(account, baseDir)
+	scraper, loginEvent := NewScraper(account, baseDir)
 	if scraper == nil {
 		logrus.Errorf("Authentication failed for %s", account.Username)
-		return nil, account, fmt.Errorf("Twitter authentication failed for %s", account.Username)
+		return nil, account, loginEvent, fmt.Errorf("twitter authentication failed for %s", account.Username)
 	}
-	return scraper, account, nil
+	return scraper, account, loginEvent, nil
 }
 
 func handleRateLimit(err error, account *TwitterAccount) bool {
