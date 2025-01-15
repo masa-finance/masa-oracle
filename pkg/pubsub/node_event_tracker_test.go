@@ -13,6 +13,21 @@ import (
 )
 
 func TestNodeEventTracker(t *testing.T) {
+
+	// nil NewNodeEventTracker
+	t.Run("NewNodeEventTracker with nil network", func(t *testing.T) {
+		tracker := NewNodeEventTracker("1.0.0", "test", "host1")
+		assert.NotNil(t, tracker)
+	})
+
+	// Connected with nil NodeEventTracker
+	t.Run("Connected with nil NodeEventTracker", func(t *testing.T) {
+		tracker := NewNodeEventTracker("1.0.0", "test", "host1")
+		tracker = nil
+		tracker.Connected(nil, nil)
+		// Should not panic and return early
+	})
+
 	t.Run("Connected with nil network", func(t *testing.T) {
 		tracker := NewNodeEventTracker("1.0.0", "test", "host1")
 		tracker.Connected(nil, nil)
@@ -154,6 +169,143 @@ func TestNodeEventTracker(t *testing.T) {
 			t.Fatal("Timeout waiting for node data")
 		}
 	})
+}
+
+func TestSortNodesByTwitterReliability(t *testing.T) {
+	testPeerID1, _ := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC")
+	testPeerID2, _ := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKD")
+
+	now := time.Now()
+
+	nodes := []NodeData{
+		{
+			PeerId:            testPeerID1,
+			ReturnedTweets:    10,
+			LastReturnedTweet: now.Add(-1 * time.Hour),
+			TweetTimeouts:     2,
+			LastTweetTimeout:  now.Add(-2 * time.Hour),
+		},
+		{
+			PeerId:            testPeerID2,
+			ReturnedTweets:    15,
+			LastReturnedTweet: now,
+			TweetTimeouts:     1,
+			LastTweetTimeout:  now.Add(-3 * time.Hour),
+		},
+	}
+
+	SortNodesByTwitterReliability(nodes)
+
+	assert.Equal(t, testPeerID2, nodes[0].PeerId, "Node with more recent tweet should be first")
+}
+
+func TestHandleNodeData(t *testing.T) {
+	t.Run("New node data", func(t *testing.T) {
+		tracker := NewNodeEventTracker("1.0.0", "test", "host1")
+		testPeerID, _ := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC")
+
+		data := NodeData{
+			PeerId:          testPeerID,
+			LastUpdatedUnix: time.Now().Unix(),
+			IsStaked:        true,
+		}
+
+		tracker.HandleNodeData(data)
+
+		stored, exists := tracker.nodeData.Get(testPeerID.String())
+		assert.True(t, exists)
+		assert.True(t, stored.IsStaked)
+	})
+
+	t.Run("Replay attack prevention", func(t *testing.T) {
+		tracker := NewNodeEventTracker("1.0.0", "test", "host1")
+		testPeerID, _ := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC")
+
+		now := time.Now()
+		oldData := NodeData{
+			PeerId:          testPeerID,
+			LastUpdatedUnix: now.Add(-1 * time.Hour).Unix(),
+			IsStaked:        true,
+		}
+
+		newData := NodeData{
+			PeerId:          testPeerID,
+			LastUpdatedUnix: now.Unix(),
+			IsStaked:        true,
+		}
+
+		// Add newer data first
+		tracker.HandleNodeData(newData)
+		// Try to add older data
+		tracker.HandleNodeData(oldData)
+
+		stored, _ := tracker.nodeData.Get(testPeerID.String())
+		assert.Equal(t, newData.LastUpdatedUnix, stored.LastUpdatedUnix)
+	})
+}
+
+func TestGetUpdatedNodes(t *testing.T) {
+	tracker := NewNodeEventTracker("1.0.0", "test", "host1")
+	testPeerID1, _ := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC")
+	testPeerID2, _ := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKD")
+
+	now := time.Now()
+
+	node1 := NodeData{
+		PeerId:          testPeerID1,
+		LastUpdatedUnix: now.Add(-2 * time.Hour).Unix(),
+		IsStaked:        true,
+	}
+
+	node2 := NodeData{
+		PeerId:          testPeerID2,
+		LastUpdatedUnix: now.Add(-1 * time.Hour).Unix(),
+		IsStaked:        true,
+	}
+
+	tracker.nodeData.Set(testPeerID1.String(), &node1)
+	tracker.nodeData.Set(testPeerID2.String(), &node2)
+
+	updatedNodes := tracker.GetUpdatedNodes(now.Add(-1*time.Hour - 1*time.Minute))
+	assert.Len(t, updatedNodes, 1)
+	assert.Equal(t, testPeerID2, updatedNodes[0].PeerId)
+}
+
+func TestUpdateNodeDataTwitter(t *testing.T) {
+	tracker := NewNodeEventTracker("1.0.0", "test", "host1")
+	testPeerID, _ := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC")
+
+	// Add initial node data
+	nodeData := &NodeData{
+		PeerId:         testPeerID,
+		ReturnedTweets: 5,
+		IsStaked:       true,
+	}
+	tracker.nodeData.Set(testPeerID.String(), nodeData)
+
+	// Create update
+	updates := NodeData{
+		ReturnedTweets: 10,
+		TweetTimeout:   true,
+		TweetTimeouts:  1,
+	}
+
+	// Create channel to receive updates
+	received := make(chan *NodeData, 1)
+	go func() {
+		data := <-tracker.NodeDataChan
+		received <- data
+	}()
+
+	err := tracker.UpdateNodeDataTwitter(testPeerID.String(), updates)
+	assert.NoError(t, err)
+
+	// Verify updates
+	updated, exists := tracker.nodeData.Get(testPeerID.String())
+	assert.True(t, exists)
+	assert.Equal(t, 15, updated.ReturnedTweets) // 5 + 10
+	assert.True(t, updated.TweetTimeout)
+	assert.Equal(t, 1, updated.TweetTimeouts)
 }
 
 // Simple test connection that just returns a peer ID
