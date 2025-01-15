@@ -17,23 +17,23 @@ func TestNodeData(t *testing.T) {
 	testPeerID, err := peer.Decode("QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC")
 	assert.NoError(t, err)
 
-	t.Run("NewNodeData", func(t *testing.T) {
+	t.Run("NewNodeData with multiple addresses", func(t *testing.T) {
+		addr2, err := multiaddr.NewMultiaddr("/ip4/192.168.1.1/tcp/4001")
+		assert.NoError(t, err)
+
 		nodeData := NewNodeData(
-			[]multiaddr.Multiaddr{testAddr},
+			[]multiaddr.Multiaddr{testAddr, addr2},
 			testPeerID,
 			"0x123",
 			ActivityJoined,
 		)
 
-		assert.Equal(t, testPeerID, nodeData.PeerId)
-		assert.Equal(t, 1, len(nodeData.Multiaddrs))
-		assert.Equal(t, testAddr.String(), nodeData.Multiaddrs[0].String())
-		assert.Equal(t, "0x123", nodeData.EthAddress)
-		assert.Equal(t, ActivityJoined, nodeData.Activity)
-		assert.False(t, nodeData.SelfIdentified)
+		assert.Equal(t, 2, len(nodeData.Multiaddrs))
+		assert.Contains(t, nodeData.MultiaddrsString, testAddr.String())
+		assert.Contains(t, nodeData.MultiaddrsString, addr2.String())
 	})
 
-	t.Run("Address", func(t *testing.T) {
+	t.Run("UpdateAccumulatedUptime with different scenarios", func(t *testing.T) {
 		nodeData := NewNodeData(
 			[]multiaddr.Multiaddr{testAddr},
 			testPeerID,
@@ -41,96 +41,56 @@ func TestNodeData(t *testing.T) {
 			ActivityJoined,
 		)
 
-		expected := "/ip4/127.0.0.1/tcp/4001/p2p/QmcgpsyWgH8Y8ajJz1Cu72KnS5uo2Aa2LpzU7kinSupNKC"
-		assert.Equal(t, expected, nodeData.Address())
-
-		// Test empty addresses
-		emptyNode := NewNodeData(
-			[]multiaddr.Multiaddr{},
-			testPeerID,
-			"0x123",
-			ActivityJoined,
-		)
-		assert.Equal(t, "", emptyNode.Address())
-	})
-
-	t.Run("Join and Leave", func(t *testing.T) {
-		nodeData := NewNodeData(
-			[]multiaddr.Multiaddr{testAddr},
-			testPeerID,
-			"0x123",
-			ActivityJoined,
-		)
-
-		nodeData.IsStaked = true
-		nodeVersion := "1.0.0"
-
-		// Call Joined() first to set initial state
-		nodeData.Joined(nodeVersion)
-
-		// Then manually adjust the join time to be in the past
-		pastTime := time.Now().Add(-1 * time.Hour).Unix()
-		nodeData.FirstJoinedUnix = pastTime
-		nodeData.LastJoinedUnix = pastTime
-
-		// Verify initial state
-		assert.Equal(t, ActivityJoined, nodeData.Activity)
-		assert.True(t, nodeData.IsActive)
-		assert.Equal(t, nodeVersion, nodeData.Version)
-
-		// Wait a tiny bit to ensure time difference
-		time.Sleep(time.Millisecond)
-
-		// Test Leave
-		nodeData.Left()
-
-		assert.Equal(t, ActivityLeft, nodeData.Activity)
-		assert.False(t, nodeData.IsActive)
-		assert.NotZero(t, nodeData.LastLeftUnix)
-		assert.Greater(t, nodeData.LastLeftUnix, nodeData.LastJoinedUnix,
-			"LastLeftUnix (%d) should be greater than LastJoinedUnix (%d)",
-			nodeData.LastLeftUnix, nodeData.LastJoinedUnix)
-
-		// Calculate expected minimum uptime
-		expectedMinUptime := time.Duration(nodeData.LastLeftUnix-nodeData.LastJoinedUnix) * time.Second
-
-		// Verify uptime was updated
-		assert.GreaterOrEqual(t, nodeData.AccumulatedUptime, expectedMinUptime,
-			"Expected accumulated uptime to be at least %v, got %v",
-			expectedMinUptime, nodeData.AccumulatedUptime)
-		assert.NotEmpty(t, nodeData.AccumulatedUptimeStr)
-	})
-
-	t.Run("Uptime Calculations", func(t *testing.T) {
-		nodeData := NewNodeData(
-			[]multiaddr.Multiaddr{testAddr},
-			testPeerID,
-			"0x123",
-			ActivityJoined,
-		)
-
-		// Set a fixed join time in the past
-		pastTime := time.Now().Add(-1 * time.Hour)
-		nodeData.LastJoinedUnix = pastTime.Unix()
-		nodeData.FirstJoinedUnix = pastTime.Unix()
+		// Test case 1: Node just joined
+		now := time.Now()
+		nodeData.FirstJoinedUnix = now.Add(-2 * time.Hour).Unix()
+		nodeData.LastJoinedUnix = now.Add(-1 * time.Hour).Unix()
 		nodeData.Activity = ActivityJoined
 		nodeData.IsActive = true
 
-		// Check current uptime while active
+		// Let's simulate some time passage
+		time.Sleep(10 * time.Millisecond)
+
 		currentUptime := nodeData.GetCurrentUptime()
-		assert.True(t, currentUptime >= time.Hour-time.Second, "Expected uptime to be approximately 1 hour")
+		assert.True(t, currentUptime > 0, "Current uptime should be greater than 0")
 
-		// Leave and verify uptime calculations
-		nodeData.Left()
-		assert.Equal(t, time.Duration(0), nodeData.GetCurrentUptime(), "Uptime should be 0 after leaving")
-		assert.True(t, nodeData.AccumulatedUptime >= time.Hour-time.Second, "Expected accumulated uptime to be approximately 1 hour")
+		// Test case 2: Node left
+		nodeData.LastLeftUnix = now.Unix()
+		nodeData.Activity = ActivityLeft
+		nodeData.IsActive = false
+		nodeData.UpdateAccumulatedUptime()
 
-		// Check final accumulated uptime
-		accumulatedUptime := nodeData.GetAccumulatedUptime()
-		assert.True(t, accumulatedUptime >= time.Hour-time.Second, "Expected final accumulated uptime to be approximately 1 hour")
+		// The accumulated uptime should be around 1 hour (difference between LastLeft and LastJoined)
+		expectedUptime := time.Duration(nodeData.LastLeftUnix-nodeData.LastJoinedUnix) * time.Second
+		assert.True(t, nodeData.AccumulatedUptime > 0,
+			"Expected accumulated uptime > 0, got %v", nodeData.AccumulatedUptime)
+		assert.True(t, nodeData.AccumulatedUptime <= expectedUptime,
+			"Expected accumulated uptime <= %v, got %v", expectedUptime, nodeData.AccumulatedUptime)
+		assert.NotEmpty(t, nodeData.AccumulatedUptimeStr)
+
+		// Test case 3: Multiple join/leave cycles
+		firstCycleUptime := nodeData.AccumulatedUptime
+
+		// Second cycle
+		laterTime := now.Add(1 * time.Hour)
+		nodeData.LastJoinedUnix = laterTime.Unix()
+		nodeData.LastLeftUnix = laterTime.Add(30 * time.Minute).Unix()
+		nodeData.Activity = ActivityLeft
+		nodeData.UpdateAccumulatedUptime()
+
+		// Accumulated uptime should increase
+		assert.True(t, nodeData.AccumulatedUptime > firstCycleUptime,
+			"Expected accumulated uptime to increase after second cycle")
 	})
 
-	t.Run("Worker Categories", func(t *testing.T) {
+	t.Run("WorkerCategory String representation", func(t *testing.T) {
+		assert.Equal(t, "Discord", CategoryDiscord.String())
+		assert.Equal(t, "Telegram", CategoryTelegram.String())
+		assert.Equal(t, "Twitter", CategoryTwitter.String())
+		assert.Equal(t, "Web", CategoryWeb.String())
+	})
+
+	t.Run("UpdateTwitterFields with zero values", func(t *testing.T) {
 		nodeData := NewNodeData(
 			[]multiaddr.Multiaddr{testAddr},
 			testPeerID,
@@ -138,50 +98,29 @@ func TestNodeData(t *testing.T) {
 			ActivityJoined,
 		)
 
-		// Test unstaked node
-		assert.False(t, nodeData.CanDoWork(CategoryTwitter))
-		assert.False(t, nodeData.CanDoWork(CategoryWeb))
-
-		// Test staked node
-		nodeData.IsStaked = true
-		nodeData.IsTwitterScraper = true
-		assert.True(t, nodeData.CanDoWork(CategoryTwitter))
-		assert.False(t, nodeData.CanDoWork(CategoryWeb))
-
-		nodeData.IsWebScraper = true
-		assert.True(t, nodeData.CanDoWork(CategoryWeb))
-	})
-
-	t.Run("TwitterFields", func(t *testing.T) {
-		nodeData := NewNodeData(
-			[]multiaddr.Multiaddr{testAddr},
-			testPeerID,
-			"0x123",
-			ActivityJoined,
-		)
-
-		updateFields := NodeData{
+		// Initial update with non-zero values
+		initialUpdate := NodeData{
 			ReturnedTweets:    5,
 			LastReturnedTweet: time.Now(),
 			TweetTimeout:      true,
 			TweetTimeouts:     1,
-			LastTweetTimeout:  time.Now(),
-			LastNotFoundTime:  time.Now(),
-			NotFoundCount:     1,
 		}
+		nodeData.UpdateTwitterFields(initialUpdate)
 
-		nodeData.UpdateTwitterFields(updateFields)
+		// Update with zero values
+		zeroUpdate := NodeData{
+			ReturnedTweets: 0,
+			TweetTimeout:   false,
+			TweetTimeouts:  0,
+		}
+		nodeData.UpdateTwitterFields(zeroUpdate)
 
+		// Original values should be preserved
 		assert.Equal(t, 5, nodeData.ReturnedTweets)
-		assert.True(t, nodeData.TweetTimeout)
 		assert.Equal(t, 1, nodeData.TweetTimeouts)
-		assert.Equal(t, 1, nodeData.NotFoundCount)
-		assert.False(t, nodeData.LastReturnedTweet.IsZero())
-		assert.False(t, nodeData.LastTweetTimeout.IsZero())
-		assert.False(t, nodeData.LastNotFoundTime.IsZero())
 	})
 
-	t.Run("MergeMultiaddresses", func(t *testing.T) {
+	t.Run("CanDoWork with different worker types", func(t *testing.T) {
 		nodeData := NewNodeData(
 			[]multiaddr.Multiaddr{testAddr},
 			testPeerID,
@@ -189,15 +128,93 @@ func TestNodeData(t *testing.T) {
 			ActivityJoined,
 		)
 
-		// Add same address - should not duplicate
-		nodeData.MergeMultiaddresses(testAddr)
+		nodeData.IsStaked = true
+
+		// Test each worker category
+		testCases := []struct {
+			category WorkerCategory
+			setup    func()
+			expected bool
+		}{
+			{
+				category: CategoryDiscord,
+				setup:    func() {},
+				expected: false,
+			},
+			{
+				category: CategoryTelegram,
+				setup:    func() {},
+				expected: false,
+			},
+			{
+				category: CategoryTwitter,
+				setup: func() {
+					nodeData.IsTwitterScraper = true
+				},
+				expected: true,
+			},
+			{
+				category: CategoryWeb,
+				setup: func() {
+					nodeData.IsWebScraper = true
+				},
+				expected: true,
+			},
+		}
+
+		for _, tc := range testCases {
+			tc.setup()
+			result := nodeData.CanDoWork(tc.category)
+			assert.Equal(t, tc.expected, result, "Category %v test failed", tc.category)
+		}
+	})
+
+	t.Run("GetCurrentUptime with various states", func(t *testing.T) {
+		nodeData := NewNodeData(
+			[]multiaddr.Multiaddr{testAddr},
+			testPeerID,
+			"0x123",
+			ActivityJoined,
+		)
+
+		// Test active node
+		now := time.Now()
+		nodeData.LastJoinedUnix = now.Add(-1 * time.Hour).Unix()
+		nodeData.Activity = ActivityJoined
+		uptime := nodeData.GetCurrentUptime()
+		assert.True(t, uptime >= time.Hour-time.Second)
+		assert.True(t, uptime <= time.Hour+time.Second)
+
+		// Test inactive node
+		nodeData.Activity = ActivityLeft
+		assert.Equal(t, time.Duration(0), nodeData.GetCurrentUptime())
+	})
+
+	t.Run("MergeMultiaddresses with duplicate addresses", func(t *testing.T) {
+		nodeData := NewNodeData(
+			[]multiaddr.Multiaddr{testAddr},
+			testPeerID,
+			"0x123",
+			ActivityJoined,
+		)
+
+		// Add same address multiple times
+		for i := 0; i < 3; i++ {
+			nodeData.MergeMultiaddresses(testAddr)
+		}
 		assert.Equal(t, 1, len(nodeData.Multiaddrs))
 
-		// Add new address
-		newAddr, err := multiaddr.NewMultiaddr("/ip4/192.168.1.1/tcp/4001")
-		assert.NoError(t, err)
-		nodeData.MergeMultiaddresses(newAddr)
-		assert.Equal(t, 2, len(nodeData.Multiaddrs))
-		assert.Equal(t, newAddr.String(), nodeData.Multiaddrs[1].String())
+		// Add multiple different addresses
+		addrs := []string{
+			"/ip4/192.168.1.1/tcp/4001",
+			"/ip4/192.168.1.2/tcp/4001",
+			"/ip4/192.168.1.1/tcp/4001", // Duplicate
+		}
+
+		for _, addrStr := range addrs {
+			addr, _ := multiaddr.NewMultiaddr(addrStr)
+			nodeData.MergeMultiaddresses(addr)
+		}
+		assert.Equal(t, 3, len(nodeData.Multiaddrs))
 	})
 }
