@@ -209,6 +209,17 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Example safeSearch {"query": "Masa filter:safe", "count": 10}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
+		// @Summary Get Tweet by ID
+		// @Description Retrieves a specific tweet by its ID
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Param   tweet_id   path    string  true  "Tweet ID"
+		// @Success 200 {object} Tweet "Successfully retrieved tweet"
+		// @Failure 400 {object} ErrorResponse "Invalid tweet ID or error fetching tweet"
+		// @Router /data/twitter/tweet/{tweet_id} [get]
+		v1.GET("/data/twitter/tweet/:tweet_id", API.GetTweetByID())
+
 		// @Summary Web Data
 		// @Description Retrieves data from the web
 		// @Tags Web

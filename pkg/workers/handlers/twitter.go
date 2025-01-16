@@ -14,6 +14,7 @@ import (
 type TwitterQueryHandler struct{ MasaDir string }
 type TwitterFollowersHandler struct{ MasaDir string }
 type TwitterProfileHandler struct{ MasaDir string }
+type TwitterTweetByIDHandler struct{ MasaDir string }
 
 func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterQueryHandler input: %s", data)
@@ -106,5 +107,37 @@ func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse 
 	}
 
 	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %v", data_types.Twitter, result)
+	return data_types.WorkResponse{Data: result}
+}
+
+func (h *TwitterTweetByIDHandler) HandleWork(data []byte) data_types.WorkResponse {
+	logrus.Infof("[+] TwitterTweetByIDHandler input: %s", data)
+	dataMap, err := utils.BytesToMap(data)
+	if err != nil {
+		logrus.Errorf("[+] TwitterTweetByIDHandler error parsing data: %v", err)
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse tweet ID data: %v", err)}
+	}
+
+	tweetID := dataMap["tweet_id"].(string)
+	logrus.Infof("[+] Getting tweet with ID: %s", tweetID)
+
+	client := tee.NewClient()
+	res, err := client.SubmitJob(types.Job{
+		Type: "twitter-scraper",
+		Arguments: map[string]interface{}{
+			"type":     "getbyid",
+			"tweet_id": tweetID,
+		},
+	})
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get tweet by ID: %v", err)}
+	}
+
+	result, err := res.Get()
+	if err != nil {
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get tweet result: %v", err)}
+	}
+
+	logrus.Infof("[+] TwitterTweetByIDHandler Work response for tweet ID %s: %v", tweetID, result)
 	return data_types.WorkResponse{Data: result}
 }

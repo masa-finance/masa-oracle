@@ -257,6 +257,42 @@ func (api *API) SearchTwitterFollowers() gin.HandlerFunc {
 	}
 }
 
+// GetTweetByID returns a gin.HandlerFunc that processes a request to get a specific tweet by ID.
+// The tweet ID is expected as a URL parameter.
+// On success, it returns the tweet data in a JSON response.
+// On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) GetTweetByID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tweetID := c.Param("tweet_id")
+		if tweetID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tweet ID must be provided"})
+			return
+		}
+
+		// Create request body
+		bodyBytes, err := json.Marshal(map[string]interface{}{
+			"tweet_id": tweetID,
+		})
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		api.sendTrackingEvent(data_types.TwitterTweetByID, bodyBytes)
+		requestID := uuid.New().String()
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = api.sendWorkRequest(requestID, data_types.TwitterTweetByID, bodyBytes, wg)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		wg.Wait()
+	}
+}
+
 // WebData returns a gin.HandlerFunc that processes web scraping requests.
 // It expects a JSON body with fields "url" (string) and "depth" (int), representing the URL to scrape and the depth of the scrape, respectively.
 // The handler validates the request body, ensuring the URL is not empty and the depth is positive.
