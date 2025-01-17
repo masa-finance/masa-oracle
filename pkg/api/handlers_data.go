@@ -185,24 +185,23 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 }
 
 // SearchTweetById returns a gin.HandlerFunc that processes a request to search for a tweet by its ID.
-// It expects a JSON body with a field "id" (string), representing the tweet ID to search for.
-// The handler validates the request body, ensuring the ID is not empty.
+// It expects the tweet ID to be provided as a URL parameter.
+// The handler validates the request, ensuring the ID is not empty.
 // If the request is valid, it attempts to scrape the tweet using the specified ID.
 // On success, it returns the scraped tweet in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
 func (api *API) SearchTweetById() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody struct {
-			ID string `json:"id"`
-		}
+		tweetID := c.Param("id")
 
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-
-		if reqBody.ID == "" {
+		if tweetID == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "ID must be provided and valid"})
 			return
+		}
+
+		reqBody := struct {
+			ID string `json:"id"`
+		}{
+			ID: tweetID,
 		}
 
 		bodyBytes, err := json.Marshal(reqBody)

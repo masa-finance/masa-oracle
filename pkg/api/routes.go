@@ -209,8 +209,16 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Example safeSearch {"query": "Masa filter:safe", "count": 10}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
-		// TODO write swagger docs code for this
-		v1.POST("/data/twitter/tweets/id", API.SearchTweetById())
+		// @Summary Search Tweet by ID
+		// @Description Retrieves a specific tweet by its ID.
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Param   id   path    string  true  "Tweet ID"
+		// @Success 200 {object} Tweet "Successfully retrieved tweet"
+		// @Failure 400 {object} ErrorResponse "Invalid tweet ID or error fetching tweet"
+		// @Router /data/twitter/tweets/id [post]
+		v1.POST("/data/twitter/tweets/:id", API.SearchTweetById())
 
 		// @Summary Search Discord Profile
 		// @Description Retrieves a Discord user profile by user ID.
