@@ -12,6 +12,28 @@ import (
 type TwitterQueryHandler struct{}
 type TwitterFollowersHandler struct{}
 type TwitterProfileHandler struct{}
+type TwitterTweetHandler struct{}
+
+func (h *TwitterTweetHandler) HandleWork(data []byte) data_types.WorkResponse {
+	logrus.Infof("[+] TwitterTweetHandler input: %s", data)
+	dataMap, err := JsonBytesToMap(data)
+	if err != nil {
+		logrus.Errorf("[+] TwitterTweetHandler error parsing data: %v", err)
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse tweet data: %v", err)}
+	}
+	tweetID := dataMap["id"].(string)
+
+	logrus.Infof("[+] Fetching tweet with ID: %s", tweetID)
+
+	resp, err := twitter.ScrapeTweetByID(tweetID)
+	if err != nil {
+		logrus.Errorf("[+] TwitterTweetHandler error fetching tweet: %v", err)
+		return data_types.WorkResponse{Error: err.Error()}
+	}
+
+	logrus.Infof("[+] TwitterTweetHandler Work response for %s: tweet returned", data_types.TwitterTweet)
+	return data_types.WorkResponse{Data: resp, RecordCount: 1}
+}
 
 func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 	logrus.Infof("[+] TwitterQueryHandler input: %s", data)

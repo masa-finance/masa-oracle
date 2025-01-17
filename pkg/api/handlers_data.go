@@ -184,6 +184,47 @@ func (api *API) SearchTweetsProfile() gin.HandlerFunc {
 	}
 }
 
+// SearchTweetById returns a gin.HandlerFunc that processes a request to search for a tweet by its ID.
+// It expects a JSON body with a field "id" (string), representing the tweet ID to search for.
+// The handler validates the request body, ensuring the ID is not empty.
+// If the request is valid, it attempts to scrape the tweet using the specified ID.
+// On success, it returns the scraped tweet in a JSON response. On failure, it returns an appropriate error message and HTTP status code.
+func (api *API) SearchTweetById() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody struct {
+			ID string `json:"id"`
+		}
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		if reqBody.ID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID must be provided and valid"})
+			return
+		}
+
+		bodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+
+		api.sendTrackingEvent(data_types.TwitterTweet, bodyBytes)
+		requestID := uuid.New().String()
+		responseCh := workers.GetResponseChannelMap().CreateChannel(requestID)
+		wg := &sync.WaitGroup{}
+		defer workers.GetResponseChannelMap().Delete(requestID)
+		go handleWorkResponse(c, responseCh, wg)
+
+		err = api.sendWorkRequest(requestID, data_types.TwitterTweet, bodyBytes, wg)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		wg.Wait()
+	}
+}
+
 // SearchTweetsRecent returns a gin.HandlerFunc that processes a request to search for tweets based on a query and count.
 // It expects a JSON body with fields "query" (string) and "count" (int), representing the search query and the number of tweets to return, respectively.
 // The handler validates the request body, ensuring the query is not empty and the count is positive.

@@ -209,6 +209,9 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Example safeSearch {"query": "Masa filter:safe", "count": 10}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
 
+		// TODO write swagger docs code for this
+		v1.POST("/data/twitter/tweets/id", API.SearchTweetById())
+
 		// @Summary Search Discord Profile
 		// @Description Retrieves a Discord user profile by user ID.
 		// @Tags Discord
