@@ -217,7 +217,7 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Param   id   path    string  true  "Tweet ID"
 		// @Success 200 {object} Tweet "Successfully retrieved tweet"
 		// @Failure 400 {object} ErrorResponse "Invalid tweet ID or error fetching tweet"
-		// @Router /data/twitter/tweets/id [post]
+		// @Router /data/twitter/tweets/{id} [post]
 		v1.POST("/data/twitter/tweets/:id", API.SearchTweetById())
 
 		// @Summary Search Discord Profile
