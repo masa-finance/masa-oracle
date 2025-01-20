@@ -4,7 +4,7 @@ import "time"
 
 const (
 	// APIVersion is the version of the analytics API
-	APIVersion = "v1"
+	APIVersion = "v1.0.0"
 
 	// DefaultBaseURL is the default URL for the external API
 	DefaultBaseURL = "https://test.protocol-api.masa.ai"

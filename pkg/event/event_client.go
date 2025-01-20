@@ -32,7 +32,7 @@ func (c *EventClient) SendEvent(event Event) error {
 		return fmt.Errorf("EventClient is nil")
 	}
 
-	url := fmt.Sprintf("%s/%s/events", c.BaseURL, APIVersion)
+	url := fmt.Sprintf("%s/%s/protocol/events", c.BaseURL, APIVersion)
 	payload, err := json.Marshal(event)
 	if err != nil {
 		c.Logger.WithError(err).Error("Failed to marshal event")
@@ -70,7 +70,7 @@ func (c *EventClient) SendLoginEvent(event *data_types.LoginEvent) error {
 		return fmt.Errorf("EventClient is nil")
 	}
 
-	url := fmt.Sprintf("%s/%s/login-events", c.BaseURL, APIVersion)
+	url := fmt.Sprintf("%s/%s/protocol/events/login", c.BaseURL, APIVersion)
 	payload, err := json.Marshal(event)
 	if err != nil {
 		c.Logger.WithError(err).Error("Failed to marshal login event")
