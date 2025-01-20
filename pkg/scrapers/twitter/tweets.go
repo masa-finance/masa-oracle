@@ -12,6 +12,22 @@ type TweetResult struct {
 	Error error
 }
 
+func ScrapeTweetByID(id string) (*twitterscraper.Tweet, error) {
+	scraper, account, err := getAuthenticatedScraper()
+	if err != nil {
+		return nil, err
+	}
+
+	tweet, err := scraper.GetTweet(id)
+	if err != nil {
+		if handleRateLimit(err, account) {
+			return nil, err
+		}
+		return nil, err
+	}
+	return tweet, nil
+}
+
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 	scraper, account, err := getAuthenticatedScraper()
 	if err != nil {

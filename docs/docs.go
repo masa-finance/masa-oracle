@@ -74,6 +74,43 @@ const docTemplate = `{
 		  ]
 		}
 	  },
+	  "/data/twitter/tweets/{id}": {
+		"post": {
+		  "description": "Retrieves a specific tweet by its ID.",
+		  "consumes": ["application/json"],
+		  "produces": ["application/json"],
+		  "tags": ["Twitter"],
+		  "summary": "Search Tweet by ID",
+		  "parameters": [
+			{
+			  "type": "string",
+			  "description": "Tweet ID",
+			  "name": "id",
+			  "in": "path",
+			  "required": true
+			}
+		  ],
+		  "responses": {
+			"200": {
+			  "description": "Successfully retrieved tweet",
+			  "schema": {
+				"$ref": "#/definitions/Tweet"
+			  }
+			},
+			"400": {
+			  "description": "Invalid tweet ID or error fetching tweet",
+			  "schema": {
+				"$ref": "#/definitions/ErrorResponse"
+			  }
+			}
+		  },
+		  "security": [
+			{
+			  "Bearer": []
+			}
+		  ]
+		}
+	  },
 	  "/data/twitter/followers/{username}": {
 		"get": {
 		  "description": "Retrieves followers from a specific Twitter profile.",
