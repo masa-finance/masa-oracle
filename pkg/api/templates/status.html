@@ -197,16 +197,83 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script>
   function verifyLogin(username) {
+    // Find the row containing this username
+    const row = Array.from(document.querySelectorAll('tr')).find(
+      row => row.querySelector('td')?.textContent === username
+    );
+    
+    if (!row) return;
+
+    // Get the status cell (third column)
+    const statusCell = row.querySelector('td:nth-child(3)');
+    
+    // Show loading state
+    statusCell.innerHTML = '<span class="badge badge-info">Verifying...</span>';
+
     fetch(`/verify-login?username=${username}`, {
       method: 'POST',
     })
-    .then(response => response.json())
-    .then(data => {
-      alert(data.message);
-      // Optionally update the UI with the new login status
+    .then(async response => {
+      const data = await response.json();
+      if (!response.ok) {
+        throw data;
+      }
+      return data;
     })
-    .catch(error => console.error('Error:', error));
+    .then(data => {
+      let badgeClass = 'badge-danger';
+      if (data.status === 'Successful') {
+        badgeClass = 'badge-success';
+      } else if (data.status === 'Please verify') {
+        badgeClass = 'badge-warning';
+      }
+      statusCell.innerHTML = `<span class="badge ${badgeClass}">${data.message}</span>`;
+      
+      // Show the message in a more user-friendly way (you could use a toast or custom modal instead)
+      if (data.message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${data.status === 'Successful' ? 'success' : 'danger'} alert-dismissible fade show`;
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+          ${data.message}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        `;
+        
+        // Insert the alert at the top of the page
+        document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+          alertDiv.remove();
+        }, 5000);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      // Use the error message from the response if available
+      const errorMessage = error.message || error.error || 'Unknown error occurred';
+      statusCell.innerHTML = `<span class="badge badge-danger">${errorMessage}</span>`;
+      
+      // Show error message
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+      alertDiv.role = 'alert';
+      alertDiv.innerHTML = `
+        ${errorMessage}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      `;
+      
+      document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+      
+      setTimeout(() => {
+        alertDiv.remove();
+      }, 5000);
+    });
   }
 </script>
 </body>
-</html>x
+</html>

@@ -97,8 +97,7 @@ func AttemptLoginForUsername(username string) error {
 
 	scraper := NewScraper(account, config.GetInstance().MasaDir)
 	if scraper == nil {
-		err := fmt.Errorf("twitter authentication failed for %s", account.Username)
-		return err
+		return fmt.Errorf("%s", account.LoginStatus)
 	}
 	logrus.Infof("Login successful for %s", username)
 	return nil
