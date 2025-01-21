@@ -25,7 +25,7 @@ func initializeAccountManager() {
 }
 
 func GetAccountManager() *TwitterAccountManager {
-	_, _, err := getAuthenticatedScraper()
+	_, _, _, err := getAuthenticatedScraper()
 	if err != nil {
 		logrus.Errorf("error initializing account manager: %v", err)
 	}
@@ -72,10 +72,10 @@ func getAuthenticatedScraper() (*Scraper, *TwitterAccount, *data_types.LoginEven
 	if scraper == nil {
 		err := fmt.Errorf("twitter authentication failed for %s", account.Username)
 		logrus.Error(err)
-		return nil, account, err
+		return nil, account, loginEvent, err
 	}
 	account.LastScraped = time.Now()
-	return scraper, account, nil
+	return scraper, account, loginEvent, nil
 }
 
 func handleRateLimit(err error, account *TwitterAccount) bool {

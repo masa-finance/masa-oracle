@@ -25,10 +25,10 @@ func (h *TwitterTweetHandler) HandleWork(data []byte) data_types.WorkResponse {
 
 	logrus.Infof("[+] Fetching tweet with ID: %s", tweetID)
 
-	resp, err := twitter.ScrapeTweetByID(tweetID)
+	resp, loginEvent, err := twitter.ScrapeTweetByID(tweetID)
 	if err != nil {
 		logrus.Errorf("[+] TwitterTweetHandler error fetching tweet: %v", err)
-		return data_types.WorkResponse{Error: err.Error()}
+		return data_types.WorkResponse{Error: err.Error(), LoginEvent: loginEvent}
 	}
 
 	logrus.Infof("[+] TwitterTweetHandler Work response for %s: tweet returned", data_types.TwitterTweet)

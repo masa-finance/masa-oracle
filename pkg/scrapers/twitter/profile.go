@@ -4,6 +4,7 @@ import (
 	"time"
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
+
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
@@ -21,5 +22,5 @@ func ScrapeTweetsProfile(username string) (twitterscraper.Profile, *data_types.L
 		return twitterscraper.Profile{}, loginEvent, err
 	}
 	account.LastScraped = time.Now()
-	return profile, nil
+	return profile, loginEvent, nil
 }

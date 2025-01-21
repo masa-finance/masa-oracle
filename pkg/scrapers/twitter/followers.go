@@ -5,6 +5,7 @@ import (
 	"time"
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
+
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 
 	"github.com/sirupsen/logrus"
@@ -25,5 +26,5 @@ func ScrapeFollowersForProfile(username string, count int) ([]*twitterscraper.Pr
 		return nil, loginEvent, fmt.Errorf("%v", errString)
 	}
 	account.LastScraped = time.Now()
-	return followingResponse, nil
+	return followingResponse, loginEvent, nil
 }
