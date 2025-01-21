@@ -51,24 +51,19 @@ type AppConfig struct {
 	CachePath            string   `mapstructure:"cachePath"`
 	Faucet               bool     `mapstructure:"faucet"`
 
-	// These may be moved to a separate struct
-	TwitterCookiesPath string `mapstructure:"twitterCookiesPath"`
-	TwitterUsername    string `mapstructure:"twitterUsername"`
-	TwitterPassword    string `mapstructure:"twitterPassword"`
-	Twitter2FaCode     string `mapstructure:"twitter2FaCode"`
-	DiscordBotToken    string `mapstructure:"discordBotToken"`
-	ClaudeApiKey       string `mapstructure:"claudeApiKey"`
-	ClaudeApiURL       string `mapstructure:"claudeApiURL"`
-	ClaudeApiVersion   string `mapstructure:"claudeApiVersion"`
-	GPTApiKey          string `mapstructure:"gptApiKey"`
-	TwitterScraper     bool   `mapstructure:"twitterScraper"`
-	DiscordScraper     bool   `mapstructure:"discordScraper"`
-	TelegramScraper    bool   `mapstructure:"telegramScraper"`
-	WebScraper         bool   `mapstructure:"webScraper"`
-	LlmServer          bool   `mapstructure:"llmServer"`
-	LLMChatUrl         string `mapstructure:"llmChatUrl"`
-	LLMCfUrl           string `mapstructure:"llmCfUrl"`
-	APIEnabled         bool   `mapstructure:"api_enabled"`
+	DiscordBotToken  string `mapstructure:"discordBotToken"`
+	ClaudeApiKey     string `mapstructure:"claudeApiKey"`
+	ClaudeApiURL     string `mapstructure:"claudeApiURL"`
+	ClaudeApiVersion string `mapstructure:"claudeApiVersion"`
+	GPTApiKey        string `mapstructure:"gptApiKey"`
+	TwitterScraper   bool   `mapstructure:"twitterScraper"`
+	DiscordScraper   bool   `mapstructure:"discordScraper"`
+	TelegramScraper  bool   `mapstructure:"telegramScraper"`
+	WebScraper       bool   `mapstructure:"webScraper"`
+	LlmServer        bool   `mapstructure:"llmServer"`
+	LLMChatUrl       string `mapstructure:"llmChatUrl"`
+	LLMCfUrl         string `mapstructure:"llmCfUrl"`
+	APIEnabled       bool   `mapstructure:"api_enabled"`
 
 	TelegramStop bg.StopFunc
 }
@@ -187,9 +182,6 @@ func (c *AppConfig) setCommandLineConfig() error {
 	pflag.StringVar(&c.FilePath, "filePath", viper.GetString(FilePath), "The node file path")
 	pflag.BoolVar(&c.Validator, "validator", viper.GetBool(Validator), "Approved validator node boolean")
 	pflag.StringVar(&c.CachePath, "cachePath", viper.GetString(CachePath), "The cache path")
-	pflag.StringVar(&c.TwitterUsername, "twitterUsername", viper.GetString(TwitterUsername), "Twitter Username")
-	pflag.StringVar(&c.TwitterPassword, "twitterPassword", viper.GetString(TwitterPassword), "Twitter Password")
-	pflag.StringVar(&c.Twitter2FaCode, "twitter2FaCode", viper.GetString(Twitter2FaCode), "Twitter 2FA Code")
 	pflag.StringVar(&c.DiscordBotToken, "discordBotToken", viper.GetString(DiscordBotToken), "Discord Bot Token")
 	pflag.StringVar(&c.ClaudeApiKey, "claudeApiKey", viper.GetString(ClaudeApiKey), "Claude API Key")
 	pflag.StringVar(&c.ClaudeApiURL, "claudeApiUrl", viper.GetString(ClaudeApiURL), "Claude API URL")

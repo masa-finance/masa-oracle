@@ -2,6 +2,7 @@ package twitter
 
 import (
 	"context"
+	"time"
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
 )
@@ -45,5 +46,6 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, error) {
 		}
 		tweets = append(tweets, &TweetResult{Tweet: &tweet.Tweet})
 	}
+	account.LastScraped = time.Now()
 	return tweets, nil
 }

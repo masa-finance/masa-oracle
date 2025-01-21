@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/masa-finance/masa-oracle/pkg/consensus"
 	"github.com/masa-finance/masa-oracle/pkg/db"
 	"github.com/masa-finance/masa-oracle/pkg/masacrypto"
-	"github.com/sirupsen/logrus"
+	"github.com/masa-finance/masa-oracle/pkg/scrapers/twitter"
 
 	"github.com/gin-gonic/gin"
 
@@ -378,6 +380,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 			"TotalPeers":        0,
 			"Name":              "Masa Status Page",
 			"PeerID":            api.Node.Host.ID().String(),
+			"PublicKey":         "",
 			"IsStaked":          false,
 			"IsTwitterScraper":  false,
 			"IsDiscordScraper":  false,
@@ -397,6 +400,7 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 
 			if nodeData := api.Node.NodeTracker.GetNodeData(api.Node.Host.ID().String()); nodeData != nil {
 				nd := *nodeData
+				templateData["PublicKey"] = nd.EthAddress
 				templateData["IsStaked"] = nd.IsStaked
 				templateData["IsTwitterScraper"] = nd.IsTwitterScraper
 				templateData["IsDiscordScraper"] = nd.IsDiscordScraper
@@ -408,10 +412,40 @@ func (api *API) NodeStatusPageHandler() gin.HandlerFunc {
 				templateData["TotalUptime"] = pubsub.PrettyDuration(nd.GetAccumulatedUptime())
 				templateData["BytesScraped"] = "0 MB"
 			}
+			accountManager := twitter.GetAccountManager()
+			accountStates := accountManager.GetAccountStates()
+			templateData["TwitterAccounts"] = accountStates
 		}
 
 		c.HTML(http.StatusOK, "status.html", templateData)
 	}
+}
+
+// verifyLoginHandler handles the /verify-login endpoint.
+func verifyLoginHandler(c *gin.Context) {
+	username := c.Query("username")
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "Error",
+			"message": "Username is required",
+		})
+		return
+	}
+	logrus.Infof("Login verification request for username: %s", username)
+
+	err := twitter.AttemptLoginForUsername(username)
+	if err != nil {
+		c.JSON(http.StatusFailedDependency, gin.H{
+			"status":  "Failed",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "Successful",
+		"message": "Login verified successfully for " + username,
+	})
 }
 
 // GetNodeApiKey returns a gin.HandlerFunc that generates and returns a JWT token for the node.
