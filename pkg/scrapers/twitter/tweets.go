@@ -5,12 +5,28 @@ import (
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
 
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 type TweetResult struct {
 	Tweet *twitterscraper.Tweet
 	Error error
+}
+
+func ScrapeTweetByID(id string) (*twitterscraper.Tweet, *data_types.LoginEvent, error) {
+	scraper, account, loginEvent, err := getAuthenticatedScraper()
+	if err != nil {
+		return nil, loginEvent, err
+	}
+
+	tweet, err := scraper.GetTweet(id)
+	if err != nil {
+		if handleRateLimit(err, account) {
+			return nil, loginEvent, err
+		}
+		return nil, loginEvent, err
+	}
+	return tweet, loginEvent, nil
 }
 
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, *data_types.LoginEvent, error) {

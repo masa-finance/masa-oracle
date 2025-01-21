@@ -23,7 +23,7 @@ func NewScraper(account *TwitterAccount, cookieDir string) (*Scraper, *data_type
 
 	RandomSleep()
 
-	if err := scraper.Login(account.Username, account.Password, account.TwoFACode); err != nil {
+	if err := scraper.Login(account); err != nil {
 		logrus.WithError(err).Warnf("Login failed for %s", account.Username)
 		// Log a failed login event
 		loginEvent = data_types.NewLoginEvent("", account.Username, "Twitter", false, err.Error())
@@ -43,14 +43,15 @@ func NewScraper(account *TwitterAccount, cookieDir string) (*Scraper, *data_type
 	return scraper, loginEvent
 }
 
-func (scraper *Scraper) Login(username, password string, twoFACode ...string) error {
+func (scraper *Scraper) Login(account *TwitterAccount) error {
 	var err error
-	if len(twoFACode) > 0 {
-		err = scraper.Scraper.Login(username, password, twoFACode[0])
+	if len(account.TwoFACode) > 0 {
+		err = scraper.Scraper.Login(account.Username, account.Password, account.TwoFACode)
 	} else {
-		err = scraper.Scraper.Login(username, password)
+		err = scraper.Scraper.Login(account.Username, account.Password)
 	}
 	if err != nil {
+		account.LoginStatus = fmt.Sprintf("Failed - %v", err)
 		return fmt.Errorf("login failed: %v", err)
 	}
 	return nil

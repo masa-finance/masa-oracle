@@ -5,12 +5,13 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 var (
@@ -21,6 +22,14 @@ var (
 func initializeAccountManager() {
 	accounts := loadAccountsFromConfig()
 	accountManager = NewTwitterAccountManager(accounts)
+}
+
+func GetAccountManager() *TwitterAccountManager {
+	_, _, err := getAuthenticatedScraper()
+	if err != nil {
+		logrus.Errorf("error initializing account manager: %v", err)
+	}
+	return accountManager
 }
 
 func loadAccountsFromConfig() []*TwitterAccount {
@@ -61,10 +70,12 @@ func getAuthenticatedScraper() (*Scraper, *TwitterAccount, *data_types.LoginEven
 	}
 	scraper, loginEvent := NewScraper(account, baseDir)
 	if scraper == nil {
-		logrus.Errorf("Authentication failed for %s", account.Username)
-		return nil, account, loginEvent, fmt.Errorf("twitter authentication failed for %s", account.Username)
+		err := fmt.Errorf("twitter authentication failed for %s", account.Username)
+		logrus.Error(err)
+		return nil, account, err
 	}
-	return scraper, account, loginEvent, nil
+	account.LastScraped = time.Now()
+	return scraper, account, nil
 }
 
 func handleRateLimit(err error, account *TwitterAccount) bool {

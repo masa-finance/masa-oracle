@@ -26,7 +26,7 @@ var _ = Describe("Twitter Auth Function", func() {
 	var (
 		twitterUsername string
 		twitterPassword string
-		twoFACode       string
+		//twoFACode       string
 	)
 
 	loadEnv := func() {
@@ -50,14 +50,10 @@ var _ = Describe("Twitter Auth Function", func() {
 
 		twitterUsername = os.Getenv("TWITTER_USERNAME")
 		twitterPassword = os.Getenv("TWITTER_PASSWORD")
-		twoFACode = os.Getenv("TWITTER_2FA_CODE")
+		//twoFACode = os.Getenv("TWITTER_2FA_CODE")
 
 		Expect(twitterUsername).NotTo(BeEmpty(), "TWITTER_USERNAME environment variable is not set")
 		Expect(twitterPassword).NotTo(BeEmpty(), "TWITTER_PASSWORD environment variable is not set")
-
-		config.GetInstance().TwitterUsername = twitterUsername
-		config.GetInstance().TwitterPassword = twitterPassword
-		config.GetInstance().Twitter2FaCode = twoFACode
 	})
 
 	authenticate := func() *twitterscraper.Scraper {
@@ -151,6 +147,10 @@ var _ = Describe("Twitter Auth Function", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(config.GetInstance().MasaDir)
+		err := os.RemoveAll(config.GetInstance().MasaDir)
+		if err != nil {
+			logrus.Errorf("Failed to remove temp directory: %v", err)
+			return
+		}
 	})
 })

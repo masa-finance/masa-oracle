@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -17,12 +19,10 @@ import (
 
 	"github.com/gin-contrib/cors"
 
-	"path/filepath"
-	"runtime"
-
-	"github.com/masa-finance/masa-oracle/node"
 	swaggerFiles "github.com/swaggo/files"     // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
+
+	"github.com/masa-finance/masa-oracle/node"
 )
 
 //go:embed templates/*.html
@@ -208,6 +208,17 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 		// @Example questionFilter {"query": "Masa ?", "count": 10}
 		// @Example safeSearch {"query": "Masa filter:safe", "count": 10}
 		v1.POST("/data/twitter/tweets/recent", API.SearchTweetsRecent())
+
+		// @Summary Search Tweet by ID
+		// @Description Retrieves a specific tweet by its ID.
+		// @Tags Twitter
+		// @Accept  json
+		// @Produce  json
+		// @Param   id   path    string  true  "Tweet ID"
+		// @Success 200 {object} Tweet "Successfully retrieved tweet"
+		// @Failure 400 {object} ErrorResponse "Invalid tweet ID or error fetching tweet"
+		// @Router /data/twitter/tweets/{id} [post]
+		v1.POST("/data/twitter/tweets/:id", API.SearchTweetById())
 
 		// @Summary Search Discord Profile
 		// @Description Retrieves a Discord user profile by user ID.
@@ -468,6 +479,17 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 	// @Failure 400 {object} ErrorResponse "Error retrieving node status page"
 	// @Router /status [get]
 	router.GET("/status", API.NodeStatusPageHandler())
+
+	// @Summary Verify Login
+	// @Description Verifies the login status of a Twitter account by username.
+	// @Tags Authentication
+	// @Accept  json
+	// @Produce  json
+	// @Param   username   query    string  true  "Twitter Username"
+	// @Success 200 {object} map[string]string "Login verified successfully"
+	// @Failure 400 {object} map[string]string "Username is required"
+	// @Router /verify-login [post]
+	router.POST("/verify-login", verifyLoginHandler)
 
 	// @Summary Chat Page
 	// @Description Renders the chat page for user interaction with the AI

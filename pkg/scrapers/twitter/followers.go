@@ -2,12 +2,12 @@ package twitter
 
 import (
 	"fmt"
+	"time"
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 func ScrapeFollowersForProfile(username string, count int) ([]*twitterscraper.Profile, *data_types.LoginEvent, error) {
@@ -24,6 +24,6 @@ func ScrapeFollowersForProfile(username string, count int) ([]*twitterscraper.Pr
 		logrus.Errorf("Error fetching followers: %v", errString)
 		return nil, loginEvent, fmt.Errorf("%v", errString)
 	}
-
-	return followingResponse, loginEvent, nil
+	account.LastScraped = time.Now()
+	return followingResponse, nil
 }
