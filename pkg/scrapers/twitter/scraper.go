@@ -12,6 +12,6 @@ func newTwitterScraper() *twitterscraper.Scraper {
 	return twitterscraper.New()
 }
 
-func (s *Scraper) IsLoggedIn() bool {
-	return s.Scraper.IsLoggedIn()
+func (scraper *Scraper) IsLoggedIn() bool {
+	return scraper.Scraper.IsLoggedIn()
 }

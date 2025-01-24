@@ -4,21 +4,23 @@ import (
 	"time"
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
+
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
-func ScrapeTweetsProfile(username string) (twitterscraper.Profile, error) {
-	scraper, account, err := getAuthenticatedScraper()
+func ScrapeTweetsProfile(username string) (twitterscraper.Profile, *data_types.LoginEvent, error) {
+	scraper, account, loginEvent, err := getAuthenticatedScraper()
 	if err != nil {
-		return twitterscraper.Profile{}, err
+		return twitterscraper.Profile{}, loginEvent, err
 	}
 
 	profile, err := scraper.GetProfile(username)
 	if err != nil {
 		if handleRateLimit(err, account) {
-			return twitterscraper.Profile{}, err
+			return twitterscraper.Profile{}, loginEvent, err
 		}
-		return twitterscraper.Profile{}, err
+		return twitterscraper.Profile{}, loginEvent, err
 	}
 	account.LastScraped = time.Now()
-	return profile, nil
+	return profile, loginEvent, nil
 }

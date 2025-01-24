@@ -94,8 +94,8 @@ func AttemptLoginForUsername(username string) error {
 	if account == nil {
 		return fmt.Errorf("account with username %s not found", username)
 	}
-
-	scraper := NewScraper(account, config.GetInstance().MasaDir)
+	// not tracking the login event here because this is invoked from the status web page by the user not during work.
+	scraper, _ := NewScraper(account, config.GetInstance().MasaDir)
 	if scraper == nil {
 		return fmt.Errorf("%s", account.LoginStatus)
 	}

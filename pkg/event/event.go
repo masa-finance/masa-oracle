@@ -123,6 +123,13 @@ func (a *EventTracker) TrackAndSendEvent(event Event, client *EventClient) error
 	return fmt.Errorf("no client available")
 }
 
+// TrackLoginEvent is a wrapper method for the EventClient
+func (a *EventTracker) TrackLoginEvent(loginEvent *data_types.LoginEvent) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.apiClient.SendLoginEvent(loginEvent)
+}
+
 func validateEvent(event Event) error {
 	if event.Name == "" {
 		return errors.New("Event name is required")

@@ -25,10 +25,10 @@ func (h *TwitterTweetHandler) HandleWork(data []byte) data_types.WorkResponse {
 
 	logrus.Infof("[+] Fetching tweet with ID: %s", tweetID)
 
-	resp, err := twitter.ScrapeTweetByID(tweetID)
+	resp, loginEvent, err := twitter.ScrapeTweetByID(tweetID)
 	if err != nil {
 		logrus.Errorf("[+] TwitterTweetHandler error fetching tweet: %v", err)
-		return data_types.WorkResponse{Error: err.Error()}
+		return data_types.WorkResponse{Error: err.Error(), LoginEvent: loginEvent}
 	}
 
 	logrus.Infof("[+] TwitterTweetHandler Work response for %s: tweet returned", data_types.TwitterTweet)
@@ -47,10 +47,10 @@ func (h *TwitterQueryHandler) HandleWork(data []byte) data_types.WorkResponse {
 
 	logrus.Infof("[+] Scraping tweets for query: %s, count: %d", query, count)
 
-	resp, err := twitter.ScrapeTweetsByQuery(query, count)
+	resp, loginEvent, err := twitter.ScrapeTweetsByQuery(query, count)
 	if err != nil {
 		logrus.Errorf("[+] TwitterQueryHandler error scraping tweets: %v", err)
-		return data_types.WorkResponse{Error: err.Error()}
+		return data_types.WorkResponse{Error: err.Error(), LoginEvent: loginEvent}
 	}
 
 	logrus.Infof("[+] TwitterQueryHandler Work response for %s: %d tweets returned", data_types.Twitter, len(resp))
@@ -70,9 +70,9 @@ func (h *TwitterFollowersHandler) HandleWork(data []byte) data_types.WorkRespons
 	}
 	username := dataMap["username"].(string)
 	count := int(dataMap["count"].(float64))
-	resp, err := twitter.ScrapeFollowersForProfile(username, count)
+	resp, loginEvent, err := twitter.ScrapeFollowersForProfile(username, count)
 	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter followers: %v", err)}
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter followers: %v", err), LoginEvent: loginEvent}
 	}
 
 	logrus.Infof("[+] TwitterFollowersHandler Work response for %s: %d records returned", data_types.TwitterFollowers, len(resp))
@@ -86,9 +86,9 @@ func (h *TwitterProfileHandler) HandleWork(data []byte) data_types.WorkResponse 
 		return data_types.WorkResponse{Error: fmt.Sprintf("unable to parse twitter profile data: %v", err)}
 	}
 	username := dataMap["username"].(string)
-	resp, err := twitter.ScrapeTweetsProfile(username)
+	resp, loginEvent, err := twitter.ScrapeTweetsProfile(username)
 	if err != nil {
-		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter profile: %v", err)}
+		return data_types.WorkResponse{Error: fmt.Sprintf("unable to get twitter profile: %v", err), LoginEvent: loginEvent}
 	}
 	logrus.Infof("[+] TwitterProfileHandler Work response for %s: %d records returned", data_types.TwitterProfile, 1)
 	return data_types.WorkResponse{Data: resp, RecordCount: 1}

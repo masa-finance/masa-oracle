@@ -4,16 +4,20 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
-func NewScraper(account *TwitterAccount, cookieDir string) *Scraper {
+func NewScraper(account *TwitterAccount, cookieDir string) (*Scraper, *data_types.LoginEvent) {
 	scraper := &Scraper{Scraper: newTwitterScraper()}
-
+	var loginEvent *data_types.LoginEvent
 	if err := LoadCookies(scraper.Scraper, account, cookieDir); err == nil {
 		logrus.Debugf("Cookies loaded for user %s.", account.Username)
 		if scraper.IsLoggedIn() {
 			logrus.Debugf("Already logged in as %s.", account.Username)
-			return scraper
+			// Log a successful login event
+			loginEvent = data_types.NewLoginEvent("", account.Username, "Twitter", true, "")
+			return scraper, loginEvent
 		}
 	}
 
@@ -21,7 +25,9 @@ func NewScraper(account *TwitterAccount, cookieDir string) *Scraper {
 
 	if err := scraper.Login(account); err != nil {
 		logrus.WithError(err).Warnf("Login failed for %s", account.Username)
-		return nil
+		// Log a failed login event
+		loginEvent = data_types.NewLoginEvent("", account.Username, "Twitter", false, err.Error())
+		return nil, loginEvent
 	}
 
 	RandomSleep()
@@ -31,7 +37,10 @@ func NewScraper(account *TwitterAccount, cookieDir string) *Scraper {
 	}
 
 	logrus.Debugf("Login successful for %s", account.Username)
-	return scraper
+	// Log a successful login event
+	loginEvent = data_types.NewLoginEvent("", account.Username, "Twitter", true, "")
+
+	return scraper, loginEvent
 }
 
 func (scraper *Scraper) Login(account *TwitterAccount) error {

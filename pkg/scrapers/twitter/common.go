@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/masa-finance/masa-oracle/pkg/config"
+	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
 var (
@@ -24,7 +25,7 @@ func initializeAccountManager() {
 }
 
 func GetAccountManager() *TwitterAccountManager {
-	_, _, err := getAuthenticatedScraper()
+	_, _, _, err := getAuthenticatedScraper()
 	if err != nil {
 		logrus.Errorf("error initializing account manager: %v", err)
 	}
@@ -59,22 +60,22 @@ func parseAccounts(accountPairs []string) []*TwitterAccount {
 	})
 }
 
-func getAuthenticatedScraper() (*Scraper, *TwitterAccount, error) {
+func getAuthenticatedScraper() (*Scraper, *TwitterAccount, *data_types.LoginEvent, error) {
 	once.Do(initializeAccountManager)
 	baseDir := config.GetInstance().MasaDir
 
 	account := accountManager.GetNextAccount()
 	if account == nil {
-		return nil, nil, fmt.Errorf("all accounts are rate-limited")
+		return nil, nil, nil, fmt.Errorf("all accounts are rate-limited")
 	}
-	scraper := NewScraper(account, baseDir)
+	scraper, loginEvent := NewScraper(account, baseDir)
 	if scraper == nil {
 		err := fmt.Errorf("twitter authentication failed for %s", account.Username)
 		logrus.Error(err)
-		return nil, account, err
+		return nil, account, loginEvent, err
 	}
 	account.LastScraped = time.Now()
-	return scraper, account, nil
+	return scraper, account, loginEvent, nil
 }
 
 func handleRateLimit(err error, account *TwitterAccount) bool {

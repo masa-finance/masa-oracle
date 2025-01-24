@@ -77,7 +77,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(scraper.IsLoggedIn()).To(BeTrue())
 
 		// Attempt a simple operation to verify the session is valid
-		profile, err := twitter.ScrapeTweetsProfile("twitter")
+		profile, _, err := twitter.ScrapeTweetsProfile("twitter")
 		Expect(err).To(BeNil())
 		Expect(profile.Username).To(Equal("twitter"))
 
@@ -104,7 +104,7 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(secondScraper.IsLoggedIn()).To(BeTrue())
 
 		// Attempt a simple operation to verify the session is valid
-		profile, err := twitter.ScrapeTweetsProfile("twitter")
+		profile, _, err := twitter.ScrapeTweetsProfile("twitter")
 		Expect(err).To(BeNil())
 		Expect(profile.Username).To(Equal("twitter"))
 
@@ -131,12 +131,12 @@ var _ = Describe("Twitter Auth Function", func() {
 		Expect(secondScraper.IsLoggedIn()).To(BeTrue())
 
 		// Attempt to scrape profile
-		profile, err := twitter.ScrapeTweetsProfile("god")
+		profile, _, err := twitter.ScrapeTweetsProfile("god")
 		Expect(err).To(BeNil())
 		logrus.Infof("Profile of 'god': %+v", profile)
 
 		// Scrape recent #Bitcoin tweets
-		tweets, err := twitter.ScrapeTweetsByQuery("#Bitcoin", 3)
+		tweets, _, err := twitter.ScrapeTweetsByQuery("#Bitcoin", 3)
 		Expect(err).To(BeNil())
 		Expect(tweets).To(HaveLen(3))
 
