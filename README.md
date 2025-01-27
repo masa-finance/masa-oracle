@@ -1,6 +1,6 @@
-# [Welcome to Masa](https://docs.masa.ai/docs/welcome-to-masa)
+# [Welcome to Masa](https://developers.masa.ai/docs/get-started/introduction)
 
-## [Introduction](https://docs.masa.ai/docs/welcome-to-masa#introduction)
+## [Introduction](https://developers.masa.ai/docs/masa-subnet/intro)
 
 Welcome to Masa, the network powering Fair AI. We are on a mission to revolutionize the AI landscape by providing an open, permissionless marketplace for specialized AI training data and compute resources. Our vision is to enable any builder, anywhere in the world, to access the tools they need to create innovative and specialized AI applications.
 
