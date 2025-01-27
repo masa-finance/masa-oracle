@@ -7,7 +7,7 @@
   resolved "https://registry.yarnpkg.com/@masa-finance/masa-contracts-oracle/-/masa-contracts-oracle-0.4.5.tgz#a9fb197b5585f9c476660c45d134842494795190"
   integrity sha512-3SeWpNQ4odLu9dIXNVjDliBSVvEliAy4ULWgQYzsX6hYfYAXhboIUd3+PvJGzGwyEib/3ATwqV7v4v0wBO2kzg==
 
-"@masa-finance/masa-token@^2.10.0":
-  version "2.10.0"
-  resolved "https://registry.yarnpkg.com/@masa-finance/masa-token/-/masa-token-2.10.0.tgz#57338708a9c6c0b437d482f5ed78b1f2698a8d60"
-  integrity sha512-5MRDkXCp1YE6SQyp2WSK4SMchCh1knogsQpnbcryD6U9/TwaT/Fwip1bbFmUdmgYyhmv+IJdiIWDHfAE6UrlvA==
+"@masa-finance/masa-token@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@masa-finance/masa-token/-/masa-token-3.0.1.tgz#d8a525ea93a519e776142f40b3ae62918c342fa9"
+  integrity sha512-cUHBoTbdIlTcm6cSMhXqA1UZTMATAj3w0o65HL8lsPoEn/kHyZHrI53kiqfWikBt/vUHOkEFpYDSVASS7JZRGw==
