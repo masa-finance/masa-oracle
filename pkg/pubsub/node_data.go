@@ -187,21 +187,24 @@ func (n *NodeData) Joined(nodeVersion string) {
 // It sets the leave time, stops uptime, sets activity to left,
 // sets node as inactive, and logs based on stake status.
 func (n *NodeData) Left() {
-	if n.Activity == ActivityLeft {
-		return
-	}
-	n.LastLeftUnix = time.Now().Unix()
-	n.LastUpdatedUnix = n.LastLeftUnix
-	n.CurrentUptime = 0
-	n.Activity = ActivityLeft
-	n.IsActive = false
+	if n != nil {
+		address := n.Address()
+		if n.Activity == ActivityLeft {
+			return
+		}
+		n.LastLeftUnix = time.Now().Unix()
+		n.LastUpdatedUnix = n.LastLeftUnix
+		n.CurrentUptime = 0
+		n.Activity = ActivityLeft
+		n.IsActive = false
 
-	n.UpdateAccumulatedUptime()
-	logMessage := fmt.Sprintf("Node left: %s", n.Address())
-	if n.IsStaked {
-		logrus.Info(logMessage)
-	} else {
-		logrus.Debug(logMessage)
+		n.UpdateAccumulatedUptime()
+		logMessage := fmt.Sprintf("Node left: %s", address)
+		if n.IsStaked {
+			logrus.Info(logMessage)
+		} else {
+			logrus.Debug(logMessage)
+		}
 	}
 }
 
