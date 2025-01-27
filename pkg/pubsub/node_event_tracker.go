@@ -132,7 +132,18 @@ func (net *NodeEventTracker) ListenClose(n network.Network, a ma.Multiaddr) {
 // If it exists and is active, it marks the node as joined and
 // saves the updated nodeData.
 func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
-	// A node has joined the network
+	logrus.Debug("Connected")
+	if net == nil {
+		logrus.Error("[-] Network is nil")
+		return
+	}
+
+	// check if the connection is nil
+	if c == nil {
+		logrus.Error("[-] Connection is nil")
+		return
+	}
+
 	remotePeer := c.RemotePeer()
 	peerID := remotePeer.String()
 
@@ -152,6 +163,13 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 			}
 		}
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Errorf("Recovered from panic: %v", r)
+		}
+	}()
+
 	logrus.WithFields(logrus.Fields{
 		"Peer":    c.RemotePeer().String(),
 		"network": n,
@@ -167,6 +185,11 @@ func (net *NodeEventTracker) Connected(n network.Network, c network.Conn) {
 func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 	logrus.Debug("Disconnect")
 
+	if net == nil {
+		logrus.Error("[-] Network is nil")
+		return
+	}
+
 	peerID := c.RemotePeer().String()
 
 	nodeData, exists := net.nodeData.Get(peerID)
@@ -175,8 +198,8 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		logrus.Debugf("Node data does not exist for disconnected node: %s", peerID)
 		return
 	}
-	buffered := net.ConnectBuffer[peerID]
-	if buffered.NodeData != nil {
+	buffered, exists := net.ConnectBuffer[peerID]
+	if exists && buffered.NodeData != nil {
 		buffered.NodeData.Left()
 		delete(net.ConnectBuffer, peerID)
 		buffered.NodeData.Joined(net.nodeVersion)
@@ -185,11 +208,18 @@ func (net *NodeEventTracker) Disconnected(n network.Network, c network.Conn) {
 		nodeData.Left()
 		net.NodeDataChan <- nodeData
 	}
+
+	// prevent panic
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Errorf("Recovered from panic: %v", r)
+		}
+	}()
 	logrus.WithFields(logrus.Fields{
-		"Peer":    c.RemotePeer().String(),
-		"network": n,
-		"conn":    c,
-	}).Info("[+] Disconnected")
+		"peer_id": fmt.Sprintf("%v", peerID),
+		"network": fmt.Sprintf("%v", n),
+		"conn":    fmt.Sprintf("%v", c),
+	}).Info("[+] Connected")
 }
 
 // HandleMessage unmarshals the received pubsub message into a NodeData struct,
