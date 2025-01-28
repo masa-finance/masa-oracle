@@ -27,7 +27,7 @@ require (
 	github.com/libp2p/go-libp2p v0.38.2
 	github.com/libp2p/go-libp2p-kad-dht v0.28.2
 	github.com/libp2p/go-libp2p-pubsub v0.12.0
-	github.com/masa-finance/masa-twitter-scraper v0.0.0-20241126070507-4938b90b44f4
+	github.com/masa-finance/masa-twitter-scraper v0.0.1
 	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/ollama/ollama v0.3.12
@@ -259,3 +259,5 @@ require (
 	rsc.io/qr v0.2.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
+
+replace github.com/imperatrona/twitter-scraper => github.com/masa-finance/twitter-scraper v1.0.1
