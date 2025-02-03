@@ -14,10 +14,8 @@ RUN apt-get update && \
     apt-utils \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
-    && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/yarn-archive-keyring.gpg] https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends yarn \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs yarn \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -27,7 +25,7 @@ COPY . .
 
 # Build with version from build arg
 ARG VERSION
-RUN VERSION=${VERSION:-$(date +%Y%m%d-%H%M%S)} make build
+RUN VERSION=${VERSION:-$(date +%Y%m%d-%H%M%S)} make build || echo "Using fallback version: $(date +%Y%m%d-%H%M%S)" && make build
 
 # Use the official Ubuntu 22.04 image as a base for the final image
 FROM ubuntu:22.04 AS base
