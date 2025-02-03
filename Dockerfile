@@ -21,20 +21,9 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-# Copy only necessary files for building
 COPY go.mod go.sum ./
-COPY Makefile ./
-COPY cmd/ ./cmd/
-COPY pkg/ ./pkg/
-COPY internal/ ./internal/
-COPY node/ ./node/
-COPY config/ ./config/
-COPY contracts/ ./contracts/
-COPY tools/ ./tools/
-
-# Download dependencies
 RUN go mod download
+COPY . .
 
 # Build with version from build arg
 ARG VERSION
