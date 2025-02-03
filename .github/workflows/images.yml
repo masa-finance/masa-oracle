@@ -66,9 +66,9 @@ jobs:
             type=ref,event=branch,suffix=-{{date 'YYYYMMDDHHmmss'}}
             type=semver,pattern={{raw}}
             type=sha,suffix=-{{date 'YYYYMMDDHHmmss'}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest  # For testing, always tag latest. Later change to: type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
           flavor: |
-            latest=auto
+            latest=false  # Disable auto-latest since we're explicitly managing it
             prefix=
             suffix=
       - name: Build and push
