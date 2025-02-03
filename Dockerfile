@@ -28,7 +28,10 @@ COPY Makefile ./
 COPY cmd/ ./cmd/
 COPY pkg/ ./pkg/
 COPY internal/ ./internal/
-COPY api/ ./api/
+COPY node/ ./node/
+COPY config/ ./config/
+COPY contracts/ ./contracts/
+COPY tools/ ./tools/
 
 # Download dependencies
 RUN go mod download
