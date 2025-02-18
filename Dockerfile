@@ -4,12 +4,19 @@ FROM golang:1.22 AS builder
 # Install Node.js and Yarn
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
-    npm install -g npm@latest yarn
+    npm install -g npm@latest yarn && \
+    yarn config set --home enableTelemetry 0
 
 WORKDIR /app
 # Only copy files needed for go mod download
 COPY go.mod go.sum ./
 RUN go mod download
+
+# Copy package files first for better caching
+COPY contracts/package.json contracts/yarn.lock contracts/
+WORKDIR /app/contracts
+RUN yarn install --frozen-lockfile --non-interactive --no-git
+WORKDIR /app
 
 # Only copy the necessary source directories
 COPY cmd/ cmd/
