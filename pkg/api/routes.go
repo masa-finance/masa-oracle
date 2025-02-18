@@ -17,10 +17,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 
-	"path/filepath"
-	"runtime"
-
 	"github.com/masa-finance/masa-oracle/node"
+	"github.com/sirupsen/logrus"
 	swaggerFiles "github.com/swaggo/files"     // swagger embed files
 	ginSwagger "github.com/swaggo/gin-swagger" // ginSwagger middleware
 )
@@ -132,10 +130,14 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 	router.SetHTMLTemplate(templ)
 
 	// Update Swagger info
-	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
-	docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Title = "Masa Oracle API"
+	docs.SwaggerInfo.Description = "API for the Masa Oracle Node"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = ""            // Leave this empty for relative URLs
+	docs.SwaggerInfo.BasePath = "/api/v1" // Set base path for API routes
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
+	// Setup Swagger handler after configuring Swagger info
 	setupSwaggerHandler(router)
 
 	v1 := router.Group("/api/v1")
@@ -391,31 +393,17 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	// Get the current file's directory
-	_, currentFile, _, _ := runtime.Caller(0)
-	currentDir := filepath.Dir(currentFile)
-
-	// Construct the path to the swagger.html file
-	swaggerTemplate := filepath.Join(currentDir, "templates", "swagger.html")
-
-	// Create a custom handler that serves our HTML file
-	customHandler := func(c *gin.Context) {
-		if c.Request.URL.Path == "/swagger" || c.Request.URL.Path == "/swagger/" || c.Request.URL.Path == "/swagger/index.html" {
-			c.File(swaggerTemplate)
-			return
+	// Debug middleware to log all swagger requests
+	router.Use(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger") {
+			logrus.Debugf("Swagger request path: %s", c.Request.URL.Path)
 		}
-
-		// For other swagger-related paths, use the default handler
-		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
-			ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
-			return
-		}
-
-		// If it's not a swagger path, pass it to the next handler
 		c.Next()
-	}
+	})
 
-	// Use our custom handler for all /swagger paths
-	router.GET("/swagger", customHandler)
-	router.GET("/swagger/*any", customHandler)
+	// Create the swagger handler
+	handler := ginSwagger.WrapHandler(swaggerFiles.Handler)
+
+	// Handle all Swagger paths with a single wildcard route
+	router.GET("/swagger/*any", handler)
 }

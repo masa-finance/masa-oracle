@@ -1,46 +1,35 @@
 services:
-  masa-tee-worker:
-    #    network_mode: "host"
-    image: masaengineering/tee-worker:main
-    # Uncomment to build from source
-    # build: .
-    ports:
-       - "8081:8080"
-    environment:
-      LISTEN_ADDRESS: ":8080"
-      # uncomment if not running with Intel SGX HW
-      OE_SIMULATION: "1"
-    # uncomment if running with Intel SGX
-    # devices:
-    # - /dev/sgx_enclave 
-    # - /dev/sgx_provision
-    volumes:
-      - masa:/home/masa/
-      - ./.env:/home/masa/.env
-    restart: always
   masa-node:
-    network_mode: "host"
-    #image: masaengineering/oracle:v0.8.8
-    build: .
-    # ports:
-    #    - "4001:4001/tcp"
-    #    - "4001:4001/udp"
-    #    - "8080:8080"
+    # Remove network_mode: "host" for macOS compatibility
+    build: .  # For development
+    # image: masaengineering/oracle:main  # Uncomment this and comment 'build' for production
     environment:
-      TEE_WORKER_URL: "http://masa-tee-worker:8080"
+      ENV: "sepolia"
+      RPC_URL: "https://sepolia.infura.io/v3/YOUR_INFURA_KEY"
+      TWITTER_SCRAPER: "true"
+      TWITTER_ACCOUNTS: "${TWITTER_ACCOUNTS}"  # Format: username1:password1,username2:password2
+      USER_AGENTS: "${USER_AGENTS}"
+      LOG_LEVEL: "debug"  # Add debug logging
+      API_ENABLED: "true"  # Add this
+      API_LISTEN_ADDRESS: "0.0.0.0:8080"  # Add this
+    ports:
+      - "8080:8080"
+      - "4001:4001/udp"  # Add P2P port
     volumes:
-      - masa:/home/masa/
+      - ./.masa:/home/masa/.masa
       - ./.env:/home/masa/.env
+    command: [
+      "--masaDir", "/home/masa/.masa",
+      "--twitterScraper",
+      "--env", "sepolia",
+      "--api-enabled=true",  # Change this format
+      "--api-port", "0.0.0.0:8080",
+      "--logLevel", "debug",
+      "--debug",
+      "--tcp=false",
+      "--udp=false"
+    ]
     restart: always
 
-volumes:
-  masa:
-    # This is a named volume. You can specify additional options here if needed,
-    # such as setting a specific driver, driver options, or even labeling.
-    # For most users, the simple declaration is sufficient.
-    # Example with explicit driver (usually not required):
-    # driver: local
-    # Example with labels (optional):
-    # labels:
-    #   - "com.example.description=MASA node key storage"
+# Remove the named volume since we're using bind mounts
 
