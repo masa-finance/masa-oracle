@@ -4,8 +4,8 @@ name: 'build container images'
 on:
   push:
     branches:
-      - master
       - main
+      - fix/v0.8.9-docker
     tags:
       - '*'
 concurrency:
