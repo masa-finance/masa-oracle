@@ -31,8 +31,9 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/}
             TAGS="${DOCKER_IMAGE}:${VERSION},${DOCKER_IMAGE}:latest"
           else
-            # For branches, tag with branch name, branch-latest, and commit hash
-            TAGS="${DOCKER_IMAGE}:${VERSION},${DOCKER_IMAGE}:${VERSION}-latest,${DOCKER_IMAGE}:${SHORTREF}"
+            # For branches, tag with branch name (replace / with -), branch-latest, and commit hash
+            BRANCH_TAG=${VERSION//\//-}
+            TAGS="${DOCKER_IMAGE}:${BRANCH_TAG},${DOCKER_IMAGE}:${BRANCH_TAG}-latest,${DOCKER_IMAGE}:${SHORTREF}"
           fi
           
           # Set output parameters.
