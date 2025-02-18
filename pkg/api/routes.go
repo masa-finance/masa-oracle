@@ -5,8 +5,6 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -132,11 +130,15 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 	router.SetHTMLTemplate(templ)
 
 	// Update Swagger info
+	docs.SwaggerInfo.Title = "Masa Oracle API"
+	docs.SwaggerInfo.Description = "The Worlds Personal Data Network Masa Oracle Node API"
+	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.Host = "" // Leave this empty for relative URLs
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
-	setupSwaggerHandler(router)
+	// Register Swagger docs with the default handler
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	v1 := router.Group("/api/v1")
 	{
@@ -529,31 +531,6 @@ func SetupRoutes(node *node.OracleNode, workerManager *workers.WorkHandlerManage
 }
 
 func setupSwaggerHandler(router *gin.Engine) {
-	// Get the current file's directory
-	_, currentFile, _, _ := runtime.Caller(0)
-	currentDir := filepath.Dir(currentFile)
-
-	// Construct the path to the swagger.html file
-	swaggerTemplate := filepath.Join(currentDir, "templates", "swagger.html")
-
-	// Create a custom handler that serves our HTML file
-	customHandler := func(c *gin.Context) {
-		if c.Request.URL.Path == "/swagger" || c.Request.URL.Path == "/swagger/" || c.Request.URL.Path == "/swagger/index.html" {
-			c.File(swaggerTemplate)
-			return
-		}
-
-		// For other swagger-related paths, use the default handler
-		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
-			ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
-			return
-		}
-
-		// If it's not a swagger path, pass it to the next handler
-		c.Next()
-	}
-
-	// Use our custom handler for all /swagger paths
-	router.GET("/swagger", customHandler)
-	router.GET("/swagger/*any", customHandler)
+	// Register Swagger docs with the default handler
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

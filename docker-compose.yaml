@@ -1,37 +1,56 @@
 services:
-  masa-node:
-    #    network_mode: "host"
+  bootnode:
     build: .
-    # optional if network_mode: "host" mode is not used
-    ports:
-       - "4001:4001/tcp"
-       - "4001:4001/udp"
-       - "8080:8080"
     environment:
-      BOOTNODES: "${BOOTNODES}"
-      ENV: "${ENV}"
-      RPC_URL: "${RPC_URL}"
-      FILE_PATH: "${FILE_PATH}"
-      VALIDATOR: "${VALIDATOR}"
-      CACHE_PATH: "${CACHE_PATH}"
-      TWITTER_PASS: "${TWITTER_PASS}"
-      TWITTER_USER: "${TWITTER_USER}"
-      TWITTER_2FA_CODE: "${TWITTER_2FA_CODE}"
-      TWITTER_SCRAPER: "${TWITTER_SCRAPER}"
+      ENV: ${ENV}
+      FILE_PATH: ${FILE_PATH}
+      RPC_URL: ${RPC_URL}
+      VALIDATOR: ${VALIDATOR}
+      LOG_LEVEL: ${LOG_LEVEL}
+      API_ENABLED: ${API_ENABLED}
+      USER_AGENTS: ${USER_AGENTS}
+    ports:
+      - 8081:8080
+      - 4001:4001/udp
     volumes:
-      - .:/app
-      - .masa-keys:/home/masa/.masa
-      - ./.env:/home/masa/.env
+      - ./.masa-bootnode:/home/masa/.masa
+      - ./bootnode.env:/home/masa/.env
+    command:
+      - --masaDir=/home/masa/.masa
+      - --env=${ENV}
+      - --api-enabled
+      - --logLevel=${LOG_LEVEL}
+      - --api-listen-address=0.0.0.0:8080
     restart: always
 
-volumes:
-  masa-keys:
-    # This is a named volume. You can specify additional options here if needed,
-    # such as setting a specific driver, driver options, or even labeling.
-    # For most users, the simple declaration is sufficient.
-    # Example with explicit driver (usually not required):
-    # driver: local
-    # Example with labels (optional):
-    # labels:
-    #   - "com.example.description=MASA node key storage"
+  worker:
+    build: .
+    environment:
+      BOOTNODES: ${BOOTNODES}
+      ENV: ${ENV}
+      FILE_PATH: ${FILE_PATH}
+      RPC_URL: ${RPC_URL}
+      VALIDATOR: ${VALIDATOR}
+      LOG_LEVEL: ${LOG_LEVEL}
+      API_ENABLED: ${API_ENABLED}
+      TWITTER_SCRAPER: ${TWITTER_SCRAPER}
+      TWITTER_ACCOUNTS: ${TWITTER_ACCOUNTS}
+      USER_AGENTS: ${USER_AGENTS}
+    ports:
+      - 8082:8080
+      - 4002:4001/udp
+    volumes:
+      - ./.masa-worker:/home/masa/.masa
+      - ./worker.env:/home/masa/.env
+    command:
+      - --masaDir=/home/masa/.masa
+      - --env=${ENV}
+      - --api-enabled
+      - --logLevel=${LOG_LEVEL}
+      - --twitterScraper
+      - --api-listen-address=0.0.0.0:8080
+      - --bootnodes=${BOOTNODES}
+    restart: always
+
+# Remove the named volume since we're using bind mounts
 

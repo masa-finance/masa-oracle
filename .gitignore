@@ -73,3 +73,6 @@ snippets.txt
 # Build result of goreleaser
 dist/
 bp-todo.md
+
+# Masa dir
+.masa/

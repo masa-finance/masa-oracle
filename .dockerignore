@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env*
+*.log
+.masa*
+bin/
+dist/
+coverage*
+node_modules/
+!contracts/node_modules/
+*.md
+.github/
+.vscode/
+*.sh
+tests/ 

@@ -16,13 +16,17 @@ print-version:
 contracts/node_modules:
 	@go generate ./...
 
+swagger:
+	@which swag > /dev/null || go install github.com/swaggo/swag/cmd/swag@latest
+	@swag init -g pkg/api/routes.go
+
 dev-dist:
 	$(GORELEASER) build --snapshot --single-target --clean
 
 dist:
 	$(GORELEASER) build --single-target --clean
 
-build: contracts/node_modules
+build: contracts/node_modules swagger
 	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node ./cmd/masa-node
 	@go build -v -ldflags "-X github.com/masa-finance/masa-oracle/internal/versioning.ApplicationVersion=${VERSION}" -o ./bin/masa-node-cli ./cmd/masa-node-cli
 
