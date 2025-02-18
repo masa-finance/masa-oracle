@@ -1,10 +1,10 @@
 # Build the Go binary in a separate stage
 FROM golang:1.22 AS builder
 
-# Install Node.js
+# Install Node.js and Yarn
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
-    npm install -g npm@latest
+    npm install -g npm@latest yarn
 
 WORKDIR /app
 # Only copy files needed for go mod download
