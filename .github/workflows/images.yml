@@ -4,10 +4,8 @@ name: 'build container images'
 on:
   push:
     branches:
-      - main
       - fix/v0.8.9-docker
-    tags:
-      - '*'
+
 concurrency:
   group: ci-image-${{ github.head_ref || github.ref }}-${{ github.repository }}
   cancel-in-progress: true

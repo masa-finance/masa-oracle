@@ -12,28 +12,30 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy package files first for better caching
-COPY contracts/package.json contracts/yarn.lock contracts/
+# Copy all contract files first
+COPY contracts/ contracts/
 WORKDIR /app/contracts
 RUN yarn install --frozen-lockfile --non-interactive --no-git
 WORKDIR /app
 
-# Only copy the necessary source directories
+# Copy remaining source directories
 COPY cmd/ cmd/
 COPY pkg/ pkg/
 COPY internal/ internal/
-COPY contracts/ contracts/
+COPY node/ node/
+COPY docs/ docs/
 COPY Makefile ./
 
-# Set specific GOARCH and ensure we're building with basic CPU features
+# Set specific GOARCH and ensure static binary
 ENV GOARCH=amd64
 ENV CGO_ENABLED=0
-ENV GOMAXPROCS=4
 
-# Accept version as build arg
+# Set VERSION for the build
 ARG VERSION=dev
-# Build with minimal CPU feature set
-RUN VERSION=${VERSION} GOAMD64=v1 make build
+ENV VERSION=${VERSION}
+
+# Build
+RUN mkdir -p bin && make build
 
 # Use the official Ubuntu 22.04 image as a base for the final image
 FROM ubuntu:22.04 AS base
@@ -44,6 +46,7 @@ RUN apt-get update && \
     update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+# Copy the binary from the builder stage
 COPY --from=builder /app/bin/masa-node /usr/bin/masa-node
 RUN chmod +x /usr/bin/masa-node
 
