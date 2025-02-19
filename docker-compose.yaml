@@ -1,56 +1,52 @@
 services:
   bootnode:
-    build: .
-    environment:
-      ENV: ${ENV}
-      FILE_PATH: ${FILE_PATH}
-      RPC_URL: ${RPC_URL}
-      VALIDATOR: ${VALIDATOR}
-      LOG_LEVEL: ${LOG_LEVEL}
-      API_ENABLED: ${API_ENABLED}
-      USER_AGENTS: ${USER_AGENTS}
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
+    env_file:
+      - bootnode.env
     ports:
-      - 8081:8080
-      - 4001:4001/udp
+      - 18101:8080
     volumes:
       - ./.masa-bootnode:/home/masa/.masa
-      - ./bootnode.env:/home/masa/.env
+      - ./bootnode.env:/app/.env
     command:
       - --masaDir=/home/masa/.masa
-      - --env=${ENV}
+      - --env=hometest
       - --api-enabled
-      - --logLevel=${LOG_LEVEL}
-      - --api-listen-address=0.0.0.0:8080
+      - --logLevel=debug
     restart: always
+    networks:
+      - masa_network
 
   worker:
-    build: .
-    environment:
-      BOOTNODES: ${BOOTNODES}
-      ENV: ${ENV}
-      FILE_PATH: ${FILE_PATH}
-      RPC_URL: ${RPC_URL}
-      VALIDATOR: ${VALIDATOR}
-      LOG_LEVEL: ${LOG_LEVEL}
-      API_ENABLED: ${API_ENABLED}
-      TWITTER_SCRAPER: ${TWITTER_SCRAPER}
-      TWITTER_ACCOUNTS: ${TWITTER_ACCOUNTS}
-      USER_AGENTS: ${USER_AGENTS}
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
+    env_file:
+      - worker.env
     ports:
-      - 8082:8080
-      - 4002:4001/udp
+      - 18102:8080
     volumes:
       - ./.masa-worker:/home/masa/.masa
-      - ./worker.env:/home/masa/.env
+      - ./worker.env:/app/.env
     command:
       - --masaDir=/home/masa/.masa
-      - --env=${ENV}
+      - --env=hometest
       - --api-enabled
-      - --logLevel=${LOG_LEVEL}
-      - --twitterScraper
-      - --api-listen-address=0.0.0.0:8080
-      - --bootnodes=${BOOTNODES}
+      - --logLevel=debug
+      - --bootnodes=/dns4/bootnode/udp/4001/quic-v1/p2p/16Uiu2HAmFDT9XC6Y5PGULHRLUM7Y9JKr6GMy64moKKsBRoyFc5qJ
     restart: always
+    networks:
+      - masa_network
+    depends_on:
+      - bootnode
 
 # Remove the named volume since we're using bind mounts
+
+networks:
+  masa_network:
+    driver: bridge
 
