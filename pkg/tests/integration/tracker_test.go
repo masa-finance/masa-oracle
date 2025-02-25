@@ -56,13 +56,13 @@ var _ = Describe("Oracle integration tests", func() {
 			// Wait for the nodes to see each others in their respective
 			// nodeTracker
 			Eventually(func() bool {
-				datas := n2.NodeTracker.GetAllNodeData()
-				return len(datas) == 2
+				data := n2.NodeTracker.GetAllNodeData()
+				return len(data) == 2
 			}, "30s").Should(BeTrue())
 
 			Eventually(func() bool {
-				datas := n.NodeTracker.GetAllNodeData()
-				return len(datas) == 2
+				data := n.NodeTracker.GetAllNodeData()
+				return len(data) == 2
 			}, "30s").Should(BeTrue())
 
 			data := n.NodeTracker.GetAllNodeData()
