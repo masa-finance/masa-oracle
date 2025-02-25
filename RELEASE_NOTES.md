@@ -10,7 +10,7 @@ This release of the Masa Oracle Node introduces the following new features and c
 
 ### Breaking Changes
 
-* Protocol verion change to 0.5.0
+* Protocol version change to 0.5.0
 
 ### Bug fixes
 
