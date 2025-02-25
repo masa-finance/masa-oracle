@@ -34,7 +34,7 @@ Key features of the Masa network include:
 
 Masa empowers contributors to monetize their data and compute resources by becoming Worker Nodes on the network. As a Worker Node, you can:
 
-- Stake tokens to provide work to the network and earn rewards for your nodes availablity and uptime.
+- Stake tokens to provide work to the network and earn rewards for your nodes availability and uptime.
 - Receive and process data requests from Oracle Nodes, servicing data and LLM requests.
 - Earn network emissions and fees for the work you provide, generating a new revenue stream.
 - Access the network's vast dataset and LLM resources to efficiently process requests and deliver accurate results.
