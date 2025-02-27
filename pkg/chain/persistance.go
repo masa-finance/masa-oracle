@@ -9,7 +9,7 @@ const (
 	KeyLastHash = "last_hash"
 )
 
-type Persistance struct {
+type Persistence struct {
 	db *badger.DB
 }
 
@@ -18,7 +18,7 @@ type Serializable interface {
 	Deserialize(data []byte) error
 }
 
-func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte)) ([]byte, error) {
+func (p *Persistence) Init(path string, genesisFn func() (Serializable, []byte)) ([]byte, error) {
 	dbOptions := badger.DefaultOptions(path)
 	dbOptions.Logger = nil
 	db, err := badger.Open(dbOptions)
@@ -71,7 +71,7 @@ func (p *Persistance) Init(path string, genesisFn func() (Serializable, []byte))
 	return lastHash, nil
 }
 
-func (p *Persistance) Get(key []byte) ([]byte, error) {
+func (p *Persistence) Get(key []byte) ([]byte, error) {
 	var value []byte
 	err := p.db.View(func(transaction *badger.Txn) error {
 		item, err := transaction.Get(key)
@@ -93,11 +93,11 @@ func (p *Persistance) Get(key []byte) ([]byte, error) {
 	return value, nil
 }
 
-func (p *Persistance) GetLastHash() ([]byte, error) {
+func (p *Persistence) GetLastHash() ([]byte, error) {
 	return p.Get([]byte(KeyLastHash))
 }
 
-func (p *Persistance) SaveBlock(hash []byte, block Serializable) error {
+func (p *Persistence) SaveBlock(hash []byte, block Serializable) error {
 	err := p.db.Update(func(transaction *badger.Txn) error {
 		serialData, err := block.Serialize()
 		if err != nil {
@@ -119,7 +119,7 @@ func (p *Persistance) SaveBlock(hash []byte, block Serializable) error {
 	return nil
 }
 
-func (p *Persistance) Iterate(prefix []byte, block Serializable, callback func(value []byte) error) error {
+func (p *Persistence) Iterate(prefix []byte, block Serializable, callback func(value []byte) error) error {
 	err := p.db.View(func(transaction *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		iterator := transaction.NewIterator(opts)
