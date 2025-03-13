@@ -2,88 +2,36 @@ package twitter
 
 import (
 	"context"
-	"time"
 
 	twitterscraper "github.com/imperatrona/twitter-scraper"
 
 	data_types "github.com/masa-finance/masa-oracle/pkg/workers/types"
 )
 
-type SimpleTweet struct {
-	ConversationID    string
-	GIFs              []twitterscraper.GIF
-	Hashtags          []string
-	HTML              string
-	ID                string
-	InReplyToStatusID string
-	IsQuoted          bool
-	IsPin             bool
-	IsReply           bool
-	IsRetweet         bool
-	IsSelfThread      bool
-	Likes             int
-	Name              string
-	Mentions          []twitterscraper.Mention
-	PermanentURL      string
-	Photos            []twitterscraper.Photo
-	Place             *twitterscraper.Place
-	QuotedStatusID    string
-	Replies           int
-	Retweets          int
-	RetweetedStatusID string
-	Text              string
-	TimeParsed        time.Time
-	Timestamp         int64
-	URLs              []string
-	UserID            string
-	Username          string
-	Videos            []twitterscraper.Video
-	Views             int
-	SensitiveContent  bool
-}
-
 type TweetResult struct {
-	Tweet *SimpleTweet
+	Tweet *twitterscraper.Tweet
 	Error error
 }
 
-// Conversion function
-func convertToSimpleTweet(tweet *twitterscraper.Tweet) *SimpleTweet {
-	return &SimpleTweet{
-		ConversationID:    tweet.ConversationID,
-		GIFs:              tweet.GIFs,
-		Hashtags:          tweet.Hashtags,
-		HTML:              tweet.HTML,
-		ID:                tweet.ID,
-		InReplyToStatusID: tweet.InReplyToStatusID,
-		IsQuoted:          tweet.IsQuoted,
-		IsPin:             tweet.IsPin,
-		IsReply:           tweet.IsReply,
-		IsRetweet:         tweet.IsRetweet,
-		IsSelfThread:      tweet.IsSelfThread,
-		Likes:             tweet.Likes,
-		Name:              tweet.Name,
-		Mentions:          tweet.Mentions,
-		PermanentURL:      tweet.PermanentURL,
-		Photos:            tweet.Photos,
-		Place:             tweet.Place,
-		QuotedStatusID:    tweet.QuotedStatusID,
-		Replies:           tweet.Replies,
-		Retweets:          tweet.Retweets,
-		RetweetedStatusID: tweet.RetweetedStatusID,
-		Text:              tweet.Text,
-		TimeParsed:        tweet.TimeParsed,
-		Timestamp:         tweet.Timestamp,
-		URLs:              tweet.URLs,
-		UserID:            tweet.UserID,
-		Username:          tweet.Username,
-		Videos:            tweet.Videos,
-		Views:             tweet.Views,
-		SensitiveContent:  tweet.SensitiveContent,
+// Function to remove cyclic references
+func removeCyclicReferences(tweet *twitterscraper.Tweet) *twitterscraper.Tweet {
+	if tweet == nil {
+		return nil
 	}
+
+	// Create a copy of the tweet to avoid modifying the original
+	cleanTweet := *tweet
+
+	// Set cyclic reference fields to nil
+	cleanTweet.InReplyToStatus = nil
+	cleanTweet.QuotedStatus = nil
+	cleanTweet.RetweetedStatus = nil
+	cleanTweet.Thread = nil
+
+	return &cleanTweet
 }
 
-func ScrapeTweetByID(id string) (*SimpleTweet, *data_types.LoginEvent, error) {
+func ScrapeTweetByID(id string) (*twitterscraper.Tweet, *data_types.LoginEvent, error) {
 	scraper, account, loginEvent, err := getAuthenticatedScraper()
 	if err != nil {
 		return nil, loginEvent, err
@@ -96,7 +44,10 @@ func ScrapeTweetByID(id string) (*SimpleTweet, *data_types.LoginEvent, error) {
 		}
 		return nil, loginEvent, err
 	}
-	return convertToSimpleTweet(tweet), loginEvent, nil
+
+	// Remove cyclic references before conversion
+	cleanTweet := removeCyclicReferences(tweet)
+	return cleanTweet, loginEvent, nil
 }
 
 func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, *data_types.LoginEvent, error) {
@@ -115,7 +66,10 @@ func ScrapeTweetsByQuery(query string, count int) ([]*TweetResult, *data_types.L
 			}
 			return nil, loginEvent, tweet.Error
 		}
-		tweets = append(tweets, &TweetResult{Tweet: convertToSimpleTweet(&tweet.Tweet)})
+
+		// Remove cyclic references before conversion
+		cleanTweet := removeCyclicReferences(&tweet.Tweet)
+		tweets = append(tweets, &TweetResult{Tweet: cleanTweet})
 	}
 	return tweets, loginEvent, nil
 }
